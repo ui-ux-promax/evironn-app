@@ -31,6 +31,15 @@
 
 The design-system source is not copied into the public repository. Only cleaned tokens, component contracts, and approved assets are transferred.
 
+## Prototype Design Workflow
+
+- Before a new UI surface, run `/impeccable init` once when project design context is missing; use `/impeccable shape` before implementation and `/impeccable critique`, `/impeccable audit`, and `/impeccable polish` at the relevant review points.
+- Use `design-taste-frontend` as the default visual-direction skill. Use `frontend-design`, `gpt-taste`, or `high-end-visual-design` only when the page needs a distinct editorial, motion-heavy, or luxury direction; do not combine conflicting visual systems blindly.
+- For every new page with a meaningful visual layout, create three intentionally different UI directions before committing to production implementation. Tiny utility-only states may use one direction. Variants share routes, data contracts, design tokens, and accessibility requirements; they differ in composition, hierarchy, density, and visual emphasis.
+- Each variant receives a fast smoke check and temporary visual preview. Full tests, responsive hardening, and production polish apply only after the user selects a direction. Temporary previews never enter the public tree.
+- The user may approve one variant, request a hybrid, or reject all three. Rejected directions stay out of the baseline; iteration continues on the phase branch until the user approves the selected direction.
+- User approval is required before pushing the selected visual result and opening the phase PR. Technical green checks alone do not equal visual approval.
+
 ## Routes
 
 ### Storefront
@@ -78,17 +87,20 @@ References:
 - [P0 implementation plan](2026-08-06-p0-clean-room-extraction.md)
 - [Asset inventory](../asset-inventory.md)
 
-### P1 — Design-system foundation
+### P1 — Design-system foundation — complete
 
-- Extract canonical semantic tokens from `design-system.html`.
-- Create `prototypes/` Vite multi-page workspace.
-- Implement shared header/footer, UI primitives, mock-data contract, and route index.
-- Add automated checks rejecting ad-hoc color, radius, shadow, type, and motion values.
-- Preserve approved home/product visual output.
+- Extracted canonical semantic tokens from `design-system.html` into the prototype design system.
+- Created the `prototypes/` Vite workspace boundary.
+- Implemented shared header/footer, UI primitives, typed mock-data contracts, and route index.
+- Added automated checks rejecting ad-hoc color, radius, typography, shadow, inline visual values, and motion values.
+- Added accessibility contracts, skip-link behavior, fixture consistency checks, and route normalization checks.
+- Preserved approved home/product visual output.
+- Validation completed: `gate:full`, 60 Vitest tests, 7 Playwright tests, production build, repository audit, design-system audit, typecheck, ESLint, and Prettier check.
 
 ### P2 — Catalog
 
-- Categories, search, filters, sorting, pagination, and cards.
+- First create three distinct catalog directions using the Prototype Design Workflow; the user selects one before full implementation.
+- Implement the selected direction with categories, search, filters, sorting, pagination, and cards.
 - Loading, empty, no-results, and error states.
 
 ### P3 — Cart
@@ -203,12 +215,14 @@ References:
 {
   "format": "prettier --write .",
   "format:check": "prettier --check .",
+  "check:repository": "node scripts/check-repository.mjs",
+  "check:design-system": "node scripts/check-design-system.mjs",
   "lint": "eslint .",
   "typecheck": "tsc --noEmit",
   "test": "vitest run",
   "test:e2e": "playwright test",
   "build": "vite build / next build",
-  "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+  "gate": "npm run format:check && npm run check:repository && npm run check:design-system && npm run lint && npm run typecheck && npm run test",
   "gate:full": "npm run gate && npm run build && npm run test:e2e"
 }
 ```
@@ -217,6 +231,8 @@ Additional requirements:
 
 - `gate` is required before every commit.
 - `gate:full` is required before phase closure and in GitHub Actions.
+- `format:check` must pass; it runs `prettier --check .` and confirms all files use Prettier formatting.
+- `check:repository` and `check:design-system` are required for every prototype phase.
 - A red required check blocks merge.
 - Coverage is risk-based; no arbitrary global percentage threshold.
 - Playwright checks 390×844, 820×1180, and 1440×900.
@@ -226,9 +242,14 @@ Additional requirements:
 
 ## Git Workflow
 
-- One English feature branch and PR per phase.
+- `prototype/clean-room-baseline` is the Phase A integration branch. It contains the latest approved prototype phase and is the normal PR target during HTML prototype work.
+- Create each phase branch from the latest baseline, for example `prototype/design-system-foundation` or `prototype/catalog`.
+- One English feature branch and PR per phase. Phase branches are never developed directly on `main`.
+- Push and open the phase PR only after the user approves the selected visual direction. Before approval, local commits and previews are allowed; no baseline or `main` mutation occurs.
+- After a phase PR is merged into `prototype/clean-room-baseline`, create the next phase branch from that updated baseline. Open the final baseline-to-`main` PR only after P17 release approval.
 - Conventional Commit messages in English.
 - PR sections: `Summary`, `User-visible changes`, `Validation`, `Risks/Follow-ups`.
+- PR `Validation` must list Prettier, repository/design-system audits, lint, typecheck, Vitest, build, and Playwright results when applicable.
 - No AI/tool attribution or automatic co-author trailers.
 - Public tree excludes captures, prompts, generators, handoff files, and service directories.
 - The next phase starts only after the previous phase has a green gate, review, merge, and user approval.
@@ -260,11 +281,13 @@ Before each phase:
 1. Write the phase specification in `docs/specs`.
 2. Write the phase implementation plan in `docs/plans`.
 3. Create an isolated feature branch/worktree.
-4. Write failing tests before implementation.
-5. Implement in small commits.
-6. Run focused tests, then `gate` and `gate:full`.
-7. Run an independent spec/code review.
-8. Fix Critical and Important findings and re-review.
-9. Ask the user for visual approval where required.
+4. Load the applicable design workflow: `brainstorming`, `impeccable`, and one primary visual-direction skill.
+5. For every new page with a meaningful visual layout, build three variants and show a temporary preview for user selection; tiny utility-only states may use one direction.
+6. Write failing tests for the selected direction before implementation.
+7. Implement in small commits and iterate on user feedback without touching the baseline.
+8. Run focused tests, then `gate` and `gate:full`.
+9. Run an independent spec/code review.
+10. Fix Critical and Important findings and re-review.
+11. Ask the user for final visual approval, then push and open the phase PR.
 
-Current next phase: **P1 — Design-system foundation**.
+Current next phase: **P2 — Catalog**.

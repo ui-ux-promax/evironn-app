@@ -23,6 +23,12 @@
   --ev-ds-type-body: 15px;
   --ev-ds-type-control: 14px;
   --ev-ds-type-title: 22px;
+  --ev-ds-leading-none: 1;
+  --ev-ds-leading-copy: 1.5;
+  --ev-ds-tracking-tight: -0.04em;
+  --ev-ds-tracking-none: 0;
+  --ev-ds-tracking-label: 0.08em;
+  --ev-ds-tracking-wide: 0.12em;
   --ev-ds-weight-medium: 500;
   --ev-ds-weight-semibold: 600;
   --ev-ds-weight-bold: 700;

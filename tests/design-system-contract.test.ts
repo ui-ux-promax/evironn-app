@@ -89,6 +89,24 @@ test('design-system audit rejects named colors and non-token motion durations', 
     expect(() => auditDesignSystem(fixture)).toThrow(/raw inline visual value/);
     writeFileSync(cssPath, '<a href="/demo-admin">Admin</a>');
     expect(() => auditDesignSystem(fixture)).toThrow(/forbidden route marker/);
+    writeFileSync(cssPath, '.bad { background: #fff; }');
+    expect(() => auditDesignSystem(fixture)).toThrow(/raw color literal/);
+    writeFileSync(
+      cssPath,
+      '.bad { font-size: 12px; font-weight: 400; line-height: 1.2; letter-spacing: 0.1em; }',
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(
+      /non-token font-size value/,
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(
+      /non-token font-weight value/,
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(
+      /non-token line-height value/,
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(
+      /non-token letter-spacing value/,
+    );
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }

@@ -197,6 +197,13 @@ export function auditDesignSystem(projectRoot = process.cwd()) {
       message: `non-token ${property} value`,
       find: (content) => firstNonTokenMotionDeclaration(content, property),
     })),
+    ...['font-size', 'font-weight', 'line-height', 'letter-spacing'].map(
+      (property) => ({
+        message: `non-token ${property} value`,
+        find: (content) =>
+          firstNonTokenDeclaration(content, property, '--ev-ds-', 'contains'),
+      }),
+    ),
   ];
 
   for (const rootPath of ownedRoots.map((path) => resolve(root, path))) {

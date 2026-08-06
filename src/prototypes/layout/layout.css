@@ -60,7 +60,7 @@
   color: hsl(var(--ev-ds-color-text));
   font-family: var(--ev-ds-font-wordmark);
   font-weight: var(--ev-ds-weight-semibold);
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ev-ds-tracking-tight);
   text-decoration: none;
 }
 
@@ -81,7 +81,7 @@
   color: hsl(var(--ev-ds-color-text-muted));
   font-size: var(--ev-ds-type-label);
   font-weight: var(--ev-ds-weight-semibold);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--ev-ds-tracking-wide);
   text-decoration: none;
   text-transform: uppercase;
   transition: color var(--ev-ds-motion-fast) var(--ev-ds-motion-ease);
@@ -119,7 +119,7 @@
   margin-top: var(--ev-ds-space-2);
   color: hsl(var(--ev-ds-color-primary-foreground) / 0.68);
   font-size: var(--ev-ds-type-label);
-  line-height: 1.5;
+  line-height: var(--ev-ds-leading-copy);
 }
 
 .evp-footer__nav {
@@ -138,13 +138,13 @@
   color: hsl(var(--ev-ds-color-primary-foreground));
   font-size: var(--ev-ds-type-label);
   font-weight: var(--ev-ds-weight-bold);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--ev-ds-tracking-wide);
   text-transform: uppercase;
 }
 
 .evp-footer__nav a {
   color: hsl(var(--ev-ds-color-primary-foreground) / 0.68);
-  letter-spacing: 0;
+  letter-spacing: var(--ev-ds-tracking-none);
   text-transform: none;
 }
 

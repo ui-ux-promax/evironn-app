@@ -10,7 +10,7 @@
   font-family: var(--ev-ds-font-body);
   font-size: var(--ev-ds-type-control);
   font-weight: var(--ev-ds-weight-semibold);
-  line-height: 1;
+  line-height: var(--ev-ds-leading-none);
   cursor: pointer;
   transition:
     transform var(--ev-ds-motion-base) var(--ev-ds-motion-ease),
@@ -113,7 +113,7 @@
   font-family: var(--ev-ds-font-body);
   font-size: var(--ev-ds-type-label);
   font-weight: var(--ev-ds-weight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ev-ds-tracking-label);
   white-space: nowrap;
 }
 
@@ -171,7 +171,7 @@
   color: hsl(var(--ev-ds-color-text-muted));
   font-size: var(--ev-ds-type-label);
   font-weight: var(--ev-ds-weight-bold);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--ev-ds-tracking-wide);
   text-transform: uppercase;
 }
 
@@ -229,7 +229,7 @@
 .evp-status__description {
   color: hsl(var(--ev-ds-color-text-muted));
   font-size: var(--ev-ds-type-body);
-  line-height: 1.5;
+  line-height: var(--ev-ds-leading-copy);
 }
 
 .evp-status__action {

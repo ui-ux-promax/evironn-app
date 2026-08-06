@@ -1,9 +1,50 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { afterEach, describe, expect, it } from 'vitest';
 
 const repositoryRoot = resolve(__dirname, '..');
+const fixtureRoots: string[] = [];
+
+function createFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'repository-contract-'));
+
+  fixtureRoots.push(root);
+  return root;
+}
+
+function writeFixtureFile(
+  root: string,
+  path: string,
+  contents: string | Buffer,
+) {
+  const file = join(root, path);
+
+  mkdirSync(resolve(file, '..'), { recursive: true });
+  writeFileSync(file, contents);
+}
+
+function writeRouteManifest(root: string, routes = ['/', '/product']) {
+  writeFixtureFile(
+    root,
+    'src/routes.ts',
+    `export const publicRoutes = ${JSON.stringify(routes)} as const;\n`,
+  );
+}
+
+afterEach(() => {
+  for (const root of fixtureRoots.splice(0)) {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
 
 const requiredScripts = {
   format: 'prettier --write .',
@@ -41,6 +82,42 @@ describe('repository contract', () => {
     expect(contracts.permittedRoutes).toEqual(['/', '/product']);
   });
 
+  it('requires an application route manifest when App is present', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeFixtureFile(
+      fixture,
+      'src/App.tsx',
+      'export function App() { return null; }\n',
+    );
+
+    expect(() => contracts.auditRepository(fixture)).toThrow('route manifest');
+  });
+
+  it('rejects routes outside the public route manifest', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeRouteManifest(fixture, ['/', '/product', '/catalog']);
+
+    expect(() => contracts.auditRepository(fixture)).toThrow('/catalog');
+  });
+
+  it('allows an application that declares only the approved routes', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeFixtureFile(
+      fixture,
+      'src/App.tsx',
+      "import { publicRoutes } from './routes';\nexport { publicRoutes };\n",
+    );
+    writeRouteManifest(fixture);
+
+    expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
   it('defines markers that prevent provenance and local-path leakage', async () => {
     const contracts = await import('../scripts/check-repository.mjs');
 
@@ -67,6 +144,57 @@ describe('repository contract', () => {
       'test-results/',
     ]) {
       expect(ignored).toContain(artifact);
+    }
+  });
+
+  it('rejects capture, screenshot, log, and generator artifacts by filename', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+
+    for (const artifact of [
+      'captures/home.webp',
+      'public/assets/home-screenshot.webp',
+      'logs/runtime.txt',
+      'build.log',
+      'generators/assets.mjs',
+      'browser.trace',
+    ]) {
+      const fixture = createFixture();
+
+      writeFixtureFile(fixture, artifact, Buffer.from([0, 255, 0, 255]));
+      expect(() => contracts.auditRepository(fixture)).toThrow(artifact);
+    }
+  });
+
+  it('allows legitimate product image filenames without reading their binary contents', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeFixtureFile(
+      fixture,
+      'public/assets/evironn-lounge-chair.webp',
+      Buffer.from([0, 255, 0, 255]),
+    );
+
+    expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
+  it('rejects POSIX local absolute paths in scanned text', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+
+    for (const localPath of [
+      '/' + ['Us', 'ers'].join('') + '/name',
+      '/' + ['ho', 'me'].join('') + '/name',
+    ]) {
+      const fixture = createFixture();
+
+      writeFixtureFile(
+        fixture,
+        'src/notes.ts',
+        `export const note = '${localPath}';\n`,
+      );
+      expect(() => contracts.auditRepository(fixture)).toThrow(
+        'forbidden content marker',
+      );
     }
   });
 

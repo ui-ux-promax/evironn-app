@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,6 +31,21 @@ const textExtensions = new Set([
   '.yml',
   '.yaml',
 ]);
+const forbiddenArtifactDirectories = new Set([
+  'capture',
+  'captures',
+  'generator',
+  'generators',
+  'log',
+  'logs',
+  'screenshot',
+  'screenshots',
+]);
+const forbiddenArtifactExtensions = new Set(['.har', '.log', '.trace']);
+const forbiddenArtifactFilename =
+  /(?:^|[-_.])(?:capture|screenshot)(?:[-_.]|$)/i;
+const routeManifestPath = 'src/routes.ts';
+const applicationEntryPath = 'src/App.tsx';
 
 export const permittedRoutes = ['/', '/product'];
 export const forbiddenMarkers = [
@@ -39,6 +54,9 @@ export const forbiddenMarkers = [
   'http' + '://',
   'https' + '://',
   /[A-Za-z]:\\/,
+  new RegExp(
+    '/(?:' + ['Us', 'ers'].join('') + '|' + ['ho', 'me'].join('') + ')/',
+  ),
 ];
 
 function extension(path) {
@@ -57,13 +75,74 @@ function listFiles(directory) {
   });
 }
 
-function findViolations() {
+function hasForbiddenArtifactPath(path) {
+  const segments = path.split('/');
+  const filename = segments.at(-1) ?? '';
+
+  return (
+    segments.some((segment) =>
+      forbiddenArtifactDirectories.has(segment.toLowerCase()),
+    ) ||
+    forbiddenArtifactExtensions.has(extension(filename).toLowerCase()) ||
+    forbiddenArtifactFilename.test(filename)
+  );
+}
+
+function findRouteViolations(root) {
+  const manifest = resolve(root, routeManifestPath);
+  const applicationEntry = resolve(root, applicationEntryPath);
+
+  if (!existsSync(manifest)) {
+    return existsSync(applicationEntry)
+      ? [
+          `${routeManifestPath}: route manifest is required when ${applicationEntryPath} exists`,
+        ]
+      : [];
+  }
+
+  const source = readFileSync(manifest, 'utf8');
+  const declaration = source.match(
+    /export\s+const\s+publicRoutes\s*=\s*(\[[\s\S]*?\])\s+as\s+const\s*;/,
+  );
+
+  if (!declaration) {
+    return [
+      `${routeManifestPath}: route manifest must export publicRoutes as a const array`,
+    ];
+  }
+
+  const routes = [...declaration[1].matchAll(/(['"])(\/[^'"]*)\1/g)].map(
+    ([, , route]) => route,
+  );
+  const unexpectedRoutes = routes.filter(
+    (route) => !permittedRoutes.includes(route),
+  );
+  const missingRoutes = permittedRoutes.filter(
+    (route) => !routes.includes(route),
+  );
+
+  return [
+    ...unexpectedRoutes.map(
+      (route) => `${routeManifestPath}: unexpected route ${route}`,
+    ),
+    ...missingRoutes.map(
+      (route) => `${routeManifestPath}: missing approved route ${route}`,
+    ),
+  ];
+}
+
+function findViolations(root) {
   const violations = [];
 
-  for (const file of listFiles(repositoryRoot)) {
-    const path = relative(repositoryRoot, file).split(sep).join('/');
+  for (const file of listFiles(root)) {
+    const path = relative(root, file).split(sep).join('/');
 
     if (ignoredFiles.has(path)) {
+      continue;
+    }
+
+    if (hasForbiddenArtifactPath(path)) {
+      violations.push(`${path}: forbidden artifact path`);
       continue;
     }
 
@@ -92,11 +171,11 @@ function findViolations() {
     }
   }
 
-  return violations;
+  return [...findRouteViolations(root), ...violations];
 }
 
-export function auditRepository() {
-  const violations = findViolations();
+export function auditRepository(root = repositoryRoot) {
+  const violations = findViolations(root);
 
   if (violations.length > 0) {
     throw new Error(`Repository audit failed:\n${violations.join('\n')}`);

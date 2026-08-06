@@ -40,6 +40,10 @@ function writeRouteManifest(root: string, routes = ['/', '/product']) {
   );
 }
 
+function writeApp(root: string, source: string) {
+  writeFixtureFile(root, 'src/App.tsx', source);
+}
+
 afterEach(() => {
   for (const root of fixtureRoots.splice(0)) {
     rmSync(root, { force: true, recursive: true });
@@ -86,11 +90,7 @@ describe('repository contract', () => {
     const contracts = await import('../scripts/check-repository.mjs');
     const fixture = createFixture();
 
-    writeFixtureFile(
-      fixture,
-      'src/App.tsx',
-      'export function App() { return null; }\n',
-    );
+    writeApp(fixture, 'export function App() { return null; }\n');
 
     expect(() => contracts.auditRepository(fixture)).toThrow('route manifest');
   });
@@ -108,14 +108,38 @@ describe('repository contract', () => {
     const contracts = await import('../scripts/check-repository.mjs');
     const fixture = createFixture();
 
-    writeFixtureFile(
+    writeApp(
       fixture,
-      'src/App.tsx',
-      "import { publicRoutes } from './routes';\nexport { publicRoutes };\n",
+      "import { publicRoutes } from './routes';\nexport const routes = publicRoutes;\n",
     );
     writeRouteManifest(fixture);
 
     expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
+  it('requires App to import and use the public route manifest', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeApp(fixture, 'export function App() { return null; }\n');
+    writeRouteManifest(fixture);
+
+    expect(() => contracts.auditRepository(fixture)).toThrow(
+      'consume publicRoutes',
+    );
+  });
+
+  it('rejects direct route literals that are absent from the manifest', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeApp(
+      fixture,
+      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst extra = '/catalog';\nexport { routes, extra };\n",
+    );
+    writeRouteManifest(fixture);
+
+    expect(() => contracts.auditRepository(fixture)).toThrow('/catalog');
   });
 
   it('defines markers that prevent provenance and local-path leakage', async () => {
@@ -156,7 +180,9 @@ describe('repository contract', () => {
       'logs/runtime.txt',
       'build.log',
       'generators/assets.mjs',
+      'scripts/generator.mjs',
       'browser.trace',
+      'runtime-log.txt',
     ]) {
       const fixture = createFixture();
 
@@ -178,12 +204,29 @@ describe('repository contract', () => {
     expect(() => contracts.auditRepository(fixture)).not.toThrow();
   });
 
+  it('allows legitimate generator and log words in text content', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeFixtureFile(
+      fixture,
+      'src/product-copy.ts',
+      "export const copy = 'A generator and log are not repository artifacts.';\n",
+    );
+
+    expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
   it('rejects POSIX local absolute paths in scanned text', async () => {
     const contracts = await import('../scripts/check-repository.mjs');
 
     for (const localPath of [
       '/' + ['Us', 'ers'].join('') + '/name',
       '/' + ['ho', 'me'].join('') + '/name',
+      '/' + ['tm', 'p'].join('') + '/name',
+      '/' + ['op', 't'].join('') + '/name',
+      '/' + ['pri', 'vate'].join('') + '/name',
+      '/' + ['mn', 't'].join('') + '/name',
     ]) {
       const fixture = createFixture();
 
@@ -196,6 +239,35 @@ describe('repository contract', () => {
         'forbidden content marker',
       );
     }
+  });
+
+  it('allows web-root asset paths in scanned text', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeFixtureFile(
+      fixture,
+      'src/assets.ts',
+      "export const heroImage = '/assets/evironn-chair.webp';\n",
+    );
+
+    expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
+  it('scans SVG text for forbidden local paths', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+    const localPath = '/' + ['Us', 'ers'].join('') + '/name';
+
+    writeFixtureFile(
+      fixture,
+      'public/icons/evironn-mark.svg',
+      `<svg data-source="${localPath}"></svg>`,
+    );
+
+    expect(() => contracts.auditRepository(fixture)).toThrow(
+      'forbidden content marker',
+    );
   });
 
   it('passes the repository audit', () => {

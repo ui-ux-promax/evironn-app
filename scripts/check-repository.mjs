@@ -26,6 +26,7 @@ const textExtensions = new Set([
   '.jsx',
   '.md',
   '.mjs',
+  '.svg',
   '.ts',
   '.tsx',
   '.yml',
@@ -43,7 +44,7 @@ const forbiddenArtifactDirectories = new Set([
 ]);
 const forbiddenArtifactExtensions = new Set(['.har', '.log', '.trace']);
 const forbiddenArtifactFilename =
-  /(?:^|[-_.])(?:capture|screenshot)(?:[-_.]|$)/i;
+  /(?:^|[-_.])(?:capture|generator|log|screenshot)(?:[-_.]|$)/i;
 const routeManifestPath = 'src/routes.ts';
 const applicationEntryPath = 'src/App.tsx';
 
@@ -55,7 +56,16 @@ export const forbiddenMarkers = [
   'https' + '://',
   /[A-Za-z]:\\/,
   new RegExp(
-    '/(?:' + ['Us', 'ers'].join('') + '|' + ['ho', 'me'].join('') + ')/',
+    '/(?:' +
+      [
+        ['Us', 'ers'].join(''),
+        ['ho', 'me'].join(''),
+        ['tm', 'p'].join(''),
+        ['op', 't'].join(''),
+        ['pri', 'vate'].join(''),
+        ['mn', 't'].join(''),
+      ].join('|') +
+      ')/',
   ),
 ];
 
@@ -120,6 +130,11 @@ function findRouteViolations(root) {
   const missingRoutes = permittedRoutes.filter(
     (route) => !routes.includes(route),
   );
+  const applicationViolations = findApplicationRouteViolations(
+    root,
+    applicationEntry,
+    routes,
+  );
 
   return [
     ...unexpectedRoutes.map(
@@ -128,7 +143,43 @@ function findRouteViolations(root) {
     ...missingRoutes.map(
       (route) => `${routeManifestPath}: missing approved route ${route}`,
     ),
+    ...applicationViolations,
   ];
+}
+
+function findApplicationRouteViolations(root, applicationEntry, routes) {
+  if (!existsSync(applicationEntry)) {
+    return [];
+  }
+
+  const source = readFileSync(applicationEntry, 'utf8');
+  const importDeclaration =
+    /import\s*\{\s*publicRoutes\s*\}\s*from\s*['"]\.\/routes['"]\s*;?/;
+
+  if (!importDeclaration.test(source)) {
+    return [
+      `${relative(root, applicationEntry)}: App must consume publicRoutes`,
+    ];
+  }
+
+  const sourceWithoutImport = source.replace(importDeclaration, '');
+
+  if (!/\bpublicRoutes\b/.test(sourceWithoutImport)) {
+    return [
+      `${relative(root, applicationEntry)}: App must consume publicRoutes`,
+    ];
+  }
+
+  const directRoutes = [...source.matchAll(/(['"])(\/[^'"]*)\1/g)].map(
+    ([, , route]) => route,
+  );
+
+  return directRoutes
+    .filter((route) => !routes.includes(route))
+    .map(
+      (route) =>
+        `${relative(root, applicationEntry)}: direct route literal is not declared in publicRoutes: ${route}`,
+    );
 }
 
 function findViolations(root) {

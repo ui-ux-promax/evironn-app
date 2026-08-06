@@ -36,6 +36,12 @@ See [`docs/asset-inventory.md`](../../docs/asset-inventory.md). It lists all 64 
 - Browser binaries are machine-local Playwright installations; CI must run its normal browser install step.
 - Existing development-tool advisories are documented in Task 2 and are outside this browser-gate change.
 
+## Review fixes
+
+- Corrected the graphite pine chair asset inventory size to 2.56 MB (2,562,642 bytes measured from the shipped file).
+- Strengthened the 360 interaction test to click the accessible close control and assert the dialog is hidden afterward.
+- Focused and full gates passed after these fixes.
+
 ## Commit
 
 Pending: `test: verify approved storefront baseline`

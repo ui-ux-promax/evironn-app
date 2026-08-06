@@ -47,8 +47,9 @@ test.describe('product 360 interaction', () => {
     await launch.click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await expect(
-      dialog.getByRole('button', { name: /закрыть|close/i }),
-    ).toBeVisible();
+    const close = dialog.getByRole('button', { name: /закрыть|close/i });
+    await expect(close).toBeVisible();
+    await close.click();
+    await expect(dialog).toBeHidden();
   });
 });

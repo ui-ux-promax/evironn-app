@@ -120,4 +120,20 @@ describe('approved storefront application', () => {
 
     expect(heroStyles).not.toContain(removedSelector);
   });
+
+  it('loads the approved local Golos Text family', () => {
+    const styles = readApplicationFile('src/index.css');
+
+    for (const asset of [
+      'src/assets/golos-text-cyrillic.woff2',
+      'src/assets/golos-text-latin.woff2',
+    ]) {
+      expect(existsSync(resolve(repositoryRoot, asset)), asset).toBe(true);
+    }
+    expect(styles).toContain("font-family: 'Golos Text'");
+    expect(styles).toContain('assets/golos-text-cyrillic.woff2');
+    expect(styles).toContain('assets/golos-text-latin.woff2');
+    expect(styles).toContain("--ev-font-body: 'Golos Text'");
+    expect(styles).not.toContain("--ev-font-body: 'Evironn Header Sans'");
+  });
 });

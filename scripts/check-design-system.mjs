@@ -28,31 +28,80 @@ function addViolation(file, message, match) {
   violations.push(`${relative(root, file)}:${line} ${message}`);
 }
 
+function firstNonTokenDeclaration(
+  content,
+  property,
+  tokenName,
+  mode = 'starts',
+) {
+  const declarationPattern = new RegExp(`${property}\\s*:\\s*([^;}]*)`, 'gi');
+  for (const match of content.matchAll(declarationPattern)) {
+    const value = match[1].trim();
+    const usesToken =
+      mode === 'contains'
+        ? value.includes(`var(${tokenName}`)
+        : value.startsWith(`var(${tokenName}`);
+    if (value === 'none' || value === 'inherit' || value === '0' || usesToken)
+      continue;
+    return match;
+  }
+  return null;
+}
+
 const rules = [
   {
     message: 'raw color literal',
-    pattern: /#[0-9a-f]{3,8}\b|(?:rgb|hsl|hwb|lab|lch)\(/gi,
+    find: (content) =>
+      content.match(
+        /#[0-9a-f]{3,8}\b|(?:rgb|hwb|lab|lch)\(|hsl\((?!var\(--ev-ds-)/gi,
+      ),
   },
   {
     message: 'non-token border radius',
-    pattern: /border-radius\s*:\s*(?!var\(--ev-ds-radius-)(?!0\b)[^;]+/gi,
+    find: (content) =>
+      firstNonTokenDeclaration(content, 'border-radius', '--ev-ds-radius-'),
   },
   {
     message: 'non-token box shadow',
-    pattern: /box-shadow\s*:\s*(?!var\(--ev-ds-shadow-)(?!none\b)[^;]+/gi,
+    find: (content) =>
+      firstNonTokenDeclaration(content, 'box-shadow', '--ev-ds-shadow-'),
   },
   {
     message: 'non-token font family',
-    pattern: /font-family\s*:\s*(?!var\(--ev-ds-font-)(?!inherit\b)[^;]+/gi,
+    find: (content) =>
+      firstNonTokenDeclaration(content, 'font-family', '--ev-ds-font-'),
   },
   {
     message: 'non-token transition value',
-    pattern: /transition\s*:\s*(?!none\b)(?![^;]*var\(--ev-ds-motion-)[^;]+/gi,
+    find: (content) =>
+      firstNonTokenDeclaration(
+        content,
+        'transition',
+        '--ev-ds-motion-',
+        'contains',
+      ),
   },
   {
     message: 'non-token animation value',
-    pattern:
-      /animation(?:-duration|-timing-function)?\s*:\s*(?!none\b)(?![^;]*var\(--ev-ds-motion-)[^;]+/gi,
+    find: (content) =>
+      firstNonTokenDeclaration(
+        content,
+        'animation',
+        '--ev-ds-motion-',
+        'contains',
+      ) ??
+      firstNonTokenDeclaration(
+        content,
+        'animation-duration',
+        '--ev-ds-motion-',
+        'contains',
+      ) ??
+      firstNonTokenDeclaration(
+        content,
+        'animation-timing-function',
+        '--ev-ds-motion-',
+        'contains',
+      ),
   },
 ];
 
@@ -62,8 +111,7 @@ for (const rootPath of ownedRoots.map((path) => resolve(root, path))) {
     const content = readFileSync(file, 'utf8');
     if (file === tokenFile) continue;
     for (const rule of rules) {
-      rule.pattern.lastIndex = 0;
-      const match = rule.pattern.exec(content);
+      const match = rule.find(content);
       if (match) addViolation(file, rule.message, match);
     }
     for (const marker of provenanceMarkers) {

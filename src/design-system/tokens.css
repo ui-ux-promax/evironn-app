@@ -19,6 +19,13 @@
   --ev-ds-font-display: 'Golos Text', -apple-system, system-ui, sans-serif;
   --ev-ds-font-body: 'Golos Text', -apple-system, system-ui, sans-serif;
   --ev-ds-font-wordmark: 'Fraunces', Georgia, serif;
+  --ev-ds-type-label: 11px;
+  --ev-ds-type-body: 15px;
+  --ev-ds-type-control: 14px;
+  --ev-ds-type-title: 22px;
+  --ev-ds-weight-medium: 500;
+  --ev-ds-weight-semibold: 600;
+  --ev-ds-weight-bold: 700;
   --ev-ds-radius-sm: 14px;
   --ev-ds-radius-md: 20px;
   --ev-ds-radius-lg: 28px;
@@ -41,8 +48,19 @@
   --ev-ds-shadow-button-hover:
     0 8px 24px hsl(var(--ev-ds-color-text) / 0.16),
     0 4px 10px hsl(var(--ev-ds-color-text) / 0.1);
+  --ev-ds-shadow-outline: inset 0 0 0 1px hsl(var(--ev-ds-color-border));
+  --ev-ds-shadow-focus:
+    0 0 0 3px hsl(var(--ev-ds-color-surface)),
+    0 0 0 5px hsl(var(--ev-ds-color-text) / 0.15);
   --ev-ds-motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --ev-ds-motion-fast: 0.18s;
   --ev-ds-motion-base: 0.3s;
   --ev-ds-motion-slow: 0.42s;
+  --ev-ds-motion-reduced: 0.001ms;
+  --ev-ds-control-sm: 38px;
+  --ev-ds-control-md: 46px;
+  --ev-ds-control-lg: 56px;
+  --ev-ds-icon-size: 44px;
+  --ev-ds-container-width: 1400px;
+  --ev-ds-page-gutter: clamp(20px, 6vw, 96px);
 }

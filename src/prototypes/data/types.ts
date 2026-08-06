@@ -50,6 +50,7 @@ export interface Product360Asset {
   readonly width: number;
   readonly height: number;
   readonly frameCount: number;
+  readonly variantId?: string;
 }
 
 export interface Category {

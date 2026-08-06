@@ -70,7 +70,7 @@ export const mockProducts = [
         price: 1240,
         stock: 8,
         optionValues: [
-          { groupId: 'option-upholstery', valueId: 'upholstery-ivory' },
+          { groupId: 'option-upholstery', valueId: 'upholstery-graphite' },
           { groupId: 'option-frame', valueId: 'frame-walnut' },
         ],
         mediaId: 'media-noma-walnut',
@@ -95,6 +95,7 @@ export const mockProducts = [
       width: 1200,
       height: 1200,
       frameCount: 48,
+      variantId: 'variant-noma-graphite-walnut',
     },
   },
 ] as const satisfies readonly Product[];

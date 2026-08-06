@@ -121,6 +121,28 @@ function firstNonTokenMotionDeclaration(content, property) {
   return null;
 }
 
+function firstRawInlineVisualValue(content) {
+  const inlinePattern =
+    /(?:color|backgroundColor|borderColor|outlineColor|fill|stroke|borderRadius|boxShadow|fontFamily|transition(?:Duration|Delay|TimingFunction)?|animation(?:Name|Duration|Delay|TimingFunction)?)\s*:\s*(['"`])([^'"`]*)\1/gi;
+  for (const match of content.matchAll(inlinePattern)) {
+    const styleContext = content.slice(
+      Math.max(0, match.index - 160),
+      match.index,
+    );
+    if (!/\bstyle\s*=\s*\{\{?[^{}]*$/i.test(styleContext)) continue;
+    const value = match[2].trim();
+    const lowerValue = value.toLowerCase();
+    if (
+      lowerValue.includes('var(--ev-ds-') ||
+      allowedColorValues.has(lowerValue)
+    ) {
+      continue;
+    }
+    return match;
+  }
+  return null;
+}
+
 function addViolation(violations, root, file, message, match) {
   const line = readFileSync(file, 'utf8')
     .slice(0, match.index)
@@ -133,6 +155,10 @@ export function auditDesignSystem(projectRoot = process.cwd()) {
   const tokenFile = resolve(root, 'src/design-system/tokens.css');
   const violations = [];
   const rules = [
+    {
+      message: 'raw inline visual value',
+      find: firstRawInlineVisualValue,
+    },
     {
       message: 'raw color literal',
       find: firstNonTokenColorDeclaration,
@@ -166,6 +192,7 @@ export function auditDesignSystem(projectRoot = process.cwd()) {
       'animation-duration',
       'animation-delay',
       'animation-timing-function',
+      'animation-name',
     ].map((property) => ({
       message: `non-token ${property} value`,
       find: (content) => firstNonTokenMotionDeclaration(content, property),
@@ -192,6 +219,16 @@ export function auditDesignSystem(projectRoot = process.cwd()) {
             match,
           );
       }
+      const forbiddenRouteMarker = new RegExp('/' + 'demo-admin', 'i');
+      const routeMatch = forbiddenRouteMarker.exec(content);
+      if (routeMatch)
+        addViolation(
+          violations,
+          root,
+          file,
+          'forbidden route marker',
+          routeMatch,
+        );
     }
   }
 

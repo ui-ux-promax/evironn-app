@@ -12,6 +12,7 @@ import { expect, test } from 'vitest';
 import { auditDesignSystem } from '../scripts/check-design-system.mjs';
 import {
   designSystemTokenSource,
+  designSystemTokenProvenance,
   designSystemTokens,
 } from '../src/design-system/tokens';
 
@@ -32,6 +33,15 @@ test('exports canonical semantic token groups', () => {
     spacing: 'spacing specimen',
     controls: 'button specimen',
   });
+  const css = readFileSync(
+    resolve(root, 'src/design-system/tokens.css'),
+    'utf8',
+  );
+  const tokenNames = Object.values(designSystemTokens).flat();
+  expect(Object.keys(designSystemTokenProvenance).sort()).toEqual(
+    [...tokenNames].sort(),
+  );
+  for (const tokenName of tokenNames) expect(css).toContain(`${tokenName}:`);
 });
 
 test('canonical CSS declares source design-system values', () => {
@@ -72,6 +82,13 @@ test('design-system audit rejects named colors and non-token motion durations', 
     expect(() => auditDesignSystem(fixture)).toThrow(
       /non-token transition value/,
     );
+    writeFileSync(
+      cssPath,
+      '<div style={{ color: "red", transitionDuration: "200ms" }} />',
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(/raw inline visual value/);
+    writeFileSync(cssPath, '<a href="/demo-admin">Admin</a>');
+    expect(() => auditDesignSystem(fixture)).toThrow(/forbidden route marker/);
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }

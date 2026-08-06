@@ -231,7 +231,7 @@ export const prototypeRoutes = [
 ] as const satisfies readonly PrototypeRoute[];
 
 function normalizePath(pathname: string) {
-  const path = pathname.trim().split('?')[0].split('#')[0];
+  const path = pathname.split('?')[0].split('#')[0];
   if (!path.startsWith('/') || path.includes('//')) return undefined;
   if (path === '/') return path;
   return path.endsWith('/') ? path.slice(0, -1) : path;

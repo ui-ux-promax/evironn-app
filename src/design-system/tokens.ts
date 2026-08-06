@@ -64,6 +64,13 @@ export const designSystemTokens = {
     '--ev-ds-motion-linear',
     '--ev-ds-motion-reduced',
   ],
+  controls: [
+    '--ev-ds-control-sm',
+    '--ev-ds-control-md',
+    '--ev-ds-control-lg',
+    '--ev-ds-icon-size',
+  ],
+  layout: ['--ev-ds-container-width', '--ev-ds-page-gutter'],
 } as const;
 
 export const designSystemTokenSource = {
@@ -74,3 +81,23 @@ export const designSystemTokenSource = {
   motion: 'interaction and reduced-motion rules',
   layout: 'approved P0 layout contract',
 } as const;
+
+const tokenGroupProvenance = {
+  color: 'source token block',
+  radius: 'source token block',
+  spacing: 'spacing specimen',
+  shadow: 'source token block',
+  typography: 'type specimen',
+  motion: 'interaction and reduced-motion rules',
+  controls: 'button specimen',
+  layout: 'approved P0 layout contract',
+} as const;
+
+export const designSystemTokenProvenance = Object.fromEntries(
+  Object.entries(designSystemTokens).flatMap(([group, tokens]) =>
+    tokens.map((token) => [
+      token,
+      tokenGroupProvenance[group as keyof typeof tokenGroupProvenance],
+    ]),
+  ),
+) as Record<string, string>;

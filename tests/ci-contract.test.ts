@@ -14,6 +14,8 @@ describe('quality workflow contract', () => {
     expect(workflow).toContain('npm ci');
     expect(workflow).toContain('npx playwright install --with-deps chromium');
     expect(workflow).toContain('npm run gate:full');
+    expect(workflow).toContain('push:');
+    expect(workflow).not.toContain('branches: [main]');
     expect(workflow).not.toContain('npm run gate\n');
   });
 });

@@ -52,4 +52,3 @@ Required scripts:
 3. Repository audit rejects forbidden internal markers and local paths.
 4. `npm run gate:full` exits zero.
 5. Public tree contains only product code, required assets, neutral documentation, and repository tooling.
-

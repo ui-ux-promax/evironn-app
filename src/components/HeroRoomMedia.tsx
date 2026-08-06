@@ -27,7 +27,7 @@ export function HeroRoomMedia({
   return (
     <div
       className={[
-        'furni-hero-room-media',
+        'evironn-hero-room-media',
         state.phase === 'changing' ? 'is-changing' : '',
         reducedMotion ? 'is-reduced-motion' : '',
       ]
@@ -48,7 +48,7 @@ export function HeroRoomMedia({
           <img
             key={room.id}
             className={[
-              'furni-hero-room-media__image',
+              'evironn-hero-room-media__image',
               room.mediaClassName,
               isStable ? 'is-stable' : '',
               isOutgoing ? 'is-outgoing' : '',

@@ -29,7 +29,7 @@ export function HeroProductCard({
       {visible && product ? (
         <motion.aside
           key={product.id}
-          className={`furni-hero-product furni-hero-product--${product.id}`}
+          className={`evironn-hero-product evironn-hero-product--${product.id}`}
           aria-label={product.name}
           variants={container}
           initial="hidden"
@@ -37,7 +37,7 @@ export function HeroProductCard({
           exit="exit"
         >
           <motion.button
-            className="furni-hero-product__back"
+            className="evironn-hero-product__back"
             type="button"
             onClick={onBack}
             disabled={locked}
@@ -45,7 +45,7 @@ export function HeroProductCard({
           >
             <span aria-hidden="true">←</span> Назад
           </motion.button>
-          <motion.div className="furni-hero-product__card" variants={item}>
+          <motion.div className="evironn-hero-product__card" variants={item}>
             <HeroProductCaption product={product} />
           </motion.div>
         </motion.aside>

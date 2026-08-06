@@ -76,4 +76,3 @@
 - [ ] Run `npm run gate:full` and inspect complete output.
 - [ ] Inspect `git status`, tracked-file list, commit metadata, and forbidden-marker scan.
 - [ ] Commit as `test: verify approved storefront baseline`.
-

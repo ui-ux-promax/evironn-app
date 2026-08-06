@@ -199,8 +199,8 @@ export function Hero() {
   return (
     <section
       id="evironn-hero"
-      aria-labelledby="furni-hero-title"
-      className="furni-hero-demo"
+      aria-labelledby="evironn-hero-title"
+      className="evironn-hero-demo"
     >
       <HeroRoomMedia
         state={roomState}
@@ -219,23 +219,23 @@ export function Hero() {
       />
       <div
         className={[
-          'furni-hero-stack',
-          `furni-hero-stack--${visualRoom.id}`,
+          'evironn-hero-stack',
+          `evironn-hero-stack--${visualRoom.id}`,
           stackFade === 'out' ? 'is-room-fading-out' : '',
           stackFade === 'in' ? 'is-room-fading-in' : '',
         ]
           .filter(Boolean)
           .join(' ')}
       >
-        <article className="furni-hero-panel">
-          <h1 className="furni-hero-title" id="furni-hero-title">
+        <article className="evironn-hero-panel">
+          <h1 className="evironn-hero-title" id="evironn-hero-title">
             Мебель с душой, созданная поколениями
           </h1>
-          <p className="furni-hero-copy">
+          <p className="evironn-hero-copy">
             Откройте вневременные предметы, созданные нашей семьёй и наполненные
             теплом традиций и красотой натурального дерева.
           </p>
-          <div className="furni-hero-actions">
+          <div className="evironn-hero-actions">
             <button className="btn btn-dark" type="button">
               СМОТРЕТЬ КОЛЛЕКЦИЮ
             </button>
@@ -244,7 +244,7 @@ export function Hero() {
             </button>
           </div>
         </article>
-        <div className="furni-hero-segments">
+        <div className="evironn-hero-segments">
           <div
             className="seg-control"
             ref={segRef}
@@ -289,7 +289,7 @@ export function Hero() {
           <button
             key={product.id}
             className={[
-              'furni-hero-hotspot',
+              'evironn-hero-hotspot',
               product.hotspotClassName,
               hotspotsVisible ? '' : 'is-hidden',
             ]

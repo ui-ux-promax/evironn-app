@@ -90,14 +90,14 @@ export function HeroProductMedia({
   const activeProduct = getHeroProduct(phase);
 
   return (
-    <div className="furni-hero-product-media" aria-hidden="true">
+    <div className="evironn-hero-product-media" aria-hidden="true">
       {HERO_PRODUCT_IDS.map((id) => {
         const product = HERO_PRODUCTS[id];
         return (
           <img
             key={`${id}-focus`}
             className={[
-              'furni-hero-product-media__asset',
+              'evironn-hero-product-media__asset',
               product.mediaClassName,
               `is-product-${id}`,
               visibleLayer === `${id}-focus` ? 'is-visible' : '',
@@ -124,7 +124,7 @@ export function HeroProductMedia({
                 else delete videoRefs.current[key];
               }}
               className={[
-                'furni-hero-product-media__asset',
+                'evironn-hero-product-media__asset',
                 product.mediaClassName,
                 `is-product-${id}`,
                 visibleLayer === key ? 'is-visible' : '',

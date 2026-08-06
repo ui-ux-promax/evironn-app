@@ -192,6 +192,7 @@ describe('repository contract', () => {
       expect.arrayContaining(['file' + '://']),
     );
     for (const marker of [
+      ['furni', '-hero'].join(''),
       ['gr', 'aft'].join(''),
       ['cl', 'one'].join(''),
       ['kan', 'va'].join(''),

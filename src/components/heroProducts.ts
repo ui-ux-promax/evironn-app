@@ -28,7 +28,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/sofa-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-living-room is-mirrored',
-    hotspotClassName: 'furni-hero-hotspot-sofa',
+    hotspotClassName: 'evironn-hero-hotspot-sofa',
     href: null,
   },
   chair: {
@@ -42,7 +42,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/chair-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-living-room is-mirrored',
-    hotspotClassName: 'furni-hero-hotspot-chair',
+    hotspotClassName: 'evironn-hero-hotspot-chair',
     href: null,
   },
   'kitchen-dining': {
@@ -56,7 +56,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/kitchen-dining-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-kitchen',
-    hotspotClassName: 'furni-hero-hotspot-kitchen-dining',
+    hotspotClassName: 'evironn-hero-hotspot-kitchen-dining',
     href: null,
   },
   'kitchen-island': {
@@ -70,7 +70,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/kitchen-island-focus.webp',
     playbackRate: 1.2,
     mediaClassName: 'is-kitchen',
-    hotspotClassName: 'furni-hero-hotspot-kitchen-island',
+    hotspotClassName: 'evironn-hero-hotspot-kitchen-island',
     href: null,
   },
   'bedroom-chair': {
@@ -84,7 +84,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/bedroom-chair-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-bedroom',
-    hotspotClassName: 'furni-hero-hotspot-bedroom-chair',
+    hotspotClassName: 'evironn-hero-hotspot-bedroom-chair',
     href: null,
   },
   'bedroom-bed': {
@@ -98,7 +98,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/bedroom-bed-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-bedroom',
-    hotspotClassName: 'furni-hero-hotspot-bedroom-bed',
+    hotspotClassName: 'evironn-hero-hotspot-bedroom-bed',
     href: null,
   },
   'terrace-chair': {
@@ -112,7 +112,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/terrace-chair-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-terrace',
-    hotspotClassName: 'furni-hero-hotspot-terrace-chair',
+    hotspotClassName: 'evironn-hero-hotspot-terrace-chair',
     href: null,
   },
   'terrace-sofa': {
@@ -126,7 +126,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     focusSrc: '/assets/hero/terrace-sofa-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-terrace',
-    hotspotClassName: 'furni-hero-hotspot-terrace-sofa',
+    hotspotClassName: 'evironn-hero-hotspot-terrace-sofa',
     href: null,
   },
 };

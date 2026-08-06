@@ -7,20 +7,20 @@
   --hero-font-family: 'Golos Text', system-ui, sans-serif;
   font-family: var(--hero-font-family);
 }
-#evironn-hero .furni-hero-title,
-#evironn-hero .furni-hero-product h2,
-#evironn-hero .furni-hero-copy,
-#evironn-hero .furni-hero-actions,
-#evironn-hero .furni-hero-segments,
-#evironn-hero .furni-hero-product {
+#evironn-hero .evironn-hero-title,
+#evironn-hero .evironn-hero-product h2,
+#evironn-hero .evironn-hero-copy,
+#evironn-hero .evironn-hero-actions,
+#evironn-hero .evironn-hero-segments,
+#evironn-hero .evironn-hero-product {
   font-family: var(--hero-font-family);
 }
-#evironn-hero .furni-hero-media {
+#evironn-hero .evironn-hero-media {
   position: absolute;
   inset: 0;
   z-index: 0;
 }
-#evironn-hero .furni-hero-media img {
+#evironn-hero .evironn-hero-media img {
   width: 100%;
   height: 100%;
   max-width: none;
@@ -28,7 +28,7 @@
   object-position: center;
   transform: scaleX(-1) scale(1.005);
 }
-#evironn-hero .furni-hero-stack {
+#evironn-hero .evironn-hero-stack {
   position: absolute;
   top: 26%;
   left: 5%;
@@ -40,31 +40,31 @@
   transition: none;
   transform: translateX(0);
 }
-#evironn-hero .furni-hero-stack--kitchen {
+#evironn-hero .evironn-hero-stack--kitchen {
   top: 12%;
   right: auto;
   transform: translateX(calc(90vw - 100%));
 }
-#evironn-hero .furni-hero-stack.is-room-fading-out {
+#evironn-hero .evironn-hero-stack.is-room-fading-out {
   animation: hero-stack-fade-out 0.26s var(--ev-ease) both;
   pointer-events: none;
 }
-#evironn-hero .furni-hero-stack.is-room-fading-in {
+#evironn-hero .evironn-hero-stack.is-room-fading-in {
   opacity: 1;
 }
-#evironn-hero .furni-hero-stack.is-room-fading-in .furni-hero-title,
-#evironn-hero .furni-hero-stack.is-room-fading-in .furni-hero-copy,
-#evironn-hero .furni-hero-stack.is-room-fading-in .furni-hero-actions,
-#evironn-hero .furni-hero-stack.is-room-fading-in .seg-item {
+#evironn-hero .evironn-hero-stack.is-room-fading-in .evironn-hero-title,
+#evironn-hero .evironn-hero-stack.is-room-fading-in .evironn-hero-copy,
+#evironn-hero .evironn-hero-stack.is-room-fading-in .evironn-hero-actions,
+#evironn-hero .evironn-hero-stack.is-room-fading-in .seg-item {
   animation: hero-stack-content-in 0.56s var(--ev-ease) both;
 }
-#evironn-hero .furni-hero-stack.is-room-fading-in .furni-hero-copy {
+#evironn-hero .evironn-hero-stack.is-room-fading-in .evironn-hero-copy {
   animation-delay: 0.08s;
 }
-#evironn-hero .furni-hero-stack.is-room-fading-in .furni-hero-actions {
+#evironn-hero .evironn-hero-stack.is-room-fading-in .evironn-hero-actions {
   animation-delay: 0.16s;
 }
-#evironn-hero .furni-hero-stack.is-room-fading-in .seg-item {
+#evironn-hero .evironn-hero-stack.is-room-fading-in .seg-item {
   animation-delay: 0.24s;
 }
 @keyframes hero-stack-fade-out {
@@ -87,14 +87,14 @@
     transform: translateY(0);
   }
 }
-#evironn-hero .furni-hero-segments {
+#evironn-hero .evironn-hero-segments {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
   border-radius: var(--ev-radius-pill);
   scrollbar-width: none;
 }
-#evironn-hero .furni-hero-segments::-webkit-scrollbar {
+#evironn-hero .evironn-hero-segments::-webkit-scrollbar {
   display: none;
 }
 #evironn-hero .seg-control {
@@ -114,7 +114,7 @@
   backdrop-filter: url(#od-nav-liquid-glass) blur(7px) saturate(1.4);
   -webkit-backdrop-filter: blur(7px) saturate(1.4);
 }
-#evironn-hero .furni-hero-segments .seg-control {
+#evironn-hero .evironn-hero-segments .seg-control {
   width: 100%;
   min-width: 0;
   padding: 7px;
@@ -134,7 +134,7 @@
   border: none;
   background: transparent;
 }
-#evironn-hero .furni-hero-segments .seg-item {
+#evironn-hero .evironn-hero-segments .seg-item {
   flex: 1 1 0;
   min-width: 0;
   padding: 11px 6px;
@@ -145,7 +145,7 @@
 #evironn-hero .seg-item:hover {
   color: rgba(255, 255, 255, 1);
 }
-#evironn-hero .furni-hero-segments .seg-item:hover {
+#evironn-hero .evironn-hero-segments .seg-item:hover {
   color: hsl(var(--ev-text));
 }
 #evironn-hero .seg-item.active {
@@ -198,7 +198,7 @@
 #evironn-hero .btn-outline:hover {
   background: rgba(255, 255, 255, 0.28);
 }
-#evironn-hero .furni-hero-panel {
+#evironn-hero .evironn-hero-panel {
   width: 100%;
   max-width: 400px;
   padding: 32px;
@@ -211,7 +211,7 @@
   -webkit-backdrop-filter: blur(5px) saturate(70%);
   background: rgba(255, 255, 255, 0.55);
 }
-#evironn-hero .furni-hero-title {
+#evironn-hero .evironn-hero-title {
   max-width: 330px;
   font-family: var(--hero-font-family);
   font-size: clamp(36px, 4vw, 46px);
@@ -221,20 +221,20 @@
   text-wrap: balance;
   color: hsl(var(--ev-text));
 }
-#evironn-hero .furni-hero-copy {
+#evironn-hero .evironn-hero-copy {
   max-width: 330px;
   margin-top: 18px;
   color: rgba(48, 45, 43, 0.72);
   font-size: 13px;
   line-height: 1.55;
 }
-#evironn-hero .furni-hero-actions {
+#evironn-hero .evironn-hero-actions {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-top: 24px;
 }
-#evironn-hero .furni-hero-hotspot {
+#evironn-hero .evironn-hero-hotspot {
   --ev-hotspot-size: 30px;
   position: absolute;
   z-index: 3;
@@ -250,22 +250,22 @@
     transform 0.2s var(--ev-ease),
     background 0.2s var(--ev-ease);
 }
-#evironn-hero .furni-hero-hotspot::after {
+#evironn-hero .evironn-hero-hotspot::after {
   content: '';
   position: absolute;
   inset: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.98);
 }
-#evironn-hero .furni-hero-hotspot:hover {
+#evironn-hero .evironn-hero-hotspot:hover {
   transform: scale(1.08);
   background: rgba(92, 88, 82, 0.5);
 }
-#evironn-hero .furni-hero-hotspot-chair {
+#evironn-hero .evironn-hero-hotspot-chair {
   left: 35%;
   top: 72%;
 }
-#evironn-hero .furni-hero-hotspot-sofa {
+#evironn-hero .evironn-hero-hotspot-sofa {
   left: calc(66.2% - var(--ev-hotspot-size) / 2);
   top: calc(68.9% - var(--ev-hotspot-size) / 2);
 }
@@ -273,34 +273,34 @@
   #evironn-hero {
     min-height: max(780px, 100dvh);
   }
-  #evironn-hero .furni-hero-media img {
+  #evironn-hero .evironn-hero-media img {
     object-position: 38% center;
   }
-  #evironn-hero .furni-hero-stack {
+  #evironn-hero .evironn-hero-stack {
     top: 87px;
     left: 16px;
     width: calc(100% - 32px);
   }
-  #evironn-hero .furni-hero-segments {
+  #evironn-hero .evironn-hero-segments {
     width: 100%;
   }
-  #evironn-hero .furni-hero-panel {
+  #evironn-hero .evironn-hero-panel {
     padding: 24px;
   }
-  #evironn-hero .furni-hero-panel {
+  #evironn-hero .evironn-hero-panel {
     padding: 24px;
   }
-  #evironn-hero .furni-hero-panel {
+  #evironn-hero .evironn-hero-panel {
     max-width: none;
   }
-  #evironn-hero .furni-hero-title {
+  #evironn-hero .evironn-hero-title {
     font-size: 36px;
   }
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: 6%;
     top: 76%;
   }
-  #evironn-hero .furni-hero-stack--kitchen {
+  #evironn-hero .evironn-hero-stack--kitchen {
     top: 87px;
     left: 16px;
     right: auto;
@@ -311,31 +311,31 @@
   #evironn-hero {
     min-height: max(820px, 100dvh);
   }
-  #evironn-hero .furni-hero-segments .seg-item {
+  #evironn-hero .evironn-hero-segments .seg-item {
     padding: 9px 3px;
     font-size: 8px;
     letter-spacing: 0.04em;
   }
-  #evironn-hero .furni-hero-title {
+  #evironn-hero .evironn-hero-title {
     font-size: 32px;
   }
-  #evironn-hero .furni-hero-actions {
+  #evironn-hero .evironn-hero-actions {
     align-items: stretch;
     flex-direction: column;
   }
-  #evironn-hero .furni-hero-actions .btn {
+  #evironn-hero .evironn-hero-actions .btn {
     width: 100%;
   }
-  #evironn-hero .furni-hero-hotspot {
+  #evironn-hero .evironn-hero-hotspot {
     --ev-hotspot-size: 26px;
   }
-  #evironn-hero .furni-hero-hotspot::after {
+  #evironn-hero .evironn-hero-hotspot::after {
     inset: 5px;
   }
-  #evironn-hero .furni-hero-hotspot::after {
+  #evironn-hero .evironn-hero-hotspot::after {
     inset: 5px;
   }
-  #evironn-hero .furni-hero-stack--kitchen {
+  #evironn-hero .evironn-hero-stack--kitchen {
     left: 16px;
     right: 16px;
     width: auto;
@@ -343,11 +343,11 @@
   }
 }
 
-#evironn-hero .furni-hero-media {
+#evironn-hero .evironn-hero-media {
   overflow: hidden;
   background: hsl(30 4% 72%);
 }
-#evironn-hero .furni-hero-media :is(img, video) {
+#evironn-hero .evironn-hero-media :is(img, video) {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -360,30 +360,30 @@
   visibility: hidden;
   transition: none;
 }
-#evironn-hero .furni-hero-media :is(img, video).is-visible {
+#evironn-hero .evironn-hero-media :is(img, video).is-visible {
   opacity: 1;
   visibility: visible;
 }
-#evironn-hero .furni-hero-hotspot {
+#evironn-hero .evironn-hero-hotspot {
   transition:
     opacity 0.2s var(--ev-ease),
     visibility 0.2s var(--ev-ease),
     transform 0.2s var(--ev-ease),
     background 0.2s var(--ev-ease);
 }
-#evironn-hero .furni-hero-hotspot.is-hidden {
+#evironn-hero .evironn-hero-hotspot.is-hidden {
   opacity: 0;
   visibility: hidden;
   transform: scale(0.65);
   pointer-events: none;
 }
-#evironn-hero .furni-hero-hotspot:focus-visible,
-#evironn-hero .furni-hero-product__back:focus-visible,
-#evironn-hero .furni-hero-product__link:focus-visible {
+#evironn-hero .evironn-hero-hotspot:focus-visible,
+#evironn-hero .evironn-hero-product__back:focus-visible,
+#evironn-hero .evironn-hero-product__link:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 4px;
 }
-#evironn-hero .furni-hero-product {
+#evironn-hero .evironn-hero-product {
   position: absolute;
   right: 6%;
   bottom: 12%;
@@ -393,7 +393,7 @@
   gap: 8px;
   width: min(310px, calc(100% - 32px));
 }
-#evironn-hero .furni-hero-product__back {
+#evironn-hero .evironn-hero-product__back {
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -406,7 +406,7 @@
   font-size: 11px;
   font-weight: 650;
 }
-#evironn-hero .furni-hero-product__card {
+#evironn-hero .evironn-hero-product__card {
   width: 100%;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -419,7 +419,7 @@
   -webkit-backdrop-filter: blur(18px) saturate(120%);
   color: hsl(var(--ev-text));
 }
-#evironn-hero .furni-hero-product__eyebrow {
+#evironn-hero .evironn-hero-product__eyebrow {
   display: block;
   margin-bottom: 8px;
   color: hsl(var(--ev-text) / 0.58);
@@ -428,27 +428,27 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-#evironn-hero .furni-hero-product__caption-token {
+#evironn-hero .evironn-hero-product__caption-token {
   display: inline-block;
   will-change: opacity, filter, transform;
 }
-#evironn-hero .furni-hero-product__link.furni-hero-product__caption-token {
+#evironn-hero .evironn-hero-product__link.evironn-hero-product__caption-token {
   display: flex;
 }
-#evironn-hero .furni-hero-product h2 {
+#evironn-hero .evironn-hero-product h2 {
   max-width: 12ch;
   font-family: var(--hero-font-family);
   font-size: clamp(24px, 2.2vw, 32px);
   font-weight: 500;
   line-height: 0.98;
 }
-#evironn-hero .furni-hero-product__price {
+#evironn-hero .evironn-hero-product__price {
   display: block;
   margin-top: 12px;
   font-size: 13px;
   font-weight: 650;
 }
-#evironn-hero .furni-hero-product__link {
+#evironn-hero .evironn-hero-product__link {
   display: flex;
   justify-content: space-between;
   margin-top: 18px;
@@ -459,7 +459,7 @@
   font-weight: 650;
   text-decoration: none;
 }
-#evironn-hero .furni-hero-product__link.is-disabled {
+#evironn-hero .evironn-hero-product__link.is-disabled {
   opacity: 0.48;
 }
 
@@ -471,22 +471,22 @@
   opacity: 0.38;
 }
 
-#evironn-hero .furni-hero-hotspot-kitchen-dining {
+#evironn-hero .evironn-hero-hotspot-kitchen-dining {
   left: calc(8.6% - var(--ev-hotspot-size) / 2);
   top: calc(63.5% - var(--ev-hotspot-size) / 2);
 }
 
-#evironn-hero .furni-hero-hotspot-kitchen-island {
+#evironn-hero .evironn-hero-hotspot-kitchen-island {
   left: calc(46.4% - var(--ev-hotspot-size) / 2);
   top: calc(67.5% - var(--ev-hotspot-size) / 2);
 }
 
-#evironn-hero .furni-hero-product--kitchen-dining {
+#evironn-hero .evironn-hero-product--kitchen-dining {
   right: 6%;
   bottom: 11%;
 }
 
-#evironn-hero .furni-hero-product--kitchen-island {
+#evironn-hero .evironn-hero-product--kitchen-island {
   right: 5%;
   bottom: 12%;
 }
@@ -498,30 +498,30 @@
   object-position: center;
 }
 
-#evironn-hero .furni-hero-stack--terrace {
+#evironn-hero .evironn-hero-stack--terrace {
   top: 12%;
 }
 
-#evironn-hero .furni-hero-hotspot-terrace-chair {
+#evironn-hero .evironn-hero-hotspot-terrace-chair {
   left: calc(80.3% - var(--ev-hotspot-size) / 2);
   top: calc(82% - var(--ev-hotspot-size) / 2);
 }
 
-#evironn-hero .furni-hero-hotspot-terrace-sofa {
+#evironn-hero .evironn-hero-hotspot-terrace-sofa {
   left: calc(29.4% - var(--ev-hotspot-size) / 2);
   top: calc(82% - var(--ev-hotspot-size) / 2);
 }
 
-#evironn-hero .furni-hero-stack--bedroom {
+#evironn-hero .evironn-hero-stack--bedroom {
   top: 12%;
 }
 
-#evironn-hero .furni-hero-hotspot-bedroom-chair {
+#evironn-hero .evironn-hero-hotspot-bedroom-chair {
   left: calc(13.75vw - var(--ev-hotspot-size) / 2);
   top: calc(50% + 16.6667vw - var(--ev-hotspot-size) / 2);
 }
 
-#evironn-hero .furni-hero-hotspot-bedroom-bed {
+#evironn-hero .evironn-hero-hotspot-bedroom-bed {
   left: calc(60vw - var(--ev-hotspot-size) / 2);
   top: calc(50% + 15vw - var(--ev-hotspot-size) / 2);
 }
@@ -530,10 +530,10 @@
   #evironn-hero .is-kitchen {
     object-position: 22% center;
   }
-  #evironn-hero .furni-hero-stack--living-room {
+  #evironn-hero .evironn-hero-stack--living-room {
     top: 12%;
   }
-  #evironn-hero .furni-hero-hotspot-kitchen-dining {
+  #evironn-hero .evironn-hero-hotspot-kitchen-dining {
     left: calc(22vw - 19.892857dvh - var(--ev-hotspot-size) / 2);
   }
 }
@@ -541,90 +541,95 @@
   #evironn-hero .is-kitchen {
     object-position: 0% center;
   }
-  #evironn-hero .furni-hero-hotspot-kitchen-dining {
+  #evironn-hero .evironn-hero-hotspot-kitchen-dining {
     left: calc(12.882653dvh - var(--ev-hotspot-size) / 2);
   }
 }
 @media (max-width: 900px) {
-  #evironn-hero .furni-hero-media :is(img, video) {
+  #evironn-hero .evironn-hero-media :is(img, video) {
     object-position: 60% center;
   }
-  #evironn-hero .furni-hero-room-media__image.is-kitchen {
+  #evironn-hero .evironn-hero-room-media__image.is-kitchen {
     object-position: 0% center;
   }
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(40% + 141px - var(--ev-hotspot-size) / 2);
     top: calc(63.5% - var(--ev-hotspot-size) / 2);
   }
-  #evironn-hero .furni-hero-product {
+  #evironn-hero .evironn-hero-product {
     right: 16px;
     bottom: 28px;
     width: min(290px, calc(100% - 32px));
   }
 }
 @media (max-width: 480px) {
-  #evironn-hero .furni-hero-media :is(img, video) {
+  #evironn-hero .evironn-hero-media :is(img, video) {
     object-position: 60% center;
   }
-  #evironn-hero .furni-hero-product {
+  #evironn-hero .evironn-hero-product {
     left: 16px;
     right: 16px;
     bottom: 20px;
     width: auto;
   }
-  #evironn-hero .furni-hero-product__card {
+  #evironn-hero .evironn-hero-product__card {
     padding: 16px;
   }
 }
 @media (max-width: 375px) {
-  #evironn-hero .furni-hero-panel {
+  #evironn-hero .evironn-hero-panel {
     display: none;
   }
-  #evironn-hero .furni-hero-stack {
+  #evironn-hero .evironn-hero-stack {
     top: 33.33%;
   }
-  #evironn-hero .furni-hero-stack--kitchen {
+  #evironn-hero .evironn-hero-stack--kitchen {
     top: 33.33%;
     left: 16px;
     right: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  #evironn-hero .furni-hero-stack {
+  #evironn-hero .evironn-hero-stack {
     transition: none;
   }
-  #evironn-hero .furni-hero-stack.is-room-fading-out,
-  #evironn-hero .furni-hero-stack.is-room-fading-in,
+  #evironn-hero .evironn-hero-stack.is-room-fading-out,
+  #evironn-hero .evironn-hero-stack.is-room-fading-in,
   #evironn-hero
-    .furni-hero-stack.is-room-fading-in
-    :is(.furni-hero-title, .furni-hero-copy, .furni-hero-actions, .seg-item) {
+    .evironn-hero-stack.is-room-fading-in
+    :is(
+      .evironn-hero-title,
+      .evironn-hero-copy,
+      .evironn-hero-actions,
+      .seg-item
+    ) {
     animation: none;
   }
-  #evironn-hero .furni-hero-hotspot,
-  #evironn-hero .furni-hero-media :is(img, video) {
+  #evironn-hero .evironn-hero-hotspot,
+  #evironn-hero .evironn-hero-media :is(img, video) {
     transition: none;
   }
 }
 
-#evironn-hero .furni-hero-room-media,
-#evironn-hero .furni-hero-product-media {
+#evironn-hero .evironn-hero-room-media,
+#evironn-hero .evironn-hero-product-media {
   position: absolute;
   inset: 0;
   overflow: hidden;
   background: hsl(30 4% 72%);
 }
 
-#evironn-hero .furni-hero-room-media {
+#evironn-hero .evironn-hero-room-media {
   z-index: 0;
 }
-#evironn-hero .furni-hero-product-media {
+#evironn-hero .evironn-hero-product-media {
   z-index: 1;
   pointer-events: none;
   background: transparent;
 }
 
 #evironn-hero
-  :is(.furni-hero-room-media__image, .furni-hero-product-media__asset) {
+  :is(.evironn-hero-room-media__image, .evironn-hero-product-media__asset) {
   --hero-flip: 1;
   position: absolute;
   inset: 0;
@@ -640,36 +645,36 @@
 
 #evironn-hero
   :is(
-    .furni-hero-room-media__image,
-    .furni-hero-product-media__asset
+    .evironn-hero-room-media__image,
+    .evironn-hero-product-media__asset
   ).is-mirrored {
   --hero-flip: -1;
 }
 
-#evironn-hero .furni-hero-room-media__image.is-stable,
-#evironn-hero .furni-hero-product-media__asset.is-visible {
+#evironn-hero .evironn-hero-room-media__image.is-stable,
+#evironn-hero .evironn-hero-product-media__asset.is-visible {
   opacity: 1;
   visibility: visible;
 }
 
-#evironn-hero .furni-hero-room-media__image.is-outgoing {
+#evironn-hero .evironn-hero-room-media__image.is-outgoing {
   z-index: 0;
   visibility: visible;
   animation: hero-room-leave 1s cubic-bezier(0.44, 0, 0.2, 1) both;
 }
 
-#evironn-hero .furni-hero-room-media__image.is-incoming {
+#evironn-hero .evironn-hero-room-media__image.is-incoming {
   z-index: 1;
   visibility: visible;
   animation: hero-room-enter 1s cubic-bezier(0.44, 0, 0.2, 1) both;
 }
 
-#evironn-hero .furni-hero-room-media__image.is-direct-incoming {
+#evironn-hero .evironn-hero-room-media__image.is-direct-incoming {
   animation-name: hero-room-enter-direct;
   animation-duration: 0.42s;
 }
 
-#evironn-hero .furni-hero-room-media::after {
+#evironn-hero .evironn-hero-room-media::after {
   content: '';
   position: absolute;
   inset: -4%;
@@ -679,7 +684,7 @@
   opacity: 0;
 }
 
-#evironn-hero .furni-hero-room-media.is-changing::after {
+#evironn-hero .evironn-hero-room-media.is-changing::after {
   animation: hero-room-veil 1s cubic-bezier(0.44, 0, 0.2, 1) both;
 }
 
@@ -733,20 +738,20 @@
 }
 
 #evironn-hero
-  .furni-hero-room-media.is-reduced-motion
-  .furni-hero-room-media__image.is-outgoing {
+  .evironn-hero-room-media.is-reduced-motion
+  .evironn-hero-room-media__image.is-outgoing {
   animation-name: hero-room-leave-reduced;
   animation-duration: 120ms;
 }
 
 #evironn-hero
-  .furni-hero-room-media.is-reduced-motion
-  .furni-hero-room-media__image.is-incoming {
+  .evironn-hero-room-media.is-reduced-motion
+  .evironn-hero-room-media__image.is-incoming {
   animation-name: hero-room-enter-reduced;
   animation-duration: 120ms;
 }
 
-#evironn-hero .furni-hero-room-media.is-reduced-motion::after {
+#evironn-hero .evironn-hero-room-media.is-reduced-motion::after {
   animation: none;
 }
 
@@ -789,12 +794,12 @@
     object-position: 50% center;
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-chair {
+  #evironn-hero .evironn-hero-hotspot-bedroom-chair {
     left: calc(20.625dvh - var(--ev-hotspot-size) / 2);
     top: calc(75% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-bed {
+  #evironn-hero .evironn-hero-hotspot-bedroom-bed {
     left: calc(min(90dvh, 92vw) - var(--ev-hotspot-size) / 2);
     top: calc(72.5% - var(--ev-hotspot-size) / 2);
   }
@@ -811,33 +816,33 @@
     object-position: 56% center;
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-chair {
+  #evironn-hero .evironn-hero-hotspot-terrace-chair {
     left: calc(56vw + 162px - var(--ev-hotspot-size) / 2);
     top: calc(67.8% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-sofa {
+  #evironn-hero .evironn-hero-hotspot-terrace-sofa {
     left: calc(56vw - 282px - var(--ev-hotspot-size) / 2);
     top: calc(74% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-product-media__asset.is-product-bedroom-chair {
+  #evironn-hero .evironn-hero-product-media__asset.is-product-bedroom-chair {
     object-position: 44% center;
   }
 
-  #evironn-hero .furni-hero-product-media__asset.is-product-bedroom-bed {
+  #evironn-hero .evironn-hero-product-media__asset.is-product-bedroom-bed {
     object-position: 52% center;
   }
 
-  #evironn-hero .furni-hero-product-media__asset.is-product-kitchen-dining {
+  #evironn-hero .evironn-hero-product-media__asset.is-product-kitchen-dining {
     object-position: 36% center;
   }
 
-  #evironn-hero .furni-hero-hotspot-kitchen-dining {
+  #evironn-hero .evironn-hero-hotspot-kitchen-dining {
     left: calc(max(100.484px, 12.882653dvh) - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-kitchen-island {
+  #evironn-hero .evironn-hero-hotspot-kitchen-island {
     left: calc(80% - var(--ev-hotspot-size) / 2);
     top: calc(67.5% - var(--ev-hotspot-size) / 2);
   }
@@ -857,47 +862,47 @@
     object-position: 58% center;
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-chair {
+  #evironn-hero .evironn-hero-hotspot-terrace-chair {
     left: calc(min(90vw, 58vw + 167px) - var(--ev-hotspot-size) / 2);
     top: calc(74% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-sofa {
+  #evironn-hero .evironn-hero-hotspot-terrace-sofa {
     left: calc(max(20vw, 50vw - 144px) - var(--ev-hotspot-size) / 2);
     top: calc(74% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-chair {
+  #evironn-hero .evironn-hero-hotspot-bedroom-chair {
     left: calc(22vw - var(--ev-hotspot-size) / 2);
     top: calc(72% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-bed {
+  #evironn-hero .evironn-hero-hotspot-bedroom-bed {
     left: calc(82vw - var(--ev-hotspot-size) / 2);
     top: calc(79% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-kitchen-dining {
+  #evironn-hero .evironn-hero-hotspot-kitchen-dining {
     left: calc(max(105.727px, 12.882653dvh) - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-kitchen-island {
+  #evironn-hero .evironn-hero-hotspot-kitchen-island {
     left: calc(80% - var(--ev-hotspot-size) / 2);
     top: calc(67.5% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-product--kitchen-dining,
-  #evironn-hero .furni-hero-product--kitchen-island {
+  #evironn-hero .evironn-hero-product--kitchen-dining,
+  #evironn-hero .evironn-hero-product--kitchen-island {
     left: 16px;
     right: 16px;
     bottom: 20px;
   }
 
-  #evironn-hero .furni-hero-room-media__image.is-outgoing {
+  #evironn-hero .evironn-hero-room-media__image.is-outgoing {
     animation-name: hero-room-leave-mobile;
   }
 
-  #evironn-hero .furni-hero-room-media__image.is-incoming {
+  #evironn-hero .evironn-hero-room-media__image.is-incoming {
     animation-name: hero-room-enter-mobile;
   }
 }
@@ -905,12 +910,12 @@
 /* Tablet living-room crop: keep both markers on the furniture called out in
    the 768px composition while preserving the phone anchors below 480px. */
 @media (min-width: 481px) and (max-width: 768px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: calc(27.6vw - var(--ev-hotspot-size) / 2);
     top: calc(71.6% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(76.6vw - var(--ev-hotspot-size) / 2);
     top: calc(64.3% - var(--ev-hotspot-size) / 2);
   }
@@ -920,18 +925,18 @@
    Anchor the lounge-chair point to that crop instead of the viewport's fixed
    percentage, which otherwise drifts as the horizontal crop changes. */
 @media (min-width: 769px) and (max-width: 1300px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: calc(50% - 30.46875vh - var(--ev-hotspot-size) / 2);
   }
 }
 
 /* Keep living-room markers on same furniture while tablet crop approaches 900px. */
 @media (min-width: 769px) and (max-width: 1024px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     top: calc(72% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(66.2% - var(--ev-hotspot-size) / 2);
     top: calc(68.9% - var(--ev-hotspot-size) / 2);
   }
@@ -942,12 +947,12 @@
     object-position: center;
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-chair {
+  #evironn-hero .evironn-hero-hotspot-bedroom-chair {
     left: calc(13.75vw - var(--ev-hotspot-size) / 2);
     top: calc(50% + 16.6667vw - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-bed {
+  #evironn-hero .evironn-hero-hotspot-bedroom-bed {
     left: calc(60vw - var(--ev-hotspot-size) / 2);
     top: calc(50% + 15vw - var(--ev-hotspot-size) / 2);
   }
@@ -956,12 +961,12 @@
 /* Track the terrace armchair through the horizontal crop before the tablet
    composition takes over at 768px. */
 @media (min-width: 769px) and (max-width: 970px) {
-  #evironn-hero .furni-hero-hotspot-terrace-chair {
+  #evironn-hero .evironn-hero-hotspot-terrace-chair {
     left: calc(50vw + 331px - var(--ev-hotspot-size) / 2);
     top: calc(76.7% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-sofa {
+  #evironn-hero .evironn-hero-hotspot-terrace-sofa {
     left: calc(50vw - 204px - var(--ev-hotspot-size) / 2);
   }
 }
@@ -972,12 +977,12 @@
     object-position: 0% center;
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-chair {
+  #evironn-hero .evironn-hero-hotspot-bedroom-chair {
     left: calc(20.625dvh - var(--ev-hotspot-size) / 2);
     top: calc(75% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-bedroom-bed {
+  #evironn-hero .evironn-hero-hotspot-bedroom-bed {
     left: calc(min(90dvh, 92vw) - var(--ev-hotspot-size) / 2);
     top: calc(72.5% - var(--ev-hotspot-size) / 2);
   }
@@ -988,15 +993,15 @@
     object-position: 58% center;
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-chair {
+  #evironn-hero .evironn-hero-hotspot-terrace-chair {
     left: calc(min(90vw, 58vw + 167px) - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-terrace-sofa {
+  #evironn-hero .evironn-hero-hotspot-terrace-sofa {
     left: calc(max(20vw, 50vw - 144px) - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-kitchen-island {
+  #evironn-hero .evironn-hero-hotspot-kitchen-island {
     left: calc(80% - var(--ev-hotspot-size) / 2);
   }
 }
@@ -1004,7 +1009,7 @@
 /* Keep the terrace sofa hotspot inside the viewport before the phone crop
    switches at 480px. */
 @media (max-width: 550px) {
-  #evironn-hero .furni-hero-hotspot-terrace-sofa {
+  #evironn-hero .evironn-hero-hotspot-terrace-sofa {
     left: calc(max(20vw, 50vw - 144px) - var(--ev-hotspot-size) / 2);
   }
 }
@@ -1040,59 +1045,59 @@
    mobile/tablet rules from nudging them away from the chair and sofa when the
    image's object-position changes. */
 @media (min-width: 1301px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: 35%;
     top: 72%;
   }
 
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(66.2% - var(--ev-hotspot-size) / 2);
     top: calc(68.9% - var(--ev-hotspot-size) / 2);
   }
 }
 
 @media (min-width: 769px) and (max-width: 1300px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: calc(50% - 30.46875vh - var(--ev-hotspot-size) / 2);
     top: 72%;
   }
 
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(66.2% - var(--ev-hotspot-size) / 2);
     top: calc(68.9% - var(--ev-hotspot-size) / 2);
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: calc(27.6vw - var(--ev-hotspot-size) / 2);
     top: calc(71.6% - var(--ev-hotspot-size) / 2);
   }
 
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(76.6vw - var(--ev-hotspot-size) / 2);
     top: calc(64.3% - var(--ev-hotspot-size) / 2);
   }
 }
 
 @media (max-width: 480px) {
-  #evironn-hero .furni-hero-hotspot-chair {
+  #evironn-hero .evironn-hero-hotspot-chair {
     left: 6%;
     top: 76%;
   }
 
-  #evironn-hero .furni-hero-hotspot-sofa {
+  #evironn-hero .evironn-hero-hotspot-sofa {
     left: calc(40% + 141px - var(--ev-hotspot-size) / 2);
     top: calc(63.5% - var(--ev-hotspot-size) / 2);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #evironn-hero .furni-hero-room-media__image.is-outgoing {
+  #evironn-hero .evironn-hero-room-media__image.is-outgoing {
     animation-name: hero-room-leave-reduced;
   }
 
-  #evironn-hero .furni-hero-room-media__image.is-incoming {
+  #evironn-hero .evironn-hero-room-media__image.is-incoming {
     animation-name: hero-room-enter-reduced;
   }
 }

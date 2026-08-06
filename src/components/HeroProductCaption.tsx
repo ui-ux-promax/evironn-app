@@ -42,9 +42,9 @@ export function HeroProductCaption({ product }: HeroProductCaptionProps) {
 
   return (
     <>
-      <span className="furni-hero-product__eyebrow">
+      <span className="evironn-hero-product__eyebrow">
         <motion.span
-          className="furni-hero-product__caption-token"
+          className="evironn-hero-product__caption-token"
           initial="hidden"
           animate="visible"
           variants={createFurnitureCaptionVariants(
@@ -61,7 +61,7 @@ export function HeroProductCaption({ product }: HeroProductCaptionProps) {
           <Fragment key={`${word}-${index}`}>
             {index > 0 && ' '}
             <motion.span
-              className="furni-hero-product__caption-token"
+              className="evironn-hero-product__caption-token"
               initial="hidden"
               animate="visible"
               variants={createFurnitureCaptionVariants(
@@ -76,7 +76,7 @@ export function HeroProductCaption({ product }: HeroProductCaptionProps) {
         ))}
       </h2>
       <motion.span
-        className="furni-hero-product__price furni-hero-product__caption-token"
+        className="evironn-hero-product__price evironn-hero-product__caption-token"
         initial="hidden"
         animate="visible"
         variants={createFurnitureCaptionVariants(
@@ -90,7 +90,7 @@ export function HeroProductCaption({ product }: HeroProductCaptionProps) {
       {product.href ? (
         <motion.a
           href={product.href}
-          className="furni-hero-product__link furni-hero-product__caption-token"
+          className="evironn-hero-product__link evironn-hero-product__caption-token"
           initial="hidden"
           animate="visible"
           variants={createFurnitureCaptionVariants(
@@ -103,7 +103,7 @@ export function HeroProductCaption({ product }: HeroProductCaptionProps) {
         </motion.a>
       ) : (
         <motion.span
-          className="furni-hero-product__link furni-hero-product__caption-token is-disabled"
+          className="evironn-hero-product__link evironn-hero-product__caption-token is-disabled"
           aria-disabled="true"
           initial="hidden"
           animate="visible"

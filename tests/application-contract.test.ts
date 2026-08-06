@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -9,6 +9,33 @@ function readApplicationFile(path: string) {
 }
 
 describe('approved storefront application', () => {
+  it('does not retain inherited hero provenance markers in product source', () => {
+    const forbiddenMarker = ['furni', '-hero'].join('');
+    const sourceRoot = resolve(repositoryRoot, 'src');
+    const files: string[] = [];
+
+    const collectFiles = (directory: string) => {
+      for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const path = resolve(directory, entry.name);
+        if (entry.isDirectory()) {
+          collectFiles(path);
+        } else {
+          files.push(path);
+        }
+      }
+    };
+
+    collectFiles(sourceRoot);
+
+    for (const path of files) {
+      const relativePath = path.slice(sourceRoot.length + 1);
+      expect(relativePath.toLowerCase()).not.toContain(forbiddenMarker);
+      expect(readFileSync(path).toString('utf8')).not.toContain(
+        forbiddenMarker,
+      );
+    }
+  });
+
   it('exports only the approved public routes', async () => {
     const { publicRoutes } = await import('../src/routes');
 
@@ -89,7 +116,8 @@ describe('approved storefront application', () => {
 
   it('does not retain styles for the removed hero font selector', () => {
     const heroStyles = readApplicationFile('src/components/Hero.css');
+    const removedSelector = ['furni', '-hero-font-selector'].join('');
 
-    expect(heroStyles).not.toContain('furni-hero-font-selector');
+    expect(heroStyles).not.toContain(removedSelector);
   });
 });

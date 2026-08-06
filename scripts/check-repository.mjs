@@ -50,6 +50,7 @@ const applicationEntryPath = 'src/App.tsx';
 
 export const permittedRoutes = ['/', '/product'];
 export const forbiddenMarkers = [
+  ['furni', '-hero'].join(''),
   'gr' + 'aft',
   new RegExp(['cl', 'one'].join(''), 'i'),
   new RegExp(['kan', 'va'].join(''), 'i'),

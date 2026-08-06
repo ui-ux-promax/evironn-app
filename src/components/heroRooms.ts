@@ -1,4 +1,4 @@
-import livingRoomImage from '../assets/furni-hero.png';
+import livingRoomImage from '../assets/evironn-hero-room.png';
 import type { HeroProductId } from './heroProductState';
 import type { AvailableHeroRoomId, HeroRoomId } from './heroRoomState';
 

@@ -1,8 +1,19 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
-import { designSystemTokens } from '../src/design-system/tokens';
+import { auditDesignSystem } from '../scripts/check-design-system.mjs';
+import {
+  designSystemTokenSource,
+  designSystemTokens,
+} from '../src/design-system/tokens';
 
 const root = resolve(import.meta.dirname, '..');
 
@@ -16,6 +27,11 @@ test('exports canonical semantic token groups', () => {
   ]);
   expect(designSystemTokens.motion).toContain('--ev-ds-motion-ease');
   expect(designSystemTokens.spacing).toContain('--ev-ds-space-8');
+  expect(designSystemTokenSource).toMatchObject({
+    semantic: 'source token block',
+    spacing: 'spacing specimen',
+    controls: 'button specimen',
+  });
 });
 
 test('canonical CSS declares source design-system values', () => {
@@ -35,4 +51,28 @@ test('design-system audit passes P1-owned files', () => {
       stdio: 'pipe',
     }),
   ).not.toThrow();
+});
+
+test('design-system audit rejects named colors and non-token motion durations', () => {
+  const fixture = mkdtempSync(resolve(tmpdir(), 'evironn-design-system-'));
+  const sourceRoot = resolve(fixture, 'src/prototypes');
+  mkdirSync(sourceRoot, { recursive: true });
+  const cssPath = resolve(sourceRoot, 'invalid.css');
+
+  try {
+    writeFileSync(
+      cssPath,
+      '.bad { color: red; transition: opacity 200ms var(--ev-ds-motion-ease); }',
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(/raw color literal/);
+    writeFileSync(
+      cssPath,
+      '.bad { color: var(--ev-ds-color-text); transition: opacity 200ms var(--ev-ds-motion-ease); }',
+    );
+    expect(() => auditDesignSystem(fixture)).toThrow(
+      /non-token transition value/,
+    );
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
+  }
 });

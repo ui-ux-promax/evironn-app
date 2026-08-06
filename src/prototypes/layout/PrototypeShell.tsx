@@ -10,8 +10,13 @@ export interface PrototypeShellProps {
 export function PrototypeShell({ activePath, children }: PrototypeShellProps) {
   return (
     <div className="evp-shell">
+      <a className="evp-skip-link" href="#prototype-main">
+        Skip to content
+      </a>
       <PrototypeHeader activePath={activePath} />
-      <main className="evp-shell__main">{children}</main>
+      <main className="evp-shell__main" id="prototype-main" tabIndex={-1}>
+        {children}
+      </main>
       <PrototypeFooter />
     </div>
   );

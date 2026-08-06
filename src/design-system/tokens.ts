@@ -61,6 +61,16 @@ export const designSystemTokens = {
     '--ev-ds-motion-fast',
     '--ev-ds-motion-base',
     '--ev-ds-motion-slow',
+    '--ev-ds-motion-linear',
     '--ev-ds-motion-reduced',
   ],
+} as const;
+
+export const designSystemTokenSource = {
+  semantic: 'source token block',
+  spacing: 'spacing specimen',
+  typography: 'type specimen',
+  controls: 'button specimen',
+  motion: 'interaction and reduced-motion rules',
+  layout: 'approved P0 layout contract',
 } as const;

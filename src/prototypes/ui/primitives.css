@@ -100,7 +100,8 @@
   border: 2px solid currentColor;
   border-top-color: transparent;
   border-radius: var(--ev-ds-radius-pill);
-  animation: evp-spin var(--ev-ds-motion-base) linear infinite;
+  animation: evp-spin var(--ev-ds-motion-base) var(--ev-ds-motion-linear)
+    infinite;
 }
 
 .evp-badge {

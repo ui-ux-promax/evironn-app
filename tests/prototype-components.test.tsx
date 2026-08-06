@@ -34,6 +34,18 @@ test('prototype header exposes approved navigation and active state', () => {
   expect(html).not.toContain('demo-admin');
 });
 
+test('prototype shell exposes skip link target', async () => {
+  const { PrototypeShell } =
+    await import('../src/prototypes/layout/PrototypeShell');
+  const html = renderToStaticMarkup(
+    <PrototypeShell>
+      <p>Content</p>
+    </PrototypeShell>,
+  );
+  expect(html).toContain('href="#prototype-main"');
+  expect(html).toContain('id="prototype-main"');
+});
+
 test('card and status message preserve semantic structure', () => {
   const card = renderToStaticMarkup(<Card>Furniture</Card>);
   const status = renderToStaticMarkup(

@@ -65,8 +65,8 @@ export const mockProducts = [
     ],
     variants: [
       {
-        id: 'variant-noma-ivory-walnut',
-        sku: 'NOMA-IVORY-WALNUT',
+        id: 'variant-noma-graphite-walnut',
+        sku: 'NOMA-GRAPHITE-WALNUT',
         price: 1240,
         stock: 8,
         optionValues: [
@@ -80,10 +80,10 @@ export const mockProducts = [
       {
         id: 'media-noma-walnut',
         kind: 'image',
-        src: '/assets/products/05-ivory-walnut-chair-fixed-alpha.png',
-        alt: 'Ivory Noma lounge chair with walnut frame',
+        src: '/assets/products/05-graphite-walnut-chair-fixed-alpha.png',
+        alt: 'Graphite Noma lounge chair with walnut frame',
         order: 1,
-        variantId: 'variant-noma-ivory-walnut',
+        variantId: 'variant-noma-graphite-walnut',
       },
     ],
     turntable: {

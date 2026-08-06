@@ -16,6 +16,8 @@ test('route registry contains approved storefront and admin inventory', () => {
   expect(findPrototypeRoute('/admin/orders/EV-1001')?.path).toBe(
     '/admin/orders/[number]',
   );
+  expect(findPrototypeRoute('/product//')).toBeUndefined();
+  expect(findPrototypeRoute('/product/%20')).toBeUndefined();
 });
 
 test('fixtures satisfy furniture domain contract', () => {
@@ -33,4 +35,6 @@ test('fixtures satisfy furniture domain contract', () => {
   });
   expect(mockProducts[0].media[0].src).toMatch(/^\/assets\//);
   expect(mockProducts[0].turntable?.webmSrc).toMatch(/^\/assets\//);
+  expect(mockProducts[0].variants[0].mediaId).toBe(mockProducts[0].media[0].id);
+  expect(mockProducts[0].media[0].src).toContain('graphite');
 });

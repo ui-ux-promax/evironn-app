@@ -5,6 +5,25 @@
   font-family: var(--ev-ds-font-body);
 }
 
+.evp-skip-link {
+  position: fixed;
+  top: var(--ev-ds-space-3);
+  left: var(--ev-ds-space-3);
+  z-index: 20;
+  padding: var(--ev-ds-space-3) var(--ev-ds-space-4);
+  border-radius: var(--ev-ds-radius-pill);
+  background: hsl(var(--ev-ds-color-text));
+  color: hsl(var(--ev-ds-color-primary-foreground));
+  font-size: var(--ev-ds-type-label);
+  font-weight: var(--ev-ds-weight-semibold);
+  transform: translateY(-200%);
+  transition: transform var(--ev-ds-motion-fast) var(--ev-ds-motion-ease);
+}
+
+.evp-skip-link:focus {
+  transform: translateY(0);
+}
+
 .evp-shell__main {
   width: min(100%, var(--ev-ds-container-width));
   min-height: 60dvh;

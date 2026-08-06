@@ -56,6 +56,7 @@
   --ev-ds-motion-fast: 0.18s;
   --ev-ds-motion-base: 0.3s;
   --ev-ds-motion-slow: 0.42s;
+  --ev-ds-motion-linear: linear;
   --ev-ds-motion-reduced: 0.001ms;
   --ev-ds-control-sm: 38px;
   --ev-ds-control-md: 46px;

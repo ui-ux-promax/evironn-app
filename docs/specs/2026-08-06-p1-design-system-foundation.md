@@ -25,7 +25,7 @@ Create the reusable foundation for Evironn HTML/Vite prototypes without changing
 
 ### Token boundary
 
-Canonical tokens live in `src/design-system/tokens.css` and are exposed with `--ev-ds-*` names. Values come from the design-system source: HSL semantic colors, Golos Text/Fraunces font stacks, 14/20/28/pill radii, documented shadows, 4px-based spacing, and `cubic-bezier(0.32, 0.72, 0, 1)` motion easing. Existing `--ev-*` variables remain available to approved pages; P1-owned code uses only `--ev-ds-*` tokens.
+Canonical tokens live in `src/design-system/tokens.css` and are exposed with `--ev-ds-*` names. Values come from two explicit source layers: the source token block supplies semantic HSL colors, Golos Text/Fraunces font stacks, 14/20/28/pill radii, documented shadows, and `cubic-bezier(0.32, 0.72, 0, 1)` easing; source specimens supply the 4px-based spacing scale, label/body/price type sizes, button control sizes, spinner linear timing, and focus/outline shadows. Container width and page gutter are compatibility aliases of the approved P0 layout contract, not new brand values. Existing `--ev-*` variables remain available to approved pages; P1-owned code uses only `--ev-ds-*` tokens.
 
 ### Prototype boundary
 

@@ -232,17 +232,22 @@ export const prototypeRoutes = [
 
 function normalizePath(pathname: string) {
   const path = pathname.trim().split('?')[0].split('#')[0];
+  if (!path.startsWith('/') || path.includes('//')) return undefined;
   if (path === '/') return path;
-  return path.replace(/\/+$/, '') || '/';
+  return path.endsWith('/') ? path.slice(0, -1) : path;
 }
 
 function matchesPattern(pattern: string, pathname: string) {
-  const patternSegments = normalizePath(pattern).split('/');
-  const pathSegments = normalizePath(pathname).split('/');
+  const normalizedPattern = normalizePath(pattern);
+  const normalizedPath = normalizePath(pathname);
+  if (!normalizedPattern || !normalizedPath) return false;
+  const patternSegments = normalizedPattern.split('/');
+  const pathSegments = normalizedPath.split('/');
   if (patternSegments.length !== pathSegments.length) return false;
-  return patternSegments.every(
-    (segment, index) =>
-      segment.startsWith('[') || segment === pathSegments[index],
+  return patternSegments.every((segment, index) =>
+    segment.startsWith('[')
+      ? /^[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*$/.test(pathSegments[index])
+      : segment === pathSegments[index],
   );
 }
 

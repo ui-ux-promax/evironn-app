@@ -6,7 +6,7 @@ Create the reusable foundation for Evironn HTML/Vite prototypes without changing
 
 ## Scope
 
-- Extract canonical semantic tokens from `C:\Users\010726Admin\Downloads\prototypes-furni\design-system.html`.
+- Extract canonical semantic tokens from the read-only design-system source archive.
 - Add a source-only `prototypes/` workspace contract and a typed route registry for all approved future storefront/admin paths.
 - Add typed furniture mock-data contracts aligned with the master plan domain contracts.
 - Add reusable prototype shell, header, footer, and UI primitives.
@@ -64,4 +64,3 @@ P1-owned source lives under `src/prototypes/`. Top-level `prototypes/README.md` 
 5. Root Vite build remains one shipped entry; no `/demo-admin` or unapproved public route appears.
 6. Existing `/` and `/product` output passes unchanged P0 browser coverage.
 7. `npm run gate:full` exits zero.
-

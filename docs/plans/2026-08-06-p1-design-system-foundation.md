@@ -10,8 +10,8 @@
 
 ## Global Constraints
 
-- `D:\Projects\evironn-app` is the clean destination repository.
-- `C:\Users\010726Admin\Downloads\prototypes-furni` remains a read-only archive.
+- The clean destination repository remains the current Evironn repository.
+- The original prototype archive remains read-only.
 - `design-system.html` is the primary visual authority for new pages.
 - Approved `/` and `/product` output is preserved; it is not redesigned for later uniformity.
 - Only approved storefront/admin routes ship; `/demo-admin` is excluded.
@@ -362,7 +362,7 @@ Expected: Vite build passes; Chromium passes `/` and `/product` at 390x844, 820x
 
 - [ ] **Step 4: Inspect public tree**
 
-Run: `git status --short --branch; git diff --check; rg -n "demo-admin|prototypes-furni|design-system\.html|C:\\\\Users|D:\\\\Projects" src prototypes scripts tests docs`
+Run: `git status --short --branch; git diff --check; npm run check:repository; npm run check:design-system`
 
 Expected: only intentional neutral docs references remain; no public capture, prompt, source-map, absolute-path, or forbidden-route artifact is added.
 
@@ -373,4 +373,3 @@ Run: `git add tests e2e .github/workflows/quality.yml && git commit -m "test: ve
 - [ ] **Step 6: Independent review and phase handoff**
 
 Run the independent spec/code review against the branch range from P0 commit `ff54c52`. Fix Critical and Important findings, re-run `npm run gate:full`, then prepare PR sections `Summary`, `User-visible changes`, `Validation`, and `Risks/Follow-ups`. Request user visual approval before P2.
-

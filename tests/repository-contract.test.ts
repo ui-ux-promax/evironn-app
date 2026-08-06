@@ -129,30 +129,60 @@ describe('repository contract', () => {
     );
   });
 
-  it('rejects direct route literals that are absent from the manifest', async () => {
+  it('rejects pathname route comparisons that are absent from the manifest', async () => {
     const contracts = await import('../scripts/check-repository.mjs');
     const fixture = createFixture();
 
     writeApp(
       fixture,
-      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst extra = '/catalog';\nexport { routes, extra };\n",
+      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst extra = window.location.pathname === '/catalog';\nexport { routes, extra };\n",
     );
     writeRouteManifest(fixture);
 
     expect(() => contracts.auditRepository(fixture)).toThrow('/catalog');
   });
 
-  it('allows web-root asset strings in App without treating them as routes', async () => {
+  it('allows web-root asset strings in App JSX without treating them as routes', async () => {
     const contracts = await import('../scripts/check-repository.mjs');
     const fixture = createFixture();
 
     writeApp(
       fixture,
-      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst image = '/assets/evironn-chair.webp';\nexport { image, routes };\n",
+      'import { publicRoutes } from \'./routes\';\nexport function App() {\n  const routes = publicRoutes;\n  return <img src="/assets/evironn-chair.webp" alt={routes[0]} />;\n}\n',
     );
     writeRouteManifest(fixture);
 
     expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
+  it('rejects pathname comparisons with asset-looking undeclared routes', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+
+    for (const appSource of [
+      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst catalog = window.location.pathname === '/catalog.svg';\nexport { catalog, routes };\n",
+      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst pathname = location.pathname;\nconst debug = pathname === '/assets/debug';\nexport { debug, routes };\n",
+    ]) {
+      const fixture = createFixture();
+
+      writeApp(fixture, appSource);
+      writeRouteManifest(fixture);
+      expect(() => contracts.auditRepository(fixture)).toThrow(
+        'direct route literal',
+      );
+    }
+  });
+
+  it('rejects undeclared routes in pathname switch branches', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeApp(
+      fixture,
+      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst pathname = window.location.pathname;\nswitch (pathname) {\n  case '/catalog':\n    break;\n}\nexport { routes };\n",
+    );
+    writeRouteManifest(fixture);
+
+    expect(() => contracts.auditRepository(fixture)).toThrow('/catalog');
   });
 
   it('defines markers that prevent provenance and local-path leakage', async () => {

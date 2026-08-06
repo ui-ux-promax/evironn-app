@@ -47,9 +47,6 @@ const forbiddenArtifactFilename =
   /(?:^|[-_.])(?:capture|generator|log|screenshot)(?:[-_.]|$)/i;
 const routeManifestPath = 'src/routes.ts';
 const applicationEntryPath = 'src/App.tsx';
-const staticAssetPath = /^\/assets\//;
-const staticAssetExtension =
-  /\.(?:avif|gif|jpe?g|png|svg|webp|woff2?)(?:[?#].*)?$/i;
 
 export const permittedRoutes = ['/', '/product'];
 export const forbiddenMarkers = [
@@ -173,20 +170,66 @@ function findApplicationRouteViolations(root, applicationEntry, routes) {
     ];
   }
 
-  const directRoutes = [...source.matchAll(/(['"])(\/[^'"]*)\1/g)].map(
-    ([, , route]) => route,
-  );
+  const directRoutes = findPathnameRouteLiterals(source);
 
   return directRoutes
-    .filter(
-      (route) =>
-        !staticAssetPath.test(route) && !staticAssetExtension.test(route),
-    )
     .filter((route) => !routes.includes(route))
     .map(
       (route) =>
         `${relative(root, applicationEntry)}: direct route literal is not declared in publicRoutes: ${route}`,
     );
+}
+
+function findPathnameRouteLiterals(source) {
+  const pathnameExpressions = ['(?:window\\.)?location\\.pathname'];
+  const pathnameAssignment =
+    /(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:window\.)?location\.pathname\b/g;
+
+  for (const [, variable] of source.matchAll(pathnameAssignment)) {
+    pathnameExpressions.push(escapeRegExp(variable));
+  }
+
+  return [
+    ...new Set(
+      pathnameExpressions.flatMap((expression) => [
+        ...findComparisonRouteLiterals(source, expression),
+        ...findSwitchRouteLiterals(source, expression),
+      ]),
+    ),
+  ];
+}
+
+function findComparisonRouteLiterals(source, pathnameExpression) {
+  const operator = '(?:===|!==|==|!=)';
+  const pathnameFirst = new RegExp(
+    `(?:${pathnameExpression})\\s*${operator}\\s*(['"])(\\/[^'"]*)\\1`,
+    'g',
+  );
+  const routeFirst = new RegExp(
+    `(['"])(\\/[^'"]*)\\1\\s*${operator}\\s*(?:${pathnameExpression})`,
+    'g',
+  );
+
+  return [
+    ...[...source.matchAll(pathnameFirst)].map(([, , route]) => route),
+    ...[...source.matchAll(routeFirst)].map(([, , route]) => route),
+  ];
+}
+
+function findSwitchRouteLiterals(source, pathnameExpression) {
+  const switchStatement = new RegExp(
+    `switch\\s*\\(\\s*(?:${pathnameExpression})\\s*\\)\\s*\\{([\\s\\S]*?)\\}`,
+    'g',
+  );
+  const caseLiteral = /case\s*(['"])(\/[^'"]*)\1\s*:/g;
+
+  return [...source.matchAll(switchStatement)].flatMap(([, body]) =>
+    [...body.matchAll(caseLiteral)].map(([, , route]) => route),
+  );
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function findViolations(root) {

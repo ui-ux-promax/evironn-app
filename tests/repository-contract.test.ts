@@ -142,6 +142,19 @@ describe('repository contract', () => {
     expect(() => contracts.auditRepository(fixture)).toThrow('/catalog');
   });
 
+  it('allows web-root asset strings in App without treating them as routes', async () => {
+    const contracts = await import('../scripts/check-repository.mjs');
+    const fixture = createFixture();
+
+    writeApp(
+      fixture,
+      "import { publicRoutes } from './routes';\nconst routes = publicRoutes;\nconst image = '/assets/evironn-chair.webp';\nexport { image, routes };\n",
+    );
+    writeRouteManifest(fixture);
+
+    expect(() => contracts.auditRepository(fixture)).not.toThrow();
+  });
+
   it('defines markers that prevent provenance and local-path leakage', async () => {
     const contracts = await import('../scripts/check-repository.mjs');
 

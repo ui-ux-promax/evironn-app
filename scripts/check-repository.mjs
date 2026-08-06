@@ -47,6 +47,9 @@ const forbiddenArtifactFilename =
   /(?:^|[-_.])(?:capture|generator|log|screenshot)(?:[-_.]|$)/i;
 const routeManifestPath = 'src/routes.ts';
 const applicationEntryPath = 'src/App.tsx';
+const staticAssetPath = /^\/assets\//;
+const staticAssetExtension =
+  /\.(?:avif|gif|jpe?g|png|svg|webp|woff2?)(?:[?#].*)?$/i;
 
 export const permittedRoutes = ['/', '/product'];
 export const forbiddenMarkers = [
@@ -175,6 +178,10 @@ function findApplicationRouteViolations(root, applicationEntry, routes) {
   );
 
   return directRoutes
+    .filter(
+      (route) =>
+        !staticAssetPath.test(route) && !staticAssetExtension.test(route),
+    )
     .filter((route) => !routes.includes(route))
     .map(
       (route) =>

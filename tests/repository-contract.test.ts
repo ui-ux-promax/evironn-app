@@ -59,7 +59,7 @@ const requiredScripts = {
   'test:e2e': 'playwright test',
   build: 'vite build',
   'check:repository': 'node scripts/check-repository.mjs',
-  gate: 'npm run format:check && npm run check:repository && npm run lint && npm run typecheck && npm run test',
+  gate: 'npm run format:check && npm run check:repository && npm run check:design-system && npm run lint && npm run typecheck && npm run test',
   'gate:full': 'npm run gate && npm run build && npm run test:e2e',
 };
 

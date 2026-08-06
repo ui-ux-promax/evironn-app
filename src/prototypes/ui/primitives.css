@@ -1,0 +1,262 @@
+.evp-button {
+  display: inline-flex;
+  min-height: var(--ev-ds-control-md);
+  align-items: center;
+  justify-content: center;
+  gap: var(--ev-ds-space-2);
+  padding: 0 var(--ev-ds-space-6);
+  border: 0;
+  border-radius: var(--ev-ds-radius-pill);
+  font-family: var(--ev-ds-font-body);
+  font-size: var(--ev-ds-type-control);
+  font-weight: var(--ev-ds-weight-semibold);
+  line-height: var(--ev-ds-leading-none);
+  cursor: pointer;
+  transition:
+    transform var(--ev-ds-motion-base) var(--ev-ds-motion-ease),
+    background-color var(--ev-ds-motion-base) var(--ev-ds-motion-ease),
+    box-shadow var(--ev-ds-motion-base) var(--ev-ds-motion-ease);
+}
+
+.evp-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.evp-button:focus-visible,
+.evp-field__input:focus-visible {
+  outline: 0;
+  box-shadow: var(--ev-ds-shadow-focus);
+}
+
+.evp-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.evp-button--small {
+  min-height: var(--ev-ds-control-sm);
+  padding-inline: var(--ev-ds-space-4);
+  font-size: var(--ev-ds-type-label);
+}
+
+.evp-button--large {
+  min-height: var(--ev-ds-control-lg);
+  padding-inline: var(--ev-ds-space-8);
+}
+
+.evp-button--primary {
+  background: hsl(var(--ev-ds-color-surface));
+  color: hsl(var(--ev-ds-color-text));
+  box-shadow: var(--ev-ds-shadow-button);
+}
+
+.evp-button--primary:hover:not(:disabled) {
+  box-shadow: var(--ev-ds-shadow-button-hover);
+}
+
+.evp-button--dark {
+  background: hsl(var(--ev-ds-color-text));
+  color: hsl(var(--ev-ds-color-primary-foreground));
+  box-shadow: var(--ev-ds-shadow-sm);
+}
+
+.evp-button--dark:hover:not(:disabled) {
+  background: hsl(var(--ev-ds-color-footer));
+  box-shadow: var(--ev-ds-shadow-md);
+}
+
+.evp-button--outline {
+  background: transparent;
+  color: hsl(var(--ev-ds-color-text));
+  box-shadow: var(--ev-ds-shadow-outline);
+}
+
+.evp-button--ghost {
+  background: transparent;
+  color: hsl(var(--ev-ds-color-text));
+}
+
+.evp-button--accent {
+  background: hsl(var(--ev-ds-color-accent));
+  color: hsl(var(--ev-ds-color-accent-foreground));
+  box-shadow: var(--ev-ds-shadow-sm);
+}
+
+.evp-button--warm {
+  background: hsl(var(--ev-ds-color-warm-accent));
+  color: hsl(var(--ev-ds-color-warm-accent-foreground));
+  box-shadow: var(--ev-ds-shadow-sm);
+}
+
+.evp-button--danger {
+  background: hsl(var(--ev-ds-color-danger));
+  color: hsl(var(--ev-ds-color-primary-foreground));
+  box-shadow: var(--ev-ds-shadow-sm);
+}
+
+.evp-button__spinner {
+  width: var(--ev-ds-space-4);
+  height: var(--ev-ds-space-4);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--ev-ds-radius-pill);
+  animation: evp-spin var(--ev-ds-motion-base) var(--ev-ds-motion-linear)
+    infinite;
+}
+
+.evp-badge {
+  display: inline-flex;
+  min-height: var(--ev-ds-space-8);
+  align-items: center;
+  padding-inline: var(--ev-ds-space-3);
+  border-radius: var(--ev-ds-radius-pill);
+  font-family: var(--ev-ds-font-body);
+  font-size: var(--ev-ds-type-label);
+  font-weight: var(--ev-ds-weight-bold);
+  letter-spacing: var(--ev-ds-tracking-label);
+  white-space: nowrap;
+}
+
+.evp-badge--dark {
+  background: hsl(var(--ev-ds-color-text));
+  color: hsl(var(--ev-ds-color-primary-foreground));
+}
+
+.evp-badge--light {
+  background: hsl(var(--ev-ds-color-surface));
+  color: hsl(var(--ev-ds-color-text));
+  box-shadow: var(--ev-ds-shadow-xs);
+}
+
+.evp-badge--warm {
+  background: hsl(var(--ev-ds-color-warm-accent));
+  color: hsl(var(--ev-ds-color-warm-accent-foreground));
+}
+
+.evp-badge--success {
+  background: hsl(var(--ev-ds-color-success) / 0.12);
+  color: hsl(var(--ev-ds-color-success));
+}
+
+.evp-badge--warning {
+  background: hsl(var(--ev-ds-color-warning) / 0.14);
+  color: hsl(var(--ev-ds-color-warning));
+}
+
+.evp-badge--danger {
+  background: hsl(var(--ev-ds-color-danger) / 0.1);
+  color: hsl(var(--ev-ds-color-danger));
+}
+
+.evp-badge--outline {
+  background: transparent;
+  color: hsl(var(--ev-ds-color-text));
+  box-shadow: var(--ev-ds-shadow-outline);
+}
+
+.evp-card {
+  overflow: hidden;
+  border-radius: var(--ev-ds-radius-lg);
+  background: hsl(var(--ev-ds-color-surface));
+  box-shadow: var(--ev-ds-shadow-sm);
+}
+
+.evp-field {
+  display: grid;
+  gap: var(--ev-ds-space-2);
+  font-family: var(--ev-ds-font-body);
+}
+
+.evp-field__label {
+  color: hsl(var(--ev-ds-color-text-muted));
+  font-size: var(--ev-ds-type-label);
+  font-weight: var(--ev-ds-weight-bold);
+  letter-spacing: var(--ev-ds-tracking-wide);
+  text-transform: uppercase;
+}
+
+.evp-field__input {
+  width: 100%;
+  min-height: var(--ev-ds-control-md);
+  padding: 0 var(--ev-ds-space-4);
+  border: 1px solid hsl(var(--ev-ds-color-border));
+  border-radius: var(--ev-ds-radius-sm);
+  background: hsl(var(--ev-ds-color-surface));
+  color: hsl(var(--ev-ds-color-text));
+  font-size: var(--ev-ds-type-control);
+  transition:
+    border-color var(--ev-ds-motion-fast) var(--ev-ds-motion-ease),
+    box-shadow var(--ev-ds-motion-fast) var(--ev-ds-motion-ease);
+}
+
+.evp-field__input:hover {
+  border-color: hsl(var(--ev-ds-color-text) / 0.2);
+}
+
+.evp-field__input[aria-invalid='true'] {
+  border-color: hsl(var(--ev-ds-color-danger));
+}
+
+.evp-field__helper,
+.evp-field__error {
+  font-size: var(--ev-ds-type-label);
+}
+
+.evp-field__helper {
+  color: hsl(var(--ev-ds-color-text-muted));
+}
+
+.evp-field__error {
+  color: hsl(var(--ev-ds-color-danger));
+  font-weight: var(--ev-ds-weight-semibold);
+}
+
+.evp-status {
+  display: grid;
+  gap: var(--ev-ds-space-2);
+  padding: var(--ev-ds-space-6);
+  border-radius: var(--ev-ds-radius-md);
+  background: hsl(var(--ev-ds-color-surface));
+  box-shadow: var(--ev-ds-shadow-sm);
+  font-family: var(--ev-ds-font-body);
+}
+
+.evp-status__title {
+  font-size: var(--ev-ds-type-control);
+  font-weight: var(--ev-ds-weight-semibold);
+}
+
+.evp-status__description {
+  color: hsl(var(--ev-ds-color-text-muted));
+  font-size: var(--ev-ds-type-body);
+  line-height: var(--ev-ds-leading-copy);
+}
+
+.evp-status__action {
+  margin-top: var(--ev-ds-space-2);
+}
+
+.evp-status--error {
+  background: hsl(var(--ev-ds-color-danger) / 0.07);
+}
+
+.evp-status--success {
+  background: hsl(var(--ev-ds-color-success) / 0.08);
+}
+
+@keyframes evp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evp-button,
+  .evp-field__input {
+    transition-duration: var(--ev-ds-motion-reduced);
+  }
+
+  .evp-button__spinner {
+    animation-duration: var(--ev-ds-motion-reduced);
+  }
+}

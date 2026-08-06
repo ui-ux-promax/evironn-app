@@ -273,16 +273,6 @@
   #evironn-hero {
     min-height: max(780px, 100dvh);
   }
-  #evironn-hero .furni-hero-font-selector {
-    top: 82px;
-    right: 16px;
-    min-height: 36px;
-    padding: 5px 8px 5px 10px;
-    font-size: 9px;
-  }
-  #evironn-hero .furni-hero-font-selector select {
-    min-width: 92px;
-  }
   #evironn-hero .furni-hero-media img {
     object-position: 38% center;
   }
@@ -320,18 +310,6 @@
 @media (max-width: 480px) {
   #evironn-hero {
     min-height: max(820px, 100dvh);
-  }
-  #evironn-hero .furni-hero-font-selector {
-    top: 76px;
-    right: 12px;
-    gap: 4px;
-    min-height: 32px;
-    padding: 4px 6px 4px 8px;
-    font-size: 8px;
-  }
-  #evironn-hero .furni-hero-font-selector select {
-    min-width: 82px;
-    padding: 4px 16px 4px 5px;
   }
   #evironn-hero .furni-hero-segments .seg-item {
     padding: 9px 3px;

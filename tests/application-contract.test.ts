@@ -86,4 +86,10 @@ describe('approved storefront application', () => {
       expect(existsSync(resolve(repositoryRoot, path)), path).toBe(false);
     }
   });
+
+  it('does not retain styles for the removed hero font selector', () => {
+    const heroStyles = readApplicationFile('src/components/Hero.css');
+
+    expect(heroStyles).not.toContain('furni-hero-font-selector');
+  });
 });

@@ -136,4 +136,14 @@ describe('approved storefront application', () => {
     expect(styles).toContain("--ev-font-body: 'Golos Text'");
     expect(styles).not.toContain("--ev-font-body: 'Evironn Header Sans'");
   });
+
+  it('ships the local Fraunces face used by the footer wordmark', () => {
+    const styles = readApplicationFile('src/index.css');
+
+    expect(
+      existsSync(resolve(repositoryRoot, 'src/assets/fraunces-latin.woff2')),
+    ).toBe(true);
+    expect(styles).toContain("font-family: 'Fraunces'");
+    expect(styles).toContain('assets/fraunces-latin.woff2');
+  });
 });

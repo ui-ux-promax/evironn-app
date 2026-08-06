@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "dev": "vite",
     "build": "vite build",
     "check:repository": "node scripts/check-repository.mjs",
     "gate": "npm run format:check && npm run check:repository && npm run lint && npm run typecheck && npm run test",

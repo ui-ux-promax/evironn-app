@@ -1,3 +1,5 @@
+@import './design-system/tokens.css';
+
 @font-face {
   font-family: 'Golos Text';
   src: url('./assets/golos-text-cyrillic.woff2') format('woff2');

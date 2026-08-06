@@ -1,0 +1,48 @@
+:root {
+  --ev-ds-color-bg: 40 20% 97%;
+  --ev-ds-color-surface: 0 0% 100%;
+  --ev-ds-color-surface-soft: 40 14% 94%;
+  --ev-ds-color-text: 30 6% 18%;
+  --ev-ds-color-text-muted: 30 4% 50%;
+  --ev-ds-color-primary: 30 6% 18%;
+  --ev-ds-color-primary-foreground: 0 0% 100%;
+  --ev-ds-color-accent: 150 8% 30%;
+  --ev-ds-color-accent-foreground: 0 0% 100%;
+  --ev-ds-color-warm-accent: 20 35% 52%;
+  --ev-ds-color-warm-accent-foreground: 0 0% 100%;
+  --ev-ds-color-border: 30 6% 91%;
+  --ev-ds-color-danger: 4 68% 50%;
+  --ev-ds-color-success: 145 25% 40%;
+  --ev-ds-color-warning: 38 80% 48%;
+  --ev-ds-color-info: 205 65% 45%;
+  --ev-ds-color-footer: 30 8% 12%;
+  --ev-ds-font-display: 'Golos Text', -apple-system, system-ui, sans-serif;
+  --ev-ds-font-body: 'Golos Text', -apple-system, system-ui, sans-serif;
+  --ev-ds-font-wordmark: 'Fraunces', Georgia, serif;
+  --ev-ds-radius-sm: 14px;
+  --ev-ds-radius-md: 20px;
+  --ev-ds-radius-lg: 28px;
+  --ev-ds-radius-pill: 999px;
+  --ev-ds-space-2: 8px;
+  --ev-ds-space-3: 12px;
+  --ev-ds-space-4: 16px;
+  --ev-ds-space-6: 24px;
+  --ev-ds-space-8: 32px;
+  --ev-ds-space-12: 48px;
+  --ev-ds-space-20: 80px;
+  --ev-ds-shadow-xs: 0 2px 8px hsl(var(--ev-ds-color-text) / 0.04);
+  --ev-ds-shadow-sm: 0 4px 16px hsl(var(--ev-ds-color-text) / 0.06);
+  --ev-ds-shadow-md: 0 12px 32px hsl(var(--ev-ds-color-text) / 0.08);
+  --ev-ds-shadow-lg: 0 24px 56px hsl(var(--ev-ds-color-text) / 0.1);
+  --ev-ds-shadow-xl: 0 40px 80px hsl(var(--ev-ds-color-text) / 0.12);
+  --ev-ds-shadow-button:
+    0 4px 14px hsl(var(--ev-ds-color-text) / 0.12),
+    0 2px 6px hsl(var(--ev-ds-color-text) / 0.08);
+  --ev-ds-shadow-button-hover:
+    0 8px 24px hsl(var(--ev-ds-color-text) / 0.16),
+    0 4px 10px hsl(var(--ev-ds-color-text) / 0.1);
+  --ev-ds-motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ev-ds-motion-fast: 0.18s;
+  --ev-ds-motion-base: 0.3s;
+  --ev-ds-motion-slow: 0.42s;
+}

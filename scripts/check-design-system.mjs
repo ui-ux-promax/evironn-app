@@ -4,6 +4,12 @@ import { extname, join, relative, resolve } from 'node:path';
 const root = resolve(process.cwd());
 const ownedRoots = ['src/design-system', 'src/prototypes', 'prototypes'];
 const tokenFile = resolve(root, 'src/design-system/tokens.css');
+const provenanceMarkers = [
+  new RegExp(['design', '-system', '.html'].join(''), 'i'),
+  new RegExp(['prototypes', '-furni'].join(''), 'i'),
+  new RegExp(['file', ':', '/', '/'].join(''), 'i'),
+  new RegExp('[A-Za-z]:' + '\\\\'),
+];
 const sourceExtensions = new Set(['.css', '.ts', '.tsx', '.js', '.mjs']);
 const violations = [];
 
@@ -60,12 +66,7 @@ for (const rootPath of ownedRoots.map((path) => resolve(root, path))) {
       const match = rule.pattern.exec(content);
       if (match) addViolation(file, rule.message, match);
     }
-    for (const marker of [
-      /design-system\.html/i,
-      /prototypes-furni/i,
-      /file:\/\//i,
-      /[A-Za-z]:\\/,
-    ]) {
+    for (const marker of provenanceMarkers) {
       const match = marker.exec(content);
       if (match)
         addViolation(file, 'forbidden provenance or absolute path', match);

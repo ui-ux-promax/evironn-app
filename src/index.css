@@ -1,0 +1,104 @@
+@font-face {
+  font-family: 'Evironn Header Sans';
+  src: url('./assets/evironn-header-sans.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ev-text: 30 6% 18%;
+  --ev-bg: hsl(40 20% 97%);
+  --ev-surface: hsl(0 0% 100%);
+  --ev-surface-soft: hsl(40 14% 94%);
+  --ev-card-bg: hsl(0 0% 100%);
+  --ev-ink: hsl(30 6% 18%);
+  --ev-ink-60: hsl(30 4% 50%);
+  --ev-accent: hsl(150 8% 30%);
+  --ev-warm-accent: hsl(20 35% 52%);
+  --ev-footer: hsl(30 8% 12%);
+  --ev-shadow-sm: 0 2px 8px rgb(46 38 30 / 8%);
+  --ev-shadow-md: 0 12px 32px rgb(46 38 30 / 12%);
+  --ev-font-display: 'Evironn Header Sans', system-ui, sans-serif;
+  --ev-font-body: 'Evironn Header Sans', system-ui, sans-serif;
+  --ev-font-serif: 'Evironn Header Sans', system-ui, sans-serif;
+  --ev-font-sans: 'Evironn Header Sans', system-ui, sans-serif;
+  --ev-radius-lg: 28px;
+  --ev-radius-pill: 999px;
+  --ev-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ev-container-width: 1400px;
+  --ev-page-gutter: clamp(20px, 6vw, 96px);
+  --ev-section-gap: clamp(64px, 10vw, 144px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--ev-bg);
+  color: hsl(var(--ev-text));
+  font-family: var(--ev-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  overflow-x: clip;
+}
+
+img {
+  display: block;
+}
+
+button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 3px solid rgb(255 255 255 / 96%);
+  outline-offset: 3px;
+}
+
+a:focus-visible {
+  outline: 3px solid hsl(var(--ev-text));
+  outline-offset: 4px;
+}
+
+.not-found {
+  display: grid;
+  min-height: 100dvh;
+  place-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.not-found h1 {
+  font-size: clamp(36px, 7vw, 72px);
+}
+
+.not-found a {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

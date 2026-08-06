@@ -51,6 +51,11 @@ const applicationEntryPath = 'src/App.tsx';
 export const permittedRoutes = ['/', '/product'];
 export const forbiddenMarkers = [
   'gr' + 'aft',
+  new RegExp(['cl', 'one'].join(''), 'i'),
+  new RegExp(['kan', 'va'].join(''), 'i'),
+  new RegExp(['dit', 'to'].join(''), 'i'),
+  new RegExp(['open', '\\s+design'].join(''), 'i'),
+  new RegExp('\\.' + ['cap', 'tures'].join(''), 'i'),
   'file' + '://',
   'http' + '://',
   'https' + '://',
@@ -260,7 +265,10 @@ function findViolations(root) {
       continue;
     }
 
-    const contents = readFileSync(file, 'utf8');
+    const contents = readFileSync(file, 'utf8').replace(
+      /xmlns(?::xlink)?=['"]http:\/\/www\.w3\.org\/[^'"]+['"]/g,
+      '',
+    );
     const marker = forbiddenMarkers.find((candidate) =>
       candidate instanceof RegExp
         ? candidate.test(contents)

@@ -189,8 +189,25 @@ describe('repository contract', () => {
     const contracts = await import('../scripts/check-repository.mjs');
 
     expect(contracts.forbiddenMarkers).toEqual(
-      expect.arrayContaining(['gr' + 'aft', 'file' + '://']),
+      expect.arrayContaining(['file' + '://']),
     );
+    for (const marker of [
+      ['gr', 'aft'].join(''),
+      ['cl', 'one'].join(''),
+      ['kan', 'va'].join(''),
+      ['dit', 'to'].join(''),
+      ['open', ' design'].join(''),
+      ['.cap', 'tures'].join(''),
+    ]) {
+      expect(
+        contracts.forbiddenMarkers.some((candidate: unknown) =>
+          candidate instanceof RegExp
+            ? candidate.test(marker)
+            : candidate === marker,
+        ),
+        marker,
+      ).toBe(true);
+    }
     expect(
       contracts.forbiddenMarkers.some(
         (marker: unknown) =>

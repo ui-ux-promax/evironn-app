@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 // ВАЖНО: Neon HTTP-адаптер НЕ поддерживает $transaction (см. lib/prisma-client.ts),
 // поэтому настоящей атомарности нет. Дизайн сделан ИДЕМПОТЕНТНЫМ/СХОДЯЩИМСЯ:
 //  - каждая позиция переносится атомарным upsert { increment } — защита от lost-update
-//    при параллельном add-to-cart и от P2002-гонки на @@unique([cartId, productVariantId]);
+//    при параллельном add-to-cart и от P2002-гонки по canonical SKU или legacy variant;
 //  - исходная позиция удаляется СРАЗУ после переноса → повтор после частичного сбоя
 //    (а Neon-сбои у нас реальны, см. P4) не задваивает уже перенесённое;
 //  - сливаются ВСЕ прежние корзины пользователя (Cart.userId НЕ уникален), не только одна;
@@ -38,11 +38,21 @@ export async function mergeGuestCart(guestToken: string | undefined, userId: str
   });
   for (const prior of priorCarts) {
     for (const item of prior.items) {
-      await prisma.cartItem.upsert({
-        where: { cartId_productVariantId: { cartId: guestCart.id, productVariantId: item.productVariantId } },
-        create: { cartId: guestCart.id, productVariantId: item.productVariantId, quantity: item.quantity },
-        update: { quantity: { increment: item.quantity } },
-      });
+      if (item.skuId) {
+        await prisma.cartItem.upsert({
+          where: { cartId_skuId: { cartId: guestCart.id, skuId: item.skuId } },
+          create: { cartId: guestCart.id, skuId: item.skuId, quantity: item.quantity },
+          update: { quantity: { increment: item.quantity } },
+        });
+      } else if (item.productVariantId) {
+        await prisma.cartItem.upsert({
+          where: { cartId_productVariantId: { cartId: guestCart.id, productVariantId: item.productVariantId } },
+          create: { cartId: guestCart.id, productVariantId: item.productVariantId, quantity: item.quantity },
+          update: { quantity: { increment: item.quantity } },
+        });
+      } else {
+        throw new Error(`Cart item ${item.id} has no catalog reference`);
+      }
       await prisma.cartItem.delete({ where: { id: item.id } });
     }
     await prisma.cart.delete({ where: { id: prior.id } });
@@ -51,11 +61,15 @@ export async function mergeGuestCart(guestToken: string | undefined, userId: str
   // Stock-clamp: ни одна позиция не должна превышать остаток на складе.
   const merged = await prisma.cartItem.findMany({
     where: { cartId: guestCart.id },
-    include: { productVariant: { select: { stock: true } } },
+    include: { sku: { select: { stock: true } }, productVariant: { select: { stock: true } } },
   });
   for (const item of merged) {
-    if (item.quantity > item.productVariant.stock) {
-      await prisma.cartItem.update({ where: { id: item.id }, data: { quantity: item.productVariant.stock } });
+    const stock = item.sku?.stock ?? item.productVariant?.stock;
+    if (stock === undefined) throw new Error(`Cart item ${item.id} has no catalog reference`);
+    if (stock <= 0) {
+      await prisma.cartItem.delete({ where: { id: item.id } });
+    } else if (item.quantity > stock) {
+      await prisma.cartItem.update({ where: { id: item.id }, data: { quantity: stock } });
     }
   }
 

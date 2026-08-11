@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOrderSnapshot } from '@/lib/order';
+import { buildOrderSnapshot, formatOrderItemConfiguration } from '@/lib/order';
 import type { CartWithItems } from '@/lib/cart-details';
 
 function fakeCart(): CartWithItems {
@@ -52,5 +52,71 @@ describe('buildOrderSnapshot', () => {
         lineTotal: 10000,
       },
     ]);
+  });
+
+  it('stores SKU identity, selected configuration, image, and pricing snapshot', () => {
+    const cart = {
+      items: [
+        {
+          id: 'ci2',
+          quantity: 1,
+          sku: {
+            id: 'sku2',
+            articleNumber: 'EV-NWL-OAK',
+            combinationKey: 'finish=oak|upholstery=ivory-boucle',
+            price: 124000,
+            oldPrice: 139000,
+            product: { name: 'Noma Woven Lounge', slug: 'noma-woven-lounge' },
+            media: [{ url: '/assets/noma.webp' }],
+            selections: [
+              {
+                optionGroup: { name: 'Отделка', slug: 'finish' },
+                optionValue: { name: 'Дуб', slug: 'oak' },
+              },
+              {
+                optionGroup: { name: 'Обивка', slug: 'upholstery' },
+                optionValue: { name: 'Кремовая букле', slug: 'ivory-boucle' },
+              },
+            ],
+          },
+        },
+      ],
+    } as unknown as CartWithItems;
+
+    expect(buildOrderSnapshot(cart).items[0]).toEqual({
+      skuId: 'sku2',
+      skuArticleNumber: 'EV-NWL-OAK',
+      skuCombinationKey: 'finish=oak|upholstery=ivory-boucle',
+      productName: 'Noma Woven Lounge',
+      productSlug: 'noma-woven-lounge',
+      configuration: [
+        { groupSlug: 'finish', groupName: 'Отделка', valueSlug: 'oak', valueName: 'Дуб' },
+        { groupSlug: 'upholstery', groupName: 'Обивка', valueSlug: 'ivory-boucle', valueName: 'Кремовая букле' },
+      ],
+      imageUrl: '/assets/noma.webp',
+      unitPrice: 124000,
+      oldUnitPrice: 139000,
+      quantity: 1,
+      lineTotal: 124000,
+    });
+  });
+});
+
+describe('formatOrderItemConfiguration', () => {
+  it('formats canonical immutable configuration JSON', () => {
+    expect(
+      formatOrderItemConfiguration({
+        configuration: [
+          { groupName: 'Finish', valueName: 'Oak' },
+          { groupName: 'Fabric', valueName: 'Ivory' },
+        ],
+      }),
+    ).toBe('Finish: Oak · Fabric: Ivory');
+  });
+
+  it('falls back to legacy snapshot fields and ignores malformed JSON', () => {
+    expect(formatOrderItemConfiguration({ configuration: { unsafe: true }, colorwayName: 'Black', size: 'M' })).toBe(
+      'Black · Размер M',
+    );
   });
 });

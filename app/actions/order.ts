@@ -17,12 +17,18 @@ import { adjustSalesCount } from '@/lib/sales-count';
 
 export type PlaceOrderResult = { ok: true; orderNumber: number; paymentUrl?: string } | { ok: false; error: string };
 
-async function restoreStock(items: { id: string; qty: number }[]): Promise<void> {
+type ReservedStock = { kind: 'sku' | 'variant'; id: string; qty: number };
+
+async function restoreStock(items: ReservedStock[]): Promise<void> {
   for (const it of items) {
     try {
-      await prisma.productVariant.update({ where: { id: it.id }, data: { stock: { increment: it.qty } } });
+      if (it.kind === 'sku') {
+        await prisma.sku.update({ where: { id: it.id }, data: { stock: { increment: it.qty } } });
+      } else {
+        await prisma.productVariant.update({ where: { id: it.id }, data: { stock: { increment: it.qty } } });
+      }
     } catch (e) {
-      logger.error('place_order_stock_restore_failed', e, { variantId: it.id });
+      logger.error('place_order_stock_restore_failed', e, { catalogKind: it.kind, catalogId: it.id });
     }
   }
 }
@@ -86,18 +92,31 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
     const cart = await prisma.cart.findFirst({ where: { id: owner.id }, include: cartInclude });
     if (!cart || cart.items.length === 0) return { ok: false, error: 'Корзина пуста' };
 
-    const inactive = cart.items.find((i) => !i.productVariant.active || !i.productVariant.colorway.product.active);
+    const inactive = cart.items.find((i) =>
+      i.sku
+        ? !i.sku.active || !i.sku.product.active
+        : !i.productVariant || !i.productVariant.active || !i.productVariant.colorway.product.active,
+    );
     if (inactive) {
       return {
         ok: false,
-        error: `Товар «${inactive.productVariant.colorway.product.name}» больше недоступен, удалите его из корзины`,
+        error: `Товар «${inactive.sku?.product.name ?? inactive.productVariant?.colorway.product.name ?? 'Товар'}» больше недоступен, удалите его из корзины`,
       };
     }
 
     snapshot = buildOrderSnapshot(cart);
     cartId = cart.id;
     cartToken = cart.token;
-    salesItems = cart.items.map((i) => ({ productId: i.productVariant.colorway.product.id, quantity: i.quantity }));
+    salesItems = cart.items.flatMap((i) =>
+      i.sku
+        ? [{ productId: i.sku.product.id, quantity: i.quantity }]
+        : i.productVariant
+          ? [{ productId: i.productVariant.colorway.product.id, quantity: i.quantity }]
+          : [],
+    );
+    if (salesItems.length !== cart.items.length) {
+      return { ok: false, error: 'Корзина требует обновления' };
+    }
   }
 
   // Купон — повторная валидация на сервере (источник истины; клиентскому couponCode не доверяем).
@@ -114,18 +133,32 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   const shippingAmount = calcShipping(snapshot.itemsTotal, form.shippingMethod);
   const totalAmount = snapshot.itemsTotal - discountAmount + shippingAmount;
 
-  const decremented: { id: string; qty: number }[] = [];
+  const decremented: ReservedStock[] = [];
   for (const it of snapshot.items) {
+    const reference = it.skuId
+      ? ({ kind: 'sku', id: it.skuId } as const)
+      : it.productVariantId
+        ? ({ kind: 'variant', id: it.productVariantId } as const)
+        : null;
+    if (!reference) {
+      return { ok: false, error: 'Состав корзины требует обновления' };
+    }
     // A conditional update reserves stock without a read-then-write race.
-    const updated = await prisma.productVariant.updateMany({
-      where: { id: it.productVariantId, stock: { gte: it.quantity } },
-      data: { stock: { decrement: it.quantity } },
-    });
+    const updated =
+      reference.kind === 'sku'
+        ? await prisma.sku.updateMany({
+            where: { id: reference.id, stock: { gte: it.quantity } },
+            data: { stock: { decrement: it.quantity } },
+          })
+        : await prisma.productVariant.updateMany({
+            where: { id: reference.id, stock: { gte: it.quantity } },
+            data: { stock: { decrement: it.quantity } },
+          });
     if (updated.count === 0) {
       await restoreStock(decremented);
       return { ok: false, error: `Товар «${it.productName}» закончился, обновите корзину` };
     }
-    decremented.push({ id: it.productVariantId, qty: it.quantity });
+    decremented.push({ ...reference, qty: it.quantity });
   }
 
   let orderId: string;
@@ -239,7 +272,12 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
-      items: { include: { productVariant: { select: { colorway: { select: { productId: true } } } } } },
+      items: {
+        include: {
+          canonicalSku: { select: { productId: true } },
+          productVariant: { select: { colorway: { select: { productId: true } } } },
+        },
+      },
       payment: true,
     },
   });
@@ -257,10 +295,14 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
     if (result.count === 0) return false;
 
     for (const item of order.items) {
-      await tx.productVariant.update({
-        where: { id: item.productVariantId },
-        data: { stock: { increment: item.quantity } },
-      });
+      if (item.skuId) {
+        await tx.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+      } else if (item.productVariantId) {
+        await tx.productVariant.update({
+          where: { id: item.productVariantId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
     }
     return true;
   });
@@ -276,14 +318,26 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
 
   // Популярность: −продажи по товарам отменённого заказа (симметрично возврату стока).
   await adjustSalesCount(
-    order.items.map((i) => ({ productId: i.productVariant.colorway.productId, quantity: i.quantity })),
+    order.items.flatMap((i) =>
+      i.canonicalSku
+        ? [{ productId: i.canonicalSku.productId, quantity: i.quantity }]
+        : i.productVariant
+          ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }]
+          : [],
+    ),
     -1,
   );
 
   // Отмена аннулирует «покупку»: снять осиротевшие отзывы по товарам этого заказа
   // (если по товару не осталось другого квалифицирующего заказа). PDP — force-dynamic,
   // перечитает список при следующем рендере, так что отдельная ревалидация не нужна.
-  const productIds = [...new Set(order.items.map((i) => i.productVariant.colorway.productId))];
+  const productIds = [
+    ...new Set(
+      order.items.flatMap((i) =>
+        i.canonicalSku ? [i.canonicalSku.productId] : i.productVariant ? [i.productVariant.colorway.productId] : [],
+      ),
+    ),
+  ];
   await pruneReviewsAfterCancel(userId, productIds);
 
   revalidatePath('/profile');

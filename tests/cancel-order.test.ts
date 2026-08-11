@@ -10,6 +10,7 @@ vi.mock('@/lib/prisma-client', () => ({
     $transaction: vi.fn(),
     order: { findUnique: vi.fn(), updateMany: vi.fn() },
     productVariant: { update: vi.fn() },
+    sku: { update: vi.fn() },
     product: { update: vi.fn() },
   },
 }));
@@ -28,6 +29,7 @@ const authMock = auth as unknown as ReturnType<typeof vi.fn>;
 const findUnique = prisma.order.findUnique as unknown as ReturnType<typeof vi.fn>;
 const orderUpdateMany = prisma.order.updateMany as unknown as ReturnType<typeof vi.fn>;
 const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
+const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
 const productUpdate = prisma.product.update as unknown as ReturnType<typeof vi.fn>;
 const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 
@@ -49,6 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   authMock.mockResolvedValue({ user: { id: 'u1' } });
   variantUpdate.mockResolvedValue({});
+  skuUpdate.mockResolvedValue({});
   orderUpdateMany.mockResolvedValue({ count: 1 });
   productUpdate.mockResolvedValue({});
   cancelPaymentMock.mockResolvedValue(undefined);
@@ -110,5 +113,28 @@ describe('cancelOrder', () => {
     variantUpdate.mockRejectedValueOnce(new Error('database unavailable'));
 
     await expect(cancelOrder('o1')).rejects.toThrow('database unavailable');
+  });
+
+  it('restores canonical SKU stock and product side effects', async () => {
+    findUnique.mockResolvedValue({
+      ...pendingOrder(),
+      items: [
+        {
+          skuId: 'sku-1',
+          productVariantId: null,
+          quantity: 2,
+          canonicalSku: { productId: 'product-1' },
+          productVariant: null,
+        },
+      ],
+    });
+
+    expect(await cancelOrder('o1')).toEqual({ ok: true });
+    expect(skuUpdate).toHaveBeenCalledWith({ where: { id: 'sku-1' }, data: { stock: { increment: 2 } } });
+    expect(productUpdate).toHaveBeenCalledWith({
+      where: { id: 'product-1' },
+      data: { salesCount: { increment: -2 } },
+    });
+    expect(pruneMock).toHaveBeenCalledWith('u1', ['product-1']);
   });
 });

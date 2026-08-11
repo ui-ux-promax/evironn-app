@@ -1,10 +1,10 @@
-# Phase 2 catalog pilot agent workflow
+# Phase 2 catalog pilot — historical workflow
 
 ## Scope
 
-This document records the bounded Phase 2 catalog pilot. It does not authorize the remainder of the storefront phase.
+This document records the completed bounded catalog experiment. It is superseded by `docs/superpowers/full-frontend-migration-workflow.md` and authorizes no further work.
 
-Current execution boundary: Task 1 is complete. Task 2 is the only next authorized implementation task. Stop after Task 2 review and verification; Tasks 3 and 4 in the draft implementation plan remain deferred until explicit user approval.
+Tasks 1, 2, and 3 produced reusable canonical catalog/PDP logic. Their temporary visual presentation was not accepted as Evironn frontend delivery. Task 4 is cancelled in favor of Phase 2A/2B/2C.
 
 The pilot covers only the approved catalog work selected by the planning agent from `docs/roadmap/ROADMAP.md` and the existing furniture catalog implementation. It must preserve the server-authority, normalized SKU, 360-media, and deferred-scope decisions in `docs/roadmap/DECISIONS.md`.
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Deliver near-complete functional parity with the `fashion-shop` commerce platform while replacing its fashion domain and presentation with the Evironn furniture store. `D:\Новая папка (2)\evironn-clone` is a read-only local design archive. Production work lives in `D:\Projects\evironn`.
+Deliver near-complete functional parity with the `fashion-shop` commerce platform while replacing its fashion domain and presentation with the complete Evironn furniture frontend. `D:\Новая папка (2)\evironn-clone` is the read-only normative frontend implementation source. `D:\Projects\fashion-shop` is the read-only technical source. Production work lives in `D:\Projects\evironn`.
 
 ## Architecture retained
 
@@ -12,7 +12,7 @@ Deliver near-complete functional parity with the `fashion-shop` commerce platfor
 - Upstash, Sentry, CI, Vercel
 - Proven commerce, payment reliability, security, and operational modules where domain-neutral
 
-Evironn UI, furniture data model, catalog behavior, checkout services, admin forms, and related DTOs replace the inherited fashion implementation. Blog, newsletter, FAQ, and legal content are deferred beyond MVP.
+Visual composition, copy, interactions, responsive behavior, CSS, and selected route variants come from `evironn-clone`. Next.js routing, rendering, metadata, Prisma, authentication, commerce, payments, security, CI, and operations come from the production foundation. Framework and data boundaries are adapted without redesigning the accepted Evironn frontend. Blog, newsletter, FAQ, and legal content are deferred beyond MVP.
 
 ## Delivery rules
 
@@ -39,12 +39,34 @@ Branch: `phase/01-furniture-domain`
 
 Branch: `phase/02-storefront`
 
-- Port selected Evironn home, catalog, and product detail interfaces.
-- Add server pagination and URL-driven catalog filters.
-- Resolve selected options to a SKU on `/product/[slug]`; update price, stock, and media.
-- Use Tailwind for layout/UI; isolate complex effects and animation CSS.
-- Add reduced-motion behavior plus turntable poster/fallback handling.
-- Require desktop/mobile preview acceptance before merge.
+Phase 2 uses three acceptance-gated deliveries on one branch. Existing canonical catalog and PDP logic stays; temporary RITM-derived presentation does not qualify as delivered UI.
+
+### Phase 2A — storefront foundation and complete home
+
+- Port the exact Evironn fonts, tokens, reset, focus, reduced-motion behavior, `Header`, `Footer15`, not-found page, and complete eight-section home composition.
+- Preserve clone JSX structure, class names, scoped CSS, interaction helpers, copy, responsive behavior, `framer-motion`, and `react-icons` unless Next.js requires a documented adapter.
+- Copy only production-referenced Phase 2A assets; do not copy the full archive or development variants.
+- Replace Vite routing with App Router pages and `next/link`; connect navigation to production routes and catalog query URLs.
+- Remove inherited RITM shell/home presentation only after replacement tests pass.
+- Stop for user desktop/mobile visual acceptance before Phase 2B.
+
+### Phase 2B — selected catalog UI
+
+- Port selected `CatalogVariantB`, its primitives, cards, CSS, interactions, and responsive states.
+- Keep Task 2 server filters, facets, deterministic sorting, pagination, Prisma predicates, and furniture card DTOs.
+- Make URL state authoritative through a narrow server-to-clone adapter.
+- Temporarily point every product card to the single showcase URL.
+- Stop for user desktop/mobile visual acceptance before Phase 2C.
+
+### Phase 2C — exact showcase PDP
+
+- Port the complete clone `ProductPage` and its fixed room, glass panel, six upholstery/wood visual combinations, accordions, benefits, responsive behavior, reduced motion, and full-screen 360 interaction.
+- Reuse Task 3 server option parsing, canonical SKU resolution, metadata, structured data, and resilient media logic through a showcase DTO.
+- Keep add-to-cart visually complete but decorative until Phase 3.
+- Redirect non-showcase product routes to the showcase until validated product media packs exist.
+- Stop for desktop/mobile acceptance plus all six combinations and 360 states.
+
+Phase 2 merges only after all three deliveries pass automated checks and user visual acceptance.
 
 ## Phase 3 — commerce and authentication
 
@@ -52,6 +74,7 @@ Branch: `phase/03-commerce-auth`
 
 - Adapt Auth.js credentials, Google OAuth, verification, roles, and middleware.
 - Implement guest cart/wishlist and merge both after sign-in.
+- Port selected clone interfaces: cart A, auth B, and profile A. Connect them to production Auth.js and canonical commerce state; do not ship clone mocks.
 - Deliver profile, addresses, coupons, server-side totals, and stock validation.
 - Prepare reviews with purchase eligibility enforcement.
 
@@ -66,6 +89,7 @@ Branch: `phase/04-checkout-orders`
 - Create orders, snapshots, and stock deductions transactionally.
 - Preserve idempotent webhook processing, payment resync, cancellation, and stock restoration.
 - Complete verified-purchase reviews.
+- Port checkout A and order A, connecting them to server-authoritative delivery, payment, and order state; do not ship clone mocks.
 
 ## Phase 5 — admin and demo admin
 
@@ -75,6 +99,7 @@ Branch: `phase/05-admin-demo`
 - Deliver dashboard, categories, products, option matrix, SKUs, stock, media/360, orders, customers, roles, and coupons.
 - Reuse Cloudinary signing/deletion with an Evironn-only folder allowlist.
 - Keep `/demo-admin` public, read-only, synthetic, independent from Prisma and mutations.
+- Port the accepted clone admin visual system for both protected admin and demo admin shells.
 - Require admin preview acceptance before merge.
 
 ## Phase 6 — hardening and release

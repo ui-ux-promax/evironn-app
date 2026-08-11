@@ -3,11 +3,12 @@
 ## Current state
 
 - Bootstrap: complete in the repository root commit `init`.
-- Active phase: Phase 2 — storefront catalog pilot.
+- Active phase: Phase 2 — full storefront migration.
 - Integration branch: `dev`.
 - Current branch: `phase/02-storefront` from updated `dev`.
-- Phase state: Phase 1 accepted and merged; bounded Phase 2 catalog pilot in progress.
-- Next phase: remainder of Phase 2, only after explicit pilot and visual-review approval.
+- Phase state: Phase 1 accepted and merged; Phase 2 migration strategy corrected and approved.
+- Current delivery: Phase 2A — shared Evironn storefront foundation and complete home.
+- Next delivery: Phase 2B only after Phase 2A automated and desktop/mobile visual acceptance.
 
 ## Bootstrap contents
 
@@ -40,13 +41,17 @@ Latest local Phase 1 validation before the final documentation-only rerun:
 - Furniture seed — executed twice successfully and remained idempotent: 5 categories, 5 rooms, 12 products, 17 SKUs, and 15 media records.
 - Turntable contract — one category has a configured turntable product and one turntable video; the separate `neon_auth` schema remained intact.
 
-## Phase 2 catalog pilot
+## Phase 2 recovery
 
-- Scope is bounded to the approved catalog pilot; remaining storefront scope is deferred.
-- Agent workflow is tracked in `docs/superpowers/phase-2-catalog-pilot-workflow.md`.
+- The prior catalog pilot is closed as an implementation experiment. Its historical workflow remains in `docs/superpowers/phase-2-catalog-pilot-workflow.md`.
+- Approved corrected design: `docs/superpowers/specs/2026-08-12-full-frontend-migration-design.md`, committed as `8044c06`.
+- Authoritative workflow: `docs/superpowers/full-frontend-migration-workflow.md`.
 - Durable subagent progress is recorded in `.superpowers/sdd/progress.md`.
 - Task 1 canonical storefront projections are complete and independently approved in commits `03e94bb` and `1b9fc3d`.
 - Database-safe Vercel bootstrap is committed as `0c14739`; deployment builds no longer run `prisma db push`.
 - Preview branch deployment is ready at `https://evironn-app-git-phase-02-storefront-s1aw3ns-projects.vercel.app`.
 - Task 2 URL-driven furniture catalog with server pagination is implemented in commit `3045183`, reviewed by fresh Sol Medium reviewer, and coordinator-verified: focused Vitest 22/22, typecheck pass, catalog E2E 5/5. Local E2E emitted Auth.js `UntrustedHost` and Tailwind ambiguous-class warnings without test failures.
-- Next step: user desktop/mobile evaluation of the bounded catalog pilot. Tasks 3 and 4 remain deferred until explicit approval.
+- Task 3 canonical furniture PDP and resilient 360 media are implemented in commits `2afad2b` and `1299585`, reviewed and coordinator-verified. Product E2E remains blocked by a 60-second no-output local runtime timeout; build passes with pre-existing warnings.
+- Task 2/3 server logic remains accepted for reuse. Their temporary inherited presentation is not accepted and cannot satisfy the Phase 2 visual gate.
+- Phase 2 cannot merge until Phase 2A, 2B, and 2C are complete and visually accepted.
+- Next action: review and execute `docs/superpowers/plans/2026-08-12-phase-2a-storefront-foundation-home.md`. No storefront code has been authorized by the documentation correction alone.

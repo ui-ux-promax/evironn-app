@@ -242,13 +242,13 @@ export const furnitureProducts: SeedProduct[] = [
       image('/assets/products/03-ivory-lounge-idle.webp', 'Noma Woven Lounge'),
       {
         kind: 'TURN_TABLE_VIDEO',
-        url: '/assets/products/03-ivory-lounge-turntable-alpha-v3.webm',
+        url: '/assets/products/03-ivory-lounge-turntable.mp4',
         alt: 'Noma Woven Lounge 360',
         sortOrder: 0,
       },
       {
         kind: 'TURN_TABLE_POSTER',
-        url: '/assets/products/03-ivory-lounge-turntable-alpha-v3-poster.png',
+        url: '/assets/products/03-ivory-lounge-turntable-alpha-poster.png',
         alt: 'Noma Woven Lounge 360 poster',
         sortOrder: 0,
       },

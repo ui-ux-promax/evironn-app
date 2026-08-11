@@ -12,6 +12,7 @@ vi.mock('@/lib/prisma-client', () => ({
   prisma: {
     cart: { findFirst: vi.fn() },
     productVariant: { findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
+    sku: { updateMany: vi.fn(), update: vi.fn() },
     order: { create: vi.fn(), delete: vi.fn() },
     orderItem: { create: vi.fn() },
     cartItem: { deleteMany: vi.fn() },
@@ -29,6 +30,8 @@ const cartFindFirst = prisma.cart.findFirst as unknown as ReturnType<typeof vi.f
 const productVariantFindUniqueMock = prisma.productVariant.findUnique as unknown as ReturnType<typeof vi.fn>;
 const variantUpdateMany = prisma.productVariant.updateMany as unknown as ReturnType<typeof vi.fn>;
 const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
+const skuUpdateMany = prisma.sku.updateMany as unknown as ReturnType<typeof vi.fn>;
+const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
 const orderCreate = prisma.order.create as unknown as ReturnType<typeof vi.fn>;
 const orderItemCreate = prisma.orderItem.create as unknown as ReturnType<typeof vi.fn>;
 const orderDelete = prisma.order.delete as unknown as ReturnType<typeof vi.fn>;
@@ -79,6 +82,8 @@ beforeEach(() => {
   authMock.mockResolvedValue({ user: { id: 'u1' } });
   cookiesMock.mockResolvedValue({ get: () => ({ value: 't' }) });
   variantUpdate.mockResolvedValue({});
+  skuUpdate.mockResolvedValue({});
+  skuUpdateMany.mockResolvedValue({ count: 1 });
   productVariantFindUniqueMock.mockResolvedValue(null);
   variantUpdateMany.mockResolvedValue({ count: 1 });
   cartItemDeleteMany.mockResolvedValue({ count: 1 });
@@ -172,6 +177,57 @@ describe('placeOrder', () => {
     expect(variantUpdateMany).toHaveBeenCalledWith({
       where: { id: buyNowVariantId, stock: { gte: 1 } },
       data: { stock: { decrement: 1 } },
+    });
+  });
+
+  it('creates an order from a canonical furniture SKU cart item', async () => {
+    cartFindFirst.mockResolvedValue({
+      id: 'c1',
+      token: 't',
+      items: [
+        {
+          id: 'ci1',
+          cartId: 'c1',
+          skuId: 'sku-1',
+          productVariantId: null,
+          quantity: 2,
+          createdAt: new Date(0),
+          productVariant: null,
+          sku: {
+            id: 'sku-1',
+            articleNumber: 'EV-NWL-OAK',
+            combinationKey: 'finish=oak',
+            price: 124000,
+            oldPrice: 139000,
+            stock: 3,
+            active: true,
+            product: { id: 'product-1', name: 'Noma', slug: 'noma', active: true },
+            media: [{ url: '/assets/noma.webp' }],
+            selections: [
+              {
+                optionGroup: { name: 'Отделка', slug: 'finish' },
+                optionValue: { name: 'Дуб', slug: 'oak' },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 3025 });
+
+    expect(await placeOrder(validForm)).toEqual({ ok: true, orderNumber: 3025 });
+    expect(skuUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'sku-1', stock: { gte: 2 } },
+      data: { stock: { decrement: 2 } },
+    });
+    expect(orderItemCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orderId: 'o1',
+        skuId: 'sku-1',
+        skuArticleNumber: 'EV-NWL-OAK',
+        quantity: 2,
+        lineTotal: 248000,
+      }),
     });
   });
 });

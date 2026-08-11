@@ -50,8 +50,9 @@ export async function recalcCartTotalByToken(token: string): Promise<CartWithIte
   const cart = await prisma.cart.findFirst({ where: { token }, include: cartInclude });
   if (!cart) return null;
   const totalAmount = cart.items.reduce((acc, i) => {
-    if (!i.productVariant) throw new Error('Cart item is missing legacy product variant');
-    return acc + calcLineTotal(i.productVariant.price, i.quantity);
+    const unitPrice = i.sku?.price ?? i.productVariant?.price;
+    if (unitPrice === undefined) throw new Error('Cart item is missing a catalog reference');
+    return acc + calcLineTotal(unitPrice, i.quantity);
   }, 0);
   await prisma.cart.update({ where: { id: cart.id }, data: { totalAmount } });
   return { ...cart, totalAmount };

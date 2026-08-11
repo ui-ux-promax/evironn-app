@@ -267,6 +267,13 @@ export const furnitureProductSchema = z
           });
         }
       }
+      if (selectedGroups.size !== groups.size) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'SKU должен выбрать ровно одно значение каждой группы товара',
+          path: ['skus', skuIndex, 'selectedOptions'],
+        });
+      }
     }
 
     if (product.active && !product.skus.some((sku) => sku.active)) {

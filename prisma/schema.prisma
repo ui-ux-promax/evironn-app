@@ -175,6 +175,7 @@ model OptionValue {
   products      ProductOptionValue[]
   skuSelections SkuOptionValue[]
 
+  @@unique([id, optionGroupId])
   @@unique([optionGroupId, slug])
   @@index([optionGroupId, sortOrder])
 }
@@ -196,7 +197,7 @@ model ProductOptionValue {
   optionValueId String
   product       Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   productOption ProductOptionGroup @relation(fields: [productId, optionGroupId], references: [productId, optionGroupId], onDelete: Cascade)
-  optionValue   OptionValue        @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+  optionValue   OptionValue        @relation(fields: [optionValueId, optionGroupId], references: [id, optionGroupId], onDelete: Cascade)
 
   @@id([productId, optionGroupId, optionValueId])
   @@index([optionValueId])
@@ -228,7 +229,7 @@ model SkuOptionValue {
   optionValueId String
   sku           Sku         @relation(fields: [skuId], references: [id], onDelete: Cascade)
   optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict)
-  optionValue   OptionValue @relation(fields: [optionValueId], references: [id], onDelete: Restrict)
+  optionValue   OptionValue @relation(fields: [optionValueId, optionGroupId], references: [id, optionGroupId], onDelete: Restrict)
 
   @@id([skuId, optionValueId])
   @@unique([skuId, optionGroupId])

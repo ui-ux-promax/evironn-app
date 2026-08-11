@@ -5,7 +5,7 @@ import { AdminPanel } from '@/components/admin/admin-panel';
 import { prisma } from '@/lib/prisma-client';
 import { Icon } from '@/components/admin/icon';
 import { formatPrice, formatDateTime } from '@/lib/format';
-import { orderStatusView } from '@/lib/order';
+import { formatOrderItemConfiguration, orderStatusView } from '@/lib/order';
 import { paymentStatusView } from '@/lib/order-admin';
 import { OrderStatusActions } from '../_components/order-status-actions';
 
@@ -74,7 +74,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-admin-on-surface truncate">{it.productName}</div>
                     <div className="text-xs text-admin-on-surface-variant">
-                      {it.colorwayName} · Размер {it.size} · {it.sku}
+                      {formatOrderItemConfiguration(it)} · {it.skuArticleNumber ?? it.sku ?? '—'}
                     </div>
                   </div>
                   <div className="text-right text-sm tabular-nums">

@@ -63,6 +63,11 @@ describe('getReviewEligibility', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           status: { not: 'CANCELLED' },
+          items: {
+            some: {
+              OR: [{ canonicalSku: { productId: 'p1' } }, { productVariant: { colorway: { productId: 'p1' } } }],
+            },
+          },
           OR: [{ paymentMethod: 'cod' }, { payment: { is: { status: 'succeeded' } } }],
         }),
       }),

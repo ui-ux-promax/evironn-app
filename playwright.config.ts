@@ -24,7 +24,9 @@ export default defineConfig({
     // dev-сервер: NODE_ENV=development → cookie cartToken без secure → сохраняется по http
     // (в prod-сборке secure:true и cookie не персистится по http в e2e). Прогрев маршрутов — в globalSetup.
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    // Server readiness must not depend on database/auth availability. Individual
+    // scenarios and global setup own those checks; a static asset only proves Next is listening.
+    url: 'http://localhost:3000/assets/products/01-bar-stool-idle.webp',
     reuseExistingServer: false,
     timeout: 180_000,
     // E2E-фикс код верификации: generateCode вернёт его вместо случайного (только не-prod),

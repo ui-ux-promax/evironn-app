@@ -1,5 +1,4 @@
 ﻿import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Prisma } from '@prisma/client';
 
 const fixedNow = new Date('2026-07-02T10:00:00.000Z');
 
@@ -9,6 +8,7 @@ vi.mock('@/lib/prisma-client', () => ({
     payment: { update: vi.fn(), updateMany: vi.fn(), findUnique: vi.fn() },
     order: { update: vi.fn(), updateMany: vi.fn() },
     productVariant: { update: vi.fn() },
+    sku: { update: vi.fn() },
     product: { update: vi.fn() },
   },
 }));
@@ -27,6 +27,7 @@ const paymentFindUnique = prisma.payment.findUnique as unknown as ReturnType<typ
 const orderUpdate = prisma.order.update as unknown as ReturnType<typeof vi.fn>;
 const orderUpdateMany = prisma.order.updateMany as unknown as ReturnType<typeof vi.fn>;
 const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
+const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
 const productUpdate = prisma.product.update as unknown as ReturnType<typeof vi.fn>;
 
 const orderItems = [{ productVariantId: 'v1', quantity: 2, productVariant: { colorway: { productId: 'prod_1' } } }];
@@ -48,6 +49,7 @@ beforeEach(() => {
   orderUpdate.mockResolvedValue({});
   orderUpdateMany.mockResolvedValue({ count: 1 });
   variantUpdate.mockResolvedValue({});
+  skuUpdate.mockResolvedValue({});
   productUpdate.mockResolvedValue({});
   paymentFindUnique.mockResolvedValue(payment());
 });
@@ -67,7 +69,12 @@ describe('reconcilePaymentStatus', () => {
       include: {
         order: {
           include: {
-            items: { include: { productVariant: { select: { colorway: { select: { productId: true } } } } } },
+            items: {
+              include: {
+                canonicalSku: { select: { productId: true } },
+                productVariant: { select: { colorway: { select: { productId: true } } } },
+              },
+            },
           },
         },
       },
@@ -142,6 +149,35 @@ describe('reconcilePaymentStatus', () => {
     expect(productUpdate).toHaveBeenCalledWith({ where: { id: 'prod_1' }, data: { salesCount: { increment: -2 } } });
     expect(paymentUpdate).not.toHaveBeenCalled();
     expect(orderUpdate).not.toHaveBeenCalled();
+  });
+
+  it('canceled canonical order restores SKU stock and product sales count', async () => {
+    paymentFindUnique.mockResolvedValue({
+      ...payment(),
+      order: {
+        id: 'o1',
+        status: 'PENDING',
+        items: [
+          {
+            skuId: 'sku-1',
+            productVariantId: null,
+            quantity: 2,
+            canonicalSku: { productId: 'product-1' },
+            productVariant: null,
+          },
+        ],
+      },
+    });
+
+    expect(await reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'canceled', source: 'webhook' })).toEqual({
+      kind: 'applied',
+      transition: 'canceled',
+    });
+    expect(skuUpdate).toHaveBeenCalledWith({ where: { id: 'sku-1' }, data: { stock: { increment: 2 } } });
+    expect(productUpdate).toHaveBeenCalledWith({
+      where: { id: 'product-1' },
+      data: { salesCount: { increment: -2 } },
+    });
   });
 
   it('repeated canceled repairs a pending order without restoring stock twice after repair loses', async () => {

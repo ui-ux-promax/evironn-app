@@ -38,6 +38,7 @@ const paymentWithOrderInclude = {
     include: {
       items: {
         include: {
+          canonicalSku: { select: { productId: true } },
           productVariant: { select: { colorway: { select: { productId: true } } } },
         },
       },
@@ -87,20 +88,30 @@ async function cancelPendingOrder(orderId: string): Promise<boolean> {
 
 async function restoreCanceledOrderSideEffects(payment: PaymentWithOrder): Promise<void> {
   for (const item of payment.order.items) {
-    if (!item.productVariantId) continue;
     try {
-      await prisma.productVariant.update({
-        where: { id: item.productVariantId },
-        data: { stock: { increment: item.quantity } },
-      });
+      if (item.skuId) {
+        await prisma.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+      } else if (item.productVariantId) {
+        await prisma.productVariant.update({
+          where: { id: item.productVariantId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
     } catch (e) {
-      logger.error('payment_canceled_stock_restore_failed', e, { variantId: item.productVariantId });
+      logger.error('payment_canceled_stock_restore_failed', e, {
+        skuId: item.skuId,
+        variantId: item.productVariantId,
+      });
     }
   }
 
   await adjustSalesCount(
     payment.order.items.flatMap((i) =>
-      i.productVariant ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }] : [],
+      i.canonicalSku
+        ? [{ productId: i.canonicalSku.productId, quantity: i.quantity }]
+        : i.productVariant
+          ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }]
+          : [],
     ),
     -1,
   );

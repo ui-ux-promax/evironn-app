@@ -1,6 +1,5 @@
 import type { CartWithItems } from '@/lib/cart-details';
 import { calcLineTotal } from '@/lib/cart-details';
-import { normalizeSize } from '@/lib/format';
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FLAT } from '@/constants/config';
 
 export type ShippingMethod = 'courier' | 'pickup';
@@ -31,6 +30,24 @@ export interface OrderItemSnapshot {
 export interface OrderSnapshot {
   items: OrderItemSnapshot[];
   itemsTotal: number;
+}
+
+export function formatOrderItemConfiguration(item: {
+  configuration?: unknown;
+  colorwayName?: string | null;
+  size?: string | null;
+}): string {
+  if (Array.isArray(item.configuration)) {
+    const labels = item.configuration.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return [];
+      const groupName = 'groupName' in entry ? entry.groupName : null;
+      const valueName = 'valueName' in entry ? entry.valueName : null;
+      return typeof groupName === 'string' && typeof valueName === 'string' ? [`${groupName}: ${valueName}`] : [];
+    });
+    if (labels.length > 0) return labels.join(' · ');
+  }
+
+  return [item.colorwayName, item.size ? `Размер ${item.size}` : null].filter(Boolean).join(' · ') || 'Конфигурация';
 }
 
 export function buildOrderSnapshot(cart: CartWithItems): OrderSnapshot {

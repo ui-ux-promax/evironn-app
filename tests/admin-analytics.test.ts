@@ -5,6 +5,7 @@ vi.mock('@/lib/prisma-client', () => {
     order: { aggregate: vi.fn(), count: vi.fn(), groupBy: vi.fn(), findMany: vi.fn() },
     user: { count: vi.fn() },
     productVariant: { findMany: vi.fn() },
+    sku: { findMany: vi.fn() },
     product: { findMany: vi.fn() },
     $queryRaw: vi.fn(),
   };
@@ -103,13 +104,14 @@ describe('analytics pure core', () => {
   });
 });
 
-import { getKpis, getStatusDistribution, getLowStock, getRevenueSeries } from '@/lib/admin/analytics';
+import { getBestSellers, getKpis, getStatusDistribution, getLowStock, getRevenueSeries } from '@/lib/admin/analytics';
 import { prisma } from '@/lib/prisma-client';
 
 const p = prisma as unknown as {
   order: Record<string, ReturnType<typeof vi.fn>>;
   user: Record<string, ReturnType<typeof vi.fn>>;
   productVariant: Record<string, ReturnType<typeof vi.fn>>;
+  sku: Record<string, ReturnType<typeof vi.fn>>;
   product: Record<string, ReturnType<typeof vi.fn>>;
   $queryRaw: ReturnType<typeof vi.fn>;
 };
@@ -167,6 +169,7 @@ describe('getStatusDistribution', () => {
 describe('getLowStock', () => {
   it('classifies tier by stock and shapes rows', async () => {
     vi.clearAllMocks();
+    p.sku.findMany.mockResolvedValue([]);
     p.productVariant.findMany.mockResolvedValue([
       { id: 'v1', stock: 2, sku: 'A-1', size: 'M', colorway: { name: 'Black', product: { name: 'Urban Flow' } } },
       { id: 'v2', stock: 7, sku: 'B-2', size: 'XL', colorway: { name: 'White', product: { name: 'Cloud' } } },
@@ -174,6 +177,49 @@ describe('getLowStock', () => {
     const rows = await getLowStock(prisma as never);
     expect(rows[0]).toMatchObject({ id: 'v1', tier: 'critical', productName: 'Urban Flow', size: 'M', stock: 2 });
     expect(rows[1]).toMatchObject({ id: 'v2', tier: 'warning', productName: 'Cloud', size: 'XL', stock: 7 });
+  });
+
+  it('includes canonical furniture SKUs', async () => {
+    vi.clearAllMocks();
+    p.productVariant.findMany.mockResolvedValue([]);
+    p.sku.findMany.mockResolvedValue([
+      {
+        id: 'sku-1',
+        stock: 2,
+        articleNumber: 'EV-NWL-OAK',
+        product: { name: 'Noma' },
+        selections: [
+          { optionGroup: { name: 'Finish' }, optionValue: { name: 'Oak' } },
+          { optionGroup: { name: 'Fabric' }, optionValue: { name: 'Ivory' } },
+        ],
+      },
+    ]);
+
+    expect(await getLowStock(prisma as never)).toEqual([
+      expect.objectContaining({
+        id: 'sku-1',
+        productName: 'Noma',
+        colorwayName: 'Finish: Oak',
+        size: 'Fabric: Ivory',
+        sku: 'EV-NWL-OAK',
+        stock: 2,
+        tier: 'critical',
+      }),
+    ]);
+  });
+});
+
+describe('getBestSellers', () => {
+  it('joins both canonical SKUs and legacy variants', async () => {
+    vi.clearAllMocks();
+    p.$queryRaw.mockResolvedValue([]);
+
+    await getBestSellers(prisma as never, RANGE);
+
+    const query = p.$queryRaw.mock.calls[0][0] as { sql: string };
+    expect(query.sql).toContain('LEFT JOIN "Sku"');
+    expect(query.sql).toContain('LEFT JOIN "ProductVariant"');
+    expect(query.sql).toContain('COALESCE(s."productId", pc."productId")');
   });
 });
 

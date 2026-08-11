@@ -24,11 +24,12 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       // Позиция должна принадлежать корзине ВЛАДЕЛЬЦА (по cartId, не по cookie-токену).
       const item = await prisma.cartItem.findFirst({
         where: { id, cartId: owner.id },
-        include: { productVariant: { select: { stock: true } } },
+        include: { sku: { select: { stock: true } }, productVariant: { select: { stock: true } } },
       });
       if (!item) return NextResponse.json({ message: 'Позиция не найдена' }, { status: 404 });
-      if (!item.productVariant) return NextResponse.json({ message: 'Корзина требует обновления' }, { status: 409 });
-      if (item.productVariant.stock < parsed.data.quantity) {
+      const stock = item.sku?.stock ?? item.productVariant?.stock;
+      if (stock === undefined) return NextResponse.json({ message: 'Корзина требует обновления' }, { status: 409 });
+      if (stock < parsed.data.quantity) {
         return NextResponse.json({ message: 'Недостаточно на складе' }, { status: 409 });
       }
 

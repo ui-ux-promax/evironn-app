@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOrderSnapshot } from '@/lib/order';
+import { buildOrderSnapshot, formatOrderItemConfiguration } from '@/lib/order';
 import type { CartWithItems } from '@/lib/cart-details';
 
 function fakeCart(): CartWithItems {
@@ -99,5 +99,24 @@ describe('buildOrderSnapshot', () => {
       quantity: 1,
       lineTotal: 124000,
     });
+  });
+});
+
+describe('formatOrderItemConfiguration', () => {
+  it('formats canonical immutable configuration JSON', () => {
+    expect(
+      formatOrderItemConfiguration({
+        configuration: [
+          { groupName: 'Finish', valueName: 'Oak' },
+          { groupName: 'Fabric', valueName: 'Ivory' },
+        ],
+      }),
+    ).toBe('Finish: Oak · Fabric: Ivory');
+  });
+
+  it('falls back to legacy snapshot fields and ignores malformed JSON', () => {
+    expect(formatOrderItemConfiguration({ configuration: { unsafe: true }, colorwayName: 'Black', size: 'M' })).toBe(
+      'Black · Размер M',
+    );
   });
 });

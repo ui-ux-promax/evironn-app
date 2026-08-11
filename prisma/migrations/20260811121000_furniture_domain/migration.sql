@@ -157,7 +157,8 @@ CREATE TABLE "Sku" (
     "stock" INTEGER NOT NULL DEFAULT 0,
     "active" BOOLEAN NOT NULL DEFAULT true,
 
-    CONSTRAINT "Sku_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Sku_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "Sku_price_stock_check" CHECK ("price" >= 0 AND "stock" >= 0 AND ("oldPrice" IS NULL OR "oldPrice" > "price"))
 );
 
 -- CreateTable
@@ -273,7 +274,9 @@ CREATE TABLE "CartItem" (
     "quantity" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "CartItem_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "CartItem_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "CartItem_exactly_one_catalog_reference" CHECK (num_nonnulls("skuId", "productVariantId") = 1),
+    CONSTRAINT "CartItem_quantity_check" CHECK ("quantity" > 0)
 );
 
 -- CreateTable
@@ -321,7 +324,10 @@ CREATE TABLE "OrderItem" (
     "quantity" INTEGER NOT NULL,
     "lineTotal" INTEGER NOT NULL,
 
-    CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "OrderItem_snapshot_identity_check" CHECK ("skuArticleNumber" IS NOT NULL OR "sku" IS NOT NULL),
+    CONSTRAINT "OrderItem_canonical_snapshot_check" CHECK ("skuArticleNumber" IS NULL OR ("skuCombinationKey" IS NOT NULL AND "configuration" IS NOT NULL)),
+    CONSTRAINT "OrderItem_pricing_check" CHECK ("unitPrice" >= 0 AND "quantity" > 0 AND "lineTotal" = "unitPrice" * "quantity" AND ("oldUnitPrice" IS NULL OR "oldUnitPrice" > "unitPrice"))
 );
 
 -- CreateTable
@@ -471,6 +477,9 @@ CREATE INDEX "OptionValue_optionGroupId_sortOrder_idx" ON "OptionValue"("optionG
 
 -- CreateIndex
 CREATE UNIQUE INDEX "OptionValue_optionGroupId_slug_key" ON "OptionValue"("optionGroupId", "slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OptionValue_id_optionGroupId_key" ON "OptionValue"("id", "optionGroupId");
 
 -- CreateIndex
 CREATE INDEX "ProductOptionGroup_optionGroupId_idx" ON "ProductOptionGroup"("optionGroupId");
@@ -626,7 +635,7 @@ ALTER TABLE "ProductOptionValue" ADD CONSTRAINT "ProductOptionValue_productId_fk
 ALTER TABLE "ProductOptionValue" ADD CONSTRAINT "ProductOptionValue_productId_optionGroupId_fkey" FOREIGN KEY ("productId", "optionGroupId") REFERENCES "ProductOptionGroup"("productId", "optionGroupId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ProductOptionValue" ADD CONSTRAINT "ProductOptionValue_optionValueId_fkey" FOREIGN KEY ("optionValueId") REFERENCES "OptionValue"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ProductOptionValue" ADD CONSTRAINT "ProductOptionValue_optionValueId_optionGroupId_fkey" FOREIGN KEY ("optionValueId", "optionGroupId") REFERENCES "OptionValue"("id", "optionGroupId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Sku" ADD CONSTRAINT "Sku_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -638,7 +647,7 @@ ALTER TABLE "SkuOptionValue" ADD CONSTRAINT "SkuOptionValue_skuId_fkey" FOREIGN 
 ALTER TABLE "SkuOptionValue" ADD CONSTRAINT "SkuOptionValue_optionGroupId_fkey" FOREIGN KEY ("optionGroupId") REFERENCES "OptionGroup"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SkuOptionValue" ADD CONSTRAINT "SkuOptionValue_optionValueId_fkey" FOREIGN KEY ("optionValueId") REFERENCES "OptionValue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "SkuOptionValue" ADD CONSTRAINT "SkuOptionValue_optionValueId_optionGroupId_fkey" FOREIGN KEY ("optionValueId", "optionGroupId") REFERENCES "OptionValue"("id", "optionGroupId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ProductMedia" ADD CONSTRAINT "ProductMedia_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;

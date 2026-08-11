@@ -9,16 +9,6 @@ function discountPercent(price: number, oldPrice: number | null): number {
   return Math.round(((oldPrice - price) / oldPrice) * 100);
 }
 
-async function down() {
-  // Keep users, orders, payments, and immutable order snapshots. Catalog references
-  // are nullable on snapshots, so reseeding cannot rewrite purchase history.
-  await prisma.cartItem.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.optionGroup.deleteMany();
-  await prisma.room.deleteMany();
-  await prisma.category.deleteMany();
-}
-
 async function up() {
   const roomIdBySlug = new Map<string, string>();
   for (const room of rooms) {
@@ -174,9 +164,9 @@ async function up() {
         const optionValueId = optionValueIdByKey.get(`${selected.groupSlug}:${selected.valueSlug}`);
         if (!optionValueId) throw new Error(`Option value not found: ${selected.groupSlug}/${selected.valueSlug}`);
         await prisma.skuOptionValue.upsert({
-          where: { skuId_optionValueId: { skuId: savedSku.id, optionValueId } },
+          where: { skuId_optionGroupId: { skuId: savedSku.id, optionGroupId: optionGroup.id } },
           create: { skuId: savedSku.id, optionGroupId: optionGroup.id, optionValueId },
-          update: { optionGroupId: optionGroup.id },
+          update: { optionValueId },
         });
       }
     }
@@ -229,7 +219,6 @@ async function up() {
 }
 
 async function main() {
-  await down();
   await up();
   const [categoryN, roomN, productN, groupN, valueN, skuN, mediaN] = await Promise.all([
     prisma.category.count(),

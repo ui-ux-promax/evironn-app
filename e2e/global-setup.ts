@@ -6,28 +6,30 @@ import { neon } from '@neondatabase/serverless';
 // РІ fetch-С‚Р°Р№РјР°СѓС‚, Р° POST /api/cart РґРµР»Р°РµС‚ РЅРµСЃРєРѕР»СЊРєРѕ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅС‹С… Р·Р°РїСЂРѕСЃРѕРІ).
 export default async function globalSetup() {
   const ctx = await request.newContext({ baseURL: 'http://localhost:3000' });
+  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL;
 
   // 1) READ-РјР°СЂС€СЂСѓС‚С‹ (РєРѕРјРїРёР»СЏС†РёСЏ dev + РїСЂРѕР±СѓР¶РґРµРЅРёРµ compute)
-  for (const u of [
-    '/api/cart',
-    '/',
-    '/catalog',
-    '/catalog?category=tees',
-    '/product/ritm-white-tee-oversize',
-    '/wishlist',
-  ]) {
-    for (let attempt = 1; attempt <= 8; attempt++) {
-      try {
-        const res = await ctx.get(u, { timeout: 60_000 });
-        if (res.ok()) break;
-      } catch {
-        /* С‚СЂР°РЅР·РёРµРЅС‚РЅС‹Р№ cold-start вЂ” РїРѕРІС‚РѕСЂСЏРµРј */
+  if (url) {
+    for (const u of [
+      '/api/cart',
+      '/',
+      '/catalog',
+      '/catalog?category=tees',
+      '/product/ritm-white-tee-oversize',
+      '/wishlist',
+    ]) {
+      for (let attempt = 1; attempt <= 8; attempt++) {
+        try {
+          const res = await ctx.get(u, { timeout: 60_000 });
+          if (res.ok()) break;
+        } catch {
+          /* С‚СЂР°РЅР·РёРµРЅС‚РЅС‹Р№ cold-start вЂ” РїРѕРІС‚РѕСЂСЏРµРј */
+        }
       }
     }
-  }
 
-  // 2) WRITE-РїСѓС‚СЊ: СЂРµР°Р»СЊРЅС‹Р№ POST /api/cart (findOrCreateCartв†’variantв†’cartItemв†’recalc) РїСЂРѕРіСЂРµРІР°РµС‚ Р·Р°РїРёСЃСЊ.
-  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL;
+    // 2) WRITE-РїСѓС‚СЊ: СЂРµР°Р»СЊРЅС‹Р№ POST /api/cart (findOrCreateCartв†’variantв†’cartItemв†’recalc) РїСЂРѕРіСЂРµРІР°РµС‚ Р·Р°РїРёСЃСЊ.
+  }
   try {
     if (url) {
       const sql = neon(url);

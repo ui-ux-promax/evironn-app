@@ -215,6 +215,41 @@ describe('furnitureProductSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects an SKU that omits one product option group', () => {
+    const result = furnitureProductSchema.safeParse({
+      name: 'Chair',
+      slug: 'chair',
+      categoryId: 'chairs',
+      roomIds: ['dining'],
+      specs: [],
+      active: false,
+      sortOrder: 1,
+      optionGroups: [
+        { name: 'Отделка', slug: 'finish', sortOrder: 1, values: [{ name: 'Дуб', slug: 'oak', sortOrder: 0 }] },
+        {
+          name: 'Обивка',
+          slug: 'upholstery',
+          sortOrder: 2,
+          values: [{ name: 'Букле', slug: 'boucle', sortOrder: 0 }],
+        },
+      ],
+      skus: [
+        {
+          articleNumber: 'EV-CHAIR',
+          combinationKey: 'finish=oak',
+          selectedOptions: [{ groupSlug: 'finish', valueSlug: 'oak' }],
+          price: 100,
+          oldPrice: null,
+          stock: 1,
+          active: true,
+        },
+      ],
+      media: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it('validates one complete turntable media set', () => {
     const result = furnitureProductSchema.safeParse({
       name: 'Noma Woven Lounge',

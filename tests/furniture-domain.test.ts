@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { buildCombinationKey } from '@/lib/furniture-sku';
-import { furnitureCategories, furnitureProducts } from '../prisma/seed-data';
+import { furnitureCategories, furnitureProducts, rooms } from '../prisma/seed-data';
 
 describe('furniture SKU combinations', () => {
   it('builds canonical keys independent of option input order', () => {
@@ -42,6 +44,52 @@ describe('furniture seed integrity', () => {
     expect(new Set(articleNumbers).size).toBe(articleNumbers.length);
     expect(new Set(combinationKeys).size).toBe(combinationKeys.length);
     expect(furnitureProducts.every((product) => product.optionGroups.length > 0)).toBe(true);
+  });
+
+  it('defines a complete valid option selection and canonical key for every SKU', () => {
+    for (const product of furnitureProducts) {
+      const groupSlugs = product.optionGroups.map((group) => group.slug);
+      const valuesByGroup = new Map(
+        product.optionGroups.map((group) => [group.slug, new Set(group.values.map((value) => value.slug))]),
+      );
+      expect(new Set(groupSlugs).size, product.slug).toBe(groupSlugs.length);
+
+      for (const sku of product.skus) {
+        expect(sku.selectedOptions.map((selection) => selection.groupSlug).sort(), sku.articleNumber).toEqual(
+          [...groupSlugs].sort(),
+        );
+        for (const selection of sku.selectedOptions) {
+          expect(valuesByGroup.get(selection.groupSlug)?.has(selection.valueSlug), sku.articleNumber).toBe(true);
+        }
+        expect(buildCombinationKey(sku.selectedOptions), sku.articleNumber).toBe(sku.combinationKey);
+        expect(sku.price, sku.articleNumber).toBeGreaterThanOrEqual(0);
+        expect(sku.stock, sku.articleNumber).toBeGreaterThanOrEqual(0);
+        if (sku.oldPrice !== null) expect(sku.oldPrice, sku.articleNumber).toBeGreaterThan(sku.price);
+      }
+    }
+  });
+
+  it('references known rooms, categories and existing local media assets', () => {
+    const roomSlugs = new Set(rooms.map((room) => room.slug));
+    const categorySlugs = new Set(furnitureCategories.map((category) => category.slug));
+
+    for (const product of furnitureProducts) {
+      expect(categorySlugs.has(product.categorySlug), product.slug).toBe(true);
+      expect(product.roomSlugs.length, product.slug).toBeGreaterThan(0);
+      expect(
+        product.roomSlugs.every((slug) => roomSlugs.has(slug)),
+        product.slug,
+      ).toBe(true);
+      expect(
+        product.media.some((media) => media.kind === 'IMAGE'),
+        product.slug,
+      ).toBe(true);
+      for (const media of product.media) {
+        if (media.url.startsWith('/')) {
+          expect(existsSync(resolve(process.cwd(), 'public', media.url.slice(1))), media.url).toBe(true);
+        }
+      }
+    }
   });
 
   it('keeps one optional turntable product contract per category', () => {

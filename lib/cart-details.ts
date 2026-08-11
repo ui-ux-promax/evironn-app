@@ -1,5 +1,4 @@
 import type { Prisma } from '@prisma/client';
-import { normalizeSize } from '@/lib/format';
 import type { CartDetails, CartStateItem } from '@/services/dto/cart.dto';
 
 // CLIENT-SAFE модуль: НЕ импортирует prisma-client (`@prisma/client` рантайм),

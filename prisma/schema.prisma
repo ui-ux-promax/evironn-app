@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+enum Gender {
+  MEN
+  WOMEN
+  UNISEX
+  KIDS
+}
+
+model Category {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  tagline    String?
+  coverImage         String?
+  coverImagePublicId String?
+  sortOrder          Int       @default(0)
+  products   Product[]
+
+  @@index([sortOrder])
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  brand        String
+  gender       Gender   @default(UNISEX)
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+  description  String?
+  fitNote      String?
+  specs        Json?
+  isBestseller Boolean  @default(false)
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  // Денормализованные ключи сортировки каталога (DB-уровень orderBy/skip/take).
+  // minPrice/discountPct — снимок дефолтной расцветки (самый дешёвый активный вариант);
+  // их ОБЯЗАН пересчитывать любой будущий путь записи цены/isDefault/active варианта
+  // (admin Phase 3). Сегодня единственный такой путь — сид. salesCount движется как сток.
+  salesCount   Int      @default(0)
+  minPrice     Int      @default(0)
+  discountPct  Int      @default(0)
+  createdAt    DateTime @default(now())
+  colorways    ProductColorway[]
+  reviews      Review[]
+  wishlistItems WishlistItem[]
+
+  @@index([categoryId, sortOrder])
+  @@index([brand])
+  @@index([gender])
+  @@index([active])
+  @@index([salesCount])
+  @@index([minPrice])
+}
+
+model ProductColorway {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  swatchHex String?
+  isDefault Boolean @default(false)
+  sortOrder Int     @default(0)
+  images    ProductImage[]
+  variants  ProductVariant[]
+
+  @@unique([productId, slug])
+  @@index([productId])
+}
+
+model ProductImage {
+  id         String          @id @default(cuid())
+  colorwayId String
+  colorway   ProductColorway @relation(fields: [colorwayId], references: [id], onDelete: Cascade)
+  url        String
+  publicId   String?
+  alt        String?
+  sortOrder  Int             @default(0)
+
+  @@index([colorwayId, sortOrder])
+}
+
+model ProductVariant {
+  id             String          @id @default(cuid())
+  colorwayId     String
+  colorway       ProductColorway @relation(fields: [colorwayId], references: [id], onDelete: Cascade)
+  size           String
+  sizeOrder      Int             @default(0)
+  sku            String          @unique
+  price          Int
+  compareAtPrice Int?
+  stock          Int             @default(0)
+  active         Boolean         @default(true)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+
+  @@unique([colorwayId, size])
+  @@index([colorwayId])
+}
+
+model Cart {
+  id          String     @id @default(cuid())
+  token       String     @unique
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  totalAmount Int        @default(0)
+  items       CartItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  name          String?
+  phone         String?
+  birthdate     DateTime?
+  role          UserRole  @default(CUSTOMER)
+  isPortfolioFixture Boolean @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  carts         Cart[]
+  orders        Order[]
+  reviews       Review[]
+  wishlists     Wishlist[]
+  addresses     Address[]
+
+  @@index([role])
+  @@index([isPortfolioFixture])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String   @default("Дом")
+  city      String
+  street    String
+  comment   String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model CartItem {
+  id               String         @id @default(cuid())
+  cartId           String
+  cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  quantity         Int            @default(1)
+  createdAt        DateTime       @default(now())
+
+  @@unique([cartId, productVariantId])
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    Int         @unique @default(autoincrement())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  status         OrderStatus @default(PENDING)
+
+  contactName    String
+  contactPhone   String
+  contactEmail   String
+
+  shippingMethod String
+  city           String
+  addressLine    String
+  addressComment String?
+
+  itemsTotal     Int
+  discountAmount Int         @default(0)
+  shippingAmount Int
+  totalAmount    Int
+  couponCode     String?
+
+  paymentMethod  String
+
+  items          OrderItem[]
+  payment        Payment?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id               String         @id @default(cuid())
+  orderId          String
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  sku          String
+  productName  String
+  colorwayName String
+  size         String
+  imageUrl     String?
+  unitPrice    Int
+  quantity     Int
+  lineTotal    Int
+
+  @@index([orderId])
+}
+
+model Payment {
+  id              String    @id
+  orderId         String    @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status          String    @default("pending")
+  confirmationUrl String?
+  amount          Int
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Coupon {
+  id        String    @id @default(cuid())
+  code      String    @unique          // нормализованный: trim + UPPERCASE
+  percent   Int                        // 1..100, процент скидки на сумму товаров
+  active    Boolean   @default(true)
+  expiresAt DateTime?                   // null = бессрочный
+  createdAt DateTime  @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int                       // 1..5 (валидация в коде, fail-closed)
+  body      String?
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([productId, createdAt])
+}
+
+model Wishlist {
+  id        String         @id @default(cuid())
+  token     String         @unique
+  userId    String?
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+}
+
+// P2.2c email-фаза владеет этими моделями и их кодом (ветка feat/phase2.2c-email-resend).
+// Здесь — ТОЛЬКО схема: таблицы уже есть в общей Neon-БД (email-деплой их создал), и без
+// этих моделей `prisma db push` на деплое main-ветки пытался бы их дропнуть. Идентичны
+// определениям в email-ветке → при мерже обеих в main конфликта нет. Кода, использующего
+// их, в этой ветке нет — таблицы просто не трогаются.
+
+model EmailVerificationCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Subscriber {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  source          String    @default("footer")
+  resendContactId String?
+  unsubscribedAt  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}

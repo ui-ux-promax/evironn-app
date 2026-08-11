@@ -1,0 +1,20 @@
+name: Deployment Smoke
+on:
+  deployment_status:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SMOKE_BASE_URL: ${{ github.event.deployment_status.target_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run smoke:production

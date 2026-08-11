@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "prisma db push --skip-generate && next build",
+  "crons": [{ "path": "/api/cron/reset-demo", "schedule": "0 3 * * *" }]
+}

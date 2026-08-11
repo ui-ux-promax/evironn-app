@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { getPaymentStatus } from '@/lib/yookassa';
 import { reconcilePaymentStatus } from '@/lib/payment-sync';
 import { logger } from '@/lib/logger';
+import { formatOrderItemConfiguration } from '@/lib/order';
 import { OrderStatusBadge } from '@/components/shared/orders/order-status-badge';
 import { CancelOrderButton } from '@/components/shared/orders/cancel-order-button';
 import { ReviewForm } from '@/components/shared/product/review-form';
@@ -28,12 +29,13 @@ const fmtDateTime = new Intl.DateTimeFormat('ru-RU', {
 const orderInclude = {
   items: {
     include: {
+      canonicalSku: { select: { product: { select: { id: true, slug: true, name: true } } } },
       productVariant: {
         select: {
           colorway: {
             select: {
               productId: true,
-              product: { select: { slug: true, name: true } },
+              product: { select: { id: true, slug: true, name: true } },
             },
           },
         },
@@ -107,7 +109,7 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-line p-5 max-[640px]:grid-cols-1">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2.5">
-              <h1 className="font-display text-[28px] font-extrabold tracking-tight">RITM-{order.orderNumber}</h1>
+              <h1 className="font-display text-[28px] font-extrabold tracking-tight">EV-{order.orderNumber}</h1>
               <OrderStatusBadge status={order.status} paymentStatus={order.payment?.status} />
             </div>
             <p className="text-sm text-ink-muted">
@@ -182,10 +184,16 @@ function collectProductsInOrder(order: OrderDetail): ProductInOrder[] {
   const products: ProductInOrder[] = [];
   const seen = new Set<string>();
   for (const item of order.items) {
-    const colorway = item.productVariant.colorway;
-    if (seen.has(colorway.productId)) continue;
-    seen.add(colorway.productId);
-    products.push({ id: colorway.productId, slug: colorway.product.slug, name: colorway.product.name });
+    const product = item.canonicalSku?.product ?? item.productVariant?.colorway.product;
+    const productId = item.canonicalSku?.product.id ?? item.productVariant?.colorway.product.id;
+    if (!product || !productId) continue;
+    if (seen.has(productId)) continue;
+    seen.add(productId);
+    products.push({
+      id: productId,
+      slug: product.slug,
+      name: product.name,
+    });
   }
   return products;
 }
@@ -291,10 +299,12 @@ function ReviewCard({ products, reviewedProductIds }: { products: ProductInOrder
 }
 
 function OrderLine({ item }: { item: OrderDetail['items'][number] }) {
+  const productSlug = item.canonicalSku?.product.slug ?? item.productVariant?.colorway.product.slug ?? item.productSlug;
+  const href = productSlug ? `/product/${productSlug}` : '/catalog';
   return (
     <div className="grid grid-cols-[54px_minmax(0,1fr)_auto] items-center gap-3 border-t border-line p-3 first:border-t-0">
       <Link
-        href={`/product/${item.productVariant.colorway.product.slug}`}
+        href={href}
         className="relative h-[60px] w-[54px] overflow-hidden rounded-[12px] border border-line bg-surface-soft"
       >
         {item.imageUrl && (
@@ -302,14 +312,11 @@ function OrderLine({ item }: { item: OrderDetail['items'][number] }) {
         )}
       </Link>
       <div className="min-w-0">
-        <Link
-          href={`/product/${item.productVariant.colorway.product.slug}`}
-          className="block truncate text-[13.5px] font-bold hover:underline"
-        >
+        <Link href={href} className="block truncate text-[13.5px] font-bold hover:underline">
           {item.productName}
         </Link>
         <div className="mt-0.5 text-xs text-ink-muted">
-          {item.colorwayName} · {item.size}
+          {formatOrderItemConfiguration(item)} · {item.skuArticleNumber ?? item.sku ?? '—'}
         </div>
       </div>
       <div className="text-right">

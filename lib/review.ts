@@ -14,7 +14,11 @@ function purchasedOrderWhere(userId: string, productId: string): Prisma.OrderWhe
   return {
     userId,
     status: { not: 'CANCELLED' },
-    items: { some: { productVariant: { colorway: { productId } } } },
+    items: {
+      some: {
+        OR: [{ canonicalSku: { productId } }, { productVariant: { colorway: { productId } } }],
+      },
+    },
     OR: [{ paymentMethod: 'cod' }, { payment: { is: { status: 'succeeded' } } }],
   };
 }

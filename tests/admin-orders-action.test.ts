@@ -11,6 +11,7 @@ vi.mock('@/lib/prisma-client', () => {
     order: { findUnique: vi.fn(), updateMany: vi.fn() },
     payment: { update: vi.fn() },
     productVariant: { update: vi.fn() },
+    sku: { update: vi.fn() },
   };
   return { prisma };
 });
@@ -30,6 +31,7 @@ const p = prisma as unknown as {
   order: Record<string, ReturnType<typeof vi.fn>>;
   payment: Record<string, ReturnType<typeof vi.fn>>;
   productVariant: Record<string, ReturnType<typeof vi.fn>>;
+  sku: Record<string, ReturnType<typeof vi.fn>>;
 };
 
 // Заказ с двумя позициями (для проверки возврата стока по каждой).
@@ -54,6 +56,7 @@ beforeEach(() => {
   p.order.updateMany.mockResolvedValue({ count: 1 });
   p.payment.update.mockResolvedValue({});
   p.productVariant.update.mockResolvedValue({});
+  p.sku.update.mockResolvedValue({});
 });
 
 describe('advanceOrderStatus', () => {
@@ -145,6 +148,27 @@ describe('cancelOrderByAdmin', () => {
     expect(cancelPaymentMock).not.toHaveBeenCalled();
     expect(p.payment.update).not.toHaveBeenCalled();
     expect(p.productVariant.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('canonical order restores SKU stock and product side effects', async () => {
+    p.order.findUnique.mockResolvedValue(
+      makeOrder({
+        items: [
+          {
+            skuId: 'sku-1',
+            productVariantId: null,
+            quantity: 2,
+            canonicalSku: { productId: 'product-1' },
+            productVariant: null,
+          },
+        ],
+      }),
+    );
+
+    expect(await cancelOrderByAdmin('o1')).toEqual({ ok: true });
+    expect(p.sku.update).toHaveBeenCalledWith({ where: { id: 'sku-1' }, data: { stock: { increment: 2 } } });
+    expect(adjustMock).toHaveBeenCalledWith([{ productId: 'product-1', quantity: 2 }], -1);
+    expect(pruneMock).toHaveBeenCalledWith('u1', ['product-1']);
   });
 
   it('terminal (count:0) → error, no stock/salesCount side-effects', async () => {

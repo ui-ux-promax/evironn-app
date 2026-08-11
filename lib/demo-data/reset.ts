@@ -19,7 +19,8 @@ export interface DemoResetDb {
   emailVerificationCode: DeleteManyDelegate;
   verificationToken: DeleteManyDelegate;
   user: UpdateManyDelegate & DeleteManyDelegate & CountDelegate;
-  productVariant: UpdateDelegate & CountDelegate;
+  productVariant?: UpdateDelegate & CountDelegate;
+  sku?: UpdateDelegate & CountDelegate;
   coupon: UpsertDelegate;
   category: CountDelegate;
   product: CountDelegate;
@@ -51,7 +52,17 @@ export async function resetDemoData(deps: {
   await db.user.deleteMany({ where: { role: 'CUSTOMER', isPortfolioFixture: false } });
 
   for (const row of CANONICAL_INVENTORY) {
-    await db.productVariant.update({ where: { sku: row.sku }, data: row });
+    if (db.sku) {
+      await db.sku.update({
+        where: { articleNumber: row.sku },
+        data: { price: row.price, oldPrice: row.oldPrice, stock: row.stock, active: row.active },
+      });
+    } else if (db.productVariant) {
+      await db.productVariant.update({
+        where: { sku: row.sku },
+        data: { price: row.price, compareAtPrice: row.compareAtPrice, stock: row.stock, active: row.active },
+      });
+    }
   }
 
   for (const coupon of CANONICAL_COUPONS) {
@@ -61,7 +72,7 @@ export async function resetDemoData(deps: {
   const [categories, products, variants, fixtureUsers, visitorUsers, carts, subscribers] = await Promise.all([
     db.category.count(),
     db.product.count(),
-    db.productVariant.count(),
+    (db.sku ?? db.productVariant)!.count(),
     db.user.count({ where: { role: 'CUSTOMER', isPortfolioFixture: true } }),
     db.user.count({ where: { role: 'CUSTOMER', isPortfolioFixture: false } }),
     db.cart.count(),

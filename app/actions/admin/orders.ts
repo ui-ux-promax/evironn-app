@@ -51,7 +51,12 @@ export async function cancelOrderByAdmin(orderId: string): Promise<OrderActionRe
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
-      items: { include: { productVariant: { select: { colorway: { select: { productId: true } } } } } },
+      items: {
+        include: {
+          canonicalSku: { select: { productId: true } },
+          productVariant: { select: { colorway: { select: { productId: true } } } },
+        },
+      },
       payment: true,
     },
   });
@@ -81,23 +86,43 @@ export async function cancelOrderByAdmin(orderId: string): Promise<OrderActionRe
   // Возврат стока — релятивен, применяется один раз (guard выше). Best-effort по позициям.
   for (const item of order.items) {
     try {
-      await prisma.productVariant.update({
-        where: { id: item.productVariantId },
-        data: { stock: { increment: item.quantity } },
-      });
+      if (item.skuId) {
+        await prisma.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+      } else if (item.productVariantId) {
+        await prisma.productVariant.update({
+          where: { id: item.productVariantId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
     } catch (e) {
-      logger.error('admin_cancel_stock_restore_failed', e, { orderId, variantId: item.productVariantId });
+      logger.error('admin_cancel_stock_restore_failed', e, {
+        orderId,
+        skuId: item.skuId,
+        variantId: item.productVariantId,
+      });
     }
   }
 
   // Популярность: −продажи по товарам отменённого заказа (симметрично возврату стока).
   await adjustSalesCount(
-    order.items.map((i) => ({ productId: i.productVariant.colorway.productId, quantity: i.quantity })),
+    order.items.flatMap((i) =>
+      i.canonicalSku
+        ? [{ productId: i.canonicalSku.productId, quantity: i.quantity }]
+        : i.productVariant
+          ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }]
+          : [],
+    ),
     -1,
   );
 
   // Отмена аннулирует «покупку» → снять осиротевшие отзывы (как клиентский cancelOrder).
-  const productIds = [...new Set(order.items.map((i) => i.productVariant.colorway.productId))];
+  const productIds = [
+    ...new Set(
+      order.items.flatMap((i) =>
+        i.canonicalSku ? [i.canonicalSku.productId] : i.productVariant ? [i.productVariant.colorway.productId] : [],
+      ),
+    ),
+  ];
   await pruneReviewsAfterCancel(order.userId, productIds);
 
   revalidatePath(LIST_PATH);

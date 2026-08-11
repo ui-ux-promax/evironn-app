@@ -1,42 +1,68 @@
 import { test, expect } from '@playwright/test';
 
-test('PDP: РїРµСЂРµРєР»СЋС‡РµРЅРёРµ СЂР°СЃС†РІРµС‚РєРё, РІС‹Р±РѕСЂ СЂР°Р·РјРµСЂР°, РґРѕР±Р°РІР»РµРЅРёРµ РІ РєРѕСЂР·РёРЅСѓ', async ({
-  page,
-}) => {
-  await page.goto('/product/ritm-white-tee-oversize');
-  await expect(page.getByRole('heading', { name: /Белая футболка/ })).toBeVisible();
+const productPath = '/product/noma-woven-lounge';
+const canonicalWalnutPath = '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle';
 
-  // РїРµСЂРµРєР»СЋС‡РёС‚СЊ СЂР°СЃС†РІРµС‚РєСѓ в†’ РјРµРЅСЏРµС‚СЃСЏ ?color= (СЃРІРѕС‚С‡Рё вЂ” СЃСЃС‹Р»РєРё <Link>, role=link, РґР»СЏ С€Р°СЂСЏС‰РµРіРѕСЃСЏ URL/SEO)
-  await page.getByRole('link', { name: /Р¦РІРµС‚ Черный/ }).click();
-  await expect(page).toHaveURL(/color=black/);
+test('PDP: default Noma configuration renders canonical SKU facts and furniture media', async ({ page }) => {
+  await page.goto(productPath);
 
-  // РІРµСЂРЅСѓС‚СЊСЃСЏ РЅР° РґРµС„РѕР»С‚РЅСѓСЋ Рё РІС‹Р±СЂР°С‚СЊ РґРѕСЃС‚СѓРїРЅС‹Р№ СЂР°Р·РјРµСЂ 42
-  await page.goto('/product/ritm-white-tee-oversize');
-  await page.getByRole('button', { name: 'L', exact: true }).click();
-  await page.getByRole('button', { name: /Р’ РєРѕСЂР·РёРЅСѓ/ }).click();
-
-  // Р±РµР№РґР¶ РєРѕСЂР·РёРЅС‹ РїРѕРєР°Р·С‹РІР°РµС‚ 1
-  await expect(page.getByRole('link', { name: /РљРѕСЂР·РёРЅР°, 1 С‚РѕРІР°СЂР°/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Noma Woven Lounge' })).toBeVisible();
+  await expect(page.getByText('EV-NWL-OAK')).toBeVisible();
+  await expect(page.getByText('124 000 ₽')).toBeVisible();
+  await expect(page.getByText('В наличии: 3')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Натуральный дуб' })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByTestId('turntable-fallback')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Noma Woven Lounge' }).first()).toBeVisible();
 });
 
-test('PDP: РЅРµРґРѕСЃС‚СѓРїРЅС‹Р№ СЂР°Р·РјРµСЂ (stock 0) вЂ” disabled', async ({ page }) => {
-  await page.goto('/product/ritm-white-tee-oversize');
-  await expect(page.getByRole('button', { name: 'XXL', exact: true })).toBeDisabled();
-});
-
-test('РљРѕСЂР·РёРЅР°: РїРѕРІС‚РѕСЂРЅРѕРµ РґРѕР±Р°РІР»РµРЅРёРµ С‚РѕРіРѕ Р¶Рµ РІР°СЂРёР°РЅС‚Р° СѓРІРµР»РёС‡РёРІР°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ (РґРµРґСѓРї)', async ({
+test('PDP: selecting walnut reaches the exact canonical option query and updates the resolved SKU', async ({
   page,
 }) => {
-  await page.goto('/product/ritm-white-tee-oversize');
-  await page.getByRole('button', { name: 'L', exact: true }).click();
-  const addBtn = page.getByRole('button', { name: /Р’ РєРѕСЂР·РёРЅСѓ/ });
-  await addBtn.click();
-  // РґРѕР¶РґР°С‚СЊСЃСЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РїРµСЂРІРѕРіРѕ РґРѕР±Р°РІР»РµРЅРёСЏ, Р·Р°С‚РµРј РІРѕР·РІСЂР°С‚Р° РєРЅРѕРїРєРё Рє В«Р’ РєРѕСЂР·РёРЅСѓВ» вЂ” Рё РґРѕР±Р°РІРёС‚СЊ СЃРЅРѕРІР°
-  await expect(page.getByRole('button', { name: /Р”РѕР±Р°РІР»РµРЅРѕ/ })).toBeVisible();
-  await expect(addBtn).toBeVisible();
-  await addBtn.click();
-  await page.goto('/cart');
-  // РѕРґРЅР° РїРѕР·РёС†РёСЏ, РєРѕР»РёС‡РµСЃС‚РІРѕ 2
-  await expect(page.locator('article').filter({ hasText: 'Белая футболка' })).toHaveCount(1);
-  await expect(page.getByText('2', { exact: true }).first()).toBeVisible();
+  await page.goto(productPath);
+  await page.getByRole('link', { name: 'Орех' }).click();
+
+  await expect(page).toHaveURL(new RegExp(`${canonicalWalnutPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
+  await expect(page.getByText('EV-NWL-WAL')).toBeVisible();
+  await expect(page.getByText('129 000 ₽')).toBeVisible();
+  await expect(page.getByText('В наличии: 2')).toBeVisible();
+});
+
+test('PDP: invalid option input falls back to the default active canonical SKU', async ({ page }) => {
+  const response = await page.goto(`${productPath}?option=finish:black`);
+
+  expect(response?.status()).toBeLessThan(500);
+  await expect(page.getByText('EV-NWL-OAK')).toBeVisible();
+  await expect(page.getByText('EV-NWL-WAL')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Орех' })).toHaveAttribute('href', canonicalWalnutPath);
+});
+
+test('PDP: failed turntable keeps the static fallback and announces the media error', async ({ page }) => {
+  await page.goto(productPath);
+
+  const video = page.getByTestId('turntable-video');
+  await expect(video).toHaveAttribute('poster', '/assets/products/03-ivory-lounge-turntable-alpha-poster.png');
+  await expect(video).not.toHaveAttribute('autoplay');
+  await expect(video).toHaveAttribute('loop', '');
+  await expect(page.getByTestId('turntable-poster')).toBeVisible();
+  await expect(page.getByTestId('turntable-fallback')).toBeVisible();
+
+  await video.dispatchEvent('error');
+  await expect(video).toHaveCount(0);
+  await expect(page.getByTestId('turntable-fallback')).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText('360° недоступен, показано статичное изображение');
+});
+
+test('PDP: reduced motion disables looping and leaves the turntable static before opt-in', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(productPath);
+
+  const video = page.getByTestId('turntable-video');
+  await expect(video).not.toHaveAttribute('loop');
+  await expect(page.getByTestId('turntable-poster')).toBeVisible();
+  await expect(page.getByTestId('turntable-fallback')).toBeVisible();
+  expect(await video.evaluate((element) => (element as HTMLVideoElement).paused)).toBe(true);
+
+  await context.close();
 });

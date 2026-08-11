@@ -2,237 +2,105 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProductView } from '@/components/shared/product/product-view';
-
-(globalThis as typeof globalThis & { React: typeof React }).React = React;
-
-const routerPush = vi.hoisted(() => vi.fn());
+import type { ResolvedProductSelection } from '@/lib/product-selection';
 
 vi.mock('next/image', () => ({
   default: ({
-    src,
-    alt,
     fill: _fill,
-    priority,
+    priority: _priority,
     ...props
-  }: React.ImgHTMLAttributes<HTMLImageElement> & {
-    src: string;
-    fill?: boolean;
-    priority?: boolean;
-  }) => React.createElement('img', { src, alt, ...props, 'data-test-priority': priority ? 'true' : 'false' }),
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; priority?: boolean }) =>
+    React.createElement('img', props),
 }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: routerPush }),
-}));
-
-vi.mock('@/components/shared/product/purchase-panel', () => ({
-  PurchasePanel: ({
-    onColorChange,
-    onSelectedVariantChange,
-  }: {
-    onColorChange: (slug: string) => void;
-    onSelectedVariantChange?: (variantId: string | null) => void;
-  }) =>
+vi.mock('@/components/shared/product/product-media-stage', () => ({
+  ProductMediaStage: ({ images }: { images: Array<{ url: string; alt: string }> }) =>
     React.createElement(
-      React.Fragment,
-      null,
-      React.createElement('button', { type: 'button', onClick: () => onColorChange('terracotta') }, 'Terracotta'),
-      React.createElement(
-        'button',
-        { type: 'button', onClick: () => onSelectedVariantChange?.('variant-graphite') },
-        'Select size',
-      ),
+      'div',
+      { 'data-testid': 'product-media-stage' },
+      images.map((image) => React.createElement('img', { key: image.url, src: image.url, alt: image.alt })),
     ),
 }));
 
-vi.mock('@/components/shared/wishlist/wishlist-heart', () => ({
-  WishlistHeart: () => null,
-}));
-
-vi.mock('@/components/shared/product/reviews-section', () => ({
-  ReviewsSection: () => null,
-}));
-
-vi.mock('@/components/shared/product/breadcrumbs', () => ({
-  Breadcrumbs: () => null,
-}));
-
-beforeEach(() => {
-  routerPush.mockClear();
-});
-
 afterEach(() => cleanup());
 
-describe('ProductView colour selection', () => {
-  it('changes the gallery without navigation and retains the selected colour in the URL', () => {
-    window.history.replaceState(null, '', '/product/cables');
-    const replaceState = vi.spyOn(window.history, 'replaceState');
+const selection: ResolvedProductSelection = {
+  sku: {
+    id: 'sku-oak',
+    articleNumber: 'EV-NWL-OAK',
+    combinationKey: 'finish=oak|upholstery=ivory-boucle',
+    price: 124000,
+    oldPrice: 139000,
+    stock: 3,
+  },
+  canonicalSelection: { finish: 'oak', upholstery: 'ivory-boucle' },
+  optionGroups: [
+    {
+      slug: 'finish',
+      name: 'Отделка',
+      values: [
+        { slug: 'oak', name: 'Натуральный дуб', swatchHex: '#c8a97e', available: true },
+        { slug: 'walnut', name: 'Орех', swatchHex: '#6b4a30', available: true },
+        { slug: 'black', name: 'Чёрный', swatchHex: '#111111', available: false },
+      ],
+    },
+    {
+      slug: 'upholstery',
+      name: 'Обивка',
+      values: [{ slug: 'ivory-boucle', name: 'Кремовая букле', swatchHex: '#efe7d8', available: true }],
+    },
+  ],
+  images: [{ url: '/assets/products/03-ivory-lounge-idle.webp', alt: 'Noma Woven Lounge' }],
+  turntable: null,
+};
 
+describe('canonical furniture ProductView', () => {
+  it('presents the server-resolved SKU and links available options through the canonical URL', () => {
     render(
       React.createElement(ProductView, {
         product: {
-          id: 'p1',
-          name: 'CABLES',
-          slug: 'cables',
-          fitNote: null,
-          description: null,
-          specs: null,
-          category: { name: 'Knitwear', slug: 'knitwear' },
+          name: 'Noma Woven Lounge',
+          slug: 'noma-woven-lounge',
+          description: 'Глубокое lounge-кресло с объёмной букле и съёмным чехлом.',
+          specs: { Материал: 'Букле, дуб', Ширина: '84 см' },
+          category: { name: 'Кресла', slug: 'armchairs' },
         },
-        galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
-        isNew: false,
-        panelColorways: [
-          { slug: 'graphite', name: 'Graphite', swatchHex: '#4b5563', thumbUrl: '/graphite.jpg' },
-          { slug: 'terracotta', name: 'Terracotta', swatchHex: '#b9654b', thumbUrl: '/terracotta.jpg' },
-        ],
-        activeColorwaySlug: 'graphite',
-        activeColorwayName: 'Graphite',
-        panelVariants: [
-          { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: 6000 },
-        ],
-        ratingAvg: null,
-        ratingCount: 0,
-        reviews: [],
-        reviewState: 'guest',
-        related: [],
-        wishlistedIds: new Set<string>(),
-        wishlisted: false,
-        productId: 'p1',
-        colorways: [
-          {
-            slug: 'graphite',
-            name: 'Graphite',
-            swatchHex: '#4b5563',
-            thumbUrl: '/graphite.jpg',
-            galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
-            variants: [
-              { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: 6000 },
-            ],
-          },
-          {
-            slug: 'terracotta',
-            name: 'Terracotta',
-            swatchHex: '#b9654b',
-            thumbUrl: '/terracotta.jpg',
-            galleryImages: [{ url: '/terracotta.jpg', alt: 'Terracotta cardigan' }],
-            variants: [
-              { id: 'variant-terracotta', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: null },
-            ],
-          },
-          {
-            slug: 'clay',
-            name: 'Clay',
-            swatchHex: '#a05a42',
-            thumbUrl: '/terracotta.jpg',
-            galleryImages: [{ url: '/terracotta.jpg', alt: 'Clay cardigan' }],
-            variants: [{ id: 'variant-clay', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: null }],
-          },
-        ],
-      } as never),
-    );
-
-    const preloadedImage = document.querySelector('img[data-preload-image="/terracotta.jpg"]');
-
-    expect(preloadedImage?.getAttribute('sizes')).toBe('(min-width: 1024px) 600px, 100vw');
-    expect(preloadedImage?.getAttribute('loading')).toBe('eager');
-    expect(preloadedImage?.getAttribute('data-test-priority')).toBe('false');
-    expect(document.querySelectorAll('img[data-preload-image="/terracotta.jpg"]')).toHaveLength(1);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Terracotta' }));
-
-    expect(screen.getAllByAltText('Terracotta cardigan')[0].getAttribute('src')).toBe('/terracotta.jpg');
-    expect(replaceState).toHaveBeenCalledWith(null, '', '/product/cables?color=terracotta');
-  });
-
-  it('shows the previous price when the active colourway is discounted', () => {
-    window.history.replaceState(null, '', '/product/cables');
-
-    render(
-      React.createElement(ProductView, {
-        product: {
-          id: 'p1',
-          name: 'CABLES',
-          slug: 'cables',
-          fitNote: null,
-          description: null,
-          specs: null,
-          category: { name: 'Knitwear', slug: 'knitwear' },
-        },
-        isNew: false,
-        initialColorwaySlug: 'graphite',
-        ratingAvg: null,
-        ratingCount: 0,
-        reviews: [],
-        reviewState: 'guest',
-        related: [],
-        wishlistedIds: new Set<string>(),
-        wishlisted: false,
-        productId: 'p1',
-        colorways: [
-          {
-            slug: 'graphite',
-            name: 'Graphite',
-            swatchHex: '#4b5563',
-            thumbUrl: '/graphite.jpg',
-            galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
-            variants: [
-              { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: 6000 },
-            ],
-          },
-        ],
+        selection,
       }),
     );
 
-    expect(screen.getByText(/6[\s\u00a0]000 ₽/)).toBeTruthy();
-  });
+    expect(screen.getByRole('heading', { name: 'Noma Woven Lounge' })).toBeVisible();
+    expect(screen.getAllByText('Кресла').length).toBeGreaterThan(0);
+    expect(screen.getByText('Глубокое lounge-кресло с объёмной букле и съёмным чехлом.')).toBeVisible();
+    expect(screen.getByText('Материал')).toBeVisible();
+    expect(screen.getByText('Букле, дуб')).toBeVisible();
 
-  it('routes buy now to checkout for the selected variant only', () => {
-    const { container } = render(
-      React.createElement(ProductView, {
-        product: {
-          id: 'p1',
-          name: 'CABLES',
-          slug: 'cables',
-          fitNote: null,
-          description: null,
-          specs: null,
-          category: { name: 'Knitwear', slug: 'knitwear' },
-        },
-        isNew: false,
-        initialColorwaySlug: 'graphite',
-        ratingAvg: null,
-        ratingCount: 0,
-        reviews: [],
-        reviewState: 'guest',
-        related: [],
-        wishlistedIds: new Set<string>(),
-        wishlisted: false,
-        productId: 'p1',
-        colorways: [
-          {
-            slug: 'graphite',
-            name: 'Graphite',
-            swatchHex: '#4b5563',
-            thumbUrl: '/graphite.jpg',
-            galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
-            variants: [
-              { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: null },
-            ],
-          },
-        ],
-      }),
+    expect(screen.getByRole('link', { name: 'Орех' })).toHaveAttribute(
+      'href',
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
+    expect(screen.getByRole('link', { name: 'Натуральный дуб' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.queryByRole('link', { name: 'Чёрный' })).toBeNull();
+    expect(screen.getByText('Чёрный')).toHaveAttribute('aria-disabled', 'true');
 
-    const buyNow = container.querySelector('button[aria-busy]') as HTMLButtonElement;
-    expect(buyNow.disabled).toBe(true);
+    expect(screen.getByText('EV-NWL-OAK')).toBeVisible();
+    expect(screen.getByText(/124[\s\u00a0]000 ₽/)).toBeVisible();
+    expect(screen.getByText(/139[\s\u00a0]000 ₽/)).toBeVisible();
+    expect(screen.getByText('В наличии: 3')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Кресла' })).toHaveAttribute('href', '/catalog?category=armchairs');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select size' }));
-    expect(buyNow.disabled).toBe(false);
-
-    fireEvent.click(buyNow);
-    expect(routerPush).toHaveBeenCalledWith('/checkout?buyNow=variant-graphite');
+    const pilotCta = screen.getByRole('button', {
+      name: 'Добавление в корзину будет доступно после завершения пилота',
+    });
+    expect(pilotCta).toBeDisabled();
+    expect(screen.getByText('Добавление в корзину будет доступно после завершения пилота')).toBeVisible();
+    expect(screen.queryByText(/размер/i)).toBeNull();
+    expect(screen.queryByText(/отзыв/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /избранн/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /купить сейчас/i })).toBeNull();
   });
 });

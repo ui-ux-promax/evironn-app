@@ -12,12 +12,14 @@ export interface PurchasePanelProps {
   selection: ResolvedProductSelection;
 }
 
-export function PurchasePanel(props: PurchasePanelProps): React.JSX.Element;
-export function PurchasePanel(props: Record<string, unknown>): React.JSX.Element;
-
-export function PurchasePanel(props: PurchasePanelProps | Record<string, unknown>): React.JSX.Element {
-  const { productSlug, productName, categoryName, description, specs, selection } = props as PurchasePanelProps;
-
+export function PurchasePanel({
+  productSlug,
+  productName,
+  categoryName,
+  description,
+  specs,
+  selection,
+}: PurchasePanelProps): React.JSX.Element {
   return (
     <section id="buy" className="grid gap-5 rounded-[24px] border border-line bg-surface p-5 sm:p-6">
       <div className="grid gap-2">

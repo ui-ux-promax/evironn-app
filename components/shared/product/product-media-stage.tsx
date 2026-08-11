@@ -58,14 +58,14 @@ export function ProductMediaStage({ images, turntable }: ProductMediaStageProps)
   if (!turntable) {
     return (
       <div className="grid gap-3">
-        <div className={styles.stage}>
+        <div className="relative aspect-square overflow-hidden rounded-[24px] bg-surface-soft">
           <Image
             src={selectedImage.url}
             alt={selectedImage.alt}
             fill
             priority
             sizes="(min-width: 1024px) 600px, 100vw"
-            className={styles.media}
+            className="object-cover"
           />
         </div>
         {images.length > 1 && (
@@ -90,22 +90,25 @@ export function ProductMediaStage({ images, turntable }: ProductMediaStageProps)
 
   return (
     <div className="grid gap-3">
-      <div className={`${styles.stage} ${failed ? styles.failed : ''}`}>
+      <div className="relative aspect-square overflow-hidden rounded-[24px] bg-surface-soft">
         <Image
           src={turntable.fallbackUrl}
           alt={turntable.alt}
           fill
           data-testid="turntable-fallback"
+          data-media-state="visible"
           sizes="(min-width: 1024px) 600px, 100vw"
-          className={`${styles.layer} ${styles.mediaTransition}`}
+          className={`${styles.layer} ${styles.fallbackLayer} ${styles.mediaTransition}`}
         />
         <Image
           src={turntable.posterUrl}
           alt={turntable.alt}
           fill
           data-testid="turntable-poster"
+          data-media-state={failed ? 'hidden' : 'visible'}
+          aria-hidden={failed || undefined}
           sizes="(min-width: 1024px) 600px, 100vw"
-          className={`${styles.layer} ${styles.mediaTransition}`}
+          className={`${styles.layer} ${styles.posterLayer} ${styles.mediaTransition}`}
         />
         {!failed && (
           <video
@@ -125,17 +128,20 @@ export function ProductMediaStage({ images, turntable }: ProductMediaStageProps)
               setPlaying(false);
             }}
             data-motion-enabled={(!reducedMotion || motionOptIn).toString()}
+            data-media-state="visible"
             className={`${styles.layer} ${styles.videoLayer} ${styles.mediaTransition}`}
           />
         )}
-        <button
-          type="button"
-          onClick={handlePlayback}
-          aria-label={playing ? 'Пауза обзора 360°' : 'Запустить обзор 360°'}
-          className="absolute bottom-4 left-4 z-10 inline-flex min-h-11 items-center rounded-full bg-surface/90 px-4 text-sm font-bold text-ink shadow-sm backdrop-blur hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-        >
-          {playing ? 'Пауза обзора 360°' : 'Запустить обзор 360°'}
-        </button>
+        {!failed && (
+          <button
+            type="button"
+            onClick={handlePlayback}
+            aria-label={playing ? 'Пауза обзора 360°' : 'Запустить обзор 360°'}
+            className="absolute bottom-4 left-4 z-10 inline-flex min-h-11 items-center rounded-full bg-surface/90 px-4 text-sm font-bold text-ink shadow-sm backdrop-blur hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            {playing ? 'Пауза обзора 360°' : 'Запустить обзор 360°'}
+          </button>
+        )}
       </div>
       {failed && (
         <p role="status" className="text-sm text-ink-muted">

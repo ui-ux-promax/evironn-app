@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
+import { readFileSync } from 'node:fs';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -104,7 +105,16 @@ describe('ProductMediaStage', () => {
 
     expect(screen.queryByTestId('turntable-video')).toBeNull();
     expect(screen.getByTestId('turntable-fallback')).toBeVisible();
+    expect(screen.getByTestId('turntable-fallback')).toHaveAttribute('data-media-state', 'visible');
+    expect(screen.getByTestId('turntable-poster')).toHaveAttribute('data-media-state', 'hidden');
+    expect(screen.queryByRole('button', { name: /обзор 360°/ })).toBeNull();
     expect(screen.getByRole('status')).toHaveTextContent('360° недоступен, показано статичное изображение');
+  });
+
+  it('keeps layout concerns in Tailwind and media behavior in the CSS module', () => {
+    const source = readFileSync('components/shared/product/product-media-stage.module.css', 'utf8');
+
+    expect(source).not.toMatch(/aspect-ratio|border-radius|background\s*:|^\.stage|^\.media\s*\{/m);
   });
 
   it('renders an image gallery without turntable controls', () => {

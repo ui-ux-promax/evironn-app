@@ -6,7 +6,7 @@
 - Active phase: Phase 1 — furniture domain and database.
 - Integration branch: `dev`.
 - Current branch: `phase/01-furniture-domain` from current `dev`.
-- Phase state: implementation complete locally; review, push, acceptance, and merge pending.
+- Phase state: implementation complete and pushed; PR, review, acceptance, and merge pending.
 - Next phase: Phase 2 — storefront, after Phase 1 acceptance and merge.
 
 ## Bootstrap contents
@@ -18,7 +18,7 @@
 
 ## Completed phase pull requests
 
-Phase 1 is implemented on `phase/01-furniture-domain`; no pull request or merge yet.
+Phase 1 is implemented on `phase/01-furniture-domain`; commit `226acf4` is pushed to origin. PR and merge are pending.
 
 ## Database migrations
 
@@ -36,7 +36,7 @@ Latest local Phase 1 validation:
 
 ## Next session checklist
 
-1. Review Phase 1 branch and open English pull request targeting `dev`.
+1. Open English pull request targeting `dev` from the pushed Phase 1 branch.
 2. Complete automated review and phase acceptance.
 3. Merge with a merge commit; record PR and merge SHA here.
 4. Start Phase 2 from updated `dev`.

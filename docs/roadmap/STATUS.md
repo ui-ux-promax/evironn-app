@@ -48,5 +48,5 @@ Latest local Phase 1 validation before the final documentation-only rerun:
 - Task 1 canonical storefront projections are complete and independently approved in commits `03e94bb` and `1b9fc3d`.
 - Database-safe Vercel bootstrap is committed as `0c14739`; deployment builds no longer run `prisma db push`.
 - Preview branch deployment is ready at `https://evironn-app-git-phase-02-storefront-s1aw3ns-projects.vercel.app`.
-- Next authorized work: Task 2 only — URL-driven furniture catalog with server pagination. Stop after its review and verification.
-- Tasks 3 and 4 remain deferred until the user explicitly approves continuing the pilot.
+- Task 2 URL-driven furniture catalog with server pagination is implemented in commit `3045183`, reviewed by fresh Sol Medium reviewer, and coordinator-verified: focused Vitest 22/22, typecheck pass, catalog E2E 5/5. Local E2E emitted Auth.js `UntrustedHost` and Tailwind ambiguous-class warnings without test failures.
+- Next step: user desktop/mobile evaluation of the bounded catalog pilot. Tasks 3 and 4 remain deferred until explicit approval.

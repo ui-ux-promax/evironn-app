@@ -6,10 +6,11 @@ import { useCatalogUrl } from '@/hooks/use-catalog-url';
 import { FilterControls } from './filter-controls';
 import { ResetButton } from './active-filter-chips';
 import { Button } from '@/components/ui';
+import { isInStockParam } from '@/lib/catalog-filters';
 import type { CatalogResult } from '@/lib/find-products';
 
 // Группы фильтров, считающиеся «активными» по числу выбранных значений (бейдж на кнопке).
-const GROUPS = ['category', 'brand', 'gender', 'color', 'size'];
+const GROUPS = ['category', 'room', 'option'];
 
 // Только <md: кнопка «Фильтры» (в sticky-тулбаре) открывает выезжающую слева панель
 // с теми же фасетами, что и инлайн-сайдбар. С md+ кнопка скрыта (md:hidden).
@@ -19,7 +20,7 @@ export function MobileFilterDrawer({ facets, total }: { facets: CatalogResult['f
 
   let activeCount = GROUPS.reduce((n, k) => n + getList(k).length, 0);
   if (get('priceFrom') || get('priceTo')) activeCount += 1;
-  if (get('inStock') === '1') activeCount += 1;
+  if (isInStockParam(get('inStock'))) activeCount += 1;
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>

@@ -1,12 +1,8 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
-import { auth } from '@/auth';
 import { findProducts } from '@/lib/find-products';
-import { buildCatalogItemListJsonLd, catalogSeoDescription, defaultOgImage } from '@/lib/seo';
-import { getWishlistProductIds } from '@/lib/wishlist';
-import { wishlistCookieName } from '@/lib/wishlist-cookie';
+import { buildCatalogItemListJsonLd, catalogSeoDescription } from '@/lib/seo';
 import { CatalogProductCard } from '@/components/shared/catalog/catalog-product-card';
 import { FilterSidebar } from '@/components/shared/catalog/filter-sidebar';
 import { MobileFilterDrawer } from '@/components/shared/catalog/mobile-filter-drawer';
@@ -14,25 +10,25 @@ import { SortSelect } from '@/components/shared/catalog/sort-select';
 import { ActiveFilterChips } from '@/components/shared/catalog/active-filter-chips';
 import { Pagination } from '@/components/shared/catalog/pagination';
 import { CatalogHero } from '@/components/shared/catalog/catalog-hero';
-import { EmptyCatalog, ProductGridSkeleton } from '@/components/shared/catalog/catalog-states';
+import { EmptyCatalog } from '@/components/shared/catalog/catalog-states';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Каталог',
+  title: 'Каталог мебели | Evironn',
   description: catalogSeoDescription,
   alternates: { canonical: '/catalog' },
   openGraph: {
-    title: 'Каталог RITM',
+    title: 'Каталог мебели Evironn',
     description: catalogSeoDescription,
     url: '/catalog',
-    images: [{ url: defaultOgImage, alt: 'Каталог RITM' }],
+    images: [{ url: '/assets/products/03-ivory-lounge-idle.webp', alt: 'Каталог мебели Evironn' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Каталог RITM',
+    title: 'Каталог мебели Evironn',
     description: catalogSeoDescription,
-    images: [defaultOgImage],
+    images: ['/assets/products/03-ivory-lounge-idle.webp'],
   },
 };
 
@@ -43,8 +39,6 @@ export default async function CatalogPage({
 }) {
   const sp = await searchParams;
   const { products, total, page, totalPages, facets } = await findProducts(sp);
-  const [session, store] = await Promise.all([auth(), cookies()]);
-  const wishlistedIds = await getWishlistProductIds(session, store.get(wishlistCookieName)?.value);
   const itemListJsonLd = buildCatalogItemListJsonLd(products);
 
   return (
@@ -63,8 +57,6 @@ export default async function CatalogPage({
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
         <FilterSidebar facets={facets} />
         <div>
-          {/* Тулбар — sticky под хедером на телефоне (glassmorphism как у шапки), чтобы кнопка
-              «Фильтры» была всегда на виду при скролле. С md+ статичный, фильтр в инлайн-сайдбаре. */}
           <div className="sticky top-[56px] z-30 -mx-4 mb-4 flex min-w-0 items-center gap-2 border-b border-line px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:gap-3 sm:px-6 md:static md:mx-0 md:border-0 md:px-0 md:py-0 md:backdrop-blur-0">
             <Suspense>
               <MobileFilterDrawer facets={facets} total={total} />
@@ -84,8 +76,8 @@ export default async function CatalogPage({
             <EmptyCatalog />
           ) : (
             <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-              {products.map((p) => (
-                <CatalogProductCard key={p.slug} data={p} wishlisted={wishlistedIds.has(p.id)} />
+              {products.map((product) => (
+                <CatalogProductCard key={product.slug} data={product} />
               ))}
             </div>
           )}

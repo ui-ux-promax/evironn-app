@@ -3,11 +3,11 @@
 ## Current state
 
 - Bootstrap: complete in the repository root commit `init`.
-- Active phase: Phase 1 — furniture domain and database.
+- Active phase: Phase 2 — storefront catalog pilot.
 - Integration branch: `dev`.
-- Current branch: `phase/01-furniture-domain` from current `dev`.
-- Phase state: independent review remediated; final commit, push, PR, acceptance, and merge pending.
-- Next phase: Phase 2 — storefront, after Phase 1 acceptance and merge.
+- Current branch: `phase/02-storefront` from updated `dev`.
+- Phase state: Phase 1 accepted and merged; bounded Phase 2 catalog pilot in progress.
+- Next phase: remainder of Phase 2, only after explicit pilot and visual-review approval.
 
 ## Bootstrap contents
 
@@ -18,7 +18,7 @@
 
 ## Completed phase pull requests
 
-Phase 1 is implemented on `phase/01-furniture-domain`. The original implementation commit `226acf4` is pushed; independent-review fixes are pending their final commit and push. PR and merge are pending.
+Phase 1 was merged into `dev` by pull request #1 with merge commit `3e4e2a02fb6367bbbec9af794044da1ecf47a973`.
 
 ## Database migrations
 
@@ -36,12 +36,17 @@ Latest local Phase 1 validation before the final documentation-only rerun:
 - `npx prisma validate` with temporary local URLs — pass.
 - `npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script` — pass; expected furniture tables and composite foreign keys generated.
 - `npm run e2e -- e2e/furniture-domain.spec.ts` — pass; 4/4 media-contract scenarios.
-- Live PostgreSQL migration/seed execution — not run; no local database URL is available in this worktree.
+- Dedicated Neon database migration — applied successfully with `prisma migrate reset` after removing an invalid UTF-8 BOM from the initial migration; one migration is registered and current.
+- Furniture seed — executed twice successfully and remained idempotent: 5 categories, 5 rooms, 12 products, 17 SKUs, and 15 media records.
+- Turntable contract — one category has a configured turntable product and one turntable video; the separate `neon_auth` schema remained intact.
 
-## Next session checklist
+## Phase 2 catalog pilot
 
-1. Commit and push the independent-review fixes.
-2. Open the English pull request targeting `dev`.
-3. Complete automated review and phase acceptance.
-4. Merge with a merge commit; record PR and merge SHA here.
-5. Start Phase 2 from updated `dev`.
+- Scope is bounded to the approved catalog pilot; remaining storefront scope is deferred.
+- Agent workflow is tracked in `docs/superpowers/phase-2-catalog-pilot-workflow.md`.
+- Durable subagent progress is recorded in `.superpowers/sdd/progress.md`.
+- Task 1 canonical storefront projections are complete and independently approved in commits `03e94bb` and `1b9fc3d`.
+- Database-safe Vercel bootstrap is committed as `0c14739`; deployment builds no longer run `prisma db push`.
+- Preview branch deployment is ready at `https://evironn-app-git-phase-02-storefront-s1aw3ns-projects.vercel.app`.
+- Next authorized work: Task 2 only — URL-driven furniture catalog with server pagination. Stop after its review and verification.
+- Tasks 3 and 4 remain deferred until the user explicitly approves continuing the pilot.

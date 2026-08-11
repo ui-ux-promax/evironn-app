@@ -11,6 +11,18 @@ export const cartInclude = {
   items: {
     orderBy: { createdAt: 'desc' as const },
     include: {
+      sku: {
+        include: {
+          product: { select: { id: true, name: true, slug: true, active: true } },
+          media: { where: { kind: 'IMAGE' as const }, orderBy: { sortOrder: 'asc' as const }, take: 1 },
+          selections: {
+            include: {
+              optionGroup: { select: { name: true, slug: true } },
+              optionValue: { select: { name: true, slug: true } },
+            },
+          },
+        },
+      },
       productVariant: {
         include: {
           colorway: {
@@ -34,7 +46,28 @@ export function calcLineTotal(unitPrice: number, quantity: number): number {
 // Чистая функция: разворачивает серверный объект корзины в плоские позиции для клиента.
 export function getCartDetails(cart: CartWithItems): CartDetails {
   const items: CartStateItem[] = cart.items.map((item) => {
+    if (item.sku) {
+      const configuration = item.sku.selections.map(
+        (selection) => `${selection.optionGroup.name}: ${selection.optionValue.name}`,
+      );
+      const unitPrice = item.sku.price;
+      return {
+        id: item.id,
+        productId: item.sku.product.id,
+        quantity: item.quantity,
+        name: item.sku.product.name,
+        productSlug: item.sku.product.slug,
+        colorwayName: configuration.join(', '),
+        size: '',
+        imageUrl: item.sku.media[0]?.url ?? null,
+        unitPrice,
+        lineTotal: calcLineTotal(unitPrice, item.quantity),
+        stock: item.sku.stock,
+        available: item.sku.active && item.sku.stock > 0,
+      };
+    }
     const v = item.productVariant;
+    if (!v) throw new Error('Cart item is missing legacy product variant');
     const cw = v.colorway;
     const unitPrice = v.price;
     return {

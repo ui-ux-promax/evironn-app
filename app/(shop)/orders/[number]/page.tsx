@@ -182,10 +182,15 @@ function collectProductsInOrder(order: OrderDetail): ProductInOrder[] {
   const products: ProductInOrder[] = [];
   const seen = new Set<string>();
   for (const item of order.items) {
-    const colorway = item.productVariant.colorway;
-    if (seen.has(colorway.productId)) continue;
-    seen.add(colorway.productId);
-    products.push({ id: colorway.productId, slug: colorway.product.slug, name: colorway.product.name });
+    const product = item.productVariant?.colorway.product;
+    const productId = product?.slug ?? item.productSlug ?? item.productName;
+    if (seen.has(productId)) continue;
+    seen.add(productId);
+    products.push({
+      id: productId,
+      slug: product?.slug ?? item.productSlug ?? '#',
+      name: product?.name ?? item.productName,
+    });
   }
   return products;
 }
@@ -291,10 +296,11 @@ function ReviewCard({ products, reviewedProductIds }: { products: ProductInOrder
 }
 
 function OrderLine({ item }: { item: OrderDetail['items'][number] }) {
+  const productSlug = item.productVariant?.colorway.product.slug ?? item.productSlug ?? '';
   return (
     <div className="grid grid-cols-[54px_minmax(0,1fr)_auto] items-center gap-3 border-t border-line p-3 first:border-t-0">
       <Link
-        href={`/product/${item.productVariant.colorway.product.slug}`}
+        href={`/product/${productSlug}`}
         className="relative h-[60px] w-[54px] overflow-hidden rounded-[12px] border border-line bg-surface-soft"
       >
         {item.imageUrl && (
@@ -302,14 +308,11 @@ function OrderLine({ item }: { item: OrderDetail['items'][number] }) {
         )}
       </Link>
       <div className="min-w-0">
-        <Link
-          href={`/product/${item.productVariant.colorway.product.slug}`}
-          className="block truncate text-[13.5px] font-bold hover:underline"
-        >
+        <Link href={`/product/${productSlug}`} className="block truncate text-[13.5px] font-bold hover:underline">
           {item.productName}
         </Link>
         <div className="mt-0.5 text-xs text-ink-muted">
-          {item.colorwayName} · {item.size}
+          {item.colorwayName ?? item.skuCombinationKey ?? 'Конфигурация'} · {item.size ?? ''}
         </div>
       </div>
       <div className="text-right">

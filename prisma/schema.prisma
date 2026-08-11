@@ -8,6 +8,18 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+enum ProductMediaKind {
+  IMAGE
+  TURN_TABLE_VIDEO
+  TURN_TABLE_POSTER
+  TURN_TABLE_FALLBACK
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
 enum Gender {
   MEN
   WOMEN
@@ -15,62 +27,94 @@ enum Gender {
   KIDS
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 model Category {
-  id         String    @id @default(cuid())
-  name       String
-  slug       String    @unique
-  tagline    String?
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String    @unique
+  tagline            String?
   coverImage         String?
   coverImagePublicId String?
   sortOrder          Int       @default(0)
-  products   Product[]
+  products           Product[]
+  turntableProductId String?   @unique
+  turntableProduct   Product?  @relation("CategoryTurntableProduct", fields: [turntableProductId], references: [id], onDelete: SetNull)
+
+  @@index([sortOrder])
+}
+
+model Room {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String        @unique
+  sortOrder Int           @default(0)
+  products  ProductRoom[]
 
   @@index([sortOrder])
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  brand        String
-  gender       Gender   @default(UNISEX)
-  categoryId   String
-  category     Category @relation(fields: [categoryId], references: [id])
-  description  String?
-  fitNote      String?
-  specs        Json?
-  isBestseller Boolean  @default(false)
-  active       Boolean  @default(true)
-  sortOrder    Int      @default(0)
-  // Денормализованные ключи сортировки каталога (DB-уровень orderBy/skip/take).
-  // minPrice/discountPct — снимок дефолтной расцветки (самый дешёвый активный вариант);
-  // их ОБЯЗАН пересчитывать любой будущий путь записи цены/isDefault/active варианта
-  // (admin Phase 3). Сегодня единственный такой путь — сид. salesCount движется как сток.
-  salesCount   Int      @default(0)
-  minPrice     Int      @default(0)
-  discountPct  Int      @default(0)
-  createdAt    DateTime @default(now())
-  colorways    ProductColorway[]
-  reviews      Review[]
-  wishlistItems WishlistItem[]
+  id                     String               @id @default(cuid())
+  name                   String
+  slug                   String               @unique
+  brand                  String               @default("Evironn")
+  gender                 Gender               @default(UNISEX)
+  categoryId             String
+  category               Category             @relation(fields: [categoryId], references: [id])
+  description            String?
+  fitNote                String?
+  specs                  Json?
+  isBestseller           Boolean              @default(false)
+  active                 Boolean              @default(true)
+  sortOrder              Int                  @default(0)
+  salesCount             Int                  @default(0)
+  minPrice               Int                  @default(0)
+  discountPct            Int                  @default(0)
+  createdAt              DateTime             @default(now())
+  rooms                  ProductRoom[]
+  optionGroups           ProductOptionGroup[]
+  optionValues           ProductOptionValue[]
+  skus                   Sku[]
+  media                  ProductMedia[]
+  colorways              ProductColorway[]
+  reviews                Review[]
+  wishlistItems          WishlistItem[]
+  turntableForCategories Category[]           @relation("CategoryTurntableProduct")
 
   @@index([categoryId, sortOrder])
-  @@index([brand])
-  @@index([gender])
   @@index([active])
   @@index([salesCount])
   @@index([minPrice])
 }
 
-model ProductColorway {
-  id        String  @id @default(cuid())
+model ProductRoom {
   productId String
+  roomId    String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([productId, roomId])
+  @@index([roomId, productId])
+}
+
+// Legacy clothing-shaped relations remain as a compatibility adapter until Phase 2
+// rewires storefront/admin reads to Product.skus and normalized option selections.
+model ProductColorway {
+  id        String           @id @default(cuid())
+  productId String
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
   name      String
   slug      String
   swatchHex String?
-  isDefault Boolean @default(false)
-  sortOrder Int     @default(0)
+  isDefault Boolean          @default(false)
+  sortOrder Int              @default(0)
   images    ProductImage[]
   variants  ProductVariant[]
 
@@ -108,6 +152,117 @@ model ProductVariant {
   @@index([colorwayId])
 }
 
+model OptionGroup {
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique
+  sortOrder     Int                  @default(0)
+  values        OptionValue[]
+  products      ProductOptionGroup[]
+  skuSelections SkuOptionValue[]
+
+  @@index([sortOrder])
+}
+
+model OptionValue {
+  id            String               @id @default(cuid())
+  optionGroupId String
+  optionGroup   OptionGroup          @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  swatchHex     String?
+  sortOrder     Int                  @default(0)
+  products      ProductOptionValue[]
+  skuSelections SkuOptionValue[]
+
+  @@unique([optionGroupId, slug])
+  @@index([optionGroupId, sortOrder])
+}
+
+model ProductOptionGroup {
+  productId     String
+  optionGroupId String
+  product       Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  optionGroup   OptionGroup          @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  values        ProductOptionValue[]
+
+  @@id([productId, optionGroupId])
+  @@index([optionGroupId])
+}
+
+model ProductOptionValue {
+  productId     String
+  optionGroupId String
+  optionValueId String
+  product       Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productOption ProductOptionGroup @relation(fields: [productId, optionGroupId], references: [productId, optionGroupId], onDelete: Cascade)
+  optionValue   OptionValue        @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+
+  @@id([productId, optionGroupId, optionValueId])
+  @@index([optionValueId])
+}
+
+model Sku {
+  id             String           @id @default(cuid())
+  productId      String
+  product        Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  combinationKey String
+  articleNumber  String           @unique
+  price          Int
+  oldPrice       Int?
+  stock          Int              @default(0)
+  active         Boolean          @default(true)
+  selections     SkuOptionValue[]
+  media          SkuMedia[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+
+  @@unique([productId, combinationKey])
+  @@index([productId, active])
+  @@index([stock])
+}
+
+model SkuOptionValue {
+  skuId         String
+  optionGroupId String
+  optionValueId String
+  sku           Sku         @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict)
+  optionValue   OptionValue @relation(fields: [optionValueId], references: [id], onDelete: Restrict)
+
+  @@id([skuId, optionValueId])
+  @@unique([skuId, optionGroupId])
+  @@index([optionValueId])
+}
+
+model ProductMedia {
+  id        String           @id @default(cuid())
+  productId String
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  kind      ProductMediaKind @default(IMAGE)
+  url       String
+  publicId  String?
+  alt       String?
+  sortOrder Int              @default(0)
+
+  @@unique([productId, kind, sortOrder])
+  @@index([productId, kind])
+}
+
+model SkuMedia {
+  id        String           @id @default(cuid())
+  skuId     String
+  sku       Sku              @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  kind      ProductMediaKind @default(IMAGE)
+  url       String
+  publicId  String?
+  alt       String?
+  sortOrder Int              @default(0)
+
+  @@unique([skuId, kind, sortOrder])
+  @@index([skuId, kind])
+}
+
 model Cart {
   id          String     @id @default(cuid())
   token       String     @unique
@@ -121,30 +276,25 @@ model Cart {
   @@index([userId])
 }
 
-enum UserRole {
-  CUSTOMER
-  ADMIN
-}
-
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  name          String?
-  phone         String?
-  birthdate     DateTime?
-  role          UserRole  @default(CUSTOMER)
-  isPortfolioFixture Boolean @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  carts         Cart[]
-  orders        Order[]
-  reviews       Review[]
-  wishlists     Wishlist[]
-  addresses     Address[]
+  id                 String     @id @default(cuid())
+  email              String     @unique
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String?
+  name               String?
+  phone              String?
+  birthdate          DateTime?
+  role               UserRole   @default(CUSTOMER)
+  isPortfolioFixture Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  accounts           Account[]
+  carts              Cart[]
+  orders             Order[]
+  reviews            Review[]
+  wishlists          Wishlist[]
+  addresses          Address[]
 
   @@index([role])
   @@index([isPortfolioFixture])
@@ -195,20 +345,15 @@ model CartItem {
   id               String         @id @default(cuid())
   cartId           String
   cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productVariantId String
-  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  skuId            String?
+  sku              Sku?           @relation(fields: [skuId], references: [id], onDelete: Restrict)
+  productVariantId String?
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
   quantity         Int            @default(1)
   createdAt        DateTime       @default(now())
 
+  @@unique([cartId, skuId])
   @@unique([cartId, productVariantId])
-}
-
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
 }
 
 model Order {
@@ -217,24 +362,19 @@ model Order {
   userId         String
   user           User        @relation(fields: [userId], references: [id])
   status         OrderStatus @default(PENDING)
-
   contactName    String
   contactPhone   String
   contactEmail   String
-
   shippingMethod String
   city           String
   addressLine    String
   addressComment String?
-
   itemsTotal     Int
   discountAmount Int         @default(0)
   shippingAmount Int
   totalAmount    Int
   couponCode     String?
-
   paymentMethod  String
-
   items          OrderItem[]
   payment        Payment?
   createdAt      DateTime    @default(now())
@@ -245,22 +385,29 @@ model Order {
 }
 
 model OrderItem {
-  id               String         @id @default(cuid())
-  orderId          String
-  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productVariantId String
-  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
-
-  sku          String
-  productName  String
-  colorwayName String
-  size         String
-  imageUrl     String?
-  unitPrice    Int
-  quantity     Int
-  lineTotal    Int
+  id                String          @id @default(cuid())
+  orderId           String
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  skuId             String?
+  canonicalSku      Sku?            @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  productVariantId  String?
+  productVariant    ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+  skuArticleNumber  String?
+  skuCombinationKey String?
+  productName       String
+  productSlug       String?
+  configuration     Json?
+  sku               String?
+  colorwayName      String?
+  size              String?
+  imageUrl          String?
+  unitPrice         Int
+  oldUnitPrice      Int?
+  quantity          Int
+  lineTotal         Int
 
   @@index([orderId])
+  @@index([skuArticleNumber])
 }
 
 model Payment {
@@ -277,10 +424,10 @@ model Payment {
 
 model Coupon {
   id        String    @id @default(cuid())
-  code      String    @unique          // нормализованный: trim + UPPERCASE
-  percent   Int                        // 1..100, процент скидки на сумму товаров
+  code      String    @unique
+  percent   Int
   active    Boolean   @default(true)
-  expiresAt DateTime?                   // null = бессрочный
+  expiresAt DateTime?
   createdAt DateTime  @default(now())
 }
 
@@ -290,7 +437,7 @@ model Review {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rating    Int                       // 1..5 (валидация в коде, fail-closed)
+  rating    Int
   body      String?
   createdAt DateTime @default(now())
 
@@ -320,12 +467,6 @@ model WishlistItem {
 
   @@unique([wishlistId, productId])
 }
-
-// P2.2c email-фаза владеет этими моделями и их кодом (ветка feat/phase2.2c-email-resend).
-// Здесь — ТОЛЬКО схема: таблицы уже есть в общей Neon-БД (email-деплой их создал), и без
-// этих моделей `prisma db push` на деплое main-ветки пытался бы их дропнуть. Идентичны
-// определениям в email-ветке → при мерже обеих в main конфликта нет. Кода, использующего
-// их, в этой ветке нет — таблицы просто не трогаются.
 
 model EmailVerificationCode {
   id         String    @id @default(cuid())

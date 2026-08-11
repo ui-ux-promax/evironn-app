@@ -80,6 +80,7 @@ export async function cancelOrderByAdmin(orderId: string): Promise<OrderActionRe
 
   // Возврат стока — релятивен, применяется один раз (guard выше). Best-effort по позициям.
   for (const item of order.items) {
+    if (!item.productVariantId) continue;
     try {
       await prisma.productVariant.update({
         where: { id: item.productVariantId },
@@ -92,12 +93,16 @@ export async function cancelOrderByAdmin(orderId: string): Promise<OrderActionRe
 
   // Популярность: −продажи по товарам отменённого заказа (симметрично возврату стока).
   await adjustSalesCount(
-    order.items.map((i) => ({ productId: i.productVariant.colorway.productId, quantity: i.quantity })),
+    order.items.flatMap((i) =>
+      i.productVariant ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }] : [],
+    ),
     -1,
   );
 
   // Отмена аннулирует «покупку» → снять осиротевшие отзывы (как клиентский cancelOrder).
-  const productIds = [...new Set(order.items.map((i) => i.productVariant.colorway.productId))];
+  const productIds = [
+    ...new Set(order.items.flatMap((i) => (i.productVariant ? [i.productVariant.colorway.productId] : []))),
+  ];
   await pruneReviewsAfterCancel(order.userId, productIds);
 
   revalidatePath(LIST_PATH);

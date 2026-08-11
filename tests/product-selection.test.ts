@@ -147,7 +147,9 @@ describe('canonical product option URL helpers', () => {
       finish: 'oak',
     });
     expect(
-      parseOptionParam('finish:oak,broken,finish:walnut,:empty,constructor:value,__proto__:polluted,prototype:x'),
+      parseOptionParam(
+        'finish:,finish:oak,broken,finish:walnut,:empty,upholstery:,constructor:value,__proto__:polluted,prototype:x',
+      ),
     ).toEqual({
       finish: 'oak',
     });
@@ -161,6 +163,30 @@ describe('canonical product option URL helpers', () => {
 });
 
 describe('server-side canonical SKU resolution', () => {
+  it('prefers an in-stock SKU over a cheaper out-of-stock SKU', () => {
+    const stockPriorityProduct = {
+      ...product,
+      skus: product.skus.map((sku) =>
+        sku.id === 'sku-oak'
+          ? { ...sku, price: 100000, stock: 0 }
+          : sku.id === 'sku-walnut'
+            ? { ...sku, price: 140000, stock: 2 }
+            : sku,
+      ),
+    } satisfies FurnitureProductForSelection;
+
+    expect(resolveSelectedSku(stockPriorityProduct, {}).sku.id).toBe('sku-walnut');
+  });
+
+  it('falls back to the deterministic active SKU order when every active SKU is out of stock', () => {
+    const allSoldOutProduct = {
+      ...product,
+      skus: product.skus.map((sku) => (sku.active ? { ...sku, stock: 0 } : sku)),
+    } satisfies FurnitureProductForSelection;
+
+    expect(resolveSelectedSku(allSoldOutProduct, {}).sku.id).toBe('sku-oak');
+  });
+
   it('resolves complete selections and prefers a valid SKU when completing partial input', () => {
     expect(resolveSelectedSku(product, { finish: 'oak', upholstery: 'ivory-boucle' }).sku.id).toBe('sku-oak');
     expect(resolveSelectedSku(product, { finish: 'walnut' }).canonicalSelection).toEqual({

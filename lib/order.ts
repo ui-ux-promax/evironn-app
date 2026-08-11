@@ -11,13 +11,19 @@ export function calcShipping(itemsTotal: number, method: ShippingMethod): number
 }
 
 export interface OrderItemSnapshot {
-  productVariantId: string;
-  sku: string;
+  skuId?: string;
+  skuArticleNumber?: string;
+  skuCombinationKey?: string;
+  productVariantId?: string;
+  sku?: string;
   productName: string;
-  colorwayName: string;
-  size: string;
+  productSlug?: string;
+  configuration?: Array<{ groupSlug: string; groupName: string; valueSlug: string; valueName: string }>;
+  colorwayName?: string;
+  size?: string;
   imageUrl: string | null;
   unitPrice: number;
+  oldUnitPrice?: number | null;
   quantity: number;
   lineTotal: number;
 }
@@ -29,7 +35,29 @@ export interface OrderSnapshot {
 
 export function buildOrderSnapshot(cart: CartWithItems): OrderSnapshot {
   const items: OrderItemSnapshot[] = cart.items.map((i) => {
+    if (i.sku) {
+      const configuration = i.sku.selections.map((selection) => ({
+        groupSlug: selection.optionGroup.slug,
+        groupName: selection.optionGroup.name,
+        valueSlug: selection.optionValue.slug,
+        valueName: selection.optionValue.name,
+      }));
+      return {
+        skuId: i.sku.id,
+        skuArticleNumber: i.sku.articleNumber,
+        skuCombinationKey: i.sku.combinationKey,
+        productName: i.sku.product.name,
+        productSlug: i.sku.product.slug,
+        configuration,
+        imageUrl: i.sku.media[0]?.url ?? null,
+        unitPrice: i.sku.price,
+        oldUnitPrice: i.sku.oldPrice,
+        quantity: i.quantity,
+        lineTotal: calcLineTotal(i.sku.price, i.quantity),
+      };
+    }
     const v = i.productVariant;
+    if (!v) throw new Error('Cart item is missing legacy product variant');
     const unitPrice = v.price;
     return {
       productVariantId: v.id,

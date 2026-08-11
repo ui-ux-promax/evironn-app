@@ -87,6 +87,7 @@ async function cancelPendingOrder(orderId: string): Promise<boolean> {
 
 async function restoreCanceledOrderSideEffects(payment: PaymentWithOrder): Promise<void> {
   for (const item of payment.order.items) {
+    if (!item.productVariantId) continue;
     try {
       await prisma.productVariant.update({
         where: { id: item.productVariantId },
@@ -98,7 +99,9 @@ async function restoreCanceledOrderSideEffects(payment: PaymentWithOrder): Promi
   }
 
   await adjustSalesCount(
-    payment.order.items.map((i) => ({ productId: i.productVariant.colorway.productId, quantity: i.quantity })),
+    payment.order.items.flatMap((i) =>
+      i.productVariant ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }] : [],
+    ),
     -1,
   );
 }

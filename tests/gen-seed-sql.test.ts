@@ -5,9 +5,8 @@ describe('generateSeedSql', () => {
   it('includes launch-slice coupons in preview SQL', () => {
     const sql = generateSeedSql();
     const expectedCouponStatements = [
-      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_ritm10\',\'RITM10\',10,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
-      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_welcome15\',\'WELCOME15\',15,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
-      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_expired\',\'EXPIRED\',50,true,\'2020-01-01T00:00:00.000Z\') ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
+      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_welcome10\',\'WELCOME10\',10,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
+      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_evironn15\',\'EVIRONN15\',15,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
     ];
 
     for (const statement of expectedCouponStatements) {
@@ -20,7 +19,7 @@ describe('generateSeedSql', () => {
   it('keeps the seeded PDP product visible in preview SQL', () => {
     const sql = generateSeedSql();
 
-    expect(sql).toContain('ritm-white-tee-oversize');
-    expect(sql).toContain('/products/product-white-tee.png');
+    expect(sql).toContain('noma-woven-lounge');
+    expect(sql).toContain('/assets/products/03-ivory-lounge-idle.webp');
   });
 });

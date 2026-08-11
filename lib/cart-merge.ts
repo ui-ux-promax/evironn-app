@@ -38,6 +38,7 @@ export async function mergeGuestCart(guestToken: string | undefined, userId: str
   });
   for (const prior of priorCarts) {
     for (const item of prior.items) {
+      if (!item.productVariantId) continue;
       await prisma.cartItem.upsert({
         where: { cartId_productVariantId: { cartId: guestCart.id, productVariantId: item.productVariantId } },
         create: { cartId: guestCart.id, productVariantId: item.productVariantId, quantity: item.quantity },
@@ -54,6 +55,7 @@ export async function mergeGuestCart(guestToken: string | undefined, userId: str
     include: { productVariant: { select: { stock: true } } },
   });
   for (const item of merged) {
+    if (!item.productVariant) continue;
     if (item.quantity > item.productVariant.stock) {
       await prisma.cartItem.update({ where: { id: item.id }, data: { quantity: item.productVariant.stock } });
     }

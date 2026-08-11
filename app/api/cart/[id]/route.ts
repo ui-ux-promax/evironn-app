@@ -27,6 +27,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
         include: { productVariant: { select: { stock: true } } },
       });
       if (!item) return NextResponse.json({ message: 'Позиция не найдена' }, { status: 404 });
+      if (!item.productVariant) return NextResponse.json({ message: 'Корзина требует обновления' }, { status: 409 });
       if (item.productVariant.stock < parsed.data.quantity) {
         return NextResponse.json({ message: 'Недостаточно на складе' }, { status: 409 });
       }

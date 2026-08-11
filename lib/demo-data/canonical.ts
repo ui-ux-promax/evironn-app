@@ -1,15 +1,14 @@
-import { coupons, products } from '../../prisma/seed-data';
+import { coupons, furnitureProducts } from '../../prisma/seed-data';
 
-export const CANONICAL_INVENTORY = products.flatMap((product) =>
-  product.colorways.flatMap((colorway) =>
-    colorway.variants.map((variant) => ({
-      sku: variant.sku,
-      stock: variant.stock,
-      price: variant.price,
-      compareAtPrice: variant.compareAtPrice ?? null,
-      active: true,
-    })),
-  ),
+export const CANONICAL_INVENTORY = furnitureProducts.flatMap((product) =>
+  product.skus.map((sku) => ({
+    sku: sku.articleNumber,
+    stock: sku.stock,
+    price: sku.price,
+    oldPrice: sku.oldPrice,
+    compareAtPrice: sku.oldPrice,
+    active: sku.active,
+  })),
 );
 
 export const CANONICAL_COUPONS = coupons;

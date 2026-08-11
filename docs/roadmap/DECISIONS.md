@@ -39,3 +39,7 @@ Blog, newsletter, FAQ, and legal content routes are outside MVP. Reintroduction 
 ## ADR-010 — architecture changes
 
 Approved phase requirements are executed without repeating discovery. Any new architecture choice pauses implementation, runs a focused brainstorming workflow, and updates this file before code resumes.
+
+## ADR-011 — furniture schema cutover compatibility
+
+Phase 1 makes `Category`, `Room`, `Product`, `OptionGroup`, `OptionValue`, `Sku`, normalized SKU selections, and product/SKU media the canonical furniture catalog. Legacy `ProductColorway`/`ProductVariant` relations remain as a typed compatibility adapter for inherited storefront and operational paths until Phase 2 rewires those reads and writes. New furniture seed data writes only canonical tables; order items keep nullable live SKU references while storing immutable article, combination, configuration, image, and pricing snapshots.

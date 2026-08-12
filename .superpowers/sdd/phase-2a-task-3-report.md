@@ -98,5 +98,10 @@ Remediation TDD evidence:
 - No Task 2 shell component was changed.
 - No product-page media, catalog, Prisma/schema/seed, auth, cart/wishlist, checkout, review, admin, API, Task 4, or Task 5 file was changed.
 - Protected plan SHA-256 values were unchanged at final audit:
-  - `docs/superpowers/plans/phase-2-task-3-execution.md`: `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`
+- `docs/superpowers/plans/phase-2-task-3-execution.md`: `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`
 - `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md`: `5D1EA46B6438E9E5B8584831D759E92B9E0517FE481951A6A0AB86D6180F73D2`
+
+## Remediation commit history
+
+- `d15e1c2095489d7188127e26d8296ca4612ad361` — original implementation: ported the interactive Evironn hero, exact hero CSS, pure state helpers, Client Component graph, and 28 byte-identical hero assets with focused tests.
+- `b1b6964b4b49ac26a7cb30c7244ccd8697571d7f` — review remediation: replaced the inert room collection CTA with canonical `catalogRoomPath` navigation, added deterministic image/video metadata and fallback/error coverage, and corrected the original SHA recorded in this report.

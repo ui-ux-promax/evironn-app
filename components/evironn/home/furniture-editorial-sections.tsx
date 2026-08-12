@@ -23,7 +23,7 @@ const categories: Category[] = [
   },
   {
     label: 'Приставные столики',
-    href: catalogCategoryPath('chairs'),
+    href: '/catalog',
     hoverVariant: 2,
     image: {
       src: '/assets/editorial/images/category-console.png',
@@ -34,7 +34,7 @@ const categories: Category[] = [
   { label: 'Кресла', href: catalogCategoryPath('armchairs'), hoverVariant: 3 },
   {
     label: 'Столы',
-    href: catalogCategoryPath('chairs'),
+    href: '/catalog',
     hoverVariant: 4,
     image: {
       src: '/assets/editorial/images/category-reading-chair.png',
@@ -54,6 +54,10 @@ const categories: Category[] = [
     },
   },
 ];
+
+const categoriesWithCanonicalLinks = categories.map((category) =>
+  [5, 6].includes(category.hoverVariant) ? { ...category, href: '/catalog' } : category,
+);
 
 function CategoryRow({ category, index }: { category: Category; index: number }) {
   const reduceMotion = useReducedMotion();
@@ -92,7 +96,7 @@ export function FurnitureCategorySection() {
     <section className="furniture-category-section" id="what-we-do">
       <div className="furniture-category-content">
         <div className="furniture-category-list">
-          {categories.map((category, index) => (
+          {categoriesWithCanonicalLinks.map((category, index) => (
             <CategoryRow category={category} index={index} key={category.label} />
           ))}
         </div>

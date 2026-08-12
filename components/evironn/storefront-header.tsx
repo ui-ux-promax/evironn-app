@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { PUBLIC_ROUTES } from '@/components/evironn/public-routes';
@@ -60,10 +60,13 @@ function buildGlassMap(width: number, height: number): string {
 export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
   const innerRef = useRef<HTMLDivElement>(null);
   const glassMapRef = useRef<SVGFEImageElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const hasOpenedMenuRef = useRef(false);
   const [isCondensed, setIsCondensed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const condenseOn = 64;
     const condenseOff = 24;
     let ticking = false;
@@ -92,7 +95,7 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const syncGlassMap = () => {
       const inner = innerRef.current;
       const glassMap = glassMapRef.current;
@@ -117,21 +120,56 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenuOpen(false);
-    };
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      if (hasOpenedMenuRef.current) menuTriggerRef.current?.focus();
+      return;
+    }
+    hasOpenedMenuRef.current = true;
+    const firstControl = menuRef.current?.querySelector<HTMLElement>('a, button, [tabindex]:not([tabindex="-1"])');
+    firstControl?.focus();
+    innerRef.current?.setAttribute('inert', '');
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
+      innerRef.current?.removeAttribute('inert');
     };
   }, [menuOpen]);
 
-  const toggleMenu = () => setMenuOpen((open) => !open);
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
+
+  const toggleMenu = () => {
+    if (menuOpen) {
+      closeMenu();
+      return;
+    }
+    setMenuOpen(true);
+  };
+
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('a, button, [tabindex]:not([tabindex="-1"])'),
+    );
+    if (controls.length === 0) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
     <header id="evironn-header" lang="ru" className={isCondensed ? 'is-condensed' : ''}>
@@ -140,6 +178,7 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
           <img className="od-logo" src="/assets/evironn-logo.svg" width="248" height="72" alt="Evironn" />
         </Link>
         <button
+          ref={menuTriggerRef}
           className="od-menu-toggle"
           type="button"
           aria-label={menuOpen ? 'Закрыть меню' : 'Открыть меню'}
@@ -170,27 +209,25 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
         <div
           className="od-mobile-menu"
           id="evironn-mobile-menu"
+          ref={menuRef}
           role="dialog"
           aria-modal="true"
+          onKeyDown={handleMenuKeyDown}
           aria-label="Мобильное меню"
         >
           <nav aria-label="Мобильная навигация">
             {primaryLinks.map(([label, href]) => (
-              <Link key={label} href={href} onClick={() => setMenuOpen(false)}>
+              <Link key={label} href={href} onClick={closeMenu}>
                 {label}
               </Link>
             ))}
-            <Link href={PUBLIC_ROUTES.catalog} onClick={() => setMenuOpen(false)}>
+            <Link href={PUBLIC_ROUTES.catalog} onClick={closeMenu}>
               Поиск
             </Link>
-            <Link href={PUBLIC_ROUTES.profile} onClick={() => setMenuOpen(false)}>
+            <Link href={PUBLIC_ROUTES.profile} onClick={closeMenu}>
               Аккаунт
             </Link>
-            <Link
-              href={PUBLIC_ROUTES.cart}
-              aria-label={`Мобильная корзина (${cartCount})`}
-              onClick={() => setMenuOpen(false)}
-            >
+            <Link href={PUBLIC_ROUTES.cart} aria-label={`Мобильная корзина (${cartCount})`} onClick={closeMenu}>
               {`Корзина (${cartCount})`}
             </Link>
           </nav>

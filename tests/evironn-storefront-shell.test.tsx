@@ -69,7 +69,7 @@ describe('Evironn storefront shell', () => {
         .map((link) => link.getAttribute('href')),
     ).toEqual(['/catalog', '/catalog', '/catalog', '/catalog', '/catalog', '/catalog', '/profile', '/cart']);
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(mobileMenu, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Открыть меню' }));
@@ -78,6 +78,43 @@ describe('Evironn storefront shell', () => {
     ).toHaveAttribute('href', '/catalog');
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть меню' }));
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
+  });
+
+  it('does not move focus to the mobile menu trigger on initial render', () => {
+    const preexistingControl = document.createElement('button');
+    preexistingControl.textContent = 'Before header';
+    document.body.append(preexistingControl);
+    preexistingControl.focus();
+
+    try {
+      render(<StorefrontHeader cartCount={0} />);
+
+      expect(document.activeElement).toBe(preexistingControl);
+    } finally {
+      preexistingControl.remove();
+    }
+  });
+
+  it('moves focus into the dialog, traps tab, hides the background, and restores the trigger', () => {
+    render(<StorefrontHeader cartCount={0} />);
+    const trigger = screen.getByRole('button', { name: 'Открыть меню' });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole('dialog', { name: 'Мобильное меню' });
+    const controls = within(dialog).getAllByRole('link');
+    expect(document.activeElement).toBe(controls[0]);
+    expect(document.querySelector('#evironn-header > .od-header-inner')).toHaveAttribute('inert');
+
+    controls[controls.length - 1].focus();
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(controls[0]);
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(controls[controls.length - 1]);
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('renders Footer15 copy and four canonical navigation columns', () => {

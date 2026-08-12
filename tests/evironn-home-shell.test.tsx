@@ -110,6 +110,21 @@ describe('Evironn post-hero home sections', () => {
       '/catalog?category=sofas',
     );
   });
+  it('keeps unsupported editorial categories on the generic catalog route', () => {
+    render(<FurnitureCategorySection />);
+    expect(screen.getAllByRole('heading', { name: 'Приставные столики' })[0].closest('a')).toHaveAttribute(
+      'href',
+      '/catalog',
+    );
+    expect(screen.getAllByRole('heading', { name: 'Столы' })[0].closest('a')).toHaveAttribute('href', '/catalog');
+    expect(screen.getAllByRole('heading', { name: 'Гардеробные' })[0].closest('a')).toHaveAttribute('href', '/catalog');
+    expect(screen.getAllByRole('heading', { name: 'Кровати' })[0].closest('a')).toHaveAttribute('href', '/catalog');
+    expect(screen.getAllByRole('heading', { name: 'Кресла' })[0].closest('a')).toHaveAttribute(
+      'href',
+      '/catalog?category=armchairs',
+    );
+  });
+
   it('keeps animation hooks at component boundaries', () => {
     const natureSource = readFileSync(path.join(process.cwd(), 'components/evironn/home/nature-section.tsx'), 'utf8');
     const benefitsSource = readFileSync(

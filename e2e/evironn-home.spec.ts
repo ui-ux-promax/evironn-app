@@ -79,6 +79,8 @@ test.describe('Evironn home desktop', () => {
 
     await expect(page.locator('#evironn-header .od-logo')).toBeVisible();
     await expect(page.locator('#evironn-header .od-primary-nav')).toBeVisible();
+    await expect(page.locator('#evironn-header')).toHaveCSS('font-family', /Golos Text/);
+    await expect.poll(() => page.evaluate(() => document.fonts.check('400 16px "Golos Text"', 'Мебель'))).toBe(true);
     await expect(page.locator('#evironn-header .od-primary-nav a')).toHaveCount(5);
     await expectHomeRoots(page);
     await expect(page.getByRole('contentinfo')).toBeVisible();
@@ -144,8 +146,36 @@ test.describe('Evironn home mobile', () => {
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveAttribute('role', 'dialog');
     await expect(drawer.locator('a')).toHaveCount(8);
-    await menuButton.tap();
+    await expect
+      .poll(() =>
+        drawer
+          .locator('a')
+          .first()
+          .evaluate((element) => element === document.activeElement),
+      )
+      .toBe(true);
+    await expect(page.locator('#evironn-header > .od-header-inner')).toHaveAttribute('inert', '');
+    await page.keyboard.press('Shift+Tab');
+    await expect
+      .poll(() =>
+        drawer
+          .locator('a')
+          .last()
+          .evaluate((element) => element === document.activeElement),
+      )
+      .toBe(true);
+    await page.keyboard.press('Tab');
+    await expect
+      .poll(() =>
+        drawer
+          .locator('a')
+          .first()
+          .evaluate((element) => element === document.activeElement),
+      )
+      .toBe(true);
+    await page.keyboard.press('Escape');
     await expect(drawer).toHaveCount(0);
+    await expect(menuButton).toBeFocused();
 
     await expectHomeRoots(page);
     const firstCard = page.locator('.interactive-furniture__button').first();

@@ -45,11 +45,27 @@ async function finishHeroVideo(page: import('@playwright/test').Page, source: st
 }
 
 async function expectHomeRoots(page: import('@playwright/test').Page) {
+  await expect(page.locator('main')).toHaveCount(1);
+  await expect(page.locator('main#main-content')).toHaveCount(1);
   const roots = page.locator('main#main-content > section');
   await expect(roots).toHaveCount(8);
   await expect
     .poll(() => roots.evaluateAll((sections) => sections.map((section) => section.id || section.className)))
     .toEqual([...homeRoots]);
+}
+
+async function tabUntilFocused(
+  page: import('@playwright/test').Page,
+  target: import('@playwright/test').Locator,
+  maximumTabs = 32,
+) {
+  for (let index = 0; index < maximumTabs; index += 1) {
+    await page.keyboard.press('Tab');
+    if (await target.evaluate((element) => element === document.activeElement)) return;
+  }
+  throw new Error(
+    `Could not reach ${await target.first().evaluate((element) => element.outerHTML)} with Tab traversal`,
+  );
 }
 
 test.describe('Evironn home desktop', () => {
@@ -75,16 +91,25 @@ test.describe('Evironn home desktop', () => {
     await expect(page.locator('.instagram-follow a[href="/catalog"]')).toHaveCount(22);
     await expect(page.getByRole('contentinfo').locator('a[href="/catalog"]')).toHaveCount(13);
 
+    const logoLink = page.locator('#evironn-header .od-logo-link');
+    const primaryLink = page.locator('#evironn-header .od-primary-nav a').first();
+    await page.keyboard.press('Tab');
+    await expect(logoLink).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(primaryLink).toBeFocused();
+    await expect.poll(() => primaryLink.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+    await page.keyboard.press('Shift+Tab');
+    await expect(logoLink).toBeFocused();
+
     const skipLink = page.locator('a[href="#main-content"]');
-    await skipLink.focus();
+    await tabUntilFocused(page, skipLink);
     await expect(skipLink).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('main#main-content')).toBeFocused();
-
-    const primaryLink = page.locator('#evironn-header .od-primary-nav a').first();
-    await primaryLink.focus();
-    await expect(primaryLink).toBeFocused();
-    await expect.poll(() => primaryLink.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+    await page.keyboard.press('Shift+Tab');
+    await expect(skipLink).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#evironn-hero a[href="/catalog?room=living"]')).toBeFocused();
 
     await page.locator('#evironn-hero .furni-hero-hotspot-sofa').click();
     await finishHeroVideo(page, '/assets/hero/sofa-forward.mp4');
@@ -124,7 +149,7 @@ test.describe('Evironn home mobile', () => {
 
     await expectHomeRoots(page);
     const firstCard = page.locator('.interactive-furniture__button').first();
-    await firstCard.dispatchEvent('click');
+    await firstCard.tap();
     await expect(firstCard.locator('..')).toHaveClass(/is-active/);
 
     const footer = page.getByRole('contentinfo');
@@ -147,6 +172,7 @@ test.describe('Evironn home motion and media resilience', () => {
       .poll(() => page.evaluate(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches))
       .toBe(true);
     await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-stable')).toHaveCount(1);
+    await expect(page.locator('main')).toHaveCount(1);
     await page.locator('#evironn-hero .furni-hero-hotspot-sofa').click();
     await expect(page.locator('#evironn-hero .furni-hero-product__back')).toBeVisible();
     await expect(page.locator('#evironn-hero .furni-hero-product-media__asset.is-visible')).toHaveCount(1);
@@ -166,6 +192,7 @@ test.describe('Evironn home motion and media resilience', () => {
 
     await expect(page.locator('#evironn-hero .furni-hero-product__back')).toHaveCount(0);
     await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-stable')).toHaveCount(1);
+    await expect(page.locator('main')).toHaveCount(1);
     await expectNoBrowserErrors(errors);
   });
 });

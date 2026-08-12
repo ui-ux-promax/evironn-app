@@ -27,9 +27,9 @@ function readExistingEvironnSources(): string {
     .join('\n');
 }
 
-function readNamedImports(source: string): Array<{ name: string; module: string }> {
+function readNamedImports(source: string): Array<{ name: string; moduleName: string }> {
   const sourceFile = ts.createSourceFile('evironn-source.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const imports: Array<{ name: string; module: string }> = [];
+  const imports: Array<{ name: string; moduleName: string }> = [];
 
   sourceFile.forEachChild((node) => {
     if (!ts.isImportDeclaration(node) || !node.importClause?.namedBindings) {
@@ -40,11 +40,11 @@ function readNamedImports(source: string): Array<{ name: string; module: string 
       return;
     }
 
-    const module = ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : '';
+    const moduleName = ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : '';
     for (const element of node.importClause.namedBindings.elements) {
       imports.push({
         name: element.name.text,
-        module,
+        moduleName,
       });
     }
   });
@@ -88,7 +88,7 @@ describe('Evironn Phase 2A migration source contract', () => {
     expect(
       readNamedImports(home)
         .filter(({ name }) => sectionNames.includes(name))
-        .every(({ module }) => module.startsWith('@/components/evironn/')),
+        .every(({ moduleName }) => moduleName.startsWith('@/components/evironn/')),
     ).toBe(true);
 
     expect(home).not.toMatch(/prisma|auth|wishlist|findProducts|force-dynamic|cart-store/);
@@ -99,8 +99,9 @@ describe('Evironn Phase 2A migration source contract', () => {
     });
     expect(renderOrder.every((index) => index >= 0)).toBe(true);
     expect(renderOrder).toEqual([...renderOrder].sort((left, right) => left - right));
-    expect(home).toMatch(/<main\s+id=["']main-content["']/);
-    expect(home.match(/<main\s+id=["']main-content["']/g)).toHaveLength(1);
+    expect(home).toMatch(/<main\b\s+id=["']main-content["']/);
+    expect(home.match(/<main\b/g)).toHaveLength(1);
+    expect(home.match(/<main\b\s+id=["']main-content["']/g)).toHaveLength(1);
     expect(home).toContain('<Hero />');
     expect(home).toContain('<FurnitureCategorySection />');
     expect(home).toContain('<InteractiveFurnitureCards />');

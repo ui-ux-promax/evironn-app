@@ -17,13 +17,16 @@ vi.stubGlobal('matchMedia', (query: string) => ({
   dispatchEvent: vi.fn(),
 }));
 vi.mock('next/link', () => ({
-  default: forwardRef<HTMLAnchorElement, React.ComponentProps<'a'>>(
-    ({ children, ...props }: React.ComponentProps<'a'>, ref: React.Ref<HTMLAnchorElement>) => (
+  default: forwardRef<HTMLAnchorElement, React.ComponentProps<'a'>>(function MockLink(
+    { children, ...props }: React.ComponentProps<'a'>,
+    ref: React.Ref<HTMLAnchorElement>,
+  ) {
+    return (
       <a {...props} ref={ref}>
         {children}
       </a>
-    ),
-  ),
+    );
+  }),
 }));
 vi.stubGlobal(
   'IntersectionObserver',
@@ -106,5 +109,29 @@ describe('Evironn post-hero home sections', () => {
       'href',
       '/catalog?category=sofas',
     );
+  });
+  it('keeps animation hooks at component boundaries', () => {
+    const natureSource = readFileSync(path.join(process.cwd(), 'components/evironn/home/nature-section.tsx'), 'utf8');
+    const benefitsSource = readFileSync(
+      path.join(process.cwd(), 'components/evironn/home/benefits-showcase-section.tsx'),
+      'utf8',
+    );
+    const natureCharacterStart = natureSource.indexOf('function NatureHeadingCharacter');
+    const natureCharacterEnd = natureSource.indexOf('\n}\n', natureCharacterStart);
+    const natureCharacterSource = natureSource.slice(natureCharacterStart, natureCharacterEnd);
+    const natureMapStart = natureSource.indexOf('Array.from(word).map');
+    const natureMapEnd = natureSource.indexOf('</span>', natureMapStart);
+    const revealMediaStart = benefitsSource.indexOf('function RevealMedia');
+    const reducedMotionIndex = benefitsSource.indexOf('const reduceMotion = useReducedMotion();', revealMediaStart);
+    const revealBranchIndex = benefitsSource.indexOf(
+      "if (className === 'benefit-materials-product-reveal'",
+      revealMediaStart,
+    );
+
+    expect(natureCharacterStart).toBeGreaterThanOrEqual(0);
+    expect(natureCharacterSource).toContain('useEditorialAnimation');
+    expect(natureSource.slice(natureMapStart, natureMapEnd)).not.toContain('useEditorialAnimation');
+    expect(reducedMotionIndex).toBeGreaterThanOrEqual(0);
+    expect(reducedMotionIndex).toBeLessThan(revealBranchIndex);
   });
 });

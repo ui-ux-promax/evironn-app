@@ -12,6 +12,31 @@ const benefits: NatureBenefit[] = [
 const natureHeading = 'Материалы, которые стареют красиво';
 const viewport = { once: true, amount: 0.24 };
 
+function NatureHeadingCharacter({
+  character,
+  index,
+  firstOrder,
+  reduceMotion,
+}: {
+  character: string;
+  index: number;
+  firstOrder: number;
+  reduceMotion: boolean | null;
+}) {
+  const variants = useEditorialAnimation(undefined, (firstOrder + index) * 0.035);
+  return (
+    <motion.span
+      className="nature-heading-character"
+      initial={reduceMotion ? false : 'hidden'}
+      variants={variants}
+      viewport={viewport}
+      whileInView="visible"
+    >
+      {character}
+    </motion.span>
+  );
+}
+
 function NatureHeading({ text, className, firstOrder }: { text: string; className: string; firstOrder: number }) {
   const reduceMotion = useReducedMotion();
   const words = text.split(' ');
@@ -23,18 +48,14 @@ function NatureHeading({ text, className, firstOrder }: { text: string; classNam
           <span className="nature-heading-word">
             {Array.from(word).map((character) => {
               const index = characterIndex++;
-              const variants = useEditorialAnimation(undefined, (firstOrder + index) * 0.035);
               return (
-                <motion.span
-                  className="nature-heading-character"
-                  initial={reduceMotion ? false : 'hidden'}
+                <NatureHeadingCharacter
+                  character={character}
+                  firstOrder={firstOrder}
+                  index={index}
                   key={`${character}-${index}`}
-                  variants={variants}
-                  viewport={viewport}
-                  whileInView="visible"
-                >
-                  {character}
-                </motion.span>
+                  reduceMotion={reduceMotion}
+                />
               );
             })}
           </span>

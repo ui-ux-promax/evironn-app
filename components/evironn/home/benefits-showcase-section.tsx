@@ -74,6 +74,7 @@ function RevealMedia({
   final?: { rotate?: number };
   initial: { opacity?: number; x?: number; y?: number; scale?: number; rotate?: number };
 }) {
+  const reduceMotion = useReducedMotion();
   if (className === 'benefit-materials-product-reveal' || className === 'benefit-standards-product-reveal') {
     return (
       <FooterRevealMedia className={className} rotate={initial.rotate ?? 0}>
@@ -81,7 +82,6 @@ function RevealMedia({
       </FooterRevealMedia>
     );
   }
-  const reduceMotion = useReducedMotion();
   return (
     <motion.div
       className={className}

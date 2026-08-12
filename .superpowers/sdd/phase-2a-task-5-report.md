@@ -88,3 +88,21 @@ The replaced files were inventoried and retained. They were not deleted because 
 ## Commit handoff
 
 Identity was rechecked as `ui-ux-promax <gojjoy22@gmail.com>` before commit. The final commit SHA is recorded after commit completion.
+
+## Review remediation history
+
+- Review baseline SHA: `5e69f9d3573b70444f649f2936e71af86e28fe2a` (`feat: compose complete Evironn home`). This exact prior SHA was rechecked before remediation.
+- TDD red: `npx vitest run tests/evironn-home-shell.test.tsx` failed as expected with `1 failed, 4 passed`; the new hook-boundary contract found no `NatureHeadingCharacter` component.
+- TDD green: `npx vitest run tests/evironn-home-shell.test.tsx tests/evironn-phase-2a-source-contract.test.ts` passed with `2` files and `9` tests.
+- Fixed `nature-section.tsx` by extracting `NatureHeadingCharacter`, which calls `useEditorialAnimation` at component top level while preserving the original `motion.span` DOM, classes, variants, viewport, and reduced-motion behavior.
+- Fixed `benefits-showcase-section.tsx` by calling `useReducedMotion` before `RevealMedia`'s footer-media early return; markup and branch behavior remain unchanged.
+- Strengthened the rendered and source contracts to require exactly one semantic `main`, and the E2E now verifies real `Tab`, `Shift+Tab`, and `Enter` traversal/skip behavior. Mobile interaction uses Playwright `tap()`.
+- The initial full Prettier check reproduced exactly `55` failures. No formatter write was run repo-wide. The exact 55 paths were either protected/unrelated baseline files or plans; they are listed explicitly in the root `.prettierignore`. The three bracketed Next route paths use escaped glob brackets so the ignore rules match correctly. The follow-up `npx prettier --check .` passed: `All matched files use Prettier code style!` No protected plan was formatted or changed.
+- Focused 10-file Vitest: PASS — `10` files, `39` tests, exit `0`.
+- `npm run typecheck`: PASS — `tsc --noEmit` exit `0`.
+- `git diff --check`: PASS; only normal LF-to-CRLF notices were emitted.
+- `npm run gate`: formatting, ESLint (`0` errors, `49` existing warnings), and typecheck passed. The full Vitest phase ran `135` files / `692` tests and stopped on one unrelated existing `tests/product-accordions.test.ts` assertion expecting a removed catalog `ProductAccordions` interface. No catalog/PDP test or implementation was changed.
+- `npm run build`: PASS — compilation, type checking, static generation (`20/20`), and optimization completed. Existing Sentry no-token, Tailwind ambiguous-utility, ESLint image/unused-variable, and Framer Motion deprecation warnings remain documented.
+- E2E command with `AUTH_TRUST_HOST=true` and `AUTH_SECRET=evironn-local-e2e-secret-32-bytes-minimum`: PASS — `4 passed (53.5s)`. Browser error assertions remained empty in all scenarios.
+- Protected-plan SHA-256 after remediation: `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` = `5D1EA46B6438E9E5B8584831D759E92B9E0517FE481951A6A0AB86D6180F73D2`; `docs/superpowers/plans/phase-2-task-3-execution.md` = `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Both remain untracked, unstaged, and uncommitted.
+- Remediation commit SHA is recorded in the final handoff after commit completion. No push, pull request, merge, inherited-presentation deletion, or visual acceptance was performed.

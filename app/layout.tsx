@@ -7,6 +7,12 @@ import '../styles/evironn/header.css';
 import '../styles/evironn/footer.css';
 import '../styles/evironn/not-found.css';
 import '../styles/evironn/home/hero.css';
+import '../styles/evironn/home/furniture-editorial-sections.css';
+import '../styles/evironn/home/interactive-furniture-cards.css';
+import '../styles/evironn/home/editorial-statement.css';
+import '../styles/evironn/home/nature-section.css';
+import '../styles/evironn/home/benefits-showcase-section.css';
+import '../styles/evironn/home/instagram-follow-section.css';
 
 // Root layout: только <html>/<body> + шрифты. Storefront-chrome живёт в
 // app/(shop)/layout.tsx, admin-shell — в app/(admin)/layout.tsx. Это

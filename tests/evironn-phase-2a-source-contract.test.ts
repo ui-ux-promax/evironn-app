@@ -92,6 +92,39 @@ describe('Evironn Phase 2A migration source contract', () => {
     ).toBe(true);
 
     expect(home).not.toMatch(/prisma|auth|wishlist|findProducts|force-dynamic|cart-store/);
+
+    const renderOrder = sectionNames.map((name) => {
+      const match = home.match(new RegExp(`<${name}\\b`));
+      return match?.index ?? -1;
+    });
+    expect(renderOrder.every((index) => index >= 0)).toBe(true);
+    expect(renderOrder).toEqual([...renderOrder].sort((left, right) => left - right));
+    expect(home).toMatch(/<main\s+id=["']main-content["']/);
+    expect(home.match(/<main\s+id=["']main-content["']/g)).toHaveLength(1);
+    expect(home).toContain('<Hero />');
+    expect(home).toContain('<FurnitureCategorySection />');
+    expect(home).toContain('<InteractiveFurnitureCards />');
+    expect(home).toContain('<EditorialStatement />');
+    expect(home).toContain('<NatureSection />');
+    expect(home).toContain('<BenefitsShowcaseSection />');
+    expect(home).toContain('<FurnitureWorksParallax />');
+    expect(home).toContain('<InstagramFollowSection />');
+  });
+
+  it('imports each Task 4 stylesheet exactly once at the root integration point', () => {
+    const layout = readSource('app/layout.tsx');
+    const homeStyles = [
+      'furniture-editorial-sections',
+      'interactive-furniture-cards',
+      'editorial-statement',
+      'nature-section',
+      'benefits-showcase-section',
+      'instagram-follow-section',
+    ];
+
+    for (const style of homeStyles) {
+      expect(layout.match(new RegExp(`styles/evironn/home/${style}\\.css`, 'g'))).toHaveLength(1);
+    }
   });
 
   it('keeps Evironn sources free of browser/archive and placeholder route references', () => {

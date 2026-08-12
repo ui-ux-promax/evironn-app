@@ -54,4 +54,24 @@ Latest local Phase 1 validation before the final documentation-only rerun:
 - Task 3 canonical furniture PDP and resilient 360 media are implemented in commits `2afad2b` and `1299585`, independently checked and verified. Product E2E remains blocked by a 60-second no-output local runtime timeout; build passes with pre-existing warnings.
 - Task 2/3 server logic remains accepted for reuse. Their temporary inherited presentation is not accepted and cannot satisfy the Phase 2 visual gate.
 - Phase 2 cannot merge until Phase 2A, 2B, and 2C are complete and visually accepted.
-- Next action: review and execute `docs/superpowers/plans/2026-08-12-phase-2a-storefront-foundation-home.md`. No storefront code has been authorized by the documentation correction alone.
+
+## Phase 2A delivery
+
+- Scope delivered: source-faithful Evironn storefront foundation and complete eight-section home ported from the read-only clone, on `phase/02-storefront`, executed against `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md`. Next.js App Router, metadata, storefront JSON-LD, `VerificationGateHost`, and all existing canonical catalog/PDP/server logic were preserved.
+- Tasks 1–5 complete, each with a fresh implementer and fresh independent reviewer and remediation to zero Critical/Important findings:
+  - Task 1 — dependencies, public route constants, source contracts: `159d81c`, `1d9e406`.
+  - Task 2 — tokens, fonts, shared header/footer, not-found view: `696e1f0`, `20dc7f2`, `93b6fd3`, `3827619`.
+  - Task 3 — interactive hero and exact hero media: `d15e1c2`, `b1b6964`, `4018b49`, `a396a5a`, `6c25279`, `26e9d6c`.
+  - Task 4 — remaining seven home sections: `7e7a2a8`, `e0567c5`, `a74be86`.
+  - Task 5 — static home composition, retirement of inherited presentation, E2E, delivery records: `5e69f9d`, `d2e519f`, `ac749df`, `9810c25`.
+- Delivery-review remediation commits: `40fdae6`, `4b14ba4`, `03808a4`, `02c3ca3`, `2f83c26`, `174ed1b`, `4158259`, `96a9d0d`, `048de3f`, `703e143`, `558b0e3`, `54893f4`, `0d09fce`, `e50921c`.
+- Final quality gate, fresh at HEAD `e50921c`:
+  - `npm run gate` — pass; 137 test files, 701 tests, 0 failures; `prettier --check .` and ESLint clean; `tsc --noEmit` clean.
+  - `npm run build` — pass; Next.js production build exit 0 with only pre-existing warnings (Sentry no auth token, Tailwind ambiguous utilities, ESLint image/unused-variable, Framer Motion `motion()` deprecation).
+  - `npm run e2e -- e2e/evironn-home.spec.ts` — pass; 4/4 scenarios (desktop `1440x1000`, mobile/touch `390x844`, reduced motion, hero media-failure recovery); zero `UntrustedHost` and zero console/page errors.
+  - Secret scan of tracked additions — clean; largest tracked object is `public/assets/hero/terrace-sofa-forward.mp4` at 9,941,316 bytes, well below the 100 MB limit; Phase 2A hero/editorial/furniture assets total 39 files / 128,740,028 bytes.
+  - Protected Task 3 plan hash `f1be0e06…c503a7e2` unchanged; both executable plan files remain untracked and unmodified.
+- All Phase 2A commits carry identity `ui-ux-promax <gojjoy22@gmail.com>` with English conventional subjects and no AI/bot/co-author trailers.
+- Final finding closed: `playwright.config.ts` was excluded from the quality gate by `.prettierignore` and unformatted; `e50921c` returns it to gate scope and it is now Prettier-clean, and no Phase 2A-owned source or test file remains ignored. The completion pass ran in a fresh coordinator session after the prior session reached its model usage limit; the independent reviewer subagent could not run because of a temporary inference-gateway outage (HTTP 503), so the final delta sign-off was verified directly by the coordinator and recorded in `.superpowers/sdd/phase-2a-delivery-report.md`.
+- Stop gate: Phase 2A halts here for user desktop/mobile visual acceptance. No Vercel Preview push, pull request, or merge is performed without explicit user authorization; Phase 2B and 2C remain unauthorized.
+- Next action: user desktop/mobile visual acceptance of the Phase 2A storefront (header/drawer, eight home sections, footer, reduced motion, media fallback), then explicit authorization to push the Preview and proceed to Phase 2B.

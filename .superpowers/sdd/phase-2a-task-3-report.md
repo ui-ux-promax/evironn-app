@@ -6,7 +6,7 @@ Implementation complete for the authorized Phase 2A hero task.
 
 - Branch: `phase/02-storefront`
 - Task base SHA: `3827619992bb5211c2f04f68da6ebee36d37a227`
-- Commit SHA: `bedf1ba` (amended once below only to record the final report SHA)
+- Original implementation commit SHA: `d15e1c2095489d7188127e26d8296ca4612ad361`
 - Required commit message: `feat: port interactive Evironn hero`
 - Protected execution plan: `docs/superpowers/plans/phase-2-task-3-execution.md` was not edited, formatted, staged, or committed.
 
@@ -52,6 +52,19 @@ Additional focused checks:
 - `npm run typecheck` — exit 0, `tsc --noEmit` produced no diagnostics.
 - `npm exec prettier -- --check app/layout.tsx components/evironn/home styles/evironn/home/hero.css tests/evironn-hero-state.test.ts tests/evironn-hero-assets.test.ts tests/evironn-hero-shell.test.tsx` — `All matched files use Prettier code style!`, exit 0.
 - `git diff --check` — exit 0; no whitespace errors. Git emitted only the normal LF-to-CRLF warning for `app/layout.tsx`.
+
+## Review remediation history
+
+The Task 3 review identified three remediation requirements. The fixes remain bounded to the hero component, its focused shell test, and this report.
+
+1. The room collection CTA was changed from an inert button to a real `next/link` while preserving the clone class and exact copy. The destination is derived from the visual room through the canonical map `living-room → living`, `kitchen → dining`, `bedroom → bedroom`, and `terrace → terrace`, then `catalogRoomPath`.
+2. `tests/evironn-hero-shell.test.tsx` now stubs `matchMedia`, image/video media APIs, and `HTMLMediaElement.play()` deterministically; assigns positive `naturalWidth`/`naturalHeight` before each room image load; fires `loadedmetadata` and asserts video duration `6 > 0`; asserts the transition play call; and covers stable recovery after room-image and transition-video errors.
+3. The stale report SHA was corrected from `bedf1ba` to the actual original implementation commit `d15e1c2095489d7188127e26d8296ca4612ad361`.
+
+Remediation TDD evidence:
+
+- Red: `npx vitest run tests/evironn-hero-shell.test.tsx` — `1 failed`, the new canonical room link assertion could not find a link because the CTA was still a button; the other 5 new/retained shell behaviors passed.
+- Green: `npx vitest run tests/evironn-hero-shell.test.tsx` — `Test Files 1 passed (1)`, `Tests 6 passed (6)`, exit 0.
 
 ## Port and behavior
 

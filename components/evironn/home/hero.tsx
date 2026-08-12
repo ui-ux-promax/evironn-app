@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { catalogRoomPath } from '@/components/evironn/public-routes';
 import { HeroProductCard } from './hero-product-card';
 import { HeroProductMedia } from './hero-product-media';
 import { HeroRoomMedia } from './hero-room-media';
@@ -29,6 +31,13 @@ import {
   type AvailableHeroRoomId,
   type HeroRoomId,
 } from './hero-room-state';
+
+const HERO_ROOM_CATALOG_SLUGS: Record<AvailableHeroRoomId, string> = {
+  'living-room': 'living',
+  kitchen: 'dining',
+  bedroom: 'bedroom',
+  terrace: 'terrace',
+};
 
 export function Hero() {
   const segRef = useRef<HTMLDivElement>(null);
@@ -220,9 +229,9 @@ export function Hero() {
             дерева.
           </p>
           <div className="furni-hero-actions">
-            <button className="btn btn-dark" type="button">
+            <Link className="btn btn-dark" href={catalogRoomPath(HERO_ROOM_CATALOG_SLUGS[visualRoom.id])}>
               СМОТРЕТЬ КОЛЛЕКЦИЮ
-            </button>
+            </Link>
             <button className="btn btn-outline" type="button">
               ПОСМОТРЕТЬ ИСТОРИЮ
             </button>

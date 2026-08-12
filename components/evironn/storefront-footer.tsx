@@ -1,3 +1,5 @@
+'use client';
+
 import { motion, type Variants } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa6';
 import Link from 'next/link';

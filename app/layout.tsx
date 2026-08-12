@@ -1,10 +1,35 @@
 import type { Metadata } from 'next';
+import { Anybody, Manrope, Unbounded } from 'next/font/google';
 import { defaultOgImage, defaultSeoDescription, defaultSeoTitle, getSiteUrl, siteName } from '@/lib/seo';
 import './globals.css';
+import '../styles/evironn/tokens.css';
+import '../styles/evironn/header.css';
+import '../styles/evironn/footer.css';
+import '../styles/evironn/not-found.css';
 
 // Root layout: только <html>/<body> + шрифты. Storefront-chrome живёт в
 // app/(shop)/layout.tsx, admin-shell — в app/(admin)/layout.tsx. Это
 // единственный layout, который рендерит <html> (требование App Router).
+const manrope = Manrope({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-manrope',
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+const unbounded = Unbounded({
+  subsets: ['latin'],
+  variable: '--font-unbounded',
+  weight: ['600', '700'],
+  display: 'swap',
+});
+// Anybody — заголовки админки (см. app/(admin)). На storefront не используется.
+const anybody = Anybody({
+  subsets: ['latin'],
+  variable: '--font-anybody',
+  weight: ['600', '700', '800'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
   title: { default: defaultSeoTitle, template: '%s · Evironn' },
@@ -29,8 +54,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru">
-      <body>{children}</body>
+    <html lang="ru" className={`${manrope.variable} ${unbounded.variable} ${anybody.variable}`}>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }

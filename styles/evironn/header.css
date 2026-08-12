@@ -294,3 +294,44 @@
     margin-left: auto;
   }
 }
+
+/* The clone header did not ship a drawer because its route shell was static.
+   This scoped adapter supplies the App Router mobile interaction without
+   changing the clone header geometry or controls. */
+#evironn-header .od-mobile-menu {
+  position: fixed;
+  inset: 71px 0 auto;
+  z-index: 0;
+  display: none;
+  padding: 24px 20px 32px;
+  border-top: 1px solid rgba(21, 20, 15, 0.08);
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 12px 40px rgb(17 17 26 / 0.12);
+  backdrop-filter: blur(12px) saturate(1.4);
+}
+
+#evironn-header .od-mobile-menu nav {
+  display: grid;
+  gap: 18px;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+#evironn-header .od-mobile-menu a {
+  color: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+@media (max-width: 1040px) {
+  #evironn-header .od-mobile-menu {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #evironn-header .od-mobile-menu {
+    transition: none;
+  }
+}

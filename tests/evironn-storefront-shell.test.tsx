@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,6 +33,10 @@ describe('Evironn storefront shell', () => {
       'Вся мебельГостинаяСтоловаяСпальняТерраса',
     );
     expect(screen.getByRole('link', { name: 'Корзина (0)' })).toHaveAttribute('href', '/cart');
+    expect(document.body).not.toHaveTextContent(/RITM/i);
+    for (const link of screen.getAllByRole('link')) {
+      expect(link).not.toHaveAttribute('href', '#');
+    }
   });
 
   it('opens and closes the accessible mobile menu with canonical links', () => {
@@ -48,6 +52,13 @@ describe('Evironn storefront shell', () => {
     expect(screen.getByRole('dialog', { name: 'Мобильное меню' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Мобильная корзина (2)' })).toHaveAttribute('href', '/cart');
 
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть меню' }));
+    expect(
+      within(screen.getByRole('dialog', { name: 'Мобильное меню' })).getByRole('link', { name: 'Гостиная' }),
+    ).toHaveAttribute('href', '/catalog');
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть меню' }));
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
   });
@@ -65,6 +76,10 @@ describe('Evironn storefront shell', () => {
       'КаталогДиваныСтолыКроватиКомнатыГостинаяСпальняТеррасаМатериалыДеревоТканьКаменьПомощьКонтактыДоставкаУход за мебелью',
     );
     expect(screen.getByRole('link', { name: 'Смотреть каталог' })).toHaveAttribute('href', '/catalog');
+    for (const link of screen.getAllByRole('link')) {
+      expect(link).toHaveAttribute('href', '/catalog');
+      expect(link).not.toHaveAttribute('href', '#');
+    }
   });
 
   it('renders the chrome-free not-found view with canonical actions', () => {
@@ -76,6 +91,9 @@ describe('Evironn storefront shell', () => {
     expect(screen.getByRole('link', { name: 'На главную' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Открыть каталог' })).toHaveAttribute('href', '/catalog');
     expect(screen.getByRole('link', { name: 'Перейти в корзину' })).toHaveAttribute('href', '/cart');
+    expect(screen.getByText(/ссылка устарела или адрес был введен с ошибкой/)).toBeInTheDocument();
+    expect(screen.getByText(/Вернитесь на понятный публичный маршрут и продолжите просмотр/)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/RITM/i);
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });

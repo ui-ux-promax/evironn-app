@@ -63,4 +63,52 @@ describe('Evironn shell source contract', () => {
     expect(notFound).toContain('StorefrontHeader');
     expect(notFound).toContain('StorefrontFooter');
   });
+
+  it('keeps the existing Next font variables and imports Evironn CSS after Tailwind directives', () => {
+    const rootLayout = read('app/layout.tsx');
+    const globals = read('app/globals.css');
+    const header = read('styles/evironn/header.css');
+
+    expect(rootLayout).toContain("from 'next/font/google'");
+    expect(rootLayout).toMatch(/variable:\s*'--font-manrope'/);
+    expect(rootLayout).toMatch(/variable:\s*'--font-unbounded'/);
+    expect(rootLayout).toMatch(/variable:\s*'--font-anybody'/);
+    expect(rootLayout).toMatch(
+      /className=\{`\$\{manrope\.variable\} \$\{unbounded\.variable\} \$\{anybody\.variable\}`\}/,
+    );
+    expect(rootLayout.indexOf("import './globals.css';")).toBeLessThan(
+      rootLayout.indexOf("import '../styles/evironn/tokens.css';"),
+    );
+    expect(rootLayout.indexOf("import '../styles/evironn/tokens.css';")).toBeLessThan(
+      rootLayout.indexOf("import '../styles/evironn/header.css';"),
+    );
+    expect(rootLayout.indexOf("import '../styles/evironn/header.css';")).toBeLessThan(
+      rootLayout.indexOf("import '../styles/evironn/footer.css';"),
+    );
+    expect(rootLayout.indexOf("import '../styles/evironn/footer.css';")).toBeLessThan(
+      rootLayout.indexOf("import '../styles/evironn/not-found.css';"),
+    );
+    expect(globals).not.toContain("@import '../styles/evironn/");
+    expect(globals).not.toContain('.od-mobile-menu');
+    expect(header).toContain('.od-mobile-menu');
+  });
+
+  it('composes one not-found header, view, and footer without RITM chrome', () => {
+    const notFound = read('app/not-found.tsx');
+    const footer = read('components/evironn/storefront-footer.tsx');
+    expect(notFound.match(/<StorefrontHeader\b/g)).toHaveLength(1);
+    expect(notFound.match(/<NotFoundView\s*\/>/g)).toHaveLength(1);
+    expect(notFound.match(/<StorefrontFooter\s*\/>/g)).toHaveLength(1);
+    expect(notFound).not.toMatch(/SiteHeader|SiteFooter|RITM|<Header\b|<Footer15\b/);
+    expect(footer.startsWith("'use client';")).toBe(true);
+  });
+
+  it('records the original shell commit and complete source/target asset pairs', () => {
+    const report = read('.superpowers/sdd/phase-2a-task-2-report.md');
+    expect(report).toContain('Commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d`');
+    expect(report).not.toContain('Commit: pending');
+    expect((report.match(/`src\/assets\//g) ?? []).length).toBe(7);
+    expect((report.match(/`public\/assets\//g) ?? []).length).toBe(9);
+    expect(report).toContain('source/target pairs matched SHA-256 and size');
+  });
 });

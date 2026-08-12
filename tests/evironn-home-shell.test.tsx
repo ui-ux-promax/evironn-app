@@ -111,6 +111,13 @@ describe('Evironn post-hero home sections', () => {
     );
   });
   it('keeps unsupported editorial categories on the generic catalog route', () => {
+    const source = readFileSync(
+      path.join(process.cwd(), 'components/evironn/home/furniture-editorial-sections.tsx'),
+      'utf8',
+    );
+    expect(source).not.toContain('categoriesWithCanonicalLinks');
+    expect(source).not.toContain('[5, 6].includes(category.hoverVariant)');
+
     render(<FurnitureCategorySection />);
     expect(screen.getAllByRole('heading', { name: 'Приставные столики' })[0].closest('a')).toHaveAttribute(
       'href',

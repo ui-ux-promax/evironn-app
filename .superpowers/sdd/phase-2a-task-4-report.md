@@ -55,4 +55,5 @@ Git identity verified before commit: `ui-ux-promax <gojjoy22@gmail.com>`.
 - Added focused shell source assertions first; the red run failed 2 of 4 tests on the missing barrel contract and corrupted alt literal.
 - Added `'use client';`, reordered exports to the required seven-section sequence, corrected the alt to `Идея для интерьера`, and updated this report to identify `7e7a2a839ccca3d7f6ff30d6754d601fb160ddc6` as the implementation commit.
 - The remediation commit uses the conventional message `fix: remediate Task 4 review findings`; its final SHA is reported by the handoff because this report is part of that commit.
+- Review remediation commit `e0567c5ea9189ca4e4542037b1c07151c11c9247` addressed the client boundary, exact export order, exact Instagram alt copy, shell-contract assertions, and the report correction.
 - Remediation was limited to `components/evironn/home/index.ts`, `components/evironn/home/instagram-follow-section.tsx`, `tests/evironn-home-shell.test.tsx`, and this report. No Task 5/page/server/protected-plan files were changed.

@@ -91,6 +91,15 @@ describe('Evironn shell source contract', () => {
     expect(globals).not.toContain("@import '../styles/evironn/");
     expect(globals).not.toContain('.od-mobile-menu');
     expect(header).toContain('.od-mobile-menu');
+
+    const drawerSelectors = header
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.includes('.od-mobile-menu') && line.endsWith('{'));
+    expect(drawerSelectors.length).toBeGreaterThan(0);
+    for (const selector of drawerSelectors) {
+      expect(selector).toMatch(/^#evironn-header\s+\.od-mobile-menu(?:\s|\{|$)/);
+    }
   });
 
   it('composes one not-found header, view, and footer without RITM chrome', () => {
@@ -105,8 +114,12 @@ describe('Evironn shell source contract', () => {
 
   it('records the original shell commit and complete source/target asset pairs', () => {
     const report = read('.superpowers/sdd/phase-2a-task-2-report.md');
-    expect(report).toContain('Commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d`');
-    expect(report).not.toContain('Commit: pending');
+    expect(report).toContain(
+      '- Initial shell commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d` — initial Task 2 shell implementation.',
+    );
+    expect(report).toContain(
+      '- Remediation commit: `20dc7f20866bd5c112ea45bdacc526e9b277e40f` — restored integration contracts and build-safe client boundary.',
+    );
     expect((report.match(/`src\/assets\//g) ?? []).length).toBe(7);
     expect((report.match(/`public\/assets\//g) ?? []).length).toBe(9);
     expect(report).toContain('source/target pairs matched SHA-256 and size');

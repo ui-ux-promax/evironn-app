@@ -29,14 +29,21 @@ describe('Evironn storefront shell', () => {
 
     expect(screen.getByRole('img', { name: 'Evironn' })).toHaveAttribute('src', '/assets/evironn-logo.svg');
     expect(screen.getByRole('link', { name: 'Evironn' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('navigation', { name: 'Основная навигация' })).toHaveTextContent(
-      'Вся мебельГостинаяСтоловаяСпальняТерраса',
-    );
+    const desktopNavigation = screen.getByRole('navigation', { name: 'Основная навигация' });
+    expect(
+      within(desktopNavigation)
+        .getAllByRole('link')
+        .map((link) => link.textContent?.trim()),
+    ).toEqual(['Вся мебель', 'Гостиная', 'Столовая', 'Спальня', 'Терраса']);
+    expect(
+      within(desktopNavigation)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['/catalog', '/catalog', '/catalog', '/catalog', '/catalog']);
     expect(screen.getByRole('link', { name: 'Корзина (0)' })).toHaveAttribute('href', '/cart');
+    expect(screen.getByRole('link', { name: 'Поиск' })).toHaveAttribute('href', '/catalog');
+    expect(screen.getByRole('link', { name: 'Аккаунт' })).toHaveAttribute('href', '/profile');
     expect(document.body).not.toHaveTextContent(/RITM/i);
-    for (const link of screen.getAllByRole('link')) {
-      expect(link).not.toHaveAttribute('href', '#');
-    }
   });
 
   it('opens and closes the accessible mobile menu with canonical links', () => {
@@ -50,7 +57,17 @@ describe('Evironn storefront shell', () => {
 
     expect(screen.getByRole('button', { name: 'Закрыть меню' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('dialog', { name: 'Мобильное меню' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Мобильная корзина (2)' })).toHaveAttribute('href', '/cart');
+    const mobileMenu = screen.getByRole('dialog', { name: 'Мобильное меню' });
+    expect(
+      within(mobileMenu)
+        .getAllByRole('link')
+        .map((link) => link.textContent?.trim()),
+    ).toEqual(['Вся мебель', 'Гостиная', 'Столовая', 'Спальня', 'Терраса', 'Поиск', 'Аккаунт', 'Корзина (2)']);
+    expect(
+      within(mobileMenu)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['/catalog', '/catalog', '/catalog', '/catalog', '/catalog', '/catalog', '/profile', '/cart']);
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
@@ -72,14 +89,37 @@ describe('Evironn storefront shell', () => {
         'Мебель для тихих, наполненных жизнью интерьеров — с вниманием к форме, материалу и ежедневному комфорту.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Навигация в подвале' })).toHaveTextContent(
-      'КаталогДиваныСтолыКроватиКомнатыГостинаяСпальняТеррасаМатериалыДеревоТканьКаменьПомощьКонтактыДоставкаУход за мебелью',
-    );
-    expect(screen.getByRole('link', { name: 'Смотреть каталог' })).toHaveAttribute('href', '/catalog');
-    for (const link of screen.getAllByRole('link')) {
-      expect(link).toHaveAttribute('href', '/catalog');
-      expect(link).not.toHaveAttribute('href', '#');
-    }
+    const footerLinks = screen.getAllByRole('link');
+    expect(footerLinks.map((link) => link.textContent?.trim())).toEqual([
+      'Смотреть каталог',
+      'Диваны',
+      'Столы',
+      'Кровати',
+      'Гостиная',
+      'Спальня',
+      'Терраса',
+      'Дерево',
+      'Ткань',
+      'Камень',
+      'Контакты',
+      'Доставка',
+      'Уход за мебелью',
+    ]);
+    expect(footerLinks.map((link) => link.getAttribute('href'))).toEqual([
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+      '/catalog',
+    ]);
   });
 
   it('renders the chrome-free not-found view with canonical actions', () => {
@@ -91,8 +131,12 @@ describe('Evironn storefront shell', () => {
     expect(screen.getByRole('link', { name: 'На главную' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Открыть каталог' })).toHaveAttribute('href', '/catalog');
     expect(screen.getByRole('link', { name: 'Перейти в корзину' })).toHaveAttribute('href', '/cart');
-    expect(screen.getByText(/ссылка устарела или адрес был введен с ошибкой/)).toBeInTheDocument();
-    expect(screen.getByText(/Вернитесь на понятный публичный маршрут и продолжите просмотр/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Похоже, ссылка устарела или адрес был введен с ошибкой. Вернитесь на понятный публичный маршрут и продолжите просмотр.',
+        { exact: true },
+      ),
+    ).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/RITM/i);
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();

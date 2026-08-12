@@ -3,7 +3,11 @@
 - Base SHA: `1d9e4067d46bc6d4183ba67afd67785a8c808fdf`
 - Implementer: Luna High
 - Scope: exact Evironn tokens/fonts/logo, shared header, Footer15, not-found view, App Router shell adapters, focused tests
-- Commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d`
+
+## Commit history
+
+- Initial shell commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d` — initial Task 2 shell implementation.
+- Remediation commit: `20dc7f20866bd5c112ea45bdacc526e9b277e40f` — restored integration contracts and build-safe client boundary.
 
 ## Red
 
@@ -81,3 +85,10 @@ Seven clone binaries were copied byte-for-byte. Total target bytes: `175693`; la
 - Final remediation verification: `npx vitest run tests/evironn-storefront-shell.test.tsx tests/evironn-shell-assets.test.ts tests/evironn-shell-source-contract.test.ts tests/evironn-public-navigation.test.ts` — 4 test files passed, 14 tests passed; `npm run typecheck` — passed; Prettier check — passed; `git diff --check` — passed.
 - Final remediation build: `npm run build` — exit 0; `/_not-found` generated successfully. Existing Sentry no-auth-token, Tailwind ambiguous-class, and unrelated ESLint warnings remain documented build output; no build errors.
 - Added `'use client'` to `StorefrontFooter` after build tracing identified `motion(Link)` evaluation during server-side `/_not-found` collection. The focused source test failed before this boundary fix and passed after it.
+
+## Second review remediation evidence
+
+- Review red: strengthened assertions failed on the missing two-commit history; the existing UI tests did not enumerate every desktop, mobile, and footer destination; and the not-found copy assertion was not exact.
+- Remediation green: the strengthened storefront UI assertions passed; the remaining red assertion was the expected missing report history.
+- Added exact desktop navigation labels/destinations, exact mobile drawer labels/destinations, exact footer link labels/destinations, and exact complete not-found explanatory copy assertions.
+- Added a source contract that checks every `.od-mobile-menu` selector is rooted under `#evironn-header`.

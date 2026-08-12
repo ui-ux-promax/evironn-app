@@ -69,8 +69,9 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const items = useCartStore((state) => state.items);
   const loading = useCartStore((state) => state.loading);
+  const error = useCartStore((state) => state.error);
   const fetchCartItems = useCartStore((state) => state.fetchCartItems);
-  const visibleCartCount = loading ? cartCount : items.length;
+  const visibleCartCount = loading || error ? cartCount : items.length;
 
   useEffect(() => {
     void fetchCartItems();

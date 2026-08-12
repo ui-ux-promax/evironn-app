@@ -20,6 +20,7 @@ vi.stubGlobal(
 import { StorefrontFooter } from '@/components/evironn/storefront-footer';
 import { StorefrontHeader } from '@/components/evironn/storefront-header';
 import { NotFoundView } from '@/components/evironn/not-found-view';
+import { Api } from '@/services/api-client';
 import { useCartStore } from '@/store';
 
 afterEach(() => {
@@ -139,6 +140,15 @@ describe('Evironn storefront shell', () => {
     });
 
     await waitFor(() => expect(screen.getByRole('link', { name: 'Корзина (2)' })).toHaveAttribute('href', '/cart'));
+  });
+
+  it('preserves the server cart count when client hydration fails', async () => {
+    const getCart = vi.spyOn(Api.cart, 'getCart').mockRejectedValue(new Error('fetch failed'));
+
+    render(<StorefrontHeader cartCount={4} />);
+
+    await waitFor(() => expect(getCart).toHaveBeenCalledOnce());
+    expect(screen.getByRole('link', { name: 'Корзина (4)' })).toHaveAttribute('href', '/cart');
   });
 
   it('does not move focus to the mobile menu trigger on initial render', () => {

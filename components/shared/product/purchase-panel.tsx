@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ResolvedProductSelection } from '@/lib/product-selection';
 import { serializeOptionParam } from '@/lib/product-selection';
 import { PriceTag } from '@/components/shared/price-tag';
+import { ProductAccordions } from './product-accordions';
 
 export interface PurchasePanelProps {
   productSlug: string;
@@ -97,18 +98,7 @@ export function PurchasePanel({
         ))}
       </div>
 
-      {description && <p className="text-sm leading-6 text-ink-muted">{description}</p>}
-
-      {specs && Object.keys(specs).length > 0 && (
-        <dl className="grid gap-2 border-t border-line pt-4 text-sm">
-          {Object.entries(specs).map(([label, value]) => (
-            <div key={label} className="flex items-baseline justify-between gap-4 border-b border-line/70 pb-2">
-              <dt className="text-ink-muted">{label}</dt>
-              <dd className="text-right font-semibold">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      <ProductAccordions description={description} specs={specs} />
 
       <div className="grid gap-2 border-t border-line pt-4">
         <button

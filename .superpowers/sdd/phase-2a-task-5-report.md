@@ -354,3 +354,7 @@ ok 4 [chromium] › e2e\\evironn-home.spec.ts:182:7 › Evironn home motion and 
 ```
 
 E2E result: exit status `0`. The run also emitted the existing Node `NO_COLOR`/`FORCE_COLOR`, Framer Motion deprecation, and Tailwind ambiguous-utility warnings; browser console/page-error assertions remained empty.
+
+## Documentation evidence commit history
+
+- Documentation-evidence commit: `ac749df15af5dd8e682c83cc42e25f2a3b3bf3e6` (`docs: record Task 5 final review evidence`). Purpose: record the exact remediation SHA and full gate, build, and E2E command excerpts, including the unrelated full-gate failure and its counts.

@@ -38,7 +38,6 @@ lib/order.ts
 lib/payment-sync.ts
 lib/product-selection.ts
 lib/review.ts
-playwright.config.ts
 prisma/gen-seed-sql.ts
 prisma/seed-data.ts
 prisma/seed-orders.ts

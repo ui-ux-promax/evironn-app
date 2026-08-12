@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import * as ts from 'typescript';
 
 import { describe, expect, it } from 'vitest';
 
@@ -24,6 +25,31 @@ function readExistingEvironnSources(): string {
     .filter((entry): entry is string => typeof entry === 'string' && /\.(?:css|tsx?|jsx?)$/.test(entry))
     .map((entry) => fs.readFileSync(path.join(directory, entry), 'utf8'))
     .join('\n');
+}
+
+function readNamedImports(source: string): Array<{ name: string; module: string }> {
+  const sourceFile = ts.createSourceFile('evironn-source.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const imports: Array<{ name: string; module: string }> = [];
+
+  sourceFile.forEachChild((node) => {
+    if (!ts.isImportDeclaration(node) || !node.importClause?.namedBindings) {
+      return;
+    }
+
+    if (!ts.isNamedImports(node.importClause.namedBindings)) {
+      return;
+    }
+
+    const module = ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : '';
+    for (const element of node.importClause.namedBindings.elements) {
+      imports.push({
+        name: element.name.text,
+        module,
+      });
+    }
+  });
+
+  return imports;
 }
 
 describe('Evironn Phase 2A migration source contract', () => {
@@ -54,12 +80,16 @@ describe('Evironn Phase 2A migration source contract', () => {
       'InstagramFollowSection',
     ];
 
-    let previousIndex = -1;
-    for (const name of sectionNames) {
-      const currentIndex = home.indexOf(name);
-      expect(currentIndex, `Expected ${name} in app/(shop)/page.tsx`).toBeGreaterThan(previousIndex);
-      previousIndex = currentIndex;
-    }
+    const importedSections = readNamedImports(home)
+      .filter(({ name }) => sectionNames.includes(name))
+      .map(({ name }) => name);
+
+    expect(importedSections).toEqual(sectionNames);
+    expect(
+      readNamedImports(home)
+        .filter(({ name }) => sectionNames.includes(name))
+        .every(({ module }) => module.startsWith('@/components/evironn/')),
+    ).toBe(true);
 
     expect(home).not.toMatch(/prisma|auth|wishlist|findProducts|force-dynamic|cart-store/);
   });

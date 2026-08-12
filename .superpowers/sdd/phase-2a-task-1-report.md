@@ -71,3 +71,14 @@ Additional focused checks:
 - npm install reported 11 audit vulnerabilities (9 high, 2 critical); no audit remediation was in Task 1 scope.
 - npm rewrote package-lock indentation, creating a large textual diff, but semantic comparison found only the requested packages and their motion subdependencies changed.
 - The broad source-contract test is intentionally red until later task owners migrate the shell and home.
+
+## Review remediation
+
+- Finding: the home-order assertion used `String.indexOf`, so comments, JSX, or other textual occurrences could satisfy the contract.
+- Fix: replaced that check with a TypeScript AST inspection of top-level `ImportDeclaration` nodes. The test now extracts named import specifiers, filters the required home section names, asserts their exact order, and verifies their import sources are Evironn component modules. Existing shell, forbidden-reference, and future Task 5 contract assertions are preserved.
+- Focused command: `npx vitest run tests/evironn-phase-2a-source-contract.test.ts tests/evironn-public-navigation.test.ts`
+- Focused output: source contract `3 tests | 2 failed` for the still-inherited shell/home; navigation `1 test file | 4 passed`. The home failure reports actual imported sections as `["Hero"]`, confirming textual JSX/comments no longer satisfy the contract.
+- `npm run typecheck` — PASS.
+- `npm exec prettier -- --check tests/evironn-phase-2a-source-contract.test.ts tests/evironn-public-navigation.test.ts` — PASS.
+- `git diff --check` — PASS.
+- Changed files: `tests/evironn-phase-2a-source-contract.test.ts`, `.superpowers/sdd/phase-2a-task-1-report.md`.

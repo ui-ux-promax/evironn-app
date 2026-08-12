@@ -1,7 +1,6 @@
-# Phase 2A Task 2 Implementer Report
+# Phase 2A Task 2 Report
 
 - Base SHA: `1d9e4067d46bc6d4183ba67afd67785a8c808fdf`
-- Implementer: Luna High
 - Scope: exact Evironn tokens/fonts/logo, shared header, Footer15, not-found view, App Router shell adapters, focused tests
 
 ## Commit history

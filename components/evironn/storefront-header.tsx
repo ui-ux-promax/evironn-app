@@ -3,17 +3,17 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
-import { PUBLIC_ROUTES } from '@/components/evironn/public-routes';
+import { catalogRoomPath, PUBLIC_ROUTES } from '@/components/evironn/public-routes';
 import { useCartStore } from '@/store';
 
 type StorefrontHeaderProps = { cartCount: number };
 
 const primaryLinks = [
   ['Вся мебель', PUBLIC_ROUTES.catalog],
-  ['Гостиная', PUBLIC_ROUTES.catalog],
-  ['Столовая', PUBLIC_ROUTES.catalog],
-  ['Спальня', PUBLIC_ROUTES.catalog],
-  ['Терраса', PUBLIC_ROUTES.catalog],
+  ['Гостиная', catalogRoomPath('living')],
+  ['Столовая', catalogRoomPath('dining')],
+  ['Спальня', catalogRoomPath('bedroom')],
+  ['Терраса', catalogRoomPath('terrace')],
 ] as const;
 
 function buildGlassMap(width: number, height: number): string {

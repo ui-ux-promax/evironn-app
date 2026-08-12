@@ -43,7 +43,13 @@ describe('Evironn storefront shell', () => {
       within(desktopNavigation)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['/catalog', '/catalog', '/catalog', '/catalog', '/catalog']);
+    ).toEqual([
+      '/catalog',
+      '/catalog?room=living',
+      '/catalog?room=dining',
+      '/catalog?room=bedroom',
+      '/catalog?room=terrace',
+    ]);
     expect(screen.getByRole('link', { name: 'Корзина (0)' })).toHaveAttribute('href', '/cart');
     expect(screen.getByRole('link', { name: 'Поиск' })).toHaveAttribute('href', '/catalog');
     expect(screen.getByRole('link', { name: 'Аккаунт' })).toHaveAttribute('href', '/profile');
@@ -71,7 +77,16 @@ describe('Evironn storefront shell', () => {
       within(mobileMenu)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['/catalog', '/catalog', '/catalog', '/catalog', '/catalog', '/catalog', '/profile', '/cart']);
+    ).toEqual([
+      '/catalog',
+      '/catalog?room=living',
+      '/catalog?room=dining',
+      '/catalog?room=bedroom',
+      '/catalog?room=terrace',
+      '/catalog',
+      '/profile',
+      '/cart',
+    ]);
 
     fireEvent.keyDown(mobileMenu, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
@@ -79,7 +94,7 @@ describe('Evironn storefront shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Открыть меню' }));
     expect(
       within(screen.getByRole('dialog', { name: 'Мобильное меню' })).getByRole('link', { name: 'Гостиная' }),
-    ).toHaveAttribute('href', '/catalog');
+    ).toHaveAttribute('href', '/catalog?room=living');
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть меню' }));
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
   });
@@ -204,12 +219,12 @@ describe('Evironn storefront shell', () => {
     ]);
     expect(footerLinks.map((link) => link.getAttribute('href'))).toEqual([
       '/catalog',
+      '/catalog?category=sofas',
       '/catalog',
       '/catalog',
-      '/catalog',
-      '/catalog',
-      '/catalog',
-      '/catalog',
+      '/catalog?room=living',
+      '/catalog?room=bedroom',
+      '/catalog?room=terrace',
       '/catalog',
       '/catalog',
       '/catalog',

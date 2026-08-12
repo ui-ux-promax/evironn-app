@@ -4,7 +4,7 @@ import { motion, type Variants } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa6';
 import Link from 'next/link';
 
-import { PUBLIC_ROUTES } from '@/components/evironn/public-routes';
+import { catalogCategoryPath, catalogRoomPath, PUBLIC_ROUTES } from '@/components/evironn/public-routes';
 
 type FooterLink = { label: string; href: string };
 type FooterColumn = { title: string; links: FooterLink[] };
@@ -13,7 +13,7 @@ const columns: FooterColumn[] = [
   {
     title: 'Каталог',
     links: [
-      { label: 'Диваны', href: PUBLIC_ROUTES.catalog },
+      { label: 'Диваны', href: catalogCategoryPath('sofas') },
       { label: 'Столы', href: PUBLIC_ROUTES.catalog },
       { label: 'Кровати', href: PUBLIC_ROUTES.catalog },
     ],
@@ -21,9 +21,9 @@ const columns: FooterColumn[] = [
   {
     title: 'Комнаты',
     links: [
-      { label: 'Гостиная', href: PUBLIC_ROUTES.catalog },
-      { label: 'Спальня', href: PUBLIC_ROUTES.catalog },
-      { label: 'Терраса', href: PUBLIC_ROUTES.catalog },
+      { label: 'Гостиная', href: catalogRoomPath('living') },
+      { label: 'Спальня', href: catalogRoomPath('bedroom') },
+      { label: 'Терраса', href: catalogRoomPath('terrace') },
     ],
   },
   {

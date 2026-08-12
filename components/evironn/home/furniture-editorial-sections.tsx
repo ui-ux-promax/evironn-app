@@ -42,10 +42,10 @@ const categories: Category[] = [
       className: 'furniture-category-image--tables',
     },
   },
-  { label: 'Гардеробные', href: catalogCategoryPath('chairs'), hoverVariant: 5 },
+  { label: 'Гардеробные', href: '/catalog', hoverVariant: 5 },
   {
     label: 'Кровати',
-    href: catalogCategoryPath('chairs'),
+    href: '/catalog',
     hoverVariant: 6,
     image: {
       src: '/assets/editorial/images/category-bedside.png',
@@ -54,10 +54,6 @@ const categories: Category[] = [
     },
   },
 ];
-
-const categoriesWithCanonicalLinks = categories.map((category) =>
-  [5, 6].includes(category.hoverVariant) ? { ...category, href: '/catalog' } : category,
-);
 
 function CategoryRow({ category, index }: { category: Category; index: number }) {
   const reduceMotion = useReducedMotion();
@@ -96,7 +92,7 @@ export function FurnitureCategorySection() {
     <section className="furniture-category-section" id="what-we-do">
       <div className="furniture-category-content">
         <div className="furniture-category-list">
-          {categoriesWithCanonicalLinks.map((category, index) => (
+          {categories.map((category, index) => (
             <CategoryRow category={category} index={index} key={category.label} />
           ))}
         </div>

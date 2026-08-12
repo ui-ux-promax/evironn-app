@@ -1,9 +1,10 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { PUBLIC_ROUTES } from '@/components/evironn/public-routes';
+import { useCartStore } from '@/store';
 
 type StorefrontHeaderProps = { cartCount: number };
 
@@ -63,8 +64,17 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const hasOpenedMenuRef = useRef(false);
+  const previousInertRef = useRef(new Map<HTMLElement, boolean>());
   const [isCondensed, setIsCondensed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const items = useCartStore((state) => state.items);
+  const loading = useCartStore((state) => state.loading);
+  const fetchCartItems = useCartStore((state) => state.fetchCartItems);
+  const visibleCartCount = loading ? cartCount : items.length;
+
+  useEffect(() => {
+    void fetchCartItems();
+  }, [fetchCartItems]);
 
   useLayoutEffect(() => {
     const condenseOn = 64;
@@ -128,12 +138,29 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
     hasOpenedMenuRef.current = true;
     const firstControl = menuRef.current?.querySelector<HTMLElement>('a, button, [tabindex]:not([tabindex="-1"])');
     firstControl?.focus();
-    innerRef.current?.setAttribute('inert', '');
+    const inner = innerRef.current;
+    if (inner) {
+      previousInertRef.current.set(inner, inner.hasAttribute('inert'));
+      inner.setAttribute('inert', '');
+    }
+    const header = document.getElementById('evironn-header');
+    const host = header?.parentElement;
+    const backgroundElements = Array.from(document.body.children).filter(
+      (element): element is HTMLElement => element !== host && element !== header,
+    );
+    for (const element of backgroundElements) {
+      previousInertRef.current.set(element, element.hasAttribute('inert'));
+      element.setAttribute('inert', '');
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
-      innerRef.current?.removeAttribute('inert');
+      for (const [element, wasInert] of previousInertRef.current) {
+        if (wasInert) element.setAttribute('inert', '');
+        else element.removeAttribute('inert');
+      }
+      previousInertRef.current.clear();
     };
   }, [menuOpen]);
 
@@ -202,7 +229,7 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
           <Link className="od-utility-action" href={PUBLIC_ROUTES.profile}>
             Аккаунт
           </Link>
-          <Link className="od-bag" href={PUBLIC_ROUTES.cart}>{`Корзина (${cartCount})`}</Link>
+          <Link className="od-bag" href={PUBLIC_ROUTES.cart}>{`Корзина (${visibleCartCount})`}</Link>
         </div>
       </div>
       {menuOpen && (
@@ -227,8 +254,8 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
             <Link href={PUBLIC_ROUTES.profile} onClick={closeMenu}>
               Аккаунт
             </Link>
-            <Link href={PUBLIC_ROUTES.cart} aria-label={`Мобильная корзина (${cartCount})`} onClick={closeMenu}>
-              {`Корзина (${cartCount})`}
+            <Link href={PUBLIC_ROUTES.cart} aria-label={`Мобильная корзина (${visibleCartCount})`} onClick={closeMenu}>
+              {`Корзина (${visibleCartCount})`}
             </Link>
           </nav>
         </div>

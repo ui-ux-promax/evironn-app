@@ -8,6 +8,7 @@
 
 - Initial shell commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d` — initial Task 2 shell implementation.
 - Remediation commit: `20dc7f20866bd5c112ea45bdacc526e9b277e40f` — restored integration contracts and build-safe client boundary.
+- Review-contract commit: `93b6fd320bd5d6cb65b67fccc7a63581b5d5fb56` — strengthened navigation, not-found, and CSS scoping contracts.
 
 ## Red
 
@@ -92,3 +93,9 @@ Seven clone binaries were copied byte-for-byte. Total target bytes: `175693`; la
 - Remediation green: the strengthened storefront UI assertions passed; the remaining red assertion was the expected missing report history.
 - Added exact desktop navigation labels/destinations, exact mobile drawer labels/destinations, exact footer link labels/destinations, and exact complete not-found explanatory copy assertions.
 - Added a source contract that checks every `.od-mobile-menu` selector is rooted under `#evironn-header`.
+
+## Final review remediation evidence
+
+- Review red: the multiline drawer-scoping check failed on the existing comment-inclusive prelude, confirming the prior line-based filter was insufficient for complete selector blocks.
+- Remediation green: replaced line filtering with comment-stripped complete prelude parsing, splitting multiline/comma-separated selectors and rejecting any `.od-mobile-menu` selector not rooted under `#evironn-header`.
+- Added the required multiline escaping fixture and verified it fails when an unrooted selector is present.

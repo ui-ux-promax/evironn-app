@@ -92,13 +92,14 @@ describe('Evironn shell source contract', () => {
     expect(globals).not.toContain('.od-mobile-menu');
     expect(header).toContain('.od-mobile-menu');
 
-    const drawerSelectors = header
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.includes('.od-mobile-menu') && line.endsWith('{'));
-    expect(drawerSelectors.length).toBeGreaterThan(0);
-    for (const selector of drawerSelectors) {
-      expect(selector).toMatch(/^#evironn-header\s+\.od-mobile-menu(?:\s|\{|$)/);
+    const drawerBlocks = [...header.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)]
+      .map((match) => match[1].trim())
+      .filter((prelude) => prelude.includes('.od-mobile-menu'));
+    expect(drawerBlocks.length).toBeGreaterThan(0);
+    for (const prelude of drawerBlocks) {
+      for (const selector of prelude.split(',')) {
+        expect(selector.trim()).toMatch(/^#evironn-header\s+\.od-mobile-menu(?:\s|$)/);
+      }
     }
   });
 
@@ -123,5 +124,20 @@ describe('Evironn shell source contract', () => {
     expect((report.match(/`src\/assets\//g) ?? []).length).toBe(7);
     expect((report.match(/`public\/assets\//g) ?? []).length).toBe(9);
     expect(report).toContain('source/target pairs matched SHA-256 and size');
+  });
+
+  it('rejects multiline mobile drawer selectors that escape the header root', () => {
+    const multilineFixture = `#evironn-header\n  .od-mobile-menu a,\n.od-mobile-menu .escape { color: red; }`;
+    const drawerBlocks = [...multilineFixture.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)]
+      .map((match) => match[1].trim())
+      .filter((prelude) => prelude.includes('.od-mobile-menu'));
+
+    expect(() => {
+      for (const prelude of drawerBlocks) {
+        for (const selector of prelude.split(',')) {
+          expect(selector.trim()).toMatch(/^#evironn-header\s+\.od-mobile-menu(?:\s|$)/);
+        }
+      }
+    }).toThrow();
   });
 });

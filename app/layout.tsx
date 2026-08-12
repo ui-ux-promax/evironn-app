@@ -6,6 +6,7 @@ import '../styles/evironn/tokens.css';
 import '../styles/evironn/header.css';
 import '../styles/evironn/footer.css';
 import '../styles/evironn/not-found.css';
+import '../styles/evironn/home/hero.css';
 
 // Root layout: только <html>/<body> + шрифты. Storefront-chrome живёт в
 // app/(shop)/layout.tsx, admin-shell — в app/(admin)/layout.tsx. Это

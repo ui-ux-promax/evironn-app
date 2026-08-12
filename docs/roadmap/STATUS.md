@@ -50,7 +50,7 @@ Latest local Phase 1 validation before the final documentation-only rerun:
 - Task 1 canonical storefront projections are complete and independently approved in commits `03e94bb` and `1b9fc3d`.
 - Database-safe Vercel bootstrap is committed as `0c14739`; deployment builds no longer run `prisma db push`.
 - Preview branch deployment is ready at `https://evironn-app-git-phase-02-storefront-s1aw3ns-projects.vercel.app`.
-- Task 2 URL-driven furniture catalog with server pagination is implemented in commit `3045183`, reviewed by fresh Sol Medium reviewer, and coordinator-verified: focused Vitest 22/22, typecheck pass, catalog E2E 5/5. Local E2E emitted Auth.js `UntrustedHost` and Tailwind ambiguous-class warnings without test failures.
+- Task 2 URL-driven furniture catalog with server pagination is implemented in commit `3045183`, reviewed by fresh reviewer, and coordinator-verified: focused Vitest 22/22, typecheck pass, catalog E2E 5/5. Local E2E emitted Auth.js `UntrustedHost` and Tailwind ambiguous-class warnings without test failures.
 - Task 3 canonical furniture PDP and resilient 360 media are implemented in commits `2afad2b` and `1299585`, reviewed and coordinator-verified. Product E2E remains blocked by a 60-second no-output local runtime timeout; build passes with pre-existing warnings.
 - Task 2/3 server logic remains accepted for reuse. Their temporary inherited presentation is not accepted and cannot satisfy the Phase 2 visual gate.
 - Phase 2 cannot merge until Phase 2A, 2B, and 2C are complete and visually accepted.

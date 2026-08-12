@@ -3,7 +3,7 @@
 ## Status
 
 - Task: 5, exact home composition and integration acceptance.
-- Base SHA: `a74be86` (Task 4 review-remediation HEAD before Task 5 changes).
+- Base SHA: `a74be86` (Task 4 remediation HEAD before Task 5 changes).
 - Branch: `phase/02-storefront`.
 - Required commit: `feat: compose complete Evironn home`.
 - Push, pull request, merge, inherited-presentation deletion, Preview, and visual acceptance were not performed.
@@ -88,9 +88,9 @@ The replaced files were inventoried and retained. They were not deleted because 
 
 Identity was rechecked as `ui-ux-promax <gojjoy22@gmail.com>` before commit. The final commit SHA is recorded after commit completion.
 
-## Review remediation history
+## Remediation history
 
-- Review baseline SHA: `5e69f9d3573b70444f649f2936e71af86e28fe2a` (`feat: compose complete Evironn home`). This exact prior SHA was rechecked before remediation.
+- Baseline SHA: `5e69f9d3573b70444f649f2936e71af86e28fe2a` (`feat: compose complete Evironn home`). This exact prior SHA was rechecked before remediation.
 - TDD red: `npx vitest run tests/evironn-home-shell.test.tsx` failed as expected with `1 failed, 4 passed`; the new hook-boundary contract found no `NatureHeadingCharacter` component.
 - TDD green: `npx vitest run tests/evironn-home-shell.test.tsx tests/evironn-phase-2a-source-contract.test.ts` passed with `2` files and `9` tests.
 - Fixed `nature-section.tsx` by extracting `NatureHeadingCharacter`, which calls `useEditorialAnimation` at component top level while preserving the original `motion.span` DOM, classes, variants, viewport, and reduced-motion behavior.
@@ -106,7 +106,7 @@ Identity was rechecked as `ui-ux-promax <gojjoy22@gmail.com>` before commit. The
 - Protected-plan SHA-256 after remediation: `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` = `5D1EA46B6438E9E5B8584831D759E92B9E0517FE481951A6A0AB86D6180F73D2`; `docs/superpowers/plans/phase-2-task-3-execution.md` = `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Both remain untracked, unstaged, and uncommitted.
 - Remediation commit SHA is recorded in the final handoff after commit completion. No push, pull request, merge, inherited-presentation deletion, or visual acceptance was performed.
 
-## Final review documentation evidence
+## Final documentation evidence
 
 The remediation commit is `d2e519f81596a555e0e1f50c844d056850c0e042` (`fix: remediate Task 5 review findings`). Its purpose was to fix the two Task 4 React hook-rule violations exposed by the composed home, strengthen the one-main/source and browser interaction contracts, and make the formatting gate pass without rewriting protected plans or unrelated files.
 

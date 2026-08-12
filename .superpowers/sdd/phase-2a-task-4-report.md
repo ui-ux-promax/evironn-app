@@ -40,20 +40,20 @@ Protected plan SHA-256 before/after: `5d1ea46b6438e9e5b8584831d759e92b9e0517fe48
 
 ## Warnings and concerns
 
-- `STATUS.md` and `DECISIONS.md` were absent from this checkout during required startup inspection; no coordinator-owned roadmap/status file was created or modified.
+- `STATUS.md` and `DECISIONS.md` were absent from this checkout during required startup inspection; no roadmap/status file was created or modified.
 - CSS is committed under `styles/evironn/home/`; global CSS import belongs to the existing shell integration and was intentionally left untouched because Task 4 ownership excludes Task 2 files. Task 5 should import these six stylesheets once at the root integration point.
 - The clone’s `framer-motion` runtime emits its existing `motion() is deprecated` warning in the jsdom shell test; it does not fail the focused suite.
-- E2E, full gate, build, preview, visual review, push, and PR are outside this implementer’s Task 4 handoff and were not claimed.
+- E2E, full gate, build, preview, visual review, push, and PR are outside Task 4 scope and were not claimed.
 
 ## Authorship
 
 Git identity verified before commit: `ui-ux-promax <gojjoy22@gmail.com>`.
 
-## Review remediation history
+## Remediation history
 
-- Review remediation requested a client boundary and exact normative barrel order, exact clone Instagram alt text, and correction of the displayed implementation SHA.
+- Remediation required a client boundary and exact normative barrel order, exact clone Instagram alt text, and correction of the displayed implementation SHA.
 - Added focused shell source assertions first; the red run failed 2 of 4 tests on the missing barrel contract and corrupted alt literal.
 - Added `'use client';`, reordered exports to the required seven-section sequence, corrected the alt to `Идея для интерьера`, and updated this report to identify `7e7a2a839ccca3d7f6ff30d6754d601fb160ddc6` as the implementation commit.
 - The remediation commit uses the conventional message `fix: remediate Task 4 review findings`; its final SHA is reported by the handoff because this report is part of that commit.
-- Review remediation commit `e0567c5ea9189ca4e4542037b1c07151c11c9247` addressed the client boundary, exact export order, exact Instagram alt copy, shell-contract assertions, and the report correction.
+- Remediation commit `e0567c5ea9189ca4e4542037b1c07151c11c9247` addressed the client boundary, exact export order, exact Instagram alt copy, shell-contract assertions, and the report correction.
 - Remediation was limited to `components/evironn/home/index.ts`, `components/evironn/home/instagram-follow-section.tsx`, `tests/evironn-home-shell.test.tsx`, and this report. No Task 5/page/server/protected-plan files were changed.

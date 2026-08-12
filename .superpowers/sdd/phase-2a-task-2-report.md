@@ -7,7 +7,7 @@
 
 - Initial shell commit: `696e1f063ee9bbb7bcd30c0408ec3dd037ba6a5d` — initial Task 2 shell implementation.
 - Remediation commit: `20dc7f20866bd5c112ea45bdacc526e9b277e40f` — restored integration contracts and build-safe client boundary.
-- Review-contract commit: `93b6fd320bd5d6cb65b67fccc7a63581b5d5fb56` — strengthened navigation, not-found, and CSS scoping contracts.
+- Contract-strengthening commit: `93b6fd320bd5d6cb65b67fccc7a63581b5d5fb56` — strengthened navigation, not-found, and CSS scoping contracts.
 
 ## Red
 
@@ -76,8 +76,8 @@ Seven clone binaries were copied byte-for-byte. Total target bytes: `175693`; la
 
 ## Remediation evidence
 
-- Review red: new assertions failed because root `next/font/google` variables were absent, Evironn CSS imports/drawer rules were located in `app/globals.css`, the report still lacked the committed SHA, and the requested drawer/source-contract coverage was not present.
-- Remediation green: `npx vitest run tests/evironn-storefront-shell.test.tsx tests/evironn-shell-source-contract.test.ts` — 2 test files passed, 10 tests passed.
+- Initial check red: new assertions failed because root `next/font/google` variables were absent, Evironn CSS imports/drawer rules were located in `app/globals.css`, the report still lacked the committed SHA, and the requested drawer/source-contract coverage was not present.
+- Follow-up check green: `npx vitest run tests/evironn-storefront-shell.test.tsx tests/evironn-shell-source-contract.test.ts` — 2 test files passed, 10 tests passed.
 - Restored the original `Manrope`, `Unbounded`, and `Anybody` imports, variables, and `<html>` classes in `app/layout.tsx`.
 - Moved Evironn stylesheet imports after `globals.css` in `app/layout.tsx`; removed those imports and all drawer rules from `app/globals.css`.
 - Moved scoped mobile drawer rules into `styles/evironn/header.css`.
@@ -86,15 +86,15 @@ Seven clone binaries were copied byte-for-byte. Total target bytes: `175693`; la
 - Final remediation build: `npm run build` — exit 0; `/_not-found` generated successfully. Existing Sentry no-auth-token, Tailwind ambiguous-class, and unrelated ESLint warnings remain documented build output; no build errors.
 - Added `'use client'` to `StorefrontFooter` after build tracing identified `motion(Link)` evaluation during server-side `/_not-found` collection. The focused source test failed before this boundary fix and passed after it.
 
-## Second review remediation evidence
+## Second remediation evidence
 
-- Review red: strengthened assertions failed on the missing two-commit history; the existing UI tests did not enumerate every desktop, mobile, and footer destination; and the not-found copy assertion was not exact.
-- Remediation green: the strengthened storefront UI assertions passed; the remaining red assertion was the expected missing report history.
+- Initial check red: strengthened assertions failed on the missing two-commit history; the existing UI tests did not enumerate every desktop, mobile, and footer destination; and the not-found copy assertion was not exact.
+- Follow-up check green: the strengthened storefront UI assertions passed; the remaining red assertion was the expected missing report history.
 - Added exact desktop navigation labels/destinations, exact mobile drawer labels/destinations, exact footer link labels/destinations, and exact complete not-found explanatory copy assertions.
 - Added a source contract that checks every `.od-mobile-menu` selector is rooted under `#evironn-header`.
 
-## Final review remediation evidence
+## Final remediation evidence
 
-- Review red: the multiline drawer-scoping check failed on the existing comment-inclusive prelude, confirming the prior line-based filter was insufficient for complete selector blocks.
-- Remediation green: replaced line filtering with comment-stripped complete prelude parsing, splitting multiline/comma-separated selectors and rejecting any `.od-mobile-menu` selector not rooted under `#evironn-header`.
+- Initial check red: the multiline drawer-scoping check failed on the existing comment-inclusive prelude, confirming the prior line-based filter was insufficient for complete selector blocks.
+- Follow-up check green: replaced line filtering with comment-stripped complete prelude parsing, splitting multiline/comma-separated selectors and rejecting any `.od-mobile-menu` selector not rooted under `#evironn-header`.
 - Added the required multiline escaping fixture and verified it fails when an unrooted selector is present.

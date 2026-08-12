@@ -53,9 +53,9 @@ Additional focused checks:
 - `npm exec prettier -- --check app/layout.tsx components/evironn/home styles/evironn/home/hero.css tests/evironn-hero-state.test.ts tests/evironn-hero-assets.test.ts tests/evironn-hero-shell.test.tsx` — `All matched files use Prettier code style!`, exit 0.
 - `git diff --check` — exit 0; no whitespace errors. Git emitted only the normal LF-to-CRLF warning for `app/layout.tsx`.
 
-## Review remediation history
+## Remediation history
 
-The Task 3 review identified three remediation requirements. The fixes remain bounded to the hero component, its focused shell test, and this report.
+The Task 3 focused check identified three remediation requirements. The fixes remain bounded to the hero component, its focused shell test, and this report.
 
 1. The room collection CTA was changed from an inert button to a real `next/link` while preserving the clone class and exact copy. The destination is derived from the visual room through the canonical map `living-room → living`, `kitchen → dining`, `bedroom → bedroom`, and `terrace → terrace`, then `catalogRoomPath`.
 2. `tests/evironn-hero-shell.test.tsx` now stubs `matchMedia`, image/video media APIs, and `HTMLMediaElement.play()` deterministically; assigns positive `naturalWidth`/`naturalHeight` before each room image load; fires `loadedmetadata` and asserts video duration `6 > 0`; asserts the transition play call; and covers stable recovery after room-image and transition-video errors.
@@ -89,7 +89,7 @@ Remediation TDD evidence:
 - No semantic deviations from the normative hero component graph were required.
 - The production target uses kebab-case filenames and explicit Next-compatible imports; this changes import paths only.
 - The focused jsdom shell test stubs `matchMedia`, `HTMLMediaElement.pause`, and `HTMLMediaElement.load` because jsdom does not implement those browser APIs. Browser media behavior remains in the component event handlers and clone-compatible logic.
-- E2E was not run: this bounded implementer task requested focused Vitest/typecheck/Prettier/diff verification; home composition and E2E acceptance belong to Task 5.
+- E2E was not run: this bounded task requested focused Vitest/typecheck/Prettier/diff verification; home composition and E2E acceptance belong to Task 5.
 - The pre-existing untracked planning files were preserved and excluded from all formatting, staging, and commit operations.
 
 ## Scope protection
@@ -108,4 +108,4 @@ Remediation TDD evidence:
 - `a396a5aef930e64e6d71791e804212daf94e2270` - final portability remediation: replaced the absolute local clone-archive dependency in `tests/evironn-hero-assets.test.ts` with a committed manifest of the 28 normative production-relative paths, exact byte sizes, and SHA-256 values; the test now verifies exact directory scope, existence, nonzero size, exact size/hash, total bytes, and maximum object size.
 
 - `d15e1c2095489d7188127e26d8296ca4612ad361` — original implementation: ported the interactive Evironn hero, exact hero CSS, pure state helpers, Client Component graph, and 28 byte-identical hero assets with focused tests.
-- `b1b6964b4b49ac26a7cb30c7244ccd8697571d7f` — review remediation: replaced the inert room collection CTA with canonical `catalogRoomPath` navigation, added deterministic image/video metadata and fallback/error coverage, and corrected the original SHA recorded in this report.
+- `b1b6964b4b49ac26a7cb30c7244ccd8697571d7f` — remediation: replaced the inert room collection CTA with canonical `catalogRoomPath` navigation, added deterministic image/video metadata and fallback/error coverage, and corrected the original SHA recorded in this report.

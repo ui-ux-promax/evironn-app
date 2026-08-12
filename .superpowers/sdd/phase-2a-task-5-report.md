@@ -5,7 +5,6 @@
 - Task: 5, exact home composition and integration acceptance.
 - Base SHA: `a74be86` (Task 4 review-remediation HEAD before Task 5 changes).
 - Branch: `phase/02-storefront`.
-- Implementer: Luna High, inheriting the confirmed root Luna High model.
 - Required commit: `feat: compose complete Evironn home`.
 - Push, pull request, merge, inherited-presentation deletion, Preview, and visual acceptance were not performed.
 

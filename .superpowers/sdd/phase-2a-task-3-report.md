@@ -103,5 +103,7 @@ Remediation TDD evidence:
 
 ## Remediation commit history
 
+- `a396a5aef930e64e6d71791e804212daf94e2270` - final portability remediation: replaced the absolute local clone-archive dependency in `tests/evironn-hero-assets.test.ts` with a committed manifest of the 28 normative production-relative paths, exact byte sizes, and SHA-256 values; the test now verifies exact directory scope, existence, nonzero size, exact size/hash, total bytes, and maximum object size.
+
 - `d15e1c2095489d7188127e26d8296ca4612ad361` — original implementation: ported the interactive Evironn hero, exact hero CSS, pure state helpers, Client Component graph, and 28 byte-identical hero assets with focused tests.
 - `b1b6964b4b49ac26a7cb30c7244ccd8697571d7f` — review remediation: replaced the inert room collection CTA with canonical `catalogRoomPath` navigation, added deterministic image/video metadata and fallback/error coverage, and corrected the original SHA recorded in this report.

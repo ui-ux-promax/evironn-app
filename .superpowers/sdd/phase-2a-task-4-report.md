@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented Task 4 on `phase/02-storefront` from base `26e9d6c382ce152ba22a3dd8ee6f8b758ce124ae`. Final commit: `1c6bc6a39ca11cd17638d383436942db9f74b270`. The protected untracked plans were not modified, staged, formatted, or committed.
+Implemented Task 4 on `phase/02-storefront` from base `26e9d6c382ce152ba22a3dd8ee6f8b758ce124ae`. Final implementation commit: `7e7a2a839ccca3d7f6ff30d6754d601fb160ddc6`. The protected untracked plans were not modified, staged, formatted, or committed.
 
 ## Red-first evidence
 
@@ -48,3 +48,11 @@ Protected plan SHA-256 before/after: `5d1ea46b6438e9e5b8584831d759e92b9e0517fe48
 ## Authorship
 
 Git identity verified before commit: `ui-ux-promax <gojjoy22@gmail.com>`.
+
+## Review remediation history
+
+- Review remediation requested a client boundary and exact normative barrel order, exact clone Instagram alt text, and correction of the displayed implementation SHA.
+- Added focused shell source assertions first; the red run failed 2 of 4 tests on the missing barrel contract and corrupted alt literal.
+- Added `'use client';`, reordered exports to the required seven-section sequence, corrected the alt to `Идея для интерьера`, and updated this report to identify `7e7a2a839ccca3d7f6ff30d6754d601fb160ddc6` as the implementation commit.
+- The remediation commit uses the conventional message `fix: remediate Task 4 review findings`; its final SHA is reported by the handoff because this report is part of that commit.
+- Remediation was limited to `components/evironn/home/index.ts`, `components/evironn/home/instagram-follow-section.tsx`, `tests/evironn-home-shell.test.tsx`, and this report. No Task 5/page/server/protected-plan files were changed.

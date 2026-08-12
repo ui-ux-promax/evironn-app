@@ -72,7 +72,7 @@ function GalleryCard({ source, onHoverChange }: { source: string; onHoverChange:
       onFocus={() => onHoverChange(true)}
       onBlur={() => onHoverChange(false)}
     >
-      <img alt="�?дея для интерьера" src={source} />
+      <img alt="Идея для интерьера" src={source} />
       <span aria-hidden="true" className="instagram-follow-card-overlay" />
       <span className="instagram-follow-card-label">Evironn</span>
     </Link>

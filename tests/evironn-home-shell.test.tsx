@@ -1,5 +1,7 @@
 /** @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { forwardRef } from 'react';
 import '@testing-library/jest-dom/vitest';
@@ -44,6 +46,28 @@ import {
 } from '@/components/evironn/home';
 
 describe('Evironn post-hero home sections', () => {
+  it('keeps the client barrel boundary and exact normative export order', () => {
+    const barrel = readFileSync(path.join(process.cwd(), 'components/evironn/home/index.ts'), 'utf8');
+    expect(barrel).toBe(
+      "'use client';\n\n" +
+        "export { FurnitureCategorySection } from './furniture-editorial-sections';\n" +
+        "export { InteractiveFurnitureCards } from './interactive-furniture-cards';\n" +
+        "export { EditorialStatement } from './editorial-statement';\n" +
+        "export { NatureSection } from './nature-section';\n" +
+        "export { BenefitsShowcaseSection } from './benefits-showcase-section';\n" +
+        "export { FurnitureWorksParallax } from './furniture-editorial-sections';\n" +
+        "export { InstagramFollowSection } from './instagram-follow-section';\n",
+    );
+  });
+
+  it('keeps the exact clone Instagram card alt copy', () => {
+    const instagramSource = readFileSync(
+      path.join(process.cwd(), 'components/evironn/home/instagram-follow-section.tsx'),
+      'utf8',
+    );
+    expect(instagramSource).toContain('alt="Идея для интерьера"');
+  });
+
   it('exports and renders the seven sections in normative order with Russian copy', () => {
     render(
       <main>

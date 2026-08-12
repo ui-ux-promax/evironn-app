@@ -1,6 +1,6 @@
-import { SiteHeader } from '@/components/shared/site-header';
-import { SiteFooter } from '@/components/shared/site-footer';
 import { VerificationGateHost } from '@/components/shared/auth/verification-gate-host';
+import { StorefrontFooter } from '@/components/evironn/storefront-footer';
+import { StorefrontHeader } from '@/components/evironn/storefront-header';
 import { buildStorefrontJsonLd } from '@/lib/seo';
 
 // Storefront chrome. Вынесено из root layout, чтобы admin route-group
@@ -11,10 +11,10 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <>
-      <SiteHeader />
+      <StorefrontHeader cartCount={0} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storefrontJsonLd) }} />
-      <main>{children}</main>
-      <SiteFooter />
+      <div className="shop-content">{children}</div>
+      <StorefrontFooter />
       <VerificationGateHost />
     </>
   );

@@ -1,0 +1,151 @@
+/* Local Sentient italic face used by editorial copy. */
+@font-face {
+  font-family: 'Sentient Reference';
+  src: url('/assets/fonts/sentient-italic-400-reference.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: block;
+}
+
+/* Local Sentient faces used by the nature section. */
+@font-face {
+  font-family: 'Nature Sentient Reference';
+  src: url('/assets/fonts/sentient-normal-400-reference.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Nature Sentient Reference';
+  src: url('/assets/fonts/sentient-italic-300-reference.woff2') format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: block;
+}
+
+/* Local Sentient faces used by the benefits showcase. */
+@font-face {
+  font-family: 'Benefits Sentient Reference';
+  src: url('/assets/fonts/sentient-benefits-normal-400-reference.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Benefits Sentient Reference';
+  src: url('/assets/fonts/sentient-benefits-italic-300-reference.woff2') format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Open Design Albert Sans';
+  src: url('/assets/fonts/open-design-albert-sans.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ev-text: 30 6% 18%;
+  --ev-bg: hsl(40 20% 97%);
+  --ev-surface: hsl(0 0% 100%);
+  --ev-surface-soft: hsl(40 14% 94%);
+  --ev-card-bg: hsl(0 0% 100%);
+  --ev-ink: hsl(30 6% 18%);
+  --ev-ink-60: hsl(30 4% 50%);
+  --ev-accent: hsl(150 8% 30%);
+  --ev-warm-accent: hsl(20 35% 52%);
+  --ev-border-subtle: hsl(30 6% 91%);
+  --ev-border-strong: hsl(30 6% 84%);
+  --ev-success: hsl(145 25% 40%);
+  --ev-warning: hsl(38 80% 48%);
+  --ev-danger: hsl(4 68% 50%);
+  --ev-info: hsl(205 65% 45%);
+  --ev-footer: hsl(30 8% 12%);
+  --ev-shadow-xs: 0 2px 8px hsl(var(--ev-text) / 0.04);
+  --ev-shadow-sm: 0 4px 16px hsl(var(--ev-text) / 0.06);
+  --ev-shadow-md: 0 12px 32px hsl(var(--ev-text) / 0.08);
+  --ev-shadow-lg: 0 24px 56px hsl(var(--ev-text) / 0.1);
+  --ev-focus-ring: 0 0 0 3px var(--ev-surface), 0 0 0 5px hsl(var(--ev-text) / 0.15);
+  --ev-font-display: 'Golos Text', system-ui, sans-serif;
+  --ev-font-body: 'Golos Text', system-ui, sans-serif;
+  --ev-font-serif: 'Golos Text', system-ui, sans-serif;
+  --ev-font-sans: 'Golos Text', system-ui, sans-serif;
+  --ev-radius-sm: 14px;
+  --ev-radius-md: 20px;
+  --ev-radius-lg: 28px;
+  --ev-radius-pill: 999px;
+  --ev-control-height-sm: 42px;
+  --ev-control-height-md: 48px;
+  --ev-control-height-lg: 56px;
+  --ev-control-radius: 999px;
+  --ev-checkbox-size: 18px;
+  --ev-checkbox-radius: 6px;
+  --ev-control-disabled-opacity: 0.34;
+  --ev-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ev-container-width: 1400px;
+  --ev-page-gutter: clamp(20px, 6vw, 96px);
+  --ev-section-gap: clamp(64px, 10vw, 144px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  min-height: 100%;
+}
+body {
+  min-height: 100dvh;
+  background: var(--ev-bg);
+  color: hsl(var(--ev-text));
+  font-family: var(--ev-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#root {
+  overflow-x: clip;
+}
+img {
+  display: block;
+}
+button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--ev-focus-ring);
+}
+
+a:focus-visible {
+  outline: none;
+  box-shadow: var(--ev-focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,0 +1,252 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+
+import { PUBLIC_ROUTES } from '@/components/evironn/public-routes';
+
+type StorefrontHeaderProps = { cartCount: number };
+
+const primaryLinks = [
+  ['Вся мебель', PUBLIC_ROUTES.catalog],
+  ['Гостиная', PUBLIC_ROUTES.catalog],
+  ['Столовая', PUBLIC_ROUTES.catalog],
+  ['Спальня', PUBLIC_ROUTES.catalog],
+  ['Терраса', PUBLIC_ROUTES.catalog],
+] as const;
+
+function buildGlassMap(width: number, height: number): string {
+  const radius = Math.round(Math.min(width, height) / 2);
+  const inset = Math.min(width, height) * 0.035;
+  const svg =
+    '<svg viewBox="0 0 ' +
+    width +
+    ' ' +
+    height +
+    '" xmlns="http://www.w3.org/2000/svg">' +
+    '<defs><linearGradient id="red" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="red"/></linearGradient>' +
+    '<linearGradient id="blue" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="blue"/></linearGradient></defs>' +
+    '<rect x="0" y="0" width="' +
+    width +
+    '" height="' +
+    height +
+    '" fill="black"/><rect x="0" y="0" width="' +
+    width +
+    '" height="' +
+    height +
+    '" rx="' +
+    radius +
+    '" fill="url(#red)"/><rect x="0" y="0" width="' +
+    width +
+    '" height="' +
+    height +
+    '" rx="' +
+    radius +
+    '" fill="url(#blue)" style="mix-blend-mode:difference"/><rect x="' +
+    inset +
+    '" y="' +
+    inset +
+    '" width="' +
+    (width - inset * 2) +
+    '" height="' +
+    (height - inset * 2) +
+    '" rx="' +
+    radius +
+    '" fill="hsl(0 0% 50% / .93)" style="filter:blur(11px)"/></svg>';
+
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const glassMapRef = useRef<SVGFEImageElement>(null);
+  const [isCondensed, setIsCondensed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const condenseOn = 64;
+    const condenseOff = 24;
+    let ticking = false;
+    let condensed = false;
+
+    const update = () => {
+      ticking = false;
+      const scrollPosition = window.scrollY;
+      if (!condensed && scrollPosition > condenseOn) {
+        condensed = true;
+        setIsCondensed(true);
+      } else if (condensed && scrollPosition < condenseOff) {
+        condensed = false;
+        setIsCondensed(false);
+      }
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    condensed = window.scrollY > condenseOn;
+    setIsCondensed(condensed);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncGlassMap = () => {
+      const inner = innerRef.current;
+      const glassMap = glassMapRef.current;
+      if (!inner || !glassMap) return;
+      const bounds = inner.getBoundingClientRect();
+      const mapUri = buildGlassMap(Math.max(1, Math.round(bounds.width)), Math.max(1, Math.round(bounds.height)));
+      glassMap.setAttribute('href', mapUri);
+      glassMap.setAttributeNS('http://www.w3.org/1999/xlink', 'href', mapUri);
+    };
+
+    syncGlassMap();
+    const inner = innerRef.current;
+    let resizeObserver: ResizeObserver | undefined;
+    if (inner && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(syncGlassMap);
+      resizeObserver.observe(inner);
+    }
+    window.addEventListener('resize', syncGlassMap, { passive: true });
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', syncGlassMap);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const toggleMenu = () => setMenuOpen((open) => !open);
+
+  return (
+    <header id="evironn-header" lang="ru" className={isCondensed ? 'is-condensed' : ''}>
+      <div className="od-header-inner" ref={innerRef}>
+        <Link className="od-logo-link" href={PUBLIC_ROUTES.home} aria-label="Evironn">
+          <img className="od-logo" src="/assets/evironn-logo.svg" width="248" height="72" alt="Evironn" />
+        </Link>
+        <button
+          className="od-menu-toggle"
+          type="button"
+          aria-label={menuOpen ? 'Закрыть меню' : 'Открыть меню'}
+          aria-expanded={menuOpen}
+          aria-controls="evironn-mobile-menu"
+          onClick={toggleMenu}
+        >
+          <span className="od-menu-icon" aria-hidden="true" />
+        </button>
+        <nav className="od-primary-nav" aria-label="Основная навигация">
+          {primaryLinks.map(([label, href]) => (
+            <Link key={label} href={href}>
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <div className="od-actions">
+          <Link className="od-utility-action" href={PUBLIC_ROUTES.catalog}>
+            Поиск
+          </Link>
+          <Link className="od-utility-action" href={PUBLIC_ROUTES.profile}>
+            Аккаунт
+          </Link>
+          <Link className="od-bag" href={PUBLIC_ROUTES.cart}>{`Корзина (${cartCount})`}</Link>
+        </div>
+      </div>
+      {menuOpen && (
+        <div
+          className="od-mobile-menu"
+          id="evironn-mobile-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Мобильное меню"
+        >
+          <nav aria-label="Мобильная навигация">
+            {primaryLinks.map(([label, href]) => (
+              <Link key={label} href={href} onClick={() => setMenuOpen(false)}>
+                {label}
+              </Link>
+            ))}
+            <Link href={PUBLIC_ROUTES.catalog} onClick={() => setMenuOpen(false)}>
+              Поиск
+            </Link>
+            <Link href={PUBLIC_ROUTES.profile} onClick={() => setMenuOpen(false)}>
+              Аккаунт
+            </Link>
+            <Link
+              href={PUBLIC_ROUTES.cart}
+              aria-label={`Мобильная корзина (${cartCount})`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {`Корзина (${cartCount})`}
+            </Link>
+          </nav>
+        </div>
+      )}
+      <svg className="od-nav-glass-defs" aria-hidden="true" focusable="false" width="0" height="0">
+        <defs>
+          <filter id="od-nav-liquid-glass" colorInterpolationFilters="sRGB">
+            <feImage
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              preserveAspectRatio="none"
+              result="map"
+              ref={glassMapRef}
+              data-nav-glass-map="true"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="map"
+              xChannelSelector="R"
+              yChannelSelector="B"
+              scale="-50"
+              result="dispRed"
+            />
+            <feColorMatrix in="dispRed" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="red" />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="map"
+              xChannelSelector="R"
+              yChannelSelector="B"
+              scale="-47"
+              result="dispGreen"
+            />
+            <feColorMatrix
+              in="dispGreen"
+              type="matrix"
+              values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0"
+              result="green"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="map"
+              xChannelSelector="R"
+              yChannelSelector="B"
+              scale="-44"
+              result="dispBlue"
+            />
+            <feColorMatrix in="dispBlue" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="blue" />
+            <feBlend in="red" in2="green" mode="screen" result="rg" />
+            <feBlend in="rg" in2="blue" mode="screen" result="output" />
+            <feGaussianBlur in="output" stdDeviation="0.7" />
+          </filter>
+        </defs>
+      </svg>
+    </header>
+  );
+}

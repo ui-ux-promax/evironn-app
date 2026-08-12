@@ -11,6 +11,22 @@ const homeRoots = [
   'instagram-follow',
 ] as const;
 
+const expectedFooterHrefs = [
+  '/catalog',
+  '/catalog?category=sofas',
+  '/catalog',
+  '/catalog',
+  '/catalog?room=living',
+  '/catalog?room=bedroom',
+  '/catalog?room=terrace',
+  '/catalog',
+  '/catalog',
+  '/catalog',
+  '/catalog',
+  '/catalog',
+  '/catalog',
+];
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/auth/session', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }),
@@ -91,7 +107,11 @@ test.describe('Evironn home desktop', () => {
     await expect(page.locator('.furniture-category-section a[href="/catalog?category=sofas"]')).toHaveCount(1);
     await expect(page.locator('.interactive-furniture__button[href="/product/noma-woven-lounge"]')).toHaveCount(5);
     await expect(page.locator('.instagram-follow a[href="/catalog"]')).toHaveCount(22);
-    await expect(page.getByRole('contentinfo').locator('a[href="/catalog"]')).toHaveCount(13);
+    const footerLinks = page.getByRole('contentinfo').locator('a');
+    await expect(footerLinks).toHaveCount(expectedFooterHrefs.length);
+    await expect
+      .poll(() => footerLinks.evaluateAll((links) => links.map((link) => link.getAttribute('href'))))
+      .toEqual(expectedFooterHrefs);
 
     const logoLink = page.locator('#evironn-header .od-logo-link');
     const primaryLink = page.locator('#evironn-header .od-primary-nav a').first();

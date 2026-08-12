@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,8 +20,12 @@ vi.stubGlobal(
 import { StorefrontFooter } from '@/components/evironn/storefront-footer';
 import { StorefrontHeader } from '@/components/evironn/storefront-header';
 import { NotFoundView } from '@/components/evironn/not-found-view';
+import { useCartStore } from '@/store';
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  useCartStore.setState({ items: [], loading: true, totalAmount: 0, error: false });
+});
 
 describe('Evironn storefront shell', () => {
   it('renders the clone header labels, logo, and cart count', () => {
@@ -80,6 +84,48 @@ describe('Evironn storefront shell', () => {
     expect(screen.queryByRole('dialog', { name: 'Мобильное меню' })).not.toBeInTheDocument();
   });
 
+  it('updates the cart label from the existing client cart state after route interactions', async () => {
+    render(<StorefrontHeader cartCount={1} />);
+    expect(screen.getByRole('link', { name: 'Корзина (1)' })).toHaveAttribute('href', '/cart');
+
+    useCartStore.setState({
+      loading: false,
+      items: [
+        {
+          id: 'item-1',
+          productId: 'product-1',
+          quantity: 1,
+          name: 'Chair',
+          productSlug: 'chair',
+          colorwayName: 'Oak',
+          size: '',
+          imageUrl: null,
+          unitPrice: 100,
+          lineTotal: 100,
+          stock: 5,
+          available: true,
+        },
+        {
+          id: 'item-2',
+          productId: 'product-2',
+          quantity: 1,
+          name: 'Table',
+          productSlug: 'table',
+          colorwayName: 'Walnut',
+          size: '',
+          imageUrl: null,
+          unitPrice: 200,
+          lineTotal: 200,
+          stock: 5,
+          available: true,
+        },
+      ],
+      totalAmount: 300,
+    });
+
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Корзина (2)' })).toHaveAttribute('href', '/cart'));
+  });
+
   it('does not move focus to the mobile menu trigger on initial render', () => {
     const preexistingControl = document.createElement('button');
     preexistingControl.textContent = 'Before header';
@@ -96,6 +142,13 @@ describe('Evironn storefront shell', () => {
   });
 
   it('moves focus into the dialog, traps tab, hides the background, and restores the trigger', () => {
+    const background = document.createElement('main');
+    background.setAttribute('data-testid', 'background-content');
+    const footer = document.createElement('footer');
+    footer.setAttribute('inert', '');
+    footer.setAttribute('data-testid', 'background-footer');
+    document.body.append(background, footer);
+
     render(<StorefrontHeader cartCount={0} />);
     const trigger = screen.getByRole('button', { name: 'Открыть меню' });
     trigger.focus();
@@ -105,6 +158,8 @@ describe('Evironn storefront shell', () => {
     const controls = within(dialog).getAllByRole('link');
     expect(document.activeElement).toBe(controls[0]);
     expect(document.querySelector('#evironn-header > .od-header-inner')).toHaveAttribute('inert');
+    expect(background).toHaveAttribute('inert');
+    expect(footer).toHaveAttribute('inert');
 
     controls[controls.length - 1].focus();
     fireEvent.keyDown(dialog, { key: 'Tab' });
@@ -115,6 +170,11 @@ describe('Evironn storefront shell', () => {
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(document.activeElement).toBe(trigger);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(background).not.toHaveAttribute('inert');
+    expect(footer).toHaveAttribute('inert');
+
+    background.remove();
+    footer.remove();
   });
 
   it('renders Footer15 copy and four canonical navigation columns', () => {

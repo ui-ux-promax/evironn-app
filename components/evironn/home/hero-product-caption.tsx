@@ -14,7 +14,7 @@ type HeroProductCaptionProps = {
 };
 
 const mobileQuery = '(max-width: 809.98px)';
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 function useMobileCaptionAnimation() {
   const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia(mobileQuery).matches);

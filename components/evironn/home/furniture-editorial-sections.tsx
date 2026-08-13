@@ -9,7 +9,7 @@ type Category = {
   hoverVariant: number;
   image?: { src: string; alt: string; className: string };
 };
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 const categories: Category[] = [
   {
     label: 'Диваны',

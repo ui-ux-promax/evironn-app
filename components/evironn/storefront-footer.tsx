@@ -57,7 +57,7 @@ const heroBrandVariant: Variants = {
   visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring', duration: 2.4, bounce: 0 } },
 };
 
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 function EvironnMark() {
   return (

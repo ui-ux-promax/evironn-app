@@ -23,6 +23,22 @@ Visual composition, copy, interactions, responsive behavior, CSS, and selected r
 - UI phases require user desktop/mobile visual acceptance before merge.
 - Final release uses an English `dev` to `main` pull request and a merge commit.
 
+## Verification cadence
+
+- During each implementation task, run only focused tests for changed behavior, formatting/lint checks for touched files, and critical task-level E2E only when required by the affected user path.
+- Run task-level type checking only for changes that affect shared types, DTOs, Prisma/schema boundaries, server contracts, framework configuration, or another broad compile-time surface.
+- Task reviewers inspect the task diff and reuse fresh focused evidence; they do not repeat the full project gate without a concrete cross-cutting risk.
+- After all tasks in an approved delivery are complete, run the full completion gate once. For Phase 2, each acceptance-gated delivery (`2A`, `2B`, `2C`) is a completion boundary.
+- After final-review remediation, rerun affected focused checks. Repeat the full completion gate only if the remediation invalidated it or changed a cross-cutting surface.
+- Final completion gate:
+
+```text
+npm run format
+npm run gate
+npm run build
+npm run e2e -- <critical current-delivery scenarios>
+```
+
 ## Phase 1 — furniture domain and database
 
 Branch: `phase/01-furniture-domain`
@@ -113,6 +129,8 @@ Branch: `phase/06-hardening-release`
 - Merge the phase into `dev`, then release through `dev` to `main`.
 
 ## Required quality gate
+
+Run this complete gate at the end of the current phase or acceptance-gated delivery, not after every implementation task:
 
 ```text
 npm run format

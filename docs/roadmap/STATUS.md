@@ -7,8 +7,8 @@
 - Integration branch: `dev`.
 - Current branch: `phase/02-storefront` from updated `dev`.
 - Phase state: Phase 1 accepted and merged; Phase 2 migration strategy corrected and approved.
-- Current delivery: Phase 2A — shared Evironn storefront foundation and complete home.
-- Next delivery: Phase 2B only after Phase 2A automated and desktop/mobile visual acceptance.
+- Current delivery: Phase 2B — selected Evironn catalog UI.
+- Previous delivery: Phase 2A is automated-check complete, deployed to Vercel Preview, and visually accepted by the user.
 
 ## Bootstrap contents
 
@@ -85,4 +85,12 @@ During user visual acceptance, three deviations from the clone were addressed on
 - `AUTH_TRUST_HOST=true` was added to the untracked local `.env.local` so `npm run dev` stops emitting Auth.js `UntrustedHost` errors on `/api/auth/session`; production and E2E are unaffected.
 - `113019a` — the kitchen, bedroom, and terrace room pills were stuck disabled and unclickable. Under SSR the idle room images could finish loading before React hydration attached their `onLoad` handler, so `onRoomReady` never fired for the non-seeded rooms and each pill stayed locked forever. Readiness is now also signalled from a ref callback for any hero image already `complete` at mount, and a desktop E2E regression asserts all four room controls are enabled and that clicking a non-active pill starts a room transition. This supersedes the earlier "no fix required" note, which was incorrect.
 
-Fresh checks at HEAD `113019a`: `npm run gate` pass (137 files / 701 tests; Prettier, ESLint, and `tsc --noEmit` clean); `npm run build` exit 0; `npm run e2e -- e2e/evironn-home.spec.ts` 5/5 with zero `UntrustedHost` and zero console/page errors. Protected Task 3 plan hash `f1be0e06…c503a7e2` unchanged; both executable plan files remain untracked and unmodified. Stop gate unchanged: no Vercel Preview push, pull request, merge, or Phase 2B/2C without explicit user authorization.
+Fresh checks at the acceptance-fix checkpoint `113019a`: `npm run gate` pass (137 files / 701 tests; Prettier, ESLint, and `tsc --noEmit` clean); `npm run build` exit 0; `npm run e2e -- e2e/evironn-home.spec.ts` 5/5 with zero `UntrustedHost` and zero console/page errors. Protected Task 3 plan hash `f1be0e06…c503a7e2` unchanged; both executable plan files remain untracked and unmodified.
+
+The branch history was subsequently migrated to Git LFS and pushed at rewritten HEAD `53f901b`. The user manually verified the Vercel Preview and accepted the rendered Phase 2A result. Phase 2B is now the next delivery; Phase 2 still cannot merge until Phase 2B and Phase 2C are complete and visually accepted.
+
+## Verification policy and performance follow-up
+
+- Future tasks use proportional verification: focused changed-module checks during implementation and one complete quality gate after all tasks in the current delivery are complete. Phase 2B and Phase 2C are separate completion boundaries.
+- The full completion gate remains `npm run format`, `npm run gate`, `npm run build`, and E2E for critical current-delivery scenarios.
+- The user observed slow initial loading on Vercel Preview. Phase 2A acceptance is not blocked, but the issue is retained as performance debt. After the storefront port is complete, measure asset/video delivery, image optimization, JavaScript bundle cost, lazy loading, Vercel cold-start behavior, and Core Web Vitals before selecting optimizations.

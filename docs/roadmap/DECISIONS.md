@@ -51,3 +51,7 @@ Existing production clone interfaces are ported before any visual redesign. Pres
 ## ADR-013 — staged UI and data adaptation
 
 Each route uses a Next Server Page or server module to produce a serializable Evironn DTO for the ported interactive shell. Server authority from ADR-007 remains unchanged. Phase 2 proceeds in order: shared shell and complete home, selected catalog B over Task 2 logic, exact showcase PDP over Task 3 logic. Until product-specific media packs are validated, all catalog cards target one showcase slug and non-showcase PDP routes redirect there. The showcase add-to-cart control remains decorative until Phase 3.
+
+## ADR-014 — proportional verification cadence
+
+Implementation tasks use the smallest verification set that proves the changed behavior: focused tests, checks for touched files, and critical task-level E2E only when necessary. Full formatting, lint, type checking, Vitest, production build, and current-delivery E2E run once after all tasks in the phase or acceptance-gated delivery are complete. Reviewers reuse valid focused evidence and do not rerun the complete project gate without a concrete cross-cutting risk. Final-review remediation reruns affected checks; the complete gate is repeated only when that remediation invalidates prior evidence or changes a cross-cutting surface.

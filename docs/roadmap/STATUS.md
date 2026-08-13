@@ -75,3 +75,15 @@ Latest local Phase 1 validation before the final documentation-only rerun:
 - Final finding closed: `playwright.config.ts` was excluded from the quality gate by `.prettierignore` and unformatted; `e50921c` returns it to gate scope and it is now Prettier-clean, and no Phase 2A-owned source or test file remains ignored. The completion pass ran in a fresh coordinator session after the prior session reached its model usage limit; the independent reviewer subagent could not run because of a temporary inference-gateway outage (HTTP 503), so the final delta sign-off was verified directly by the coordinator and recorded in `.superpowers/sdd/phase-2a-delivery-report.md`.
 - Stop gate: Phase 2A halts here for user desktop/mobile visual acceptance. No Vercel Preview push, pull request, or merge is performed without explicit user authorization; Phase 2B and 2C remain unauthorized.
 - Next action: user desktop/mobile visual acceptance of the Phase 2A storefront (header/drawer, eight home sections, footer, reduced motion, media fallback), then explicit authorization to push the Preview and proceed to Phase 2B.
+
+## Phase 2A acceptance fixes
+
+During user visual acceptance, three deviations from the clone were addressed on `phase/02-storefront` (still unpushed; stop gate intact):
+
+- `6937824` — the footer wordmark declared Fraunces but no Fraunces face was shipped, so it fell back to Georgia. The Fraunces latin and latin-ext WOFF2 subsets are now bundled locally under `public/assets/fonts` and registered as `@font-face` in `styles/evironn/tokens.css`, with no runtime remote font import.
+- `920105f` — the three `motion(Link)` call sites now use `motion.create(Link)`, clearing the Framer Motion 11 deprecation console warning; no runtime or visual change.
+- `AUTH_TRUST_HOST=true` was added to the untracked local `.env.local` so `npm run dev` stops emitting Auth.js `UntrustedHost` errors on `/api/auth/session`; production and E2E are unaffected.
+
+Room switching (living/kitchen/bedroom/terrace) is confirmed in scope (Task 3 interactive hero) and working; per-room pills unlock as each room's media preloads, matching the clone. No fix required.
+
+Fresh checks at HEAD `920105f`: `npm run gate` pass (137 files / 701 tests; Prettier, ESLint, and `tsc --noEmit` clean); `npm run build` exit 0; `npm run e2e -- e2e/evironn-home.spec.ts` 4/4 with zero `UntrustedHost` and zero console/page errors. Protected Task 3 plan hash `f1be0e06…c503a7e2` unchanged; both executable plan files remain untracked and unmodified. Stop gate unchanged: no Vercel Preview push, pull request, merge, or Phase 2B/2C without explicit user authorization.

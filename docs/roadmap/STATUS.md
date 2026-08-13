@@ -94,3 +94,54 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - Future tasks use proportional verification: focused changed-module checks during implementation and one complete quality gate after all tasks in the current delivery are complete. Phase 2B and Phase 2C are separate completion boundaries.
 - The full completion gate remains `npm run format`, `npm run gate`, `npm run build`, and E2E for critical current-delivery scenarios.
 - The user observed slow initial loading on Vercel Preview. Phase 2A acceptance is not blocked, but the issue is retained as performance debt. After the storefront port is complete, measure asset/video delivery, image optimization, JavaScript bundle cost, lazy loading, Vercel cold-start behavior, and Core Web Vitals before selecting optimizations.
+
+## Phase 2B Task 5 checkpoint — 2026-08-13
+
+- Owned changes: `e2e/catalog.spec.ts`, `tests/evironn-catalog-source-contract.test.ts`, this record, `.superpowers/sdd/progress.md`. Existing Task 1–4 work and plans preserved.
+- Source contract: canonical `findProducts`/Variant B boundary; forbids mock data, legacy presentation, `/catalog-a|b|c`, non-showcase card destinations.
+- E2E: 12 cards/showcase links; category/room/option/sort URL authority + page reset; mobile drawer draft/apply/Escape; invalid empty; out-of-range; reduced motion.
+- RED: `npx vitest run tests/evironn-catalog-source-contract.test.ts` — `1 passed`, `3 tests passed`; current source already satisfied contract.
+- GREEN: `npx vitest run tests/evironn-catalog-source-contract.test.ts tests/catalog-filters.test.ts tests/catalog-pagination.test.ts tests/catalog-option-facet.test.tsx tests/catalog-product-card.test.ts` — `5 passed`, `21 tests passed`; exit 0.
+- Prettier: initial check failed on 2 new files; write + check passed: `All matched files use Prettier code style!`
+- E2E first attempt failed: stale `node.exe` PID `13116` owned port 3000. Exact PID stopped.
+- E2E rerun: `npm run e2e -- e2e/catalog.spec.ts` — `7 passed (42.7s)`; exit 0. Node `NO_COLOR`/`FORCE_COLOR` warnings only. No timeout.
+- Full gate/build/full Vitest/commit/push/PR not run.
+
+## Phase 2B Task 5 remediation — 2026-08-13
+
+- Important 1 fixed: reduced-motion E2E now checks every comma-separated computed `transitionDuration` for stage media, drawer, and indicator; animation name remains checked too.
+- Important 2 fixed: source contract checks exact canonical import modules and recursively scans production `app/` for forbidden catalog variant route files. Read-only archive is outside scan.
+- Important 3 fixed: owned changed-file count is 4: modified `e2e/catalog.spec.ts` and `docs/roadmap/STATUS.md`; created `tests/evironn-catalog-source-contract.test.ts` and `.superpowers/sdd/progress.md` (ignored local file). Task 5 added 0 assets.
+- Protected old plan hashes, verified now: baseline/current `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` = `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` / `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9`; baseline/current `docs/superpowers/plans/phase-2-task-3-execution.md` = `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2` / `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Current Phase 2B plan hash is `BC301FE3`; no protected plan edited.
+- RED: `npx vitest run tests/evironn-catalog-source-contract.test.ts` — `1 passed`, `3 tests passed`; source already met strengthened contract.
+- GREEN: `npx vitest run tests/evironn-catalog-source-contract.test.ts tests/catalog-filters.test.ts tests/catalog-pagination.test.ts tests/catalog-option-facet.test.tsx tests/catalog-product-card.test.ts` — `5 passed`, `21 tests passed`; exit 0.
+- Regression: wrong-source symbol case throws under strict same-import binding.
+- E2E remediation: `npm run e2e -- e2e/catalog.spec.ts` — `7 passed (40.6s)`; exit 0. No timeout. Node `NO_COLOR`/`FORCE_COLOR` warnings only.
+- Prettier: `All matched files use Prettier code style!`; exit 0.
+- Remaining risk: Vercel Preview initial loading slow; retained as performance debt. No optimization mixed into Task 5.
+
+## Phase 2B Task 5 remediation 2 — 2026-08-13
+
+- Strict source parser fixed: each required named import must occur inside same import statement as its exact canonical module path. Regression covers symbol present elsewhere but imported from wrong module; it throws.
+- Protected plans untouched. Current SHA-256 verification: first protected old plan `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9`; second protected old plan `phase-2-task-3-execution.md` `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
+
+## Phase 2B final review remediation — 2026-08-13
+
+- Drawer CTA semantics are explicit and honest: `Показать N` uses `model.total` only when staged filters equal the authoritative URL state (page excluded); any staged delta renders `Показать 0` with an accessible explanation that exact count is calculated after apply. No client-side intersection guess or preview route was added.
+- Playback E2E resets/unhovers before independently focusing the card, then separately asserts video playback and idle/canvas/video exclusivity after a reliable video error event.
+- Pager behavior is covered by the focused shell test with a two-page serializable model; the live seeded catalog has 12 products and server page size 12, so its normal E2E correctly has no actual page button to click.
+- Protected old plan hashes remain baseline/current `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Current Phase 2B plan hash is `BC301FE3`; plans untouched.
+- Source Vitest: `npx vitest run tests/evironn-catalog-source-contract.test.ts` — `1 passed`, `4 tests passed`; exit 0.
+- Catalog E2E: `npm run e2e -- e2e/catalog.spec.ts` — `7 passed (40.1s)`; exit 0. No timeout.
+- Prettier: initial check flagged source test; write rerun passed: `All matched files use Prettier code style!`; exit 0.
+- Full gate/build/full Vitest not run.
+
+## Phase 2B completion — 2026-08-13
+
+- Selected Evironn CatalogVariantB delivered on `phase/02-storefront`; report: `.superpowers/sdd/phase-2b-delivery-report.md`.
+- All five task reviewers and final delivery reviewer approved with Critical 0 / Important 0 / Minor 0.
+- Completion gate passed: `npm run format`; `npm run gate` (143 files / 750 tests, typecheck pass, 0 lint errors); `npm run build` (exit 0); `npm run e2e -- e2e/catalog.spec.ts` (9/9, exit 0).
+- Final UI uses canonical server catalog data and URL authority, showcase-only card destinations, exact catalog shell/primitives/card CSS and interactions, mobile drawer accessibility, reduced-motion behavior, and playback fallback.
+- Compatibility-only test correction: Phase 2A source-contract forbidden-route regex now uses route boundaries so legitimate `catalog-card` imports are not mistaken for forbidden `catalog-c` routes. No Phase 2A production UI changed.
+- Preservation: protected plan hashes baseline=current — Phase 2A `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9`; Task 3 `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Current Phase 2B plan hash `BC301FE367E1FD40FE486244F250498B7F38197F120C3617733AF13081BFD1E1`.
+- No Phase 2B assets added; Preview initial loading remains performance debt. No PR, merge, or Phase 2C start performed.

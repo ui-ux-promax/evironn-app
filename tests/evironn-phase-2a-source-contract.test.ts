@@ -5,6 +5,8 @@ import * as ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const repositoryRoot = process.cwd();
+const forbiddenRoutePattern =
+  /\/catalog-a(?:[\/\?"'`\s]|$)|\/catalog-c(?:[\/\?"'`\s]|$)|\/login-variants(?:[\/\?"'`\s]|$)/;
 
 function readSource(relativePath: string): string {
   const absolutePath = path.join(repositoryRoot, relativePath);
@@ -136,7 +138,8 @@ describe('Evironn Phase 2A migration source contract', () => {
     ].join('\n');
 
     expect(source).not.toMatch(/window\.location|import\.meta\.url|href="#"/);
-    expect(source).not.toMatch(/\/catalog-a|\/catalog-c|\/login-variants/);
+    expect('/catalog-a"').toMatch(forbiddenRoutePattern);
+    expect(source).not.toMatch(forbiddenRoutePattern);
     expect(source).not.toContain('D:\\Новая папка (2)\\evironn-clone');
   });
 });

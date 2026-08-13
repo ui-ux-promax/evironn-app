@@ -43,6 +43,12 @@ export function HeroRoomMedia({
         return (
           <img
             key={room.id}
+            ref={(node) => {
+              // Under SSR the idle images can finish loading before hydration attaches the
+              // React onLoad handler, so its load event is never observed and the room pill
+              // stays disabled forever. Signal readiness for any image already complete at mount.
+              if (node?.complete && node.naturalWidth > 0) onRoomReady(room.id);
+            }}
             className={[
               'furni-hero-room-media__image',
               room.mediaClassName,

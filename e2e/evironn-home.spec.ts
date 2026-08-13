@@ -146,6 +146,24 @@ test.describe('Evironn home desktop', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expectNoBrowserErrors(errors);
   });
+
+  test('unlocks every hero room control once idle media is ready', async ({ page }) => {
+    const errors = collectBrowserErrors(page);
+    await page.goto('/', { waitUntil: 'networkidle' });
+
+    const roomButtons = page.locator('#evironn-hero .seg-control .seg-item');
+    await expect(roomButtons).toHaveCount(4);
+    // Regression: SSR-loaded idle images finished before hydration, so their onLoad was
+    // missed and the kitchen/bedroom/terrace pills were stuck disabled and unclickable.
+    for (let index = 0; index < 4; index += 1) {
+      await expect(roomButtons.nth(index)).toBeEnabled();
+    }
+
+    // Clicking a non-active, now-enabled pill must start a room transition.
+    await roomButtons.nth(1).click();
+    await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-incoming')).toHaveCount(1);
+    await expectNoBrowserErrors(errors);
+  });
 });
 
 test.describe('Evironn home mobile', () => {

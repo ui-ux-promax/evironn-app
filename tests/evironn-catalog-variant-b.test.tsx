@@ -108,6 +108,7 @@ describe('Catalog Variant B shell', () => {
     expect(screen.getByRole('heading', { name: /Мебель под комнату/i })).toBeInTheDocument();
     expect(screen.getAllByRole('tab')).toHaveLength(5);
     expect(screen.getByRole('button', { name: 'Фильтры' })).toBeInTheDocument();
+    expect(document.querySelector('.cat-b__desktop-facets')).toBeNull();
     expect(screen.getAllByTestId('catalog-card')).toHaveLength(modelFixture.cards.length);
     expect(screen.getByRole('group', { name: /Сортировка/i })).toBeInTheDocument();
     expect(document.querySelectorAll('.cat-b__seg-indicator')).toHaveLength(2);

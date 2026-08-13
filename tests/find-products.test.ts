@@ -79,11 +79,11 @@ describe('findProducts', () => {
       expect.objectContaining({
         include: furnitureProductCardInclude,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-        skip: 12,
-        take: 12,
+        skip: 8,
+        take: 8,
       }),
     );
-    expect(result).toMatchObject({ page: 2, total: 25, totalPages: 3 });
+    expect(result).toMatchObject({ page: 2, total: 25, totalPages: 4 });
     expect(result.facets).toMatchObject({
       categories: [
         { value: 'sofas', label: 'Sofas' },
@@ -128,8 +128,8 @@ describe('findProducts', () => {
   it('clamps an out-of-range page before calculating the Prisma skip', async () => {
     const result = await findProducts({ page: '999' });
 
-    expect(result.page).toBe(3);
-    expect(mocks.productFindMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 24, take: 12 }));
+    expect(result.page).toBe(4);
+    expect(mocks.productFindMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 24, take: 8 }));
   });
 
   it('builds facet counts from independent same-facet selections and waits for every count', async () => {

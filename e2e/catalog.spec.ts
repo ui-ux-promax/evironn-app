@@ -2,24 +2,27 @@ import { expect, test } from '@playwright/test';
 
 const showcasePath = '/product/noma-woven-lounge';
 
-test('catalog default renders 12 seeded cards with showcase links', async ({ page }) => {
+test('catalog default renders first 8 seeded cards with showcase links and pager', async ({ page }) => {
   await page.goto('/catalog');
   const cards = page.locator('.cat-card');
-  await expect(cards).toHaveCount(12);
-  await expect(page.locator('.cat-card__frame')).toHaveCount(12);
+  await expect(cards).toHaveCount(8);
+  await expect(page.locator('.cat-card__frame')).toHaveCount(8);
+  await expect(page.locator('.cat-pager')).toBeVisible();
   await expect(page.locator('.cat-card__frame').first()).toHaveAttribute('href', showcasePath);
   await expect
     .poll(() => page.locator('.cat-card__frame').evaluateAll((links) => links.map((link) => link.getAttribute('href'))))
-    .toEqual(Array.from({ length: 12 }, () => showcasePath));
+    .toEqual(Array.from({ length: 8 }, () => showcasePath));
+  await page.getByRole('button', { name: '2', exact: true }).click();
+  await expect(page).toHaveURL(/page=2/);
+  await expect(page.locator('.cat-card')).toHaveCount(4);
 });
 
 test('category, room, and option controls update URL and delete page', async ({ page }) => {
   await page.goto('/catalog?page=2');
-  await page
-    .locator('.cat-b__desktop-facets')
-    .getByRole('button', { name: /Кресла/i })
-    .first()
-    .click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: /^Фильтры/i }).click();
+  await page.locator('.cat-b__drawer .cat-b__pill-row button').first().click();
+  await page.getByRole('button', { name: /^Показать \d+$/ }).click();
   await expect(page).toHaveURL(/category=/);
   await expect(page).not.toHaveURL(/page=/);
   await page.goto('/catalog?page=2');
@@ -27,7 +30,9 @@ test('category, room, and option controls update URL and delete page', async ({ 
   await expect(page).toHaveURL(/room=bedroom/);
   await expect(page).not.toHaveURL(/page=/);
   await page.goto('/catalog?page=2');
-  await page.locator('.cat-b__desktop-facets .cat-b__swatch-row button').first().click();
+  await page.getByRole('button', { name: /^Фильтры/i }).click();
+  await page.locator('.cat-b__drawer .cat-b__swatch-row button').first().click();
+  await page.getByRole('button', { name: /^Показать \d+$/ }).click();
   await expect(page).toHaveURL(/option=/);
   await expect(page).not.toHaveURL(/page=/);
 });
@@ -66,18 +71,19 @@ test('invalid filters render empty state without application error', async ({ pa
   await expect(page.locator('body')).not.toContainText('Application error');
 });
 
-test('out-of-range page stays successful and server-clamped', async ({ page }) => {
+test('out-of-range page stays successful without URL redirect', async ({ page }) => {
   const response = await page.goto('/catalog?page=999');
   expect(response?.ok()).toBeTruthy();
-  await expect(page.locator('.cat-card')).toHaveCount(12);
+  await expect(page.locator('.cat-card')).toHaveCount(4);
+  await expect(page).toHaveURL(/page=999/);
   await expect(page.locator('body')).not.toContainText('Application error');
 });
 
 test('normal first-page pagination stays successful', async ({ page }) => {
   const response = await page.goto('/catalog?page=1');
   expect(response?.ok()).toBeTruthy();
-  await expect(page.locator('.cat-card')).toHaveCount(12);
-  await expect(page.locator('.cat-pager')).toBeHidden();
+  await expect(page.locator('.cat-card')).toHaveCount(8);
+  await expect(page.locator('.cat-pager')).toBeVisible();
 });
 
 test('catalog card hover and keyboard focus activate playback with idle fallback', async ({ page }) => {

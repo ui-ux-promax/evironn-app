@@ -262,24 +262,6 @@
   padding: clamp(1.6rem, 3vw, 2.6rem) var(--ev-page-gutter) clamp(4rem, 9vw, 8rem);
 }
 
-.cat-b__desktop-facets {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  border: 1px solid rgb(21 20 15 / 0.08);
-  border-radius: 24px;
-  background: rgb(255 255 255 / 0.36);
-}
-
-.cat-b__desktop-facets h2 {
-  margin-bottom: 0.7rem;
-  font-size: 11px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
 .cat-b__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -547,9 +529,6 @@
 }
 
 @media (max-width: 720px) {
-  .cat-b__desktop-facets {
-    display: none;
-  }
   .cat-b__stage {
     min-height: 72vh;
   }

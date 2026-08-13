@@ -5,7 +5,7 @@ export const SHIPPING_FLAT = 500; // ₽, курьер ниже порога б�
 export const NEW_PRODUCT_WINDOW_DAYS = 30; // окно бейджа «Новинка» по createdAt
 export const LOW_STOCK_THRESHOLD = 3; // «Осталось N пар»
 
-export const CATALOG_PAGE_SIZE = 12;
+export const CATALOG_PAGE_SIZE = 8;
 
 export const CART_COOKIE_NAME = 'cartToken';
 export const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 дней

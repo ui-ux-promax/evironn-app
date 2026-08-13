@@ -337,23 +337,6 @@ export function CatalogVariantB({ model }: { model: CatalogBModel }): React.Reac
         </div>
       </div>
       <section className="cat-b__body" aria-label="Товары">
-        <aside className="cat-b__desktop-facets" aria-label="Фильтры на компьютере">
-          {model.facetGroups.map((group) => (
-            <section key={group.key}>
-              <h2>{group.title}</h2>
-              <FacetControl
-                group={group}
-                query={query}
-                onToggle={(id) => {
-                  const next = new URLSearchParams(query);
-                  if (group.key === 'category') toggle(next, 'category', id);
-                  else toggleOption(next, group.key, id);
-                  navigate(next);
-                }}
-              />
-            </section>
-          ))}
-        </aside>
         <ChipRow
           chips={chips}
           onRemove={(id) => {

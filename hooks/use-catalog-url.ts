@@ -1,61 +1,65 @@
 'use client';
+
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+
+const unique = (values: string[]) => [...new Set(values.filter(Boolean))];
 
 export function useCatalogUrl() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const getList = useCallback((key: string) => sp.get(key)?.split(',').filter(Boolean) ?? [], [sp]);
+  const getList = useCallback((key: string) => unique(sp.get(key)?.split(',') ?? []), [sp]);
   const get = useCallback((key: string) => sp.get(key) ?? '', [sp]);
 
   const push = useCallback(
-    (mutate: (p: URLSearchParams) => void) => {
-      const p = new URLSearchParams(sp.toString());
-      mutate(p);
-      p.delete('page'); // любое изменение фильтра/сортировки сбрасывает страницу
-      const qs = p.toString();
-      router.push(qs ? `/catalog?${qs}` : '/catalog', { scroll: false });
+    (mutate: (params: URLSearchParams) => void) => {
+      const params = new URLSearchParams(sp.toString());
+      mutate(params);
+      params.delete('page');
+      const query = params.toString();
+      router.push(query ? `/catalog?${query}` : '/catalog', { scroll: false });
     },
     [router, sp],
   );
 
   const toggleInList = useCallback(
     (key: string, value: string) =>
-      push((p) => {
-        const cur = p.get(key)?.split(',').filter(Boolean) ?? [];
-        const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
-        if (next.length) p.set(key, next.join(','));
-        else p.delete(key);
+      push((params) => {
+        const current = unique(params.get(key)?.split(',') ?? []);
+        const next = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+        if (next.length) params.set(key, next.join(','));
+        else params.delete(key);
       }),
     [push],
   );
 
   const setParam = useCallback(
     (key: string, value: string | null) =>
-      push((p) => {
-        if (value) p.set(key, value);
-        else p.delete(key);
+      push((params) => {
+        if (value) params.set(key, value);
+        else params.delete(key);
       }),
     [push],
   );
 
   const setPage = useCallback(
     (page: number) => {
-      const p = new URLSearchParams(sp.toString());
-      if (page > 1) p.set('page', String(page));
-      else p.delete('page');
-      router.push(`/catalog?${p.toString()}`, { scroll: false });
+      const params = new URLSearchParams(sp.toString());
+      if (page > 1) params.set('page', String(page));
+      else params.delete('page');
+      const query = params.toString();
+      router.push(query ? `/catalog?${query}` : '/catalog', { scroll: false });
     },
     [router, sp],
   );
 
   const setParams = useCallback(
     (entries: Record<string, string | null>) =>
-      push((p) => {
-        for (const [k, v] of Object.entries(entries)) {
-          if (v) p.set(k, v);
-          else p.delete(k);
+      push((params) => {
+        for (const [key, value] of Object.entries(entries)) {
+          if (value) params.set(key, value);
+          else params.delete(key);
         }
       }),
     [push],

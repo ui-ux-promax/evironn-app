@@ -23,7 +23,7 @@ export function ProductAccordions({ description, specs }: ProductAccordionsProps
       )}
 
       {specs && Object.keys(specs).length > 0 && (
-        <details className="group border-t border-line">
+        <details className="group border-t border-line" open>
           <summary className="flex items-center justify-between list-none py-[18px] px-0.5 font-display font-bold text-base cursor-pointer select-none [&::-webkit-details-marker]:hidden">
             <span>Характеристики</span>
             <ChevronDown className="w-5 h-5 text-ink-muted transition-transform duration-300 group-open:rotate-180" />

@@ -6,15 +6,12 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AddressSuggest } from '@/components/shared/checkout/address-suggest';
-import { SizeFilter } from '@/components/shared/catalog/size-filter';
 import { WishlistBadge } from '@/components/shared/wishlist/wishlist-badge';
 import { CatalogProductCard } from '@/components/shared/catalog/catalog-product-card';
-import type { ProductCardData } from '@/lib/product-summary';
+import type { FurnitureProductCardData } from '@/lib/furniture-product-summary';
 
 const pathname = vi.hoisted(() => ({ value: '/profile' }));
 const wishlistCount = vi.hoisted(() => ({ value: 2 }));
-const selectedSizes = vi.hoisted(() => ({ value: ['S'] }));
-const addCartItem = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname.value,
@@ -32,14 +29,6 @@ vi.mock('next/link', () => ({
 vi.mock('@/store', () => ({
   useWishlistStore: (selector: (state: { count: number; fetchCount: () => void }) => unknown) =>
     selector({ count: wishlistCount.value, fetchCount: vi.fn() }),
-  useCartStore: (selector: (state: { addCartItem: typeof addCartItem }) => unknown) => selector({ addCartItem }),
-}));
-
-vi.mock('@/hooks/use-catalog-url', () => ({
-  useCatalogUrl: () => ({
-    getList: () => selectedSizes.value,
-    toggleInList: vi.fn(),
-  }),
 }));
 
 vi.mock('@/components/shared/wishlist/wishlist-heart', () => ({
@@ -50,7 +39,6 @@ afterEach(() => {
   cleanup();
   pathname.value = '/profile';
   wishlistCount.value = 2;
-  selectedSizes.value = ['S'];
   window.history.replaceState(null, '', '/');
 });
 
@@ -66,28 +54,20 @@ function AddressSuggestHost() {
   );
 }
 
-const cardData: ProductCardData = {
+const cardData: FurnitureProductCardData = {
   id: 'product-1',
   slug: 'long-title-card',
-  name: 'RITM Longsleeve Japan Green',
-  brand: 'RITM',
-  categoryName: 'Longsleeves',
+  name: 'Evironn Long Title Chair',
+  brand: 'Evironn',
+  categoryName: 'Armchairs',
   imageUrl: '/images/product.jpg',
-  imageAlt: 'Longsleeve',
+  imageAlt: 'Chair',
+  primarySkuId: 'sku-1',
   minPrice: 4990,
-  minCompareAtPrice: null,
+  minOldPrice: null,
   badges: [],
   soldOut: false,
-  colorways: [
-    {
-      id: 'cw',
-      name: 'Green',
-      swatchHex: '#6f7f68',
-      imageUrl: '/images/product.jpg',
-      variants: [{ size: 'S', sizeOrder: 2, inStock: true, variantId: 'variant-s' }],
-    },
-  ],
-  sizes: [{ size: 'S', sizeOrder: 2, inStock: true, variantId: 'variant-s' }],
+  optionSwatches: [{ groupSlug: 'finish', valueSlug: 'oak', label: 'Oak', swatchHex: '#c8a97e' }],
 };
 
 describe('storefront UI regressions', () => {
@@ -124,18 +104,10 @@ describe('storefront UI regressions', () => {
     expect(screen.getByText('2').className).toContain('text-ink');
   });
 
-  it('renders the active catalog size filter as black with white text', () => {
-    render(<SizeFilter />);
-
-    const activeSize = screen.getByRole('button', { name: 'S' });
-    expect(activeSize.className).toContain('bg-ink');
-    expect(activeSize.className).toContain('text-white');
-  });
-
   it('keeps catalog card title and price on separate rows at narrow widths', () => {
     render(<CatalogProductCard data={cardData} />);
 
-    const title = screen.getByRole('heading', { name: 'RITM Longsleeve Japan Green' });
+    const title = screen.getByRole('heading', { name: 'Evironn Long Title Chair' });
     expect(title.closest('article')?.className).toContain('[container-type:inline-size]');
     expect(title.className).toContain('text-[clamp(21px,8cqw,26px)]');
     expect(screen.getByText(/4[\s\u00a0]990/).closest('p')?.className).toContain('justify-self-end');

@@ -20,6 +20,17 @@ describe('generateSeedSql', () => {
     const sql = generateSeedSql();
 
     expect(sql).toContain('noma-woven-lounge');
-    expect(sql).toContain('/assets/products/03-ivory-lounge-idle.webp');
+    for (const combinationKey of [
+      'finish=oak|upholstery=ivory-boucle',
+      'finish=walnut|upholstery=ivory-boucle',
+      'finish=oak|upholstery=graphite',
+      'finish=walnut|upholstery=graphite',
+      'finish=oak|upholstery=terracotta',
+      'finish=walnut|upholstery=terracotta',
+    ]) {
+      expect(sql).toContain(combinationKey);
+    }
+    expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm');
+    expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png');
   });
 });

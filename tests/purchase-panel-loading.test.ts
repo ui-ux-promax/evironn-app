@@ -1,48 +1,95 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import { PurchasePanel } from '@/components/shared/product/purchase-panel';
+import { readFileSync } from 'node:fs';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import ProductPage from '@/components/evironn/product/ProductPage';
+import type { ShowcaseProductPageDto } from '@/lib/showcase-product';
 
-const addCartItem = vi.hoisted(() => vi.fn());
-(globalThis as typeof globalThis & { React: typeof React }).React = React;
-
-vi.mock('axios', () => ({ default: { isAxiosError: () => false } }));
-vi.mock('@/store', () => ({
-  useCartStore: (selector: (state: { addCartItem: typeof addCartItem }) => unknown) => selector({ addCartItem }),
+vi.mock('@/components/evironn/home/interactive-furniture-cards', () => ({
+  InteractiveFurnitureCards: () => React.createElement('section'),
 }));
-vi.mock('@/hooks/use-countdown', () => ({ useCountdown: () => ({ seconds: 0, start: vi.fn() }) }));
-vi.mock('@/components/shared/product/rating-stars', () => ({ RatingStars: () => null }));
-vi.mock('@/components/shared/product/product-accordions', () => ({ ProductAccordions: () => null }));
-vi.mock('@/components/shared/product/size-guide-dialog', () => ({ SizeGuideDialog: () => null }));
 
-describe('PurchasePanel', () => {
-  it('shows a spinner while adding the selected variant', () => {
-    addCartItem.mockReturnValueOnce(new Promise<void>(() => {}));
-    render(
-      React.createElement(PurchasePanel, {
-        productName: 'Hoodie',
-        colorways: [],
-        activeColorwaySlug: 'sage',
-        activeColorwayName: 'Sage',
-        variants: [{ id: 'variant-1', size: 'M', stock: 3, active: true, price: 5400, compareAtPrice: null }],
-        fitNote: null,
-        productSlug: 'hoodie',
-        description: null,
-        specs: null,
-        ratingAvg: null,
-        ratingCount: 0,
-        onColorChange: vi.fn(),
-      }),
+const selectedCombination = {
+  upholstery: 'ivory' as const,
+  wood: 'walnut' as const,
+  canonicalOption: 'finish=walnut&upholstery=ivory-boucle',
+  canonicalPath: '/product/noma-woven-lounge?option=selected',
+  chairUrl: '/chair.png',
+  sku: {
+    id: 'sku',
+    articleNumber: 'EV-NWL',
+    price: 89990,
+    oldPrice: 109990,
+    stock: 3,
+    priceLabel: '89 990 ₽',
+    oldPriceLabel: '109 990 ₽',
+  },
+};
+
+const model: ShowcaseProductPageDto = {
+  product: {
+    name: 'Кресло Graphite',
+    description: 'Мягкое кресло.',
+    categoryName: 'Кресла',
+    categorySlug: 'armchairs',
+  },
+  sceneBackgroundUrl: '/scene.png',
+  selected: selectedCombination,
+  combinations: [selectedCombination],
+  turntable: {
+    videoUrl: '/turntable.webm',
+    posterUrl: '/poster.png',
+    fallbackUrl: '/fallback.png',
+    alt: 'Noma 360',
+  },
+};
+
+beforeEach(() => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+  vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+describe('showcase ProductPage decorative purchase controls', () => {
+  it('keeps both add controls disabled and free of cart/store/action behavior', () => {
+    const source = readFileSync('components/evironn/product/ProductPage.tsx', 'utf8');
+    expect(source).not.toMatch(/cartCountStore|useCartCount|setCartCount|addProductToCart|useCartStore/);
+
+    render(React.createElement(ProductPage, { model }));
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+
+    const controls = screen.getAllByRole('button', { name: 'Добавить в корзину', hidden: true });
+    expect(controls).toHaveLength(2);
+    expect(controls.every((control) => (control as HTMLButtonElement).disabled)).toBe(true);
+    expect(new Set(controls.map((control) => control.getAttribute('aria-disabled')))).toEqual(new Set(['true']));
+    expect(new Set(controls.map((control) => control.getAttribute('aria-describedby'))).size).toBe(1);
+
+    const noticeId = controls[0].getAttribute('aria-describedby');
+    expect(noticeId).toBeTruthy();
+    expect(document.getElementById(noticeId as string)).toHaveTextContent(
+      'Добавление в корзину будет доступно после завершения пилота',
     );
-
-    fireEvent.click(screen.getByRole('button', { name: 'M' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить в корзину' }));
-
-    const button = screen.getByRole('button', { name: 'Добавляем' }) as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
-    expect(button.getAttribute('aria-busy')).toBe('true');
-    expect(button.querySelector('svg.animate-spin')).not.toBeNull();
-    expect(button.className).toContain('bg-ink/20');
+    expect(document.getElementById(noticeId as string)).toHaveClass('product-page__visually-hidden');
   });
 });

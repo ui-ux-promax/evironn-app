@@ -1,7 +1,22 @@
 import type { Metadata } from 'next';
-import { Unbounded, Manrope, Anybody } from 'next/font/google';
+import { Anybody, Manrope, Unbounded } from 'next/font/google';
 import { defaultOgImage, defaultSeoDescription, defaultSeoTitle, getSiteUrl, siteName } from '@/lib/seo';
 import './globals.css';
+import '../styles/evironn/tokens.css';
+import '../styles/evironn/header.css';
+import '../styles/evironn/footer.css';
+import '../styles/evironn/not-found.css';
+import '../styles/evironn/home/hero.css';
+import '../styles/evironn/home/furniture-editorial-sections.css';
+import '../styles/evironn/home/interactive-furniture-cards.css';
+import '../styles/evironn/home/editorial-statement.css';
+import '../styles/evironn/home/nature-section.css';
+import '../styles/evironn/home/benefits-showcase-section.css';
+import '../styles/evironn/home/instagram-follow-section.css';
+import '../styles/evironn/catalog-primitives.css';
+import '../styles/evironn/catalog-variant-b.css';
+import '../styles/evironn/ProductPage.css';
+import '../styles/evironn/ProductPage.next.css';
 
 // Root layout: только <html>/<body> + шрифты. Storefront-chrome живёт в
 // app/(shop)/layout.tsx, admin-shell — в app/(admin)/layout.tsx. Это

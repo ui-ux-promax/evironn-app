@@ -33,6 +33,8 @@ export default defineConfig({
     // чтобы хелпер registerAndVerify прошёл gate-модалку. Прод этой ветки не касается.
     env: {
       E2E_TEST_CODE: '424242',
+      AUTH_TRUST_HOST: 'true',
+      AUTH_SECRET: process.env.AUTH_SECRET ?? 'e2e-local-auth-secret',
       NEXT_FONT_GOOGLE_MOCKED_RESPONSES: path.join(__dirname, 'e2e', 'next-font-google-mocks.cjs'),
     },
   },

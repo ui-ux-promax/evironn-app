@@ -4,11 +4,9 @@ import { CATALOG_PAGE_SIZE, DEFAULT_SORT, SORT_OPTIONS, type SortValue } from '@
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
 export interface CatalogParams {
-  categories: string[]; // slugs
-  sizes: string[]; // '42','42.5'
-  colors: string[]; // colorway slugs
-  brands: string[];
-  genders: string[]; // 'MEN'...
+  categories: string[];
+  rooms: string[];
+  options: Record<string, string[]>;
   priceFrom?: number;
   priceTo?: number;
   inStock: boolean;
@@ -17,79 +15,110 @@ export interface CatalogParams {
   query?: string;
 }
 
-const first = (v: string | string[] | undefined): string | undefined => (Array.isArray(v) ? v[0] : v);
+const first = (value: string | string[] | undefined): string | undefined => (Array.isArray(value) ? value[0] : value);
 
-const csv = (v: string | string[] | undefined): string[] => {
-  const s = first(v);
-  return s
-    ? s
-        .split(',')
-        .map((x) => x.trim())
-        .filter(Boolean)
-    : [];
+const normalizeSlug = (value: string): string => value.trim().toLowerCase();
+
+const csv = (value: string | string[] | undefined): string[] => {
+  const seen = new Set<string>();
+  for (const item of (first(value) ?? '').split(',')) {
+    const normalized = normalizeSlug(item);
+    if (normalized && !seen.has(normalized)) seen.add(normalized);
+  }
+  return [...seen];
 };
 
-const SORT_VALUES = SORT_OPTIONS.map((o) => o.value) as readonly string[];
+const SORT_VALUES = SORT_OPTIONS.map((option) => option.value) as readonly string[];
+const INVALID_OPTION_GROUPS = new Set(['__proto__', 'constructor', 'prototype']);
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function isInStockParam(value: string | undefined): boolean {
+  return value === '1' || value === 'true';
+}
+
+function parseOptions(value: string | string[] | undefined): Record<string, string[]> {
+  const options: Record<string, string[]> = {};
+  const seenByGroup = new Map<string, Set<string>>();
+
+  for (const token of (first(value) ?? '').split(',')) {
+    const separator = token.indexOf(':');
+    if (separator <= 0 || separator !== token.lastIndexOf(':')) continue;
+
+    const group = normalizeSlug(token.slice(0, separator));
+    const option = normalizeSlug(token.slice(separator + 1));
+    if (!SLUG_PATTERN.test(group) || !SLUG_PATTERN.test(option) || INVALID_OPTION_GROUPS.has(group)) continue;
+
+    const seen = seenByGroup.get(group) ?? new Set<string>();
+    if (seen.has(option)) continue;
+    seen.add(option);
+    seenByGroup.set(group, seen);
+    (options[group] ??= []).push(option);
+  }
+
+  return options;
+}
 
 export function parseCatalogParams(sp: RawSearchParams): CatalogParams {
   const sortRaw = first(sp.sort);
   const sort: SortValue = (SORT_VALUES.includes(sortRaw ?? '') ? sortRaw : DEFAULT_SORT) as SortValue;
-
-  const pageNum = Number(first(sp.page));
-  const page = Number.isInteger(pageNum) && pageNum > 1 ? pageNum : 1;
-
-  const priceFromNum = Number(first(sp.priceFrom));
-  const priceToNum = Number(first(sp.priceTo));
+  const pageNumber = Number(first(sp.page));
+  const priceFromNumber = Number(first(sp.priceFrom));
+  const priceToNumber = Number(first(sp.priceTo));
 
   return {
     categories: csv(sp.category),
-    sizes: csv(sp.size),
-    colors: csv(sp.color),
-    brands: csv(sp.brand),
-    genders: csv(sp.gender),
-    priceFrom: Number.isFinite(priceFromNum) && priceFromNum > 0 ? priceFromNum : undefined,
-    priceTo: Number.isFinite(priceToNum) && priceToNum > 0 ? priceToNum : undefined,
-    inStock: first(sp.inStock) === '1' || first(sp.inStock) === 'true',
+    rooms: csv(sp.room),
+    options: parseOptions(sp.option),
+    priceFrom: Number.isFinite(priceFromNumber) && priceFromNumber > 0 ? priceFromNumber : undefined,
+    priceTo: Number.isFinite(priceToNumber) && priceToNumber > 0 ? priceToNumber : undefined,
+    inStock: isInStockParam(first(sp.inStock)),
     sort,
-    page,
+    page: Number.isInteger(pageNumber) && pageNumber > 1 ? pageNumber : 1,
     query: first(sp.q)?.trim() || undefined,
   };
 }
 
-// where для активного варианта (цена/размер/доступность) — переиспользуется в include.
-function variantWhere(p: CatalogParams): Prisma.ProductVariantWhereInput {
+function buildSkuWhere(params: CatalogParams): Prisma.SkuWhereInput {
   const price: Prisma.IntFilter = {};
-  if (p.priceFrom !== undefined) price.gte = p.priceFrom;
-  if (p.priceTo !== undefined) price.lte = p.priceTo;
-  const w: Prisma.ProductVariantWhereInput = { active: true };
-  if (Object.keys(price).length) w.price = price;
-  if (p.sizes.length) w.size = { in: p.sizes };
-  if (p.inStock) w.stock = { gt: 0 };
-  return w;
+  if (params.priceFrom !== undefined) price.gte = params.priceFrom;
+  if (params.priceTo !== undefined) price.lte = params.priceTo;
+
+  const skuWhere: Prisma.SkuWhereInput = { active: true };
+  if (Object.keys(price).length) skuWhere.price = price;
+  if (params.inStock) skuWhere.stock = { gt: 0 };
+
+  const optionPredicates = Object.keys(params.options)
+    .sort((left, right) => left.localeCompare(right))
+    .map((groupSlug) => ({
+      selections: {
+        some: {
+          optionGroup: { slug: groupSlug },
+          optionValue: { slug: { in: params.options[groupSlug] } },
+        },
+      },
+    }));
+  if (optionPredicates.length) skuWhere.AND = optionPredicates;
+
+  return skuWhere;
 }
 
-export function buildProductWhere(p: CatalogParams): Prisma.ProductWhereInput {
+export function buildProductWhere(params: CatalogParams): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = { active: true };
 
-  if (p.categories.length) where.category = { slug: { in: p.categories } };
-  if (p.brands.length) where.brand = { in: p.brands };
-  if (p.genders.length) where.gender = { in: p.genders as Prisma.EnumGenderFilter['in'] };
-  if (p.query) where.name = { contains: p.query, mode: 'insensitive' };
+  if (params.categories.length) where.category = { slug: { in: params.categories } };
+  if (params.rooms.length) where.rooms = { some: { room: { slug: { in: params.rooms } } } };
+  if (params.query) where.name = { contains: params.query, mode: 'insensitive' };
 
-  // Фильтры на уровне расцветок/вариантов: цвет — slug расцветки; размер/цена/инсток — её варианты.
-  const colorwaySome: Prisma.ProductColorwayWhereInput = {};
-  if (p.colors.length) colorwaySome.slug = { in: p.colors };
-  const vWhere = variantWhere(p);
-  const hasVariantFilter = p.sizes.length || p.priceFrom !== undefined || p.priceTo !== undefined || p.inStock;
-  if (hasVariantFilter) colorwaySome.variants = { some: vWhere };
-  if (Object.keys(colorwaySome).length) where.colorways = { some: colorwaySome };
+  const hasSkuFilter =
+    Object.keys(params.options).length > 0 ||
+    params.priceFrom !== undefined ||
+    params.priceTo !== undefined ||
+    params.inStock;
+  if (hasSkuFilter) where.skus = { some: buildSkuWhere(params) };
 
   return where;
 }
 
-// Сортировка на уровне БД по денормализованным колонкам Product (minPrice/discountPct/salesCount).
-// Финальный tiebreak `{ id: 'asc' }` в КАЖДОЙ ветке → строгий тотальный порядок → стабильная
-// пагинация (товары с равным ключом не «прыгают» между страницами).
 export function buildOrderBy(sort: SortValue): Prisma.ProductOrderByWithRelationInput[] {
   switch (sort) {
     case 'popular':
@@ -108,6 +137,6 @@ export function buildOrderBy(sort: SortValue): Prisma.ProductOrderByWithRelation
 
 export const PAGE_SIZE = CATALOG_PAGE_SIZE;
 
-export function buildPagination(page: number) {
+export function buildPagination(page: number): { skip: number; take: number } {
   return { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE };
 }

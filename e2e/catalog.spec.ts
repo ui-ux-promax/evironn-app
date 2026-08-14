@@ -51,6 +51,29 @@ test('sort control is URL-authoritative and resets page', async ({ page }) => {
   await expect(page).not.toHaveURL(/page=/);
 });
 
+test('sort indicator follows the active control from URL state', async ({ page }) => {
+  await page.goto('/catalog?sort=new');
+  const sortControl = page.locator('.cat-b__seg-control--sm');
+  const active = sortControl.locator('button.is-active');
+  await expect(active).toHaveAttribute('aria-pressed', 'true');
+  await expect
+    .poll(() =>
+      sortControl.evaluate((control) => {
+        const activeButton = control.querySelector<HTMLElement>('button.is-active');
+        const indicator = control.querySelector<HTMLElement>('.cat-b__seg-indicator');
+        if (!activeButton || !indicator) return false;
+        const controlRect = control.getBoundingClientRect();
+        const activeRect = activeButton.getBoundingClientRect();
+        const indicatorRect = indicator.getBoundingClientRect();
+        return (
+          Math.round(indicatorRect.left - controlRect.left) === Math.round(activeRect.left - controlRect.left) &&
+          Math.round(indicatorRect.width) === Math.round(activeRect.width)
+        );
+      }),
+    )
+    .toBe(true);
+});
+
 test('mobile drawer keeps draft local until apply and closes on Escape', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/catalog?page=2');

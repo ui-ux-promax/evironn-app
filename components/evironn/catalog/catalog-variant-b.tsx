@@ -17,8 +17,8 @@ import {
 import { formatPrice } from '@/lib/format';
 
 const SORT_OPTIONS = [
-  { value: 'new', label: 'Новинки', fullLabel: 'Сначала новинки' },
   { value: 'popular', label: 'Популярные', fullLabel: 'Популярные' },
+  { value: 'new', label: 'Новинки', fullLabel: 'Сначала новинки' },
   { value: 'price-asc', label: 'Дешевле', fullLabel: 'Цена: по возрастанию' },
   { value: 'price-desc', label: 'Дороже', fullLabel: 'Цена: по убыванию' },
 ] as const;

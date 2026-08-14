@@ -17,6 +17,8 @@
 }
 
 .product-page__product-media--fallback {
+  position: relative;
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
 }

@@ -104,8 +104,9 @@ describe('showcase ProductPage 360 stage', () => {
     expect(video).toHaveAttribute('playsinline');
     expect(video).toHaveAttribute('preload', 'auto');
     expect((video as HTMLVideoElement).muted).toBe(true);
-    expect(screen.getByTestId('product-page-360-poster')).toHaveAttribute('src', turntable.posterUrl);
-    expect(screen.getByTestId('product-page-360-fallback')).toHaveAttribute('src', turntable.fallbackUrl);
+    expect(screen.queryByTestId('product-page-360-poster')).toBeNull();
+    expect(screen.queryByTestId('product-page-360-fallback')).toBeNull();
+    expect(screen.getByRole('dialog').querySelectorAll('.product-page__product-media')).toHaveLength(1);
     await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce());
 
     fireEvent.loadedMetadata(video);
@@ -170,6 +171,10 @@ describe('showcase ProductPage 360 stage', () => {
 
     expect(screen.queryByRole('dialog')?.querySelector('video')).toBeNull();
     expect(screen.getByTestId('product-page-360-fallback')).toBeVisible();
+    expect(screen.getByTestId('product-page-360-fallback')).toHaveClass('product-page__product-media');
+    expect(screen.getByRole('dialog').querySelectorAll('.product-page__product-media')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Пауза' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Продолжить' })).toBeNull();
     expect(screen.getByRole('status')).toHaveTextContent('360° недоступен, показано статичное изображение');
   });
 });

@@ -395,22 +395,13 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                       transition={{ duration: reducedMotion ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
                       aria-hidden="true"
                     />
-                    {is360Active ? (
+                    {is360Active && isVideoFailed ? (
                       <img
                         className="product-page__product-media product-page__product-media--fallback"
                         data-testid="product-page-360-fallback"
                         src={model.turntable.fallbackUrl}
                         alt={model.turntable.alt}
                         data-media-state={isVideoFailed ? 'visible' : 'hidden'}
-                      />
-                    ) : null}
-                    {is360Active ? (
-                      <img
-                        className="product-page__product-media product-page__product-media--poster"
-                        data-testid="product-page-360-poster"
-                        src={model.turntable.posterUrl}
-                        alt=""
-                        aria-hidden="true"
                       />
                     ) : null}
                     {is360Active && !isVideoFailed ? (
@@ -453,7 +444,7 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                         aria-label="Графитовое кресло с каркасом из тёмного ореха в режиме 360 градусов"
                       />
                     ) : null}
-                    {is360Active ? (
+                    {is360Active && !isVideoFailed ? (
                       <div className="product-page__video-controls">
                         <button type="button" onClick={toggleVideoPlayback} disabled={!isVideoReady}>
                           {isVideoPlaying ? 'Пауза' : 'Продолжить'}

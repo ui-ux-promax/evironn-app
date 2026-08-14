@@ -116,3 +116,12 @@
 - Minor wording fixed: `.env.example` now states that the pooled URL and write opt-in are required while the direct/unpooled URL is optional.
 - Review-remediation RED: the new empty-unpooled regression failed because the old guard treated present empty as absent. GREEN: the focused pair passed 17/17 tests.
 - Task 1: complete (commits ef9b2db..85da104, review clean; Critical 0 / Important 0 / Minor 0).
+
+## Phase 3 commerce and authentication — Task 2
+
+- Task 2 implementation complete in the focused working tree. Auth Variant B uses the accepted clone presentation with production Auth.js credentials/Google sign-in, registration, inline verification, safe callbacks, server retry feedback, and the single demonstration-service consent.
+- Auth route group now renders the accepted storefront header/footer and initial cart count without `VerificationGateHost`; the shop route retains the host.
+- Exact clone assets verified: graphite room `77AD8149…80D7`, ivory chair `75106ABA…66F1`, terracotta chair `19F47174…385D`.
+- RED: required new-auth Vitest command failed while components, styles, and assets were absent. GREEN: focused Vitest command passed 14 files / 69 tests; `npm run typecheck` passed; required focused Prettier check passed.
+- Playwright skipped because disposable E2E database keys or explicit write opt-in are absent. No ambient database used. Full gate, build, and all E2E were intentionally not run.
+- Report: `.superpowers/sdd/phase-3-task-2-report.md`.

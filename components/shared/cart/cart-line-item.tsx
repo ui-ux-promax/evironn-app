@@ -5,9 +5,9 @@ import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/store';
 import { WishlistHeart } from '@/components/shared/wishlist/wishlist-heart';
-import type { CartStateItem } from '@/services/dto/cart.dto';
+import type { CartLineDto } from '@/services/dto/commerce-cart.dto';
 
-export function CartLineItem({ item, wishlisted = false }: { item: CartStateItem; wishlisted?: boolean }) {
+export function CartLineItem({ item, wishlisted = false }: { item: CartLineDto; wishlisted?: boolean }) {
   const updateItemQuantity = useCartStore((s) => s.updateItemQuantity);
   const removeCartItem = useCartStore((s) => s.removeCartItem);
   const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
@@ -22,6 +22,9 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartStateItem
     }
   };
   const maximumQuantity = Math.min(item.stock, 99);
+  const configurationLabel = item.configuration
+    .map((option) => `${option.groupLabel}: ${option.valueLabel}`)
+    .join(' · ');
   const dec = () => item.quantity > 1 && void updateQuantity(item.quantity - 1);
   const inc = () => item.quantity < maximumQuantity && void updateQuantity(item.quantity + 1);
 
@@ -29,7 +32,7 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartStateItem
     <article
       className={cn(
         'relative grid grid-cols-[80px_minmax(0,1fr)] gap-3 rounded-[20px] border border-line bg-surface p-3 transition-opacity duration-250 hover:border-ink/16 sm:grid-cols-[104px_minmax(0,1fr)_auto] sm:gap-4 sm:rounded-[24px] sm:p-3.5',
-        (item.disabled || !item.available) && 'opacity-60',
+        !item.available && 'opacity-60',
       )}
     >
       {/* Media */}
@@ -47,19 +50,14 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartStateItem
             <div className="font-display text-[16px] font-bold leading-tight tracking-tight sm:text-[18px]">
               {item.name}
             </div>
-            <div className="text-ink-muted text-xs mt-0.5">
-              {item.colorwayName} · Размер: {item.size}
-            </div>
+            <div className="text-ink-muted text-xs mt-0.5">{configurationLabel || 'Конфигурация'}</div>
           </div>
         </div>
 
         {/* Attributes */}
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-soft/70 border border-line text-xs">
-            {item.colorwayName}
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-soft/70 border border-line text-xs">
-            Размер: {item.size}
+            {configurationLabel || 'Конфигурация'}
           </span>
         </div>
 
@@ -70,7 +68,7 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartStateItem
             <button
               type="button"
               onClick={dec}
-              disabled={item.quantity <= 1 || item.disabled || isUpdatingQuantity}
+              disabled={item.quantity <= 1 || !item.available || isUpdatingQuantity}
               aria-label="Меньше"
               className="w-[38px] h-full grid place-items-center rounded-full hover:bg-surface-soft disabled:opacity-35 disabled:cursor-not-allowed"
             >
@@ -91,7 +89,7 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartStateItem
             <button
               type="button"
               onClick={inc}
-              disabled={item.quantity >= maximumQuantity || item.disabled || isUpdatingQuantity}
+              disabled={item.quantity >= maximumQuantity || !item.available || isUpdatingQuantity}
               aria-label="Больше"
               className="w-[38px] h-full grid place-items-center rounded-full hover:bg-surface-soft disabled:opacity-35 disabled:cursor-not-allowed"
             >

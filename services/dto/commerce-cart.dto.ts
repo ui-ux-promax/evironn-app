@@ -1,34 +1,28 @@
 export interface CartConfigurationItemDto {
   groupSlug: string;
-  groupName: string;
+  groupLabel: string;
   valueSlug: string;
-  valueName: string;
+  valueLabel: string;
   swatchHex: string | null;
 }
 
 export interface CartLineDto {
   id: string;
-  skuId?: string | null;
-  productVariantId?: string | null;
-  articleNumber?: string;
+  skuId: string;
   productId: string;
-  productName?: string;
-  name: string;
   productSlug: string;
-  quantity: number;
-  configuration?: CartConfigurationItemDto[];
-  colorwayName: string;
-  size: string;
+  name: string;
+  articleNumber: string;
+  configuration: CartConfigurationItemDto[];
   imageUrl: string | null;
-  imageAlt?: string;
+  imageAlt: string;
+  quantity: number;
   unitPrice: number;
-  oldUnitPrice?: number | null;
+  oldUnitPrice: number | null;
   lineTotal: number;
-  compareAtLineTotal?: number;
+  oldLineTotal: number | null;
   stock: number;
-  active?: boolean;
   available: boolean;
-  disabled?: boolean;
 }
 
 export interface CartTotalsDto {
@@ -47,20 +41,19 @@ export interface CartDto {
 }
 
 export type CartApiErrorCode =
-  | 'CART_INVALID'
-  | 'CART_QUANTITY_LIMIT'
-  | 'CART_OWNER_REQUIRED'
-  | 'CART_SKU_NOT_FOUND'
+  | 'INVALID_INPUT'
+  | 'SKU_NOT_FOUND'
+  | 'OUT_OF_STOCK'
+  | 'QUANTITY_EXCEEDS_STOCK'
   | 'CART_ITEM_NOT_FOUND'
-  | 'CART_UNAVAILABLE'
-  | 'CART_OUT_OF_STOCK'
-  | 'CART_CONFLICT'
-  | 'CART_INTERNAL';
+  | 'CART_CONFLICT';
 
 export interface CartApiError {
-  code: CartApiErrorCode;
-  message: string;
-  issues?: unknown;
+  error: {
+    code: CartApiErrorCode;
+    message: string;
+    stock?: number;
+  };
 }
 
 export const EMPTY_CART_DTO: CartDto = {

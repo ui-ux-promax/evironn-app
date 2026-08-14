@@ -48,12 +48,10 @@ export function CartRelatedGrid({ items }: { items: ProductCardData[] }) {
                   aria-label={`Добавить ${p.name}`}
                   onClick={async () => {
                     if (isAdding) return;
-                    // Add first available variant
-                    const variant = p.sizes.find((s) => s.inStock);
-                    if (variant?.variantId) {
+                    if (p.canonicalSkuId) {
                       setAddingProductIds((ids) => new Set(ids).add(p.id));
                       try {
-                        await addCartItem({ productVariantId: variant.variantId });
+                        await addCartItem({ skuId: p.canonicalSkuId });
                       } catch {
                         /* store sets error */
                       } finally {

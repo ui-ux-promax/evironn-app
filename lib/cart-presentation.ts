@@ -68,38 +68,30 @@ function buildLine(item: CartWithItems['items'][number]): CartLineDto {
         const optionValue = selection.optionValue as typeof selection.optionValue & { swatchHex?: string | null };
         return {
           groupSlug: selection.optionGroup.slug,
-          groupName: selection.optionGroup.name,
+          groupLabel: selection.optionGroup.name,
           valueSlug: optionValue.slug,
-          valueName: optionValue.name,
+          valueLabel: optionValue.name,
           swatchHex: optionValue.swatchHex ?? null,
         };
       });
     const lineTotal = calcLineTotal(item.sku.price, item.quantity);
-    const compareAtLineTotal = calcLineTotal(
-      Math.max(item.sku.oldPrice ?? item.sku.price, item.sku.price),
-      item.quantity,
-    );
+    const oldLineTotal = item.sku.oldPrice === null ? null : calcLineTotal(item.sku.oldPrice, item.quantity);
     return {
       id: item.id,
       skuId: item.sku.id,
-      productVariantId: null,
-      articleNumber: item.sku.articleNumber,
       productId: product.id,
-      productName: product.name,
-      name: product.name,
       productSlug: product.slug,
+      name: product.name,
+      articleNumber: item.sku.articleNumber,
       quantity: item.quantity,
       configuration,
-      colorwayName: configuration.map((option) => option.valueName).join(', '),
-      size: '',
       imageUrl: image?.url ?? null,
       imageAlt: image?.alt ?? product.name,
       unitPrice: item.sku.price,
       oldUnitPrice: item.sku.oldPrice,
       lineTotal,
-      compareAtLineTotal,
+      oldLineTotal,
       stock: item.sku.stock,
-      active: item.sku.active && product.active,
       available: item.sku.active && product.active && item.sku.stock > 0,
     };
   }
@@ -110,31 +102,23 @@ function buildLine(item: CartWithItems['items'][number]): CartLineDto {
   const productMedia = (product as typeof product & { media?: Array<{ url: string; alt: string | null }> }).media ?? [];
   const image = variant.colorway.images[0] ?? productMedia[0] ?? null;
   const lineTotal = calcLineTotal(variant.price, item.quantity);
-  const compareAtLineTotal = calcLineTotal(
-    Math.max(variant.compareAtPrice ?? variant.price, variant.price),
-    item.quantity,
-  );
+  const oldLineTotal = variant.compareAtPrice === null ? null : calcLineTotal(variant.compareAtPrice, item.quantity);
   return {
     id: item.id,
-    skuId: null,
-    productVariantId: variant.id,
-    articleNumber: variant.sku,
+    skuId: variant.id,
     productId: product.id,
-    productName: product.name,
-    name: product.name,
     productSlug: product.slug,
+    name: product.name,
+    articleNumber: variant.sku,
     quantity: item.quantity,
     configuration: [],
-    colorwayName: variant.colorway.name,
-    size: variant.size,
     imageUrl: image?.url ?? null,
     imageAlt: image?.alt ?? product.name,
     unitPrice: variant.price,
     oldUnitPrice: variant.compareAtPrice,
     lineTotal,
-    compareAtLineTotal,
+    oldLineTotal,
     stock: variant.stock,
-    active: variant.active && product.active,
     available: variant.active && product.active && variant.stock > 0,
   };
 }
@@ -142,7 +126,11 @@ function buildLine(item: CartWithItems['items'][number]): CartLineDto {
 export function buildCartDto(cart: CartWithItems, couponPercent = 0): CartDto {
   const items = cart.items.map(buildLine);
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-  const compareAtSubtotal = items.reduce((sum, item) => sum + (item.compareAtLineTotal ?? item.lineTotal), 0);
+  const compareAtSubtotal = items.reduce(
+    (sum, item) =>
+      sum + (item.oldUnitPrice === null ? item.lineTotal : Math.max(item.oldUnitPrice, item.unitPrice) * item.quantity),
+    0,
+  );
   const couponDiscount = calcCouponDiscount(subtotal, couponPercent);
   return {
     items,

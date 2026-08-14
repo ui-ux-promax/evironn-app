@@ -3,7 +3,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CartLineItem } from '@/components/shared/cart/cart-line-item';
-import type { CartStateItem } from '@/services/dto/cart.dto';
+import type { CartLineDto } from '@/services/dto/commerce-cart.dto';
 
 const updateItemQuantity = vi.hoisted(() => vi.fn());
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -23,17 +23,21 @@ vi.mock('@/components/shared/wishlist/wishlist-heart', () => ({
   WishlistHeart: () => React.createElement('button', { type: 'button' }, 'wishlist'),
 }));
 
-const item: CartStateItem = {
+const item: CartLineDto = {
   id: 'cart-item-1',
+  skuId: 'sku-1',
+  articleNumber: 'EV-HOODIE-SAGE-M',
   productId: 'product-1',
   quantity: 1,
   name: 'Hoodie',
   productSlug: 'hoodie',
-  colorwayName: 'Sage',
-  size: 'M',
+  configuration: [],
   imageUrl: null,
+  imageAlt: 'Hoodie',
   unitPrice: 5400,
+  oldUnitPrice: null,
   lineTotal: 5400,
+  oldLineTotal: null,
   stock: 5,
   available: true,
 };

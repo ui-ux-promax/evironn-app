@@ -149,3 +149,11 @@
 - GREEN: the required focused regression command passed 11 files / 53 tests; `npm run typecheck` passed; the required focused Prettier check passed.
 - Playwright skipped because `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, and `E2E_DATABASE_ALLOW_WRITES` are absent. Full gate/build/all-E2E were not run.
 - Report: `.superpowers/sdd/phase-3-task-3-report.md`.
+
+### Task 3 review remediation — 2026-08-14
+
+- Exact approved commerce CartDto restored: canonical required fields only, ordered option labels/swatches, `oldLineTotal`, exact six error codes, nested `CartApiError`, and no client `productVariantId`/legacy fields.
+- Legacy ProductVariant support remains server projection compatibility only. Related-cart client writes now require canonical SKU identity.
+- Route mapping now distinguishes `OUT_OF_STOCK` from `QUANTITY_EXCEEDS_STOCK`, includes current stock, uses exact nested envelopes/statuses, and preserves P2034 retry handling.
+- Added focused P2002 race cases: retry rereads quantity/stock and preserves valid increment; reread quantity above stock returns `QUANTITY_EXCEEDS_STOCK`; retry exhaustion returns `CART_CONFLICT`, never generic 500.
+- RED: focused projection/route/store run failed 8 expected contract assertions. GREEN: focused 14-file command passed 67/67. Typecheck passed. Touched-file Prettier check passed. Full gate/build/E2E not run.

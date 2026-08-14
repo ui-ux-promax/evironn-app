@@ -25,7 +25,7 @@ class CartRouteError extends Error {
     readonly code: CartApiErrorCode,
     readonly status: number,
     message: string,
-    readonly issues?: unknown,
+    readonly stock?: number,
   ) {
     super(message);
   }
@@ -33,13 +33,15 @@ class CartRouteError extends Error {
 
 function errorResponse(error: CartRouteError): NextResponse<CartApiError> {
   return NextResponse.json(
-    { code: error.code, message: error.message, ...(error.issues ? { issues: error.issues } : {}) },
+    {
+      error: { code: error.code, message: error.message, ...(error.stock === undefined ? {} : { stock: error.stock }) },
+    },
     { status: error.status },
   );
 }
 
 function genericErrorResponse(message: string): NextResponse<CartApiError> {
-  return NextResponse.json({ code: 'CART_INTERNAL', message }, { status: 500 });
+  return NextResponse.json({ error: { code: 'CART_CONFLICT', message } }, { status: 500 });
 }
 
 function isRetryableTransactionError(error: unknown): boolean {
@@ -80,20 +82,13 @@ export async function POST(req: NextRequest) {
 
       const parsed = createCartItemSchema.safeParse(await req.json());
       if (!parsed.success) {
-        const quantityIssue = parsed.error.issues.some((issue) => issue.path[0] === 'quantity');
-        const error = new CartRouteError(
-          quantityIssue ? 'CART_QUANTITY_LIMIT' : 'CART_INVALID',
-          400,
-          quantityIssue ? 'Количество ограничено 99 товарами' : 'Некорректные данные',
-          parsed.error.flatten(),
-        );
-        return errorResponse(error);
+        return errorResponse(new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные'));
       }
 
       const session = await auth();
       const cookieToken = req.cookies.get(cartCookieName)?.value ?? randomUUID();
       const owner = await resolveOwnerCart(session?.user?.id ?? null, cookieToken, { create: true });
-      if (!owner) return errorResponse(new CartRouteError('CART_OWNER_REQUIRED', 401, 'Корзина не найдена'));
+      if (!owner) return errorResponse(new CartRouteError('CART_ITEM_NOT_FOUND', 401, 'Корзина не найдена'));
       const { skuId, quantity = 1 } = parsed.data;
       let updatedCart = null;
 
@@ -105,19 +100,17 @@ export async function POST(req: NextRequest) {
                 where: { id: skuId },
                 include: { product: { select: { active: true } } },
               });
-              if (!sku) throw new CartRouteError('CART_SKU_NOT_FOUND', 404, 'Товар не найден');
-              if (!sku.active || !sku.product.active)
-                throw new CartRouteError('CART_UNAVAILABLE', 409, 'Товар недоступен');
-              if (sku.stock <= 0) throw new CartRouteError('CART_OUT_OF_STOCK', 409, 'Недостаточно на складе');
+              if (!sku) throw new CartRouteError('SKU_NOT_FOUND', 404, 'Товар не найден');
+              if (!sku.active || !sku.product.active) throw new CartRouteError('SKU_NOT_FOUND', 404, 'Товар не найден');
+              if (sku.stock <= 0) throw new CartRouteError('OUT_OF_STOCK', 409, 'Недостаточно на складе', sku.stock);
 
               const existing = await tx.cartItem.findUnique({
                 where: { cartId_skuId: { cartId: owner.id, skuId } },
               });
               const nextQuantity = (existing?.quantity ?? 0) + quantity;
-              if (nextQuantity > 99)
-                throw new CartRouteError('CART_QUANTITY_LIMIT', 400, 'Количество ограничено 99 товарами');
+              if (nextQuantity > 99) throw new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные');
               if (nextQuantity > sku.stock)
-                throw new CartRouteError('CART_OUT_OF_STOCK', 409, 'Недостаточно на складе');
+                throw new CartRouteError('QUANTITY_EXCEEDS_STOCK', 409, 'Недостаточно на складе', sku.stock);
 
               await tx.cartItem.upsert({
                 where: { cartId_skuId: { cartId: owner.id, skuId } },
@@ -156,7 +149,7 @@ export async function DELETE(req: NextRequest) {
       const session = await auth();
       const token = req.cookies.get(cartCookieName)?.value;
       const owner = await resolveOwnerCart(session?.user?.id ?? null, token, { create: false });
-      if (!owner) return errorResponse(new CartRouteError('CART_OWNER_REQUIRED', 401, 'Корзина не найдена'));
+      if (!owner) return errorResponse(new CartRouteError('CART_ITEM_NOT_FOUND', 401, 'Корзина не найдена'));
       await prisma.cartItem.deleteMany({ where: { cartId: owner.id } });
       return NextResponse.json(await readCartDto(owner.id));
     } catch (error) {

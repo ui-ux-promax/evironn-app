@@ -88,30 +88,60 @@ describe('buildCartDto', () => {
       id: 'line-1',
       skuId: 'sku-1',
       articleNumber: 'EV-NOMA-WAL-LIN',
+      productId: 'product-1',
+      productSlug: 'noma',
+      name: 'Кресло Noma',
+      configuration: [
+        {
+          groupSlug: 'upholstery',
+          groupLabel: 'Обивка',
+          valueSlug: 'linen',
+          valueLabel: 'Лён',
+          swatchHex: null,
+        },
+        {
+          groupSlug: 'finish',
+          groupLabel: 'Дерево',
+          valueSlug: 'walnut',
+          valueLabel: 'Орех',
+          swatchHex: '#6b4226',
+        },
+      ],
       imageUrl: '/sku.jpg',
+      imageAlt: 'SKU',
+      quantity: 2,
       unitPrice: 80000,
       oldUnitPrice: 100000,
       lineTotal: 160000,
-      compareAtLineTotal: 200000,
+      oldLineTotal: 200000,
+      stock: 3,
       available: true,
     });
     expect(dto.items[0].configuration).toEqual([
       {
         groupSlug: 'upholstery',
-        groupName: 'Обивка',
+        groupLabel: 'Обивка',
         valueSlug: 'linen',
-        valueName: 'Лён',
+        valueLabel: 'Лён',
         swatchHex: null,
       },
       {
         groupSlug: 'finish',
-        groupName: 'Дерево',
+        groupLabel: 'Дерево',
         valueSlug: 'walnut',
-        valueName: 'Орех',
+        valueLabel: 'Орех',
         swatchHex: '#6b4226',
       },
     ]);
-    expect(dto.items[1]).toMatchObject({ imageUrl: '/product-fallback.jpg', available: false });
+    expect(dto.items[1]).toMatchObject({
+      imageUrl: '/product-fallback.jpg',
+      imageAlt: 'Стул Oak',
+      oldUnitPrice: null,
+      oldLineTotal: null,
+      available: false,
+    });
+    expect(dto.items[0]).not.toHaveProperty('productVariantId');
+    expect(dto.items[0]).not.toHaveProperty('productName');
     expect(dto.totals).toEqual({
       subtotal: 185000,
       compareAtSubtotal: 225000,
@@ -177,11 +207,16 @@ describe('buildCartDto', () => {
 
     const line = buildCartDto(cart).items[0];
     expect(line).toMatchObject({
-      productVariantId: 'variant-1',
-      skuId: null,
+      skuId: 'variant-1',
+      productId: 'product-legacy',
+      productSlug: 'legacy',
+      name: 'Legacy',
       articleNumber: 'LEGACY-M',
+      configuration: [],
+      imageUrl: '/legacy.jpg',
       available: true,
     });
+    expect(line).not.toHaveProperty('productVariantId');
     expect(line).not.toHaveProperty('skuWriteInput');
   });
 });

@@ -3,8 +3,6 @@ import { Api } from '@/services/api-client';
 import type { CreateCartItemValues } from '@/services/dto/cart.dto';
 import type { CartDto, CartLineDto, CartTotalsDto } from '@/services/dto/commerce-cart.dto';
 
-type CartInput = CreateCartItemValues | Record<string, unknown>;
-
 export interface CartState {
   loading: boolean;
   error: boolean;
@@ -12,7 +10,7 @@ export interface CartState {
   items: CartLineDto[];
   totals: CartTotalsDto;
   fetchCartItems: () => Promise<void>;
-  addCartItem: (values: CartInput) => Promise<void>;
+  addCartItem: (values: CreateCartItemValues) => Promise<void>;
   updateItemQuantity: (id: string, quantity: number) => Promise<void>;
   removeCartItem: (id: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -30,13 +28,6 @@ const emptyTotals: CartTotalsDto = {
 
 function setSnapshot(data: CartDto): Pick<CartState, 'items' | 'totals' | 'totalAmount'> {
   return { items: data.items, totals: data.totals, totalAmount: data.totals.subtotal };
-}
-
-function canonicalInput(values: CartInput): CreateCartItemValues {
-  if (!values || typeof values.skuId !== 'string' || values.skuId.length === 0) {
-    throw new Error('Canonical skuId is required');
-  }
-  return values as CreateCartItemValues;
 }
 
 export const useCartStore = create<CartState>((set) => ({
@@ -61,7 +52,7 @@ export const useCartStore = create<CartState>((set) => ({
   addCartItem: async (values) => {
     try {
       set({ loading: true, error: false });
-      set(setSnapshot(await Api.cart.addCartItem(canonicalInput(values))));
+      set(setSnapshot(await Api.cart.addCartItem(values)));
     } catch (error) {
       console.error(error);
       set({ error: true });

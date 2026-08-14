@@ -42,6 +42,7 @@ const items: ProductCardData[] = [
       },
     ],
     sizes: [{ size: 'M', sizeOrder: 3, inStock: true, variantId: 'variant-1' }],
+    canonicalSkuId: 'sku-1',
   },
 ];
 

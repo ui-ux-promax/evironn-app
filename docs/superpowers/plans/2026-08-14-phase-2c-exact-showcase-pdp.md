@@ -377,7 +377,7 @@ Repurpose tests/product-media-stage.test.tsx to cover 360 open/close, exact vide
 
 Repurpose tests/purchase-panel-loading.test.ts to assert both add controls are disabled/decorative, have unchanged visible copy, and have no cart/store/action import.
 
-Create tests/evironn-product-shell.test.tsx to assert clone root/section/aside/modal class names, Russian copy, three benefits, four features, four accordions, recommendations heading, backdrop close, Escape close, scroll lock restoration, dialog focus entry/return, and 25% wider-mobile positioning.
+Create tests/evironn-product-shell.test.tsx to assert clone root/section/aside/modal class names, Russian copy, three benefits, four features, four accordions, recommendations heading, backdrop close, Escape close, scroll lock restoration, dialog focus entry/return, and clone mobile positioning: default 50% at 390px plus 25% wider-mobile positioning from 401px through 640px.
 
 - [ ] **Step 2: Run RED.**
 
@@ -564,7 +564,7 @@ Cover:
 3. All six upholstery/wood pairs update aria-pressed state, exact chair src, canonical URL, server-projected 89 990 ₽ / 109 990 ₽, and never mutate cart count.
 4. Desktop 360 opens the dialog, locks scroll, focuses close, loads exact WebM/poster, pauses on pointer drag, changes progress/currentTime, resumes/pauses, closes with Escape, restores scroll and launch focus.
 5. Video error leaves the exact static fallback visible and announces the polite Russian status.
-6. A 390x844 context keeps the fixed scene, 25% room/chair positioning, stacked glass panel, all selectors, mobile dialog, and close control usable.
+6. A 390x844 context keeps the fixed scene at clone-default 50% room/chair positioning, stacked glass panel, all selectors, mobile dialog, and close control usable; a 412x844 context verifies clone 25% wider-mobile room/chair positioning.
 7. Reduced motion has no meaningful CSS transition/animation duration, no video autoplay/loop before explicit opt-in, and visible poster/fallback.
 8. Keyboard traversal reaches selectors, launch, modal close, playback, accordions, catalog link, and recommendation links. Axe scan of .product-page has no critical or serious violations.
 

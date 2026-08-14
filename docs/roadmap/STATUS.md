@@ -145,3 +145,16 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - Compatibility-only test correction: Phase 2A source-contract forbidden-route regex now uses route boundaries so legitimate `catalog-card` imports are not mistaken for forbidden `catalog-c` routes. No Phase 2A production UI changed.
 - Preservation: protected plan hashes baseline=current — Phase 2A `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9`; Task 3 `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Current Phase 2B plan hash `BC301FE367E1FD40FE486244F250498B7F38197F120C3617733AF13081BFD1E1`.
 - No Phase 2B assets added; Preview initial loading remains performance debt. No PR, merge, or Phase 2C start performed.
+
+## Phase 2C Task 5 implementation — 2026-08-14
+
+- Scope done: critical product E2E and durable delivery records. Production Task 1–4 files, schema, seed, dependencies, and protected old plans untouched. Corrected Phase 2C plan is included in this Task 5 commit.
+- Task 1–4 base evidence: Task 1 `62a2eb5`; Task 2 `a6da7a9`, `4751505`; Task 3 `9b6ac32`, `2a0f4f4`; Task 4 `0e784f2`, `1c0cd00`.
+- Server state: six active Noma SKU combinations; each has price `89 990 ₽`, old price `109 990 ₽`, stock `3`; repeat seed evidence remains idempotent.
+- Asset state: nine exact showcase assets, total `49,189,609` bytes; WebM is `28,717,710` bytes and ffprobe-valid, with exact poster and source paths. No Task 5 assets added.
+- E2E coverage: default and non-showcase redirects; six canonical option pairs with server facts, exact layer source, canonical URL, and unchanged cart; desktop 360 lock/focus/poster/WebM/drag/play/pause/Escape/backdrop/restore; explicit fallback/status; 390x844 clone `50%`; 412x844 wider-mobile `25%`; reduced motion; keyboard; axe serious/critical scan.
+- Focused evidence: `npm run e2e -- e2e/product.spec.ts --grep "390x844" --retries=0` — 1 passed; `npm run e2e -- e2e/product.spec.ts --retries=0` — 9 passed; standard `npm run e2e -- e2e/product.spec.ts` — 9 passed, exit 0. Full gate and build not run by Task 5 request.
+- Root causes recorded: browser clamps requested scroll to actual `window.scrollY`; test now uses actual value. SSR button can appear before client hydration; `gotoProduct` waits for `networkidle`. Valid WebM can still race native browser decode/error; test-only harness suppresses only exact native media errors until fallback test explicitly allows and dispatches error. Desktop interaction contract stays strict video-only.
+- Normative CSS preserved: `styles/evironn/ProductPage.css` expected hash `735C66AA3C4579847FBFF64950C808B85D1CF5B55BE10D1E722AB677F9294270`.
+- Remaining debt: slow initial Preview loading. Measure asset/video delivery, image loading, bundle cost, cold start, and Core Web Vitals after storefront completion; no optimization rewrite mixed into Task 5.
+- Local acceptance stop gate: coordinator starts local server after review. User must inspect desktop, 390x844, 412x844, all six options, 360 controls/fallback, reduced motion, keyboard, recommendations, header, and footer. No push, PR, merge, branch deletion, or Phase 3.

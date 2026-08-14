@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, type KeyboardEvent, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, type Ref, useRef, useState } from 'react';
 import { FiArrowRight, FiCheck, FiEye, FiEyeOff, FiLock, FiMail, FiRefreshCw, FiShield, FiUser } from 'react-icons/fi';
 import { ConsentBlock, Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
 import {
@@ -17,6 +17,7 @@ export interface AuthVariantBProps {
   errors: AuthVariantBErrors;
   oauthError: string | null;
   busy: boolean;
+  resendBusy: boolean;
   resendSeconds: number;
   passwordVisible: boolean;
   onModeChange: (mode: 'login' | 'register') => void;
@@ -71,15 +72,21 @@ function PasswordField({
 }
 
 function AuthTab({
-  mode,
   selected,
+  id,
+  tabIndex,
+  tabPanelId,
+  tabRef,
   onClick,
   onKeyDown,
   children,
   href,
 }: {
-  mode: 'login' | 'register';
   selected: boolean;
+  id: string;
+  tabIndex: number;
+  tabPanelId: string;
+  tabRef: Ref<HTMLAnchorElement>;
   onClick: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLAnchorElement>) => void;
   children: string;
@@ -87,9 +94,13 @@ function AuthTab({
 }) {
   return (
     <a
+      id={id}
       href={href}
       role="tab"
       aria-selected={selected}
+      aria-controls={tabPanelId}
+      tabIndex={tabIndex}
+      ref={tabRef}
       className={selected ? 'is-on' : ''}
       onClick={(event) => {
         event.preventDefault();
@@ -108,6 +119,7 @@ export function AuthVariantB({
   errors,
   oauthError,
   busy,
+  resendBusy,
   resendSeconds,
   passwordVisible,
   onModeChange,
@@ -121,12 +133,25 @@ export function AuthVariantB({
   error,
 }: AuthVariantBProps) {
   const [remember, setRemember] = useState(true);
+  const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const strength = passwordStrength(values.password);
-  const selectTab = (next: 'login' | 'register') => (event: KeyboardEvent<HTMLAnchorElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+  const selectTab = (current: 'login' | 'register') => (event: KeyboardEvent<HTMLAnchorElement>) => {
+    const modes = ['login', 'register'] as const;
+    const currentIndex = modes.indexOf(current);
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % modes.length;
+    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex + modes.length - 1) % modes.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = modes.length - 1;
+    else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      onModeChange(next);
-    }
+      onModeChange(current);
+      return;
+    } else return;
+
+    event.preventDefault();
+    onModeChange(modes[nextIndex]);
+    tabRefs.current[nextIndex]?.focus();
   };
   const message =
     oauthError === 'OAuthAccountNotLinked'
@@ -165,9 +190,18 @@ export function AuthVariantB({
               label="Подтвердить"
               sendingLabel="Проверяем код…"
             />
-            <button className="auth-resend" type="button" disabled={resendSeconds > 0 || busy} onClick={onResend}>
+            <button
+              className="auth-resend"
+              type="button"
+              disabled={resendSeconds > 0 || busy || resendBusy}
+              onClick={onResend}
+            >
               <FiRefreshCw aria-hidden="true" />
-              {resendSeconds > 0 ? `Повторный код через ${resendSeconds} с` : 'Отправить код повторно'}
+              {resendBusy
+                ? 'Отправляем код…'
+                : resendSeconds > 0
+                  ? `Повторный код через ${resendSeconds} с`
+                  : 'Отправить код повторно'}
             </button>
           </form>
         </section>
@@ -203,8 +237,13 @@ export function AuthVariantB({
         <div className={`auth-tabs auth-tabs--${mode}`} role="tablist" aria-label="Режим аккаунта">
           <span className="auth-tabs__indicator" aria-hidden="true" />
           <AuthTab
-            mode="login"
             selected={isLogin}
+            id="auth-tab-login"
+            tabIndex={isLogin ? 0 : -1}
+            tabPanelId="auth-panel"
+            tabRef={(element) => {
+              tabRefs.current[0] = element;
+            }}
             onClick={() => onModeChange('login')}
             onKeyDown={selectTab('login')}
             href="/login"
@@ -212,8 +251,13 @@ export function AuthVariantB({
             Войти
           </AuthTab>
           <AuthTab
-            mode="register"
             selected={!isLogin}
+            id="auth-tab-register"
+            tabIndex={isLogin ? -1 : 0}
+            tabPanelId="auth-panel"
+            tabRef={(element) => {
+              tabRefs.current[1] = element;
+            }}
             onClick={() => onModeChange('register')}
             onKeyDown={selectTab('register')}
             href="/register"
@@ -221,7 +265,13 @@ export function AuthVariantB({
             Регистрация
           </AuthTab>
         </div>
-        <div className="auth-panel">
+        <div
+          className="auth-panel"
+          id="auth-panel"
+          role="tabpanel"
+          aria-labelledby={isLogin ? 'auth-tab-login' : 'auth-tab-register'}
+          tabIndex={0}
+        >
           <FormError message={message ?? ''} />
           {isLogin ? (
             <form className="auth-fields" onSubmit={onSubmit} noValidate>

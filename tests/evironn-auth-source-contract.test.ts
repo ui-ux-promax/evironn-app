@@ -34,13 +34,17 @@ describe('production Auth Variant B source contract', () => {
   });
 
   it('keeps shell server-boundary isolation and bans clone auth paths', () => {
+    const login = read('app/(auth)/login/page.tsx');
+    const register = read('app/(auth)/register/page.tsx');
+    const controller = read('components/evironn/auth/auth-variant-b-controller.tsx');
     const shell = read('components/evironn/auth/auth-variant-b.tsx');
     const state = read('components/evironn/auth/auth-variant-b-state.ts');
     const forbidden =
-      /useAuth|authState|123456|phone|SMS|sms|recover|VK|Yandex|Telegram|guest checkout|window\.location\.search/i;
+      /useAuth|authState|mock|123456|phone|SMS|sms|recover|VK|Yandex|Telegram|guest checkout|window\.location\.search/i;
 
     expect(shell).not.toMatch(forbidden);
     expect(state).not.toMatch(forbidden);
+    for (const source of [controller, login, register]) expect(source).not.toMatch(forbidden);
     expect(shell).not.toMatch(/@\/auth|@\/lib\/prisma|cookies\(/);
   });
 

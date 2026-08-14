@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -118,11 +118,46 @@ describe('Auth Variant B', () => {
     expect(screen.getByRole('heading', { name: 'Подтвердите почту' })).toBeInTheDocument();
   });
 
+  it('shows visible feedback when verification action throws', async () => {
+    verifyEmailCode.mockRejectedValue(new Error('verification unavailable'));
+    render(<AuthVariantBController {...props} initialVerificationPending />);
+    fireEvent.change(screen.getByLabelText('Код из сообщения'), { target: { value: '424242' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось подтвердить код. Попробуйте позже');
+  });
+
   it('shows resend rate feedback', async () => {
     resendVerificationCode.mockResolvedValue({ ok: false, error: 'rate' });
     render(<AuthVariantBController {...props} initialVerificationPending />);
     fireEvent.click(screen.getByRole('button', { name: 'Отправить код повторно' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Слишком часто');
+  });
+
+  it('shows visible feedback when resend action throws', async () => {
+    resendVerificationCode.mockRejectedValue(new Error('resend unavailable'));
+    render(<AuthVariantBController {...props} initialVerificationPending />);
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить код повторно' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось отправить код. Попробуйте позже');
+  });
+
+  it('blocks concurrent resend clicks while the action is in flight', async () => {
+    let resolveResend!: (value: { ok: true }) => void;
+    const resendPromise = new Promise<{ ok: true }>((resolve) => {
+      resolveResend = resolve;
+    });
+    resendVerificationCode.mockReturnValue(resendPromise);
+    render(<AuthVariantBController {...props} initialVerificationPending />);
+    const resend = screen.getByRole('button', { name: 'Отправить код повторно' });
+
+    fireEvent.click(resend);
+    fireEvent.click(resend);
+    expect(resendVerificationCode).toHaveBeenCalledTimes(1);
+    expect(resend).toBeDisabled();
+
+    await act(async () => resolveResend({ ok: true }));
+    await waitFor(() => expect(resend).toBeDisabled());
   });
 
   it('invokes only Google OAuth with callback and preserves provider error copy', async () => {
@@ -133,12 +168,26 @@ describe('Auth Variant B', () => {
     expect(screen.queryByRole('button', { name: /VK|Яндекс|Telegram|Apple/i })).not.toBeInTheDocument();
   });
 
-  it('uses tabs with keyboard semantics', () => {
+  it('uses roving tabs with keyboard and panel semantics', () => {
     render(<AuthVariantBController {...props} />);
     const loginTab = screen.getByRole('tab', { name: 'Войти' });
     const registerTab = screen.getByRole('tab', { name: 'Регистрация' });
     expect(loginTab).toHaveAttribute('aria-selected', 'true');
-    fireEvent.keyDown(registerTab, { key: 'Enter' });
+    expect(loginTab).toHaveAttribute('tabindex', '0');
+    expect(registerTab).toHaveAttribute('tabindex', '-1');
+    expect(loginTab).toHaveAttribute('aria-controls', 'auth-panel');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'auth-panel');
+
+    fireEvent.keyDown(loginTab, { key: 'ArrowRight' });
     expect(registerTab).toHaveAttribute('aria-selected', 'true');
+    expect(registerTab).toHaveAttribute('tabindex', '0');
+    expect(document.activeElement).toBe(registerTab);
+
+    fireEvent.keyDown(registerTab, { key: 'Home' });
+    expect(loginTab).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(loginTab, { key: 'End' });
+    expect(registerTab).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(registerTab, { key: 'ArrowLeft' });
+    expect(loginTab).toHaveAttribute('aria-selected', 'true');
   });
 });

@@ -125,3 +125,10 @@
 - RED: required new-auth Vitest command failed while components, styles, and assets were absent. GREEN: focused Vitest command passed 14 files / 69 tests; `npm run typecheck` passed; required focused Prettier check passed.
 - Playwright skipped because disposable E2E database keys or explicit write opt-in are absent. No ambient database used. Full gate, build, and all E2E were intentionally not run.
 - Report: `.superpowers/sdd/phase-3-task-2-report.md`.
+
+### Task 2 review remediation
+
+- Important findings fixed: local Google sign-in boundary is intercepted in E2E with sanitized `/` callback proof and no Google navigation; auth tabs use roving `tabIndex`, ArrowLeft/Right/Home/End, `aria-controls`, and `role="tabpanel"`; verification/resend action exceptions show visible alerts; resend blocks concurrent clicks; forbidden `useAuth`/mock scanning covers the controller and auth pages.
+- Review-remediation RED showed the new assertions failing on the old implementation. GREEN focused component/source check: 2 files / 15 tests passed.
+- Final focused check: requested six-file Vitest command passed 6 files / 40 tests; `npm run typecheck` passed; Prettier check passed for all five touched source/test files.
+- Playwright skipped because all disposable E2E URL/write-opt-in keys were absent. No ambient application database used.

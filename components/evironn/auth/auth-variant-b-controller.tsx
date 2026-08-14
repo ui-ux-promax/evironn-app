@@ -53,6 +53,7 @@ export function AuthVariantBController({
   const [busy, setBusy] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [resendBusy, setResendBusy] = useState(false);
   const safeCallback = safeCallbackUrl(callbackUrl);
 
   useEffect(() => {
@@ -144,19 +145,29 @@ export function AuthVariantBController({
         return;
       }
       setErrors({ code: VERIFY_MESSAGES[result.reason] ?? 'Не удалось подтвердить код.' });
+    } catch {
+      setError('Не удалось подтвердить код. Попробуйте позже');
     } finally {
       setBusy(false);
     }
   };
 
   const onResend = async () => {
-    if (resendSeconds > 0) return;
-    const result = await resendVerificationCode();
-    if (!result.ok) {
-      setError(VERIFY_MESSAGES[result.error ?? ''] ?? 'Не удалось отправить код.');
-      return;
+    if (resendSeconds > 0 || resendBusy) return;
+    setResendBusy(true);
+    setError(null);
+    try {
+      const result = await resendVerificationCode();
+      if (!result.ok) {
+        setError(VERIFY_MESSAGES[result.error ?? ''] ?? 'Не удалось отправить код.');
+        return;
+      }
+      setResendSeconds(Math.round(VERIFICATION_RESEND_COOLDOWN_MS / 1000));
+    } catch {
+      setError('Не удалось отправить код. Попробуйте позже');
+    } finally {
+      setResendBusy(false);
     }
-    setResendSeconds(Math.round(VERIFICATION_RESEND_COOLDOWN_MS / 1000));
   };
 
   return (
@@ -166,6 +177,7 @@ export function AuthVariantBController({
       errors={errors}
       oauthError={oauthError}
       busy={busy}
+      resendBusy={resendBusy}
       resendSeconds={resendSeconds}
       passwordVisible={passwordVisible}
       onModeChange={(next) => {

@@ -27,7 +27,25 @@ test('credentials login accepts verified account', async ({ page }) => {
 });
 
 test('Google control exists and external callback is reduced to local path', async ({ page }) => {
+  let localSignInUrl = '';
+  let callbackUrl = '';
+  await page.route('**/api/auth/signin/google', async (route) => {
+    const request = route.request();
+    localSignInUrl = request.url();
+    callbackUrl = new URLSearchParams(request.postData() ?? '').get('callbackUrl') ?? '';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ url: `${new URL(request.url()).origin}/login?callbackUrl=%2F` }),
+    });
+  });
   await page.goto('/login?callbackUrl=https%3A%2F%2Fevil.example%2Fphish');
   await expect(page.getByRole('button', { name: 'Google' })).toBeVisible();
   await expect(page.locator('main.auth-page--b')).toBeVisible();
+  await page.getByRole('button', { name: 'Google' }).click();
+  await expect(page).toHaveURL(/\/login\?callbackUrl=%2F/);
+  expect(localSignInUrl).toMatch(/\/api\/auth\/signin\/google$/);
+  expect(callbackUrl).toBe('/');
+  expect(page.url()).not.toContain('/phish');
+  expect(page.url()).not.toMatch(/accounts\.google|google\.com/i);
 });

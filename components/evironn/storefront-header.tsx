@@ -67,11 +67,11 @@ export function StorefrontHeader({ cartCount }: StorefrontHeaderProps) {
   const previousInertRef = useRef(new Map<HTMLElement, boolean>());
   const [isCondensed, setIsCondensed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const items = useCartStore((state) => state.items);
+  const totals = useCartStore((state) => state.totals);
   const loading = useCartStore((state) => state.loading);
   const error = useCartStore((state) => state.error);
   const fetchCartItems = useCartStore((state) => state.fetchCartItems);
-  const visibleCartCount = loading || error ? cartCount : items.length;
+  const visibleCartCount = loading || error ? cartCount : totals.itemCount;
 
   useEffect(() => {
     void fetchCartItems();

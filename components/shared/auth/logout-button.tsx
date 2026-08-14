@@ -11,7 +11,20 @@ export function LogoutButton() {
     <button
       type="submit"
       onClick={() => {
-        useCartStore.setState({ items: [], totalAmount: 0 });
+        useCartStore.setState({
+          items: [],
+          totals: {
+            subtotal: 0,
+            compareAtSubtotal: 0,
+            saleDiscount: 0,
+            couponDiscount: 0,
+            total: 0,
+            itemCount: 0,
+            lineCount: 0,
+          },
+          totalAmount: 0,
+          error: false,
+        });
         useWishlistStore.getState().setCount(0);
       }}
       className="w-10 h-10 grid place-items-center rounded-full hover:bg-surface-soft text-ink-muted hover:text-ink"

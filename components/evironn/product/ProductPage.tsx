@@ -16,6 +16,7 @@ import {
 import { coalesceVideoSeek, videoTimeFromDrag } from './productVideo360';
 import { createFurnitureCaptionVariants } from '@/components/evironn/home/furniture-caption-motion';
 import { InteractiveFurnitureCards } from '@/components/evironn/home/interactive-furniture-cards';
+import { useCartStore } from '@/store';
 
 const ACCORDION_ITEMS: Array<{ id: AccordionKey; label: string; content: string }> = [
   {
@@ -79,10 +80,24 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
+  const addCartItem = useCartStore((state) => state.addCartItem);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const currentCombination = model.combinations.find(
     (combination) => combination.upholstery === selectedUpholstery && combination.wood === selectedWood,
   )!;
+
+  const handleAddToCart = async () => {
+    if (isAddingToCart || currentCombination.sku.stock <= 0) return;
+    setIsAddingToCart(true);
+    try {
+      await addCartItem({ skuId: currentCombination.sku.id, quantity: 1 });
+    } catch {
+      // The cart store retains the previous snapshot and exposes the error state.
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const selectCombination = (upholstery: ShowcaseUpholsteryId, wood: ShowcaseWoodId) => {
     const next = model.combinations.find(
@@ -362,9 +377,9 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                   <motion.button
                     className="product-page__360-add-button"
                     type="button"
-                    disabled
-                    aria-disabled="true"
-                    aria-describedby="product-page-phase-3-notice"
+                    onClick={() => void handleAddToCart()}
+                    disabled={isAddingToCart || currentCombination.sku.stock <= 0}
+                    aria-busy={isAddingToCart}
                     initial={reducedMotion ? false : 'hidden'}
                     animate="visible"
                     variants={modalCaptionVariant(5)}
@@ -538,9 +553,9 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
             <button
               className="product-page__add-button"
               type="button"
-              disabled
-              aria-disabled="true"
-              aria-describedby="product-page-phase-3-notice"
+              onClick={() => void handleAddToCart()}
+              disabled={isAddingToCart || currentCombination.sku.stock <= 0}
+              aria-busy={isAddingToCart}
             >
               Добавить в корзину
             </button>
@@ -589,9 +604,6 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
         </motion.aside>
       </main>
       <InteractiveFurnitureCards heading="Также смотрят" />
-      <p id="product-page-phase-3-notice" className="product-page__visually-hidden">
-        Добавление в корзину будет доступно после завершения пилота
-      </p>
     </>
   );
 }

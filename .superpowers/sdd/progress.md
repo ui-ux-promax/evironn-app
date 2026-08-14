@@ -141,3 +141,11 @@
 - `npx prettier --check e2e/auth.spec.ts` — pass.
 - Playwright skipped: missing `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `E2E_DATABASE_ALLOW_WRITES`; no ambient database used.
 - Task 2: complete (commits 2e5167c..96dbd52, review clean; Critical 0 / Important 0 / Minor 0).
+
+## Phase 3 commerce and authentication — Task 3
+
+- Task 3 complete in the focused working tree. Canonical SKU cart DTOs, projection, serializable POST retry boundary, owner-scoped PATCH/DELETE, root clear, complete Zustand snapshots, totals/counts, logout reset, and both accepted ProductPage add controls are implemented.
+- RED: the required four-file Vitest command failed on the absent projection, canonical POST, clear route, store snapshot, and active PDP behavior.
+- GREEN: the required focused regression command passed 11 files / 53 tests; `npm run typecheck` passed; the required focused Prettier check passed.
+- Playwright skipped because `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, and `E2E_DATABASE_ALLOW_WRITES` are absent. Full gate/build/all-E2E were not run.
+- Report: `.superpowers/sdd/phase-3-task-3-report.md`.

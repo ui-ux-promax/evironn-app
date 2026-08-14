@@ -54,6 +54,9 @@ describe('Evironn product route source contract', () => {
     expect(statSync(join(root, 'styles/evironn/ProductPage.next.css')).isFile()).toBe(true);
     expect(layoutSource).toContain("'../styles/evironn/ProductPage.css'");
     expect(layoutSource).toContain("'../styles/evironn/ProductPage.next.css'");
+    expect(productPageSource).toContain('addCartItem({ skuId: currentCombination.sku.id, quantity: 1 })');
+    expect(productPageSource).not.toContain('product-page-phase-3-notice');
+    expect(productPageSource).not.toContain('Добавление в корзину будет доступно после завершения пилота');
   });
 
   it('has no product variant or demo routes under App Router', () => {

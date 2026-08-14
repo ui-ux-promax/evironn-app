@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createCartItemSchema = z.object({
-  productVariantId: z.string().min(1),
+  skuId: z.string().min(1),
   quantity: z.number().int().positive().max(99).optional(),
 });
 export type CreateCartItemValues = z.infer<typeof createCartItemSchema>;

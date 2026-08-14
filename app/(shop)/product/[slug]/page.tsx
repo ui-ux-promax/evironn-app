@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import ProductPage from '@/components/evironn/product/ProductPage';
+import { ProductPageHandoff } from '@/components/evironn/product/product-page-handoff';
 import { getFurnitureProductBySlug } from '@/lib/get-furniture-product';
 import { buildShowcaseProductPageDto, SHOWCASE_PRODUCT_SLUG } from '@/lib/showcase-product';
 import { absoluteUrl, buildBreadcrumbListJsonLd, buildProductJsonLd, siteName } from '@/lib/seo';
@@ -105,7 +105,7 @@ export default async function ProductRoute({ params, searchParams }: ProductPage
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <ProductPage model={model} />
+      <ProductPageHandoff model={model} />
     </>
   );
 }

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
 const routePath = join(root, 'app/(shop)/product/[slug]/page.tsx');
+const handoffPath = join(root, 'components/evironn/product/product-page-handoff.tsx');
 const temporaryPdpFiles = [
   'components/shared/product/product-view.tsx',
   'components/shared/product/purchase-panel.tsx',
@@ -20,13 +21,14 @@ function filesUnder(directory: string): string[] {
 }
 
 describe('Evironn product route source contract', () => {
-  it('keeps product route boundary on canonical server DTO and clone ProductPage', () => {
+  it('keeps product route boundary on canonical server DTO and clone ProductPage handoff', () => {
     const source = readFileSync(routePath, 'utf8');
+    const handoffSource = readFileSync(handoffPath, 'utf8');
     const imports = [...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((match) => match[1]);
 
     expect(imports).toContain('@/lib/get-furniture-product');
     expect(imports).toContain('@/lib/showcase-product');
-    expect(imports).toContain('@/components/evironn/product/ProductPage');
+    expect(imports).toContain('@/components/evironn/product/product-page-handoff');
     expect(imports).toContain('next/navigation');
     expect(imports).toContain('@/lib/seo');
     expect(source).toContain('SHOWCASE_PRODUCT_SLUG');
@@ -37,6 +39,8 @@ describe('Evironn product route source contract', () => {
       /ProductView|PurchasePanel|ProductMediaStage|useCartStore|setCartCount|addProductToCart|@\/auth|wishlist|review|checkout|axios|fashion/i,
     );
     expect(source).not.toContain('@/components/shared/product');
+    expect(handoffSource).toContain("import ProductPage from './ProductPage'");
+    expect(handoffSource).toContain("from './product-page-loading-fallback'");
   });
 
   it('keeps clone ProductPage and its scoped CSS imports present', () => {

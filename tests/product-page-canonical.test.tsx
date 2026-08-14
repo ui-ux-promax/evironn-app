@@ -14,37 +14,18 @@ const mocks = vi.hoisted(() => ({
   notFound: vi.fn(() => {
     throw new Error('NOT_FOUND');
   }),
-  capturedModel: null as any,
-  buildProductJsonLd: vi.fn((input: any) => ({ '@type': 'Product', ...input })),
-  buildBreadcrumbListJsonLd: vi.fn((items: any[]) => ({ '@type': 'BreadcrumbList', itemListElement: items })),
 }));
 
 vi.mock('@/lib/get-furniture-product', () => ({
   getFurnitureProductBySlug: mocks.getFurnitureProductBySlug,
 }));
 vi.mock('@/components/evironn/product/ProductPage', () => ({
-  default: (props: any) => {
-    mocks.capturedModel = props.model;
-    return React.createElement('div', { 'data-testid': 'product-page-mock' });
-  },
+  default: () => React.createElement('div', { 'data-testid': 'product-page-mock' }),
 }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
-vi.mock('@/lib/seo', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/seo')>('@/lib/seo');
-  return {
-    ...actual,
-    buildProductJsonLd: mocks.buildProductJsonLd,
-    buildBreadcrumbListJsonLd: mocks.buildBreadcrumbListJsonLd,
-  };
-});
 
 const selection = (groupSlug: string, valueSlug: string, sortOrder: number) => ({
-  optionGroup: {
-    id: `group-${groupSlug}`,
-    name: groupSlug,
-    slug: groupSlug,
-    sortOrder,
-  },
+  optionGroup: { id: `group-${groupSlug}`, name: groupSlug, slug: groupSlug, sortOrder },
   optionValue: {
     id: `value-${valueSlug}`,
     optionGroupId: `group-${groupSlug}`,
@@ -98,13 +79,7 @@ const nomaProduct = {
     },
   ],
   media: [
-    {
-      id: 'noma-image',
-      kind: 'IMAGE' as const,
-      url: AUDITED_POSTER,
-      alt: 'Noma Woven Lounge',
-      sortOrder: 0,
-    },
+    { id: 'noma-image', kind: 'IMAGE' as const, url: AUDITED_POSTER, alt: 'Noma Woven Lounge', sortOrder: 0 },
     {
       id: 'noma-video',
       kind: 'TURN_TABLE_VIDEO' as const,
@@ -155,9 +130,6 @@ beforeEach(() => {
   mocks.getFurnitureProductBySlug.mockResolvedValue(nomaProduct);
   mocks.redirect.mockClear();
   mocks.notFound.mockClear();
-  mocks.capturedModel = null;
-  mocks.buildProductJsonLd.mockClear();
-  mocks.buildBreadcrumbListJsonLd.mockClear();
 });
 
 const pageInput = (slug = 'noma-woven-lounge', option?: string | string[]) => ({
@@ -205,7 +177,6 @@ describe('canonical showcase furniture product page', () => {
       sku: { id: 'sku-charcoal-walnut', articleNumber: 'EV-NWL-GPH-WAL' },
     });
     expect(model.combinations).toHaveLength(6);
-    expect(readPageChildren(page).some((child) => child.props && 'model' in child.props)).toBe(true);
   });
 
   it('redirects every non-showcase slug to default showcase canonical URL', async () => {
@@ -214,6 +185,21 @@ describe('canonical showcase furniture product page', () => {
       '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
     expect(mocks.getFurnitureProductBySlug).toHaveBeenCalledWith('noma-woven-lounge');
+  });
+
+  it('redirects non-showcase slug with non-default option to showcase default canonical URL', async () => {
+    await expectRedirect(
+      ProductPage(pageInput('other-chair', 'finish:oak,upholstery:graphite')),
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+    );
+  });
+
+  it('redirects unsupported option group to invalid-option default canonical URL', async () => {
+    await expectRedirect(
+      ProductPage(pageInput('noma-woven-lounge', 'color:red')),
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+    );
+    expect(mocks.notFound).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -242,33 +228,50 @@ describe('canonical showcase furniture product page', () => {
     expect(metadata.twitter).toMatchObject({ images: [expect.stringContaining(AUDITED_POSTER)] });
   });
 
-  it('emits Product JSON-LD with all six active SKUs and canonical breadcrumbs', async () => {
+  it('emits real Product JSON-LD with six offers and canonical BreadcrumbList URLs', async () => {
     const page = await ProductPage(pageInput('noma-woven-lounge', 'finish:walnut,upholstery:graphite'));
     const children = readPageChildren(page);
     const scripts = children.filter((child) => child.type === 'script');
-    const productJsonLd = scripts.find((script) => script.props.dangerouslySetInnerHTML.__html.includes('Product'));
-    const breadcrumbJsonLd = scripts.find((script) =>
-      script.props.dangerouslySetInnerHTML.__html.includes('BreadcrumbList'),
-    );
+    const jsonLd = scripts.map((script) => JSON.parse(script.props.dangerouslySetInnerHTML.__html));
+    const productJsonLd = jsonLd.find((item) => item['@type'] === 'Product');
+    const breadcrumbJsonLd = jsonLd.find((item) => item['@type'] === 'BreadcrumbList');
+    const productPage = children.find((child) => child.props && 'model' in child.props);
+    const model = productPage?.props.model;
 
-    expect(mocks.buildProductJsonLd).toHaveBeenCalledWith({
+    expect(productJsonLd).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
       name: '\u041a\u0440\u0435\u0441\u043b\u043e Graphite',
-      description: nomaProduct.description,
-      images: [AUDITED_POSTER],
-      variants: expect.arrayContaining(nomaProduct.skus.map(({ price, stock }) => ({ price, stock, active: true }))),
-      url: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite',
-    });
-    expect(mocks.buildProductJsonLd.mock.calls[0][0].variants).toHaveLength(6);
-    expect(mocks.buildBreadcrumbListJsonLd).toHaveBeenCalledWith([
-      { name: 'Главная', url: '/' },
-      { name: 'Каталог', url: '/catalog' },
-      { name: 'Armchairs', url: '/catalog?category=armchairs' },
-      {
-        name: '\u041a\u0440\u0435\u0441\u043b\u043e Graphite',
-        url: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite',
+      image: [`http://localhost:3000${AUDITED_POSTER}`],
+      offers: {
+        '@type': 'AggregateOffer',
+        priceCurrency: 'RUB',
+        lowPrice: 89990,
+        highPrice: 89990,
+        offerCount: 6,
+        availability: 'https://schema.org/InStock',
+        url: 'http://localhost:3000/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite',
       },
-    ]);
-    expect(productJsonLd).toBeDefined();
-    expect(breadcrumbJsonLd).toBeDefined();
+    });
+    expect(breadcrumbJsonLd).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { item: 'http://localhost:3000/' },
+        { item: 'http://localhost:3000/catalog' },
+        { item: 'http://localhost:3000/catalog?category=armchairs' },
+        {
+          item: 'http://localhost:3000/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite',
+        },
+      ],
+    });
+    expect(model.combinations).toHaveLength(6);
+    expect(model.combinations).toEqual(
+      expect.arrayContaining(
+        nomaProduct.skus.map((sku) =>
+          expect.objectContaining({ sku: expect.objectContaining({ price: sku.price, oldPrice: sku.oldPrice }) }),
+        ),
+      ),
+    );
   });
 });

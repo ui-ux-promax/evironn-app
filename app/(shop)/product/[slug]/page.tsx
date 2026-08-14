@@ -11,6 +11,18 @@ type RawSearchParams = { option?: string | string[] };
 type ProductPageParams = { params: Promise<{ slug: string }>; searchParams: Promise<RawSearchParams> };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+const supportedOptionGroups = new Set(['finish', 'upholstery']);
+
+function hasUnsupportedOptionGroup(rawOption: string | undefined): boolean {
+  if (!rawOption) return false;
+
+  return rawOption.split(',').some((token) => {
+    const parts = token.split(':');
+    if (parts.length !== 2) return false;
+    const group = parts[0].trim().toLowerCase();
+    return Boolean(group) && !supportedOptionGroups.has(group);
+  });
+}
 
 async function getShowcaseModel(rawOption: string | undefined) {
   const product = await getFurnitureProductBySlug(SHOWCASE_PRODUCT_SLUG);
@@ -25,7 +37,8 @@ async function getShowcaseModel(rawOption: string | undefined) {
 
 export async function generateMetadata({ searchParams }: ProductPageParams): Promise<Metadata> {
   const { option } = await searchParams;
-  const model = await getShowcaseModel(first(option));
+  const rawOption = first(option);
+  const model = await getShowcaseModel(hasUnsupportedOptionGroup(rawOption) ? undefined : rawOption);
   const canonicalPath = model.selected.canonicalPath;
   const socialImage = absoluteUrl(model.turntable.posterUrl);
 
@@ -54,11 +67,14 @@ export default async function ProductRoute({ params, searchParams }: ProductPage
   const { slug } = await params;
   const { option } = await searchParams;
   const rawOption = first(option);
-  const model = await getShowcaseModel(rawOption);
 
-  if (slug !== SHOWCASE_PRODUCT_SLUG || rawOption !== model.selected.canonicalOption) {
-    redirect(model.selected.canonicalPath);
+  if (slug !== SHOWCASE_PRODUCT_SLUG) {
+    const defaultModel = await getShowcaseModel(undefined);
+    redirect(defaultModel.selected.canonicalPath);
   }
+
+  const model = await getShowcaseModel(hasUnsupportedOptionGroup(rawOption) ? undefined : rawOption);
+  if (rawOption !== model.selected.canonicalOption) redirect(model.selected.canonicalPath);
 
   const canonicalPath = model.selected.canonicalPath;
   const productJsonLd = buildProductJsonLd({

@@ -140,3 +140,4 @@
 - `npx vitest run tests/evironn-auth-source-contract.test.ts` — 1 file / 3 tests passed.
 - `npx prettier --check e2e/auth.spec.ts` — pass.
 - Playwright skipped: missing `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `E2E_DATABASE_ALLOW_WRITES`; no ambient database used.
+- Task 2: complete (commits 2e5167c..96dbd52, review clean; Critical 0 / Important 0 / Minor 0).

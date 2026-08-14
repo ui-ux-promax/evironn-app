@@ -1,4 +1,4 @@
-import { SHOWCASE_PRODUCT_PATH } from '@/components/evironn/public-routes';
+import { SHOWCASE_DEFAULT_PRODUCT_PATH } from '@/components/evironn/public-routes';
 import type { HeroProductId } from './hero-product-state';
 import type { AvailableHeroRoomId } from './hero-room-state';
 
@@ -30,7 +30,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-living-room is-mirrored',
     hotspotClassName: 'furni-hero-hotspot-sofa',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   chair: {
     id: 'chair',
@@ -44,7 +44,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-living-room is-mirrored',
     hotspotClassName: 'furni-hero-hotspot-chair',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   'kitchen-dining': {
     id: 'kitchen-dining',
@@ -58,7 +58,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-kitchen',
     hotspotClassName: 'furni-hero-hotspot-kitchen-dining',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   'kitchen-island': {
     id: 'kitchen-island',
@@ -72,7 +72,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1.2,
     mediaClassName: 'is-kitchen',
     hotspotClassName: 'furni-hero-hotspot-kitchen-island',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   'bedroom-chair': {
     id: 'bedroom-chair',
@@ -86,7 +86,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-bedroom',
     hotspotClassName: 'furni-hero-hotspot-bedroom-chair',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   'bedroom-bed': {
     id: 'bedroom-bed',
@@ -100,7 +100,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-bedroom',
     hotspotClassName: 'furni-hero-hotspot-bedroom-bed',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   'terrace-chair': {
     id: 'terrace-chair',
@@ -114,7 +114,7 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-terrace',
     hotspotClassName: 'furni-hero-hotspot-terrace-chair',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
   'terrace-sofa': {
     id: 'terrace-sofa',
@@ -128,6 +128,6 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     playbackRate: 1,
     mediaClassName: 'is-terrace',
     hotspotClassName: 'furni-hero-hotspot-terrace-sofa',
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
   },
 };

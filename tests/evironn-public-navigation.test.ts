@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   PUBLIC_ROUTES,
+  SHOWCASE_DEFAULT_PRODUCT_PATH,
   SHOWCASE_PRODUCT_PATH,
   catalogCategoryPath,
   catalogRoomPath,
@@ -17,6 +18,9 @@ describe('Evironn public navigation', () => {
       profile: '/profile',
     });
     expect(SHOWCASE_PRODUCT_PATH).toBe('/product/noma-woven-lounge');
+    expect(SHOWCASE_DEFAULT_PRODUCT_PATH).toBe(
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+    );
   });
 
   it('builds encoded canonical catalog links', () => {

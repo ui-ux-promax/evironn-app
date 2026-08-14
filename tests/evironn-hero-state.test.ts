@@ -73,8 +73,12 @@ describe('Evironn hero pure state', () => {
     expect(HERO_ROOMS.terrace.productIds).toEqual(['terrace-chair', 'terrace-sofa']);
     expect(HERO_ROOMS['living-room'].idleSrc).toBe('/assets/hero/living-room-idle.png');
     expect(HERO_PRODUCTS['kitchen-island'].playbackRate).toBe(1.2);
-    expect(HERO_PRODUCTS['kitchen-island'].href).toBe('/product/noma-woven-lounge');
-    expect(HERO_PRODUCTS['bedroom-bed'].href).toBe('/product/noma-woven-lounge');
+    expect(HERO_PRODUCTS['kitchen-island'].href).toBe(
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+    );
+    expect(HERO_PRODUCTS['bedroom-bed'].href).toBe(
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+    );
     expect(HERO_PRODUCTS['terrace-sofa'].forwardSrc).toBe('/assets/hero/terrace-sofa-forward.mp4');
   });
 
@@ -95,7 +99,7 @@ describe('Evironn hero pure state', () => {
       expect(product.forwardSrc).toMatch(/^\/assets\/hero\/.*-forward\.mp4$/);
       expect(product.reverseSrc).toMatch(/^\/assets\/hero\/.*-reverse\.mp4$/);
       expect(product.focusSrc).toMatch(/^\/assets\/hero\/.*-focus\.webp$/);
-      expect(product.href).toBe('/product/noma-woven-lounge');
+      expect(product.href).toBe('/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle');
     }
   });
 

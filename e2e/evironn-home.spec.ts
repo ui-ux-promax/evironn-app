@@ -105,7 +105,11 @@ test.describe('Evironn home desktop', () => {
     await expect(page.locator('#evironn-header .od-primary-nav a').first()).toHaveAttribute('href', '/catalog');
     await expect(page.locator('#evironn-hero a[href="/catalog?room=living"]')).toHaveCount(1);
     await expect(page.locator('.furniture-category-section a[href="/catalog?category=sofas"]')).toHaveCount(1);
-    await expect(page.locator('.interactive-furniture__button[href="/product/noma-woven-lounge"]')).toHaveCount(5);
+    await expect(
+      page.locator(
+        '.interactive-furniture__button[href="/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle"]',
+      ),
+    ).toHaveCount(5);
     await expect(page.locator('.instagram-follow a[href="/catalog"]')).toHaveCount(22);
     const footerLinks = page.getByRole('contentinfo').locator('a');
     await expect(footerLinks).toHaveCount(expectedFooterHrefs.length);
@@ -136,7 +140,11 @@ test.describe('Evironn home desktop', () => {
     await page.locator('#evironn-hero .furni-hero-hotspot-sofa').click();
     await finishHeroVideo(page, '/assets/hero/sofa-forward.mp4');
     await expect(page.locator('#evironn-hero .furni-hero-product__back')).toBeVisible();
-    await expect(page.locator('.furni-hero-product__link[href="/product/noma-woven-lounge"]')).toBeVisible();
+    await expect(
+      page.locator(
+        '.furni-hero-product__link[href="/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle"]',
+      ),
+    ).toBeVisible();
 
     await page.locator('#evironn-hero .furni-hero-product__back').click();
     await finishHeroVideo(page, '/assets/hero/sofa-reverse.mp4');

@@ -69,7 +69,11 @@ describe('Catalog Variant B adapter', () => {
     const model = buildCatalogBModel(resultFixture);
 
     expect(model.cards).toHaveLength(12);
-    expect(model.cards.every((card) => card.href === '/product/noma-woven-lounge')).toBe(true);
+    expect(
+      model.cards.every(
+        (card) => card.href === '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+      ),
+    ).toBe(true);
     expect(model.cards[0].media.idle).toBe('/assets/products/01-bar-stool-idle.webp');
     expect(model.cards[0].note).toContain('Кресла');
     expect(model.cards[0].colors).toEqual([
@@ -139,7 +143,11 @@ describe('Catalog Variant B adapter', () => {
 
     expect(serialized).toEqual(model);
     expect(model.cards).toHaveLength(12);
-    expect(model.cards.every((card) => card.href === '/product/noma-woven-lounge')).toBe(true);
+    expect(
+      model.cards.every(
+        (card) => card.href === '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+      ),
+    ).toBe(true);
     for (const card of model.cards) {
       for (const asset of Object.values(card.media)) {
         expect(existsSync(resolve(process.cwd(), 'public', asset.slice(1)))).toBe(true);

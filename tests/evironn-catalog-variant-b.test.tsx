@@ -39,7 +39,7 @@ const modelFixture: CatalogBModel = {
       badges: [],
       soldOut: false,
       optionSwatches: [],
-      href: '/product/noma-woven-lounge',
+      href: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
       media: {
         idle: '/assets/products/03-ivory-lounge-idle.webp',
         forward: '/assets/products/03-ivory-lounge-forward.mp4',

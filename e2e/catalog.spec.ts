@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const showcasePath = '/product/noma-woven-lounge';
+const defaultShowcasePath = '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle';
 
 test('catalog default renders first 8 seeded cards with showcase links and pager', async ({ page }) => {
   await page.goto('/catalog');
@@ -8,13 +8,20 @@ test('catalog default renders first 8 seeded cards with showcase links and pager
   await expect(cards).toHaveCount(8);
   await expect(page.locator('.cat-card__frame')).toHaveCount(8);
   await expect(page.locator('.cat-pager')).toBeVisible();
-  await expect(page.locator('.cat-card__frame').first()).toHaveAttribute('href', showcasePath);
+  await expect(page.locator('.cat-card__frame').first()).toHaveAttribute('href', defaultShowcasePath);
   await expect
     .poll(() => page.locator('.cat-card__frame').evaluateAll((links) => links.map((link) => link.getAttribute('href'))))
-    .toEqual(Array.from({ length: 8 }, () => showcasePath));
+    .toEqual(Array.from({ length: 8 }, () => defaultShowcasePath));
   await page.getByRole('button', { name: '2', exact: true }).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(page.locator('.cat-card')).toHaveCount(4);
+});
+
+test('catalog card enters showcase at its canonical default option', async ({ page }) => {
+  await page.goto('/catalog');
+  await page.locator(`.cat-card__frame[href="${defaultShowcasePath}"]`).first().click();
+  await expect(page).toHaveURL(defaultShowcasePath);
+  await expect(page.locator('main.product-page').first()).toBeVisible();
 });
 
 test('category, room, and option controls update URL and delete page', async ({ page }) => {

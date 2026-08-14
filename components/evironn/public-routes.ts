@@ -7,6 +7,8 @@ export const PUBLIC_ROUTES = {
 } as const;
 
 export const SHOWCASE_PRODUCT_PATH = '/product/noma-woven-lounge' as const;
+export const SHOWCASE_DEFAULT_PRODUCT_PATH =
+  '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle' as const;
 
 function catalogPath(key: 'category' | 'room', slug: string): string {
   if (!slug) {

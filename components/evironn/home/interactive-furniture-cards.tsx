@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { SHOWCASE_PRODUCT_PATH } from '@/components/evironn/public-routes';
+import { SHOWCASE_DEFAULT_PRODUCT_PATH } from '@/components/evironn/public-routes';
 import { FurnitureCaption } from './furniture-caption';
 import {
   CARD_PLAYBACK_RATE,
@@ -322,7 +322,7 @@ export function InteractiveFurnitureCards({ heading = defaultFurnitureHeading }:
           >
             <Link
               className="interactive-furniture__button"
-              href={SHOWCASE_PRODUCT_PATH}
+              href={SHOWCASE_DEFAULT_PRODUCT_PATH}
               aria-label={`${product.name}, ${product.category}, ${product.price}`}
               onPointerEnter={() => activateFromPointer(index)}
               onPointerLeave={() => deactivateFromPointer(index)}

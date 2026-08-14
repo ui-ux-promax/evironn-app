@@ -55,9 +55,9 @@ describe('Evironn catalog source boundary', () => {
   });
 
   it('routes every catalog card through the single showcase destination', () => {
-    expect(adapterSource).toContain('import { SHOWCASE_PRODUCT_PATH }');
-    expect(adapterSource).toMatch(/href:\s*SHOWCASE_PRODUCT_PATH/);
-    expect(adapterSource).toMatch(/href:\s*SHOWCASE_PRODUCT_PATH,\s*media:/s);
+    expect(adapterSource).toContain('import { SHOWCASE_DEFAULT_PRODUCT_PATH }');
+    expect(adapterSource).toMatch(/href:\s*SHOWCASE_DEFAULT_PRODUCT_PATH/);
+    expect(adapterSource).toMatch(/href:\s*SHOWCASE_DEFAULT_PRODUCT_PATH,\s*media:/s);
     expect(cardSource).toContain('href={product.href}');
     expect(cardSource).not.toMatch(/href=\{[^}]*product\.slug/);
   });

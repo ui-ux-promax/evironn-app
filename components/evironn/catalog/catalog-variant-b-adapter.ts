@@ -1,6 +1,6 @@
 import type { CatalogResult } from '@/lib/find-products';
 import type { FurnitureProductCardData } from '@/lib/furniture-product-summary';
-import { SHOWCASE_PRODUCT_PATH } from '@/components/evironn/public-routes';
+import { SHOWCASE_DEFAULT_PRODUCT_PATH } from '@/components/evironn/public-routes';
 
 export type CatalogBMedia = {
   idle: string;
@@ -9,7 +9,7 @@ export type CatalogBMedia = {
 };
 
 export type CatalogBCard = FurnitureProductCardData & {
-  href: typeof SHOWCASE_PRODUCT_PATH;
+  href: typeof SHOWCASE_DEFAULT_PRODUCT_PATH;
   media: CatalogBMedia;
   note: string;
   colors: Array<{ label: string; swatchHex: string | null }>;
@@ -118,7 +118,7 @@ function facetKind(
 export function buildCatalogBModel(result: CatalogResult): CatalogBModel {
   const cards = result.products.map((product): CatalogBCard => ({
     ...product,
-    href: SHOWCASE_PRODUCT_PATH,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
     media: mediaForFurnitureCard(product),
     note: noteForFurnitureCard(product),
     colors: product.optionSwatches.map(({ label, swatchHex }) => ({ label, swatchHex })),

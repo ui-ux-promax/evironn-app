@@ -52,7 +52,7 @@ const cardFixture: CatalogBCard = {
     { groupSlug: 'finish', valueSlug: 'oak', label: 'Дуб', swatchHex: '#c89b6d' },
     { groupSlug: 'upholstery', valueSlug: 'linen', label: 'Лён', swatchHex: null },
   ],
-  href: '/product/noma-woven-lounge',
+  href: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
   media: {
     idle: '/assets/products/01-bar-stool-idle.webp',
     forward: '/assets/products/01-bar-stool-forward.mp4',
@@ -78,7 +78,7 @@ describe('CatalogCard', () => {
 
     expect(screen.getByRole('link', { name: /Noma Woven Lounge/i })).toHaveAttribute(
       'href',
-      '/product/noma-woven-lounge',
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
     expect(screen.getByText('89 000 ₽')).toBeInTheDocument();
     expect(screen.getByText('109 000 ₽')).toBeInTheDocument();

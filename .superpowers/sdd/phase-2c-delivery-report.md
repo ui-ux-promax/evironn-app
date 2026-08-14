@@ -25,7 +25,7 @@ Commit subject: `test: cover showcase product acceptance`
 
 - Browser clamps `scrollTo(0, 240)` to real max scroll. Test captures real `window.scrollY`, then checks restore against it.
 - SSR can show button before React hydration. `gotoProduct` uses `waitUntil: 'networkidle'`; no production marker, timeout hack, or production change.
-- ffprobe says WebM valid, 8 seconds, `28,717,710` bytes. Browser can still native-error during decode. Test-only harness suppresses error for exact WebM while strict desktop assertions run. Fallback test waits for exactly one `video` or fallback; if video exists, exact src/poster then explicit error; if fallback exists, accepts natural onError. Desktop never accepts “video or fallback”.
+- ffprobe says WebM valid, 8 seconds, `28,717,710` bytes. Final E2E uses the real browser request, real metadata, and real controls; no masking harness or synthetic media state. Browser response is HTTP `200` or valid range `206` with exact total. Fallback test waits for exactly one `video` or fallback; if video exists, exact src/poster then explicit error; if fallback exists, accepts natural onError. Desktop never accepts “video or fallback”.
 - Responsive correction kept: 390 clone-default room/chair `50%`; 412 wider-mobile room/chair `25%`.
 
 ## Inventory and server facts

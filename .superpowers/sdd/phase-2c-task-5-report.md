@@ -13,7 +13,7 @@ Task 5 done. Caveman facts:
 - 390 room/chair `50%`. 412 room/chair `25%`.
 - Reduced motion, keyboard, axe serious/critical zero covered.
 - Hydration fix test-only: `gotoProduct` waits `networkidle`. No production marker.
-- Media fix test-only: exact WebM native error suppression during strict desktop interaction. Fallback path waits one state, then explicit error only when video still exists. ffprobe-valid WebM still can race browser decode.
+- Media proof: final E2E uses real WebM HTTP delivery, real `loadedmetadata` and positive duration, and real media controls. No masking harness, synthetic media properties, or synthetic metadata events. Fallback path waits one natural video/fallback state, then explicit error only when video still exists. ffprobe-valid WebM and browser range delivery both remain accepted evidence.
 - Scroll fix test-only: use actual clamped `window.scrollY`.
 
 Proof:

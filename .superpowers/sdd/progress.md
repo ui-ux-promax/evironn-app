@@ -157,3 +157,10 @@
 - Route mapping now distinguishes `OUT_OF_STOCK` from `QUANTITY_EXCEEDS_STOCK`, includes current stock, uses exact nested envelopes/statuses, and preserves P2034 retry handling.
 - Added focused P2002 race cases: retry rereads quantity/stock and preserves valid increment; reread quantity above stock returns `QUANTITY_EXCEEDS_STOCK`; retry exhaustion returns `CART_CONFLICT`, never generic 500.
 - RED: focused projection/route/store run failed 8 expected contract assertions. GREEN: focused 14-file command passed 67/67. Typecheck passed. Touched-file Prettier check passed. Full gate/build/E2E not run.
+
+### Phase 3 checkpoint — 2026-08-14
+
+- Stop point: Task 3 implementation and first review-remediation wave are committed through `8ebbf54` (`feat: add canonical sku cart contracts`, `fix: remediate canonical sku cart review findings`).
+- Task 3 re-review is blocked with Critical 0 / Important 4 / Minor 0. Required next remediation: map malformed JSON to nested `INVALID_INPUT` HTTP 400; make every cart store action return `Promise<CartDto>` after replacing the server snapshot; select only in-stock related-cart SKUs and disable missing/unavailable buttons; catch quantity/remove failures in cart-line consumers.
+- Focused evidence remains green: 14 Vitest files / 67 tests, typecheck, and Prettier. No E2E, full gate, build, push, PR, merge, or Task 4 work started. Disposable E2E keys remain absent.
+- Resume from Task 3 remediation. Do not mark Task 3 complete or start Task 4 until affected focused checks pass and fresh Task 3 review is clean.

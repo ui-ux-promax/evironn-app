@@ -132,3 +132,11 @@
 - Review-remediation RED showed the new assertions failing on the old implementation. GREEN focused component/source check: 2 files / 15 tests passed.
 - Final focused check: requested six-file Vitest command passed 6 files / 40 tests; `npm run typecheck` passed; Prettier check passed for all five touched source/test files.
 - Playwright skipped because all disposable E2E URL/write-opt-in keys were absent. No ambient application database used.
+
+### Task 2 review Important follow-up — 2026-08-14
+
+- `e2e/auth.spec.ts` now intercepts `**/api/auth/signin/google**`, covering Auth.js `callbackUrl` query strings. Callback assertion reads query with POST fallback.
+- E2E contract now verifies local origin/path, sanitized `/` callback, no external Google request, no `/phish`, and no Google page URL; fulfilled callback remains local `/login?callbackUrl=%2F`.
+- `npx vitest run tests/evironn-auth-source-contract.test.ts` — 1 file / 3 tests passed.
+- `npx prettier --check e2e/auth.spec.ts` — pass.
+- Playwright skipped: missing `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `E2E_DATABASE_ALLOW_WRITES`; no ambient database used.

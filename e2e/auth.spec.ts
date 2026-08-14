@@ -29,14 +29,24 @@ test('credentials login accepts verified account', async ({ page }) => {
 test('Google control exists and external callback is reduced to local path', async ({ page }) => {
   let localSignInUrl = '';
   let callbackUrl = '';
-  await page.route('**/api/auth/signin/google', async (route) => {
+  let externalGoogleUrl = '';
+  page.on('request', (request) => {
+    if (/^https?:\/\/(?:accounts\.google\.com|(?:[^/]+\.)?google\.com)\//i.test(request.url())) {
+      externalGoogleUrl = request.url();
+    }
+  });
+  await page.route('**/api/auth/signin/google**', async (route) => {
     const request = route.request();
+    const requestUrl = new URL(request.url());
     localSignInUrl = request.url();
-    callbackUrl = new URLSearchParams(request.postData() ?? '').get('callbackUrl') ?? '';
+    callbackUrl =
+      requestUrl.searchParams.get('callbackUrl') ??
+      new URLSearchParams(request.postData() ?? '').get('callbackUrl') ??
+      '';
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ url: `${new URL(request.url()).origin}/login?callbackUrl=%2F` }),
+      body: JSON.stringify({ url: `${requestUrl.origin}/login?callbackUrl=%2F` }),
     });
   });
   await page.goto('/login?callbackUrl=https%3A%2F%2Fevil.example%2Fphish');
@@ -44,8 +54,11 @@ test('Google control exists and external callback is reduced to local path', asy
   await expect(page.locator('main.auth-page--b')).toBeVisible();
   await page.getByRole('button', { name: 'Google' }).click();
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2F/);
-  expect(localSignInUrl).toMatch(/\/api\/auth\/signin\/google$/);
+  expect(localSignInUrl).toMatch(/\/api\/auth\/signin\/google(?:\?|$)/);
+  expect(new URL(localSignInUrl).origin).toBe(new URL(page.url()).origin);
+  expect(new URL(localSignInUrl).pathname).toBe('/api/auth/signin/google');
   expect(callbackUrl).toBe('/');
+  expect(externalGoogleUrl).toBe('');
   expect(page.url()).not.toContain('/phish');
   expect(page.url()).not.toMatch(/accounts\.google|google\.com/i);
 });

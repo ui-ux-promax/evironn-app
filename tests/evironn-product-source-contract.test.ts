@@ -57,7 +57,7 @@ describe('Evironn product route source contract', () => {
       .map((path) => relative(join(root, 'app'), path).replaceAll('\\', '/'))
       .filter((path) => /^\(shop\)\/product\//i.test(path));
 
-    expect(productRoutes).toEqual(['(shop)/product/[slug]/page.tsx']);
+    expect(productRoutes).toEqual(['(shop)/product/[slug]/loading.tsx', '(shop)/product/[slug]/page.tsx']);
   });
 
   it('has no production references to temporary inherited PDP presentation', () => {

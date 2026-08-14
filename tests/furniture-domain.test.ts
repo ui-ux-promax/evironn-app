@@ -47,9 +47,58 @@ describe('furniture seed integrity', () => {
     const skus = noma?.skus ?? [];
     expect(skus).toHaveLength(6);
     expect(skus.every((sku) => sku.active)).toBe(true);
-    expect(new Set(skus.map((sku) => sku.combinationKey)).size).toBe(6);
-    expect(new Set(skus.map((sku) => sku.price))).toEqual(new Set([89990]));
-    expect(new Set(skus.map((sku) => sku.oldPrice))).toEqual(new Set([109990]));
+    expect(
+      skus.map(({ articleNumber, combinationKey, price, oldPrice, stock }) => ({
+        articleNumber,
+        combinationKey,
+        price,
+        oldPrice,
+        stock,
+      })),
+    ).toEqual([
+      {
+        articleNumber: 'EV-NWL-OAK',
+        combinationKey: 'finish=oak|upholstery=ivory-boucle',
+        price: 89990,
+        oldPrice: 109990,
+        stock: 3,
+      },
+      {
+        articleNumber: 'EV-NWL-WAL',
+        combinationKey: 'finish=walnut|upholstery=ivory-boucle',
+        price: 89990,
+        oldPrice: 109990,
+        stock: 3,
+      },
+      {
+        articleNumber: 'EV-NWL-GPH-OAK',
+        combinationKey: 'finish=oak|upholstery=graphite',
+        price: 89990,
+        oldPrice: 109990,
+        stock: 3,
+      },
+      {
+        articleNumber: 'EV-NWL-GPH-WAL',
+        combinationKey: 'finish=walnut|upholstery=graphite',
+        price: 89990,
+        oldPrice: 109990,
+        stock: 3,
+      },
+      {
+        articleNumber: 'EV-NWL-TER-OAK',
+        combinationKey: 'finish=oak|upholstery=terracotta',
+        price: 89990,
+        oldPrice: 109990,
+        stock: 3,
+      },
+      {
+        articleNumber: 'EV-NWL-TER-WAL',
+        combinationKey: 'finish=walnut|upholstery=terracotta',
+        price: 89990,
+        oldPrice: 109990,
+        stock: 3,
+      },
+    ]);
     expect(noma?.media).toEqual([
       {
         kind: 'IMAGE',

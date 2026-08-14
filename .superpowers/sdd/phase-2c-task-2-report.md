@@ -59,3 +59,23 @@ Prisma schema uses `POSTGRES_URL`, while local file provides approved `DATABASE_
 - No push, PR, merge, migration, dependency, client hook, or media generation.
 
 Concern: seed run #1 exit output was not captured because the networked command exceeded the tool wait window; process completion and post-run DB state were observed. Seed run #2 has direct exit-0 evidence.
+
+## Reviewer fix
+
+Caveman remediation. Two Important findings closed. Task 3 not started.
+
+- Seed binding now asserts exact ordered six-row matrix: article number, canonical combination key, price `89990`, old price `109990`, stock `3`. No article can silently bind wrong visual pair.
+- Resolver drift now has direct fixture coverage. One fixture combination key is corrupted while all six fixture SKU IDs remain unique. Test requires exact `ShowcaseProductContractError` drift message. Duplicate-ID guard cannot cause pass.
+- RED after test addition: focused run failed only the new drift assertion because expected text used key syntax instead of serialized option syntax. Corrected test expectation.
+- GREEN after correction: focused suite `4 passed`, `27 passed`.
+- Typecheck: pass.
+- Prettier: pass.
+- `git diff --check`: pass.
+
+## Captured repeat seed evidence
+
+Fresh preflight before each run: source `.env.local`; redacted hostname `ep-…-pooler.c-5.eu-central-1.aws.neon.tech`; database `neondb`; Prisma env `POSTGRES_URL` set only in child process from approved `DATABASE_URL`. No credential, query, or full URL exposed.
+
+- Seed run #1: explicit `SEED_EXIT=0`; `categories=5 rooms=5 products=12 optionGroups=3 optionValues=19 skus=21 media=15`.
+- Seed run #2: explicit `SEED_EXIT=0`; `categories=5 rooms=5 products=12 optionGroups=3 optionValues=19 skus=21 media=15`.
+- Counts identical. Idempotency evidence direct and complete.

@@ -225,6 +225,21 @@ describe('showcase product DTO', () => {
     expect(() => buildShowcaseProductPageDto(mutate(product))).toThrow(ShowcaseProductContractError);
   });
 
+  it('throws from the resolver drift guard with six unique fixture SKU IDs', () => {
+    const driftedProduct = {
+      ...product,
+      skus: product.skus.map((sku) =>
+        sku.id === 'sku-ivory-pine' ? { ...sku, combinationKey: 'finish=oak|upholstery=graphite' } : sku,
+      ),
+    } satisfies FurnitureProductForSelection;
+
+    expect(new Set(driftedProduct.skus.map((sku) => sku.id)).size).toBe(6);
+    expect(() => buildShowcaseProductPageDto(driftedProduct)).toThrow(
+      'Resolver drift for canonical showcase option finish:oak,upholstery:ivory-boucle',
+    );
+    expect(() => buildShowcaseProductPageDto(driftedProduct)).toThrow(ShowcaseProductContractError);
+  });
+
   it('throws for unexpected selected option groups', () => {
     expect(() => buildShowcaseProductPageDto(product, 'finish:walnut,dimensions:bar')).toThrow(
       ShowcaseProductContractError,

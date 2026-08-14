@@ -141,7 +141,7 @@ describe('Catalog Variant B shell', () => {
     const drawer = document.querySelector('.cat-b__drawer') as HTMLElement;
     fireEvent.click(within(drawer).getAllByRole('button')[1]);
     expect(push).not.toHaveBeenCalled();
-    expect(within(drawer).getByRole('button', { name: /Показать/i })).toHaveTextContent('Показать 0');
+    expect(within(drawer).getByRole('button', { name: /Показать/i })).toHaveTextContent('Показать 1');
     expect(document.body.style.overflow).toBe('hidden');
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть фильтры' }));
     expect(document.body.style.overflow).toBe('clip');
@@ -157,7 +157,7 @@ describe('Catalog Variant B shell', () => {
     expect(push).toHaveBeenLastCalledWith('/catalog?priceFrom=1000&inStock=1');
   });
 
-  it('uses the authoritative total only for an unchanged draft and explains unavailable preview counts', () => {
+  it('uses exact facet counts when one draft facet is changed', () => {
     render(<CatalogVariantB model={{ ...modelFixture, total: 12 }} />);
 
     fireEvent.click(document.querySelector('.cat-b__filter-button')!);
@@ -167,8 +167,19 @@ describe('Catalog Variant B shell', () => {
     expect(apply).toHaveAttribute('aria-describedby', 'catalog-drawer-count-help');
 
     fireEvent.click(drawer.querySelector('.cat-b__swatch-row button')!);
-    expect(apply).toHaveTextContent('Показать 0');
-    expect(screen.getByText(/Точное количество.*применения/i)).toBeInTheDocument();
+    expect(apply).toHaveTextContent('Показать 1');
+    expect(screen.getByText(/Количество соответствует выбранным фильтрам/i)).toBeInTheDocument();
+  });
+
+  it('does not present an unknown deferred count as zero', () => {
+    render(<CatalogVariantB model={{ ...modelFixture, total: 12 }} />);
+
+    fireEvent.click(document.querySelector('.cat-b__filter-button')!);
+    const drawer = screen.getByRole('dialog');
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Только в наличии' }));
+
+    expect(within(drawer).getByRole('button', { name: /Показать/i })).toHaveTextContent('Показать результаты');
+    expect(screen.getByText(/Количество будет рассчитано после применения/i)).toBeInTheDocument();
   });
 
   it('opens an accessible dialog, traps Tab, closes on Escape, and restores trigger focus', () => {

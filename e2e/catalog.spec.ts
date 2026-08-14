@@ -44,6 +44,19 @@ test('category, room, and option controls update URL and delete page', async ({ 
   await expect(page).not.toHaveURL(/page=/);
 });
 
+test('drawer previews the exact count for one category selection', async ({ page }) => {
+  await page.goto('/catalog');
+  await page.getByRole('button', { name: /^Фильтры/i }).click();
+  const drawer = page.locator('.cat-b__drawer');
+  await drawer.getByRole('button', { name: 'Диваны' }).click();
+  const apply = drawer.getByRole('button', { name: /^Показать \d+$/ });
+  const preview = Number((await apply.innerText()).replace(/^Показать\s+/, ''));
+  expect(preview).toBeGreaterThan(0);
+  await apply.click();
+  await expect(page).toHaveURL(/category=sofas/);
+  await expect(page.locator('.cat-result b').nth(1)).toHaveText(String(preview));
+});
+
 test('sort control is URL-authoritative and resets page', async ({ page }) => {
   await page.goto('/catalog?page=2');
   await page.getByRole('button', { name: /Цена: по возрастанию/i }).click();

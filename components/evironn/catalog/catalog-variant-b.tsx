@@ -61,10 +61,49 @@ function toggleOption(query: URLSearchParams, group: string, value: string): voi
 function resetPage(query: URLSearchParams): void {
   query.delete('page');
 }
-function queryForDraftCount(query: URLSearchParams): string {
+function queryWithoutPage(query: URLSearchParams): URLSearchParams {
   const normalized = new URLSearchParams(query);
   normalized.delete('page');
-  return normalized.toString();
+  return normalized;
+}
+
+function queryWithoutOptionGroup(query: URLSearchParams, group: string): URLSearchParams {
+  const normalized = queryWithoutPage(query);
+  setValues(
+    normalized,
+    'option',
+    values(normalized, 'option').filter((token) => !token.startsWith(`${group}:`)),
+  );
+  return normalized;
+}
+
+function exactFacetDraftCount(model: CatalogBModel, query: URLSearchParams, draft: URLSearchParams): number | null {
+  const normalizedQuery = queryWithoutPage(query);
+  const normalizedDraft = queryWithoutPage(draft);
+  if (normalizedDraft.toString() === normalizedQuery.toString()) return model.total;
+
+  for (const group of model.facetGroups) {
+    const selected =
+      group.key === 'category' ? values(normalizedDraft, 'category') : options(normalizedDraft, group.key);
+    if (selected.length !== 1) continue;
+
+    const queryWithoutGroup = new URLSearchParams(normalizedQuery);
+    const draftWithoutGroup = new URLSearchParams(normalizedDraft);
+    if (group.key === 'category') {
+      queryWithoutGroup.delete('category');
+      draftWithoutGroup.delete('category');
+    } else {
+      const queryWithoutOptions = queryWithoutOptionGroup(normalizedQuery, group.key);
+      const draftWithoutOptions = queryWithoutOptionGroup(normalizedDraft, group.key);
+      if (queryWithoutOptions.toString() !== draftWithoutOptions.toString()) continue;
+      return group.values.find((value) => value.id === selected[0])?.count ?? null;
+    }
+
+    if (queryWithoutGroup.toString() !== draftWithoutGroup.toString()) continue;
+    return group.values.find((value) => value.id === selected[0])?.count ?? null;
+  }
+
+  return null;
 }
 
 function chipsFor(query: URLSearchParams, model: CatalogBModel): Array<{ id: string; label: string }> {
@@ -188,8 +227,7 @@ export function CatalogVariantB({ model }: { model: CatalogBModel }): React.Reac
   const roomIndicator = useSegmentIndicator(model.roomTabs.findIndex((tab) => tab.id === activeRoom));
   const sortIndicator = useSegmentIndicator(SORT_OPTIONS.findIndex((option) => option.value === activeSort));
   const chips = chipsFor(query, model);
-  const draftMatchesAuthoritativeQuery = queryForDraftCount(draft) === queryForDraftCount(query);
-  const draftCount = draftMatchesAuthoritativeQuery ? model.total : 0;
+  const draftCount = exactFacetDraftCount(model, query, draft);
   const navigate = (next: URLSearchParams, clearCurrentPage = true) => {
     if (clearCurrentPage) resetPage(next);
     router.push(`${pathname}${next.toString() ? `?${next}` : ''}`);
@@ -437,12 +475,12 @@ export function CatalogVariantB({ model }: { model: CatalogBModel }): React.Reac
                 setDrawerOpen(false);
               }}
             >
-              Показать {draftCount}
+              {draftCount === null ? 'Показать результаты' : `Показать ${draftCount}`}
             </button>
             <span id="catalog-drawer-count-help" className="cat-sr">
-              {draftMatchesAuthoritativeQuery
-                ? 'Количество соответствует текущему результату.'
-                : 'Точное количество для отложенных фильтров будет рассчитано после применения.'}
+              {draftCount === null
+                ? 'Количество будет рассчитано после применения.'
+                : 'Количество соответствует выбранным фильтрам.'}
             </span>
           </footer>
         </aside>

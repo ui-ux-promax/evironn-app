@@ -2,105 +2,114 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ProductView } from '@/components/shared/product/product-view';
-import type { ResolvedProductSelection } from '@/lib/product-selection';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import ProductPage from '@/components/evironn/product/ProductPage';
+import type {
+  ShowcaseCombinationDto,
+  ShowcaseProductPageDto,
+  ShowcaseUpholsteryId,
+  ShowcaseWoodId,
+} from '@/lib/showcase-product';
 
-vi.mock('next/image', () => ({
-  default: ({
-    fill: _fill,
-    priority: _priority,
-    ...props
-  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; priority?: boolean }) =>
-    React.createElement('img', props),
+vi.mock('@/components/evironn/home/interactive-furniture-cards', () => ({
+  InteractiveFurnitureCards: ({ heading }: { heading: string }) => React.createElement('section', null, heading),
 }));
 
-vi.mock('@/components/shared/product/product-media-stage', () => ({
-  ProductMediaStage: ({ images }: { images: Array<{ url: string; alt: string }> }) =>
-    React.createElement(
-      'div',
-      { 'data-testid': 'product-media-stage' },
-      images.map((image) => React.createElement('img', { key: image.url, src: image.url, alt: image.alt })),
-    ),
-}));
-
-afterEach(() => cleanup());
-
-const selection: ResolvedProductSelection = {
-  sku: {
-    id: 'sku-oak',
-    articleNumber: 'EV-NWL-OAK',
-    combinationKey: 'finish=oak|upholstery=ivory-boucle',
-    price: 124000,
-    oldPrice: 139000,
-    stock: 3,
-  },
-  canonicalSelection: { finish: 'oak', upholstery: 'ivory-boucle' },
-  optionGroups: [
-    {
-      slug: 'finish',
-      name: 'Отделка',
-      values: [
-        { slug: 'oak', name: 'Натуральный дуб', swatchHex: '#c8a97e', available: true },
-        { slug: 'walnut', name: 'Орех', swatchHex: '#6b4a30', available: true },
-        { slug: 'black', name: 'Чёрный', swatchHex: '#111111', available: false },
-      ],
-    },
-    {
-      slug: 'upholstery',
-      name: 'Обивка',
-      values: [{ slug: 'ivory-boucle', name: 'Кремовая букле', swatchHex: '#efe7d8', available: true }],
-    },
-  ],
-  images: [{ url: '/assets/products/03-ivory-lounge-idle.webp', alt: 'Noma Woven Lounge' }],
-  turntable: null,
+const turntable = {
+  videoUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
+  posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+  fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+  alt: 'Noma 360',
 };
 
-describe('canonical furniture ProductView', () => {
-  it('presents the server-resolved SKU and links available options through the canonical URL', () => {
-    render(
-      React.createElement(ProductView, {
-        product: {
-          name: 'Noma Woven Lounge',
-          slug: 'noma-woven-lounge',
-          description: 'Глубокое lounge-кресло с объёмной букле и съёмным чехлом.',
-          specs: { Материал: 'Букле, дуб', Ширина: '84 см' },
-          category: { name: 'Кресла', slug: 'armchairs' },
-        },
-        selection,
-      }),
-    );
+const combinations: ShowcaseCombinationDto[] = [
+  ['ivory', 'pine'],
+  ['ivory', 'walnut'],
+  ['charcoal', 'pine'],
+  ['charcoal', 'walnut'],
+  ['terracotta', 'pine'],
+  ['terracotta', 'walnut'],
+].map(([upholstery, wood], index) => ({
+  upholstery: upholstery as ShowcaseUpholsteryId,
+  wood: wood as ShowcaseWoodId,
+  canonicalOption: `finish=${wood === 'pine' ? 'oak' : 'walnut'}&upholstery=${upholstery}`,
+  canonicalPath: `/product/noma-woven-lounge?option=finish%3A${wood === 'pine' ? 'oak' : 'walnut'}%2Cupholstery%3A${upholstery}`,
+  chairUrl: `/assets/products/chair-${upholstery}-${wood}.png`,
+  sku: {
+    id: `sku-${index}`,
+    articleNumber: `EV-NWL-${index}`,
+    price: 89990 + index * 1000,
+    oldPrice: 109990 + index * 1000,
+    stock: 3,
+    priceLabel: `${89990 + index * 1000}`,
+    oldPriceLabel: `${109990 + index * 1000}`,
+  },
+}));
 
-    expect(screen.getByRole('heading', { name: 'Noma Woven Lounge' })).toBeVisible();
-    expect(screen.getAllByText('Кресла').length).toBeGreaterThan(0);
-    expect(screen.getByText('Глубокое lounge-кресло с объёмной букле и съёмным чехлом.')).toBeVisible();
-    expect(screen.getByText('Материал')).toBeVisible();
-    expect(screen.getByText('Букле, дуб')).toBeVisible();
+const model: ShowcaseProductPageDto = {
+  product: {
+    name: 'Кресло Graphite',
+    description: 'Мягкое кресло для спокойных жилых пространств.',
+    categoryName: 'Кресла',
+    categorySlug: 'armchairs',
+  },
+  sceneBackgroundUrl: '/assets/products/05-graphite-walnut-room-background-fixed.png',
+  selected: combinations[1],
+  combinations,
+  turntable,
+};
 
-    expect(screen.getByRole('link', { name: 'Орех' })).toHaveAttribute(
-      'href',
-      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
-    );
-    expect(screen.getByRole('link', { name: 'Натуральный дуб' })).toHaveAttribute('aria-current', 'true');
-    expect(screen.queryByRole('link', { name: 'Чёрный' })).toBeNull();
-    expect(screen.getByText('Чёрный')).toHaveAttribute('aria-disabled', 'true');
+beforeEach(() => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+});
 
-    expect(screen.getByText('EV-NWL-OAK')).toBeVisible();
-    expect(screen.getByText(/124[\s\u00a0]000 ₽/)).toBeVisible();
-    expect(screen.getByText(/139[\s\u00a0]000 ₽/)).toBeVisible();
-    expect(screen.getByText('В наличии: 3')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Кресла' })).toHaveAttribute('href', '/catalog?category=armchairs');
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
-    const pilotCta = screen.getByRole('button', {
-      name: 'Добавление в корзину будет доступно после завершения пилота',
-    });
-    expect(pilotCta).toBeDisabled();
-    expect(screen.getByText('Добавление в корзину будет доступно после завершения пилота')).toBeVisible();
-    expect(screen.queryByText(/размер/i)).toBeNull();
-    expect(screen.queryByText(/отзыв/i)).toBeNull();
-    expect(screen.queryByRole('button', { name: /избранн/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /купить сейчас/i })).toBeNull();
+describe('showcase ProductPage visual selection', () => {
+  it('projects every upholstery/wood selection immediately without router navigation or scroll movement', () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => undefined);
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 640 });
+
+    render(React.createElement(ProductPage, { model }));
+
+    for (const combination of combinations) {
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: `Обивка: ${combination.upholstery === 'ivory' ? 'Айвори' : combination.upholstery === 'charcoal' ? 'Графит' : 'Терракота'}`,
+        }),
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: `Дерево: ${combination.wood === 'pine' ? 'Сосна' : 'Орех'}` }),
+      );
+
+      expect(document.querySelector<HTMLImageElement>('.product-page__scene-chair')).toHaveAttribute(
+        'src',
+        combination.chairUrl,
+      );
+      expect(replaceState).toHaveBeenLastCalledWith(null, '', combination.canonicalPath);
+      expect(window.scrollY).toBe(640);
+    }
+
+    expect(replaceState).toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });

@@ -15,6 +15,8 @@ import '../styles/evironn/home/benefits-showcase-section.css';
 import '../styles/evironn/home/instagram-follow-section.css';
 import '../styles/evironn/catalog-primitives.css';
 import '../styles/evironn/catalog-variant-b.css';
+import '../styles/evironn/ProductPage.css';
+import '../styles/evironn/ProductPage.next.css';
 
 // Root layout: только <html>/<body> + шрифты. Storefront-chrome живёт в
 // app/(shop)/layout.tsx, admin-shell — в app/(admin)/layout.tsx. Это

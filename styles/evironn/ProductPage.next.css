@@ -1,0 +1,27 @@
+.product-page__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.product-page__add-button:disabled,
+.product-page__360-add-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.product-page__product-media--fallback {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.product-page__product-media--fallback[data-media-state='visible'] {
+  opacity: 1;
+  pointer-events: auto;
+}

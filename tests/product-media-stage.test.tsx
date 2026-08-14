@@ -2,52 +2,83 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { readFileSync } from 'node:fs';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ProductMediaStage } from '@/components/shared/product/product-media-stage';
+import ProductPage from '@/components/evironn/product/ProductPage';
+import type {
+  ShowcaseCombinationDto,
+  ShowcaseProductPageDto,
+  ShowcaseUpholsteryId,
+  ShowcaseWoodId,
+} from '@/lib/showcase-product';
 
-vi.mock('next/image', () => ({
-  default: ({
-    fill: _fill,
-    priority: _priority,
-    ...props
-  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; priority?: boolean }) =>
-    React.createElement('img', props),
+vi.mock('@/components/evironn/home/interactive-furniture-cards', () => ({
+  InteractiveFurnitureCards: () => <section data-testid="recommendations" />,
 }));
 
-const images = [{ url: '/assets/products/03-ivory-lounge-idle.webp', alt: 'Noma Woven Lounge' }];
 const turntable = {
-  videoUrl: '/assets/products/03-ivory-lounge-turntable.mp4',
-  posterUrl: '/assets/products/03-ivory-lounge-turntable-alpha-poster.png',
-  fallbackUrl: '/assets/products/03-ivory-lounge-cutout.png',
-  alt: 'Noma Woven Lounge 360',
+  videoUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
+  posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+  fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+  alt: 'Noma 360',
+};
+
+const combinations: ShowcaseCombinationDto[] = [
+  ['ivory', 'pine'],
+  ['ivory', 'walnut'],
+  ['charcoal', 'pine'],
+  ['charcoal', 'walnut'],
+  ['terracotta', 'pine'],
+  ['terracotta', 'walnut'],
+].map(([upholstery, wood], index) => ({
+  upholstery: upholstery as ShowcaseUpholsteryId,
+  wood: wood as ShowcaseWoodId,
+  canonicalOption: `finish=${wood === 'pine' ? 'oak' : 'walnut'}&upholstery=${upholstery}`,
+  canonicalPath: `/product/noma-woven-lounge?option=${index}`,
+  chairUrl: `/assets/products/chair-${upholstery}-${wood}.png`,
+  sku: {
+    id: `sku-${index}`,
+    articleNumber: `EV-NWL-${index}`,
+    price: 89990,
+    oldPrice: 109990,
+    stock: 3,
+    priceLabel: '89 990 ₽',
+    oldPriceLabel: '109 990 ₽',
+  },
+}));
+
+const model: ShowcaseProductPageDto = {
+  product: {
+    name: 'Кресло Graphite',
+    description: 'Мягкое кресло для спокойных жилых пространств.',
+    categoryName: 'Кресла',
+    categorySlug: 'armchairs',
+  },
+  sceneBackgroundUrl: '/assets/products/05-graphite-walnut-room-background-fixed.png',
+  selected: combinations[1],
+  combinations,
+  turntable,
 };
 
 let reducedMotion = false;
-let mediaQueryListeners: Array<(event: MediaQueryListEvent) => void> = [];
 
 beforeEach(() => {
   reducedMotion = false;
-  mediaQueryListeners = [];
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
       matches: query === '(prefers-reduced-motion: reduce)' ? reducedMotion : false,
       media: query,
       onchange: null,
-      addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
-        mediaQueryListeners.push(listener);
-      },
-      removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
-        mediaQueryListeners = mediaQueryListeners.filter((candidate) => candidate !== listener);
-      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
       addListener: vi.fn(),
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })),
   );
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
 });
@@ -58,78 +89,87 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('ProductMediaStage', () => {
-  it('renders a static-first turntable that only plays after an explicit click', async () => {
-    render(<ProductMediaStage images={images} turntable={turntable} />);
+describe('showcase ProductPage 360 stage', () => {
+  it('keeps media static before open, plays normal mode on open, and closes cleanly', async () => {
+    render(<ProductPage model={model} />);
 
-    const video = screen.getByTestId('turntable-video');
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+
+    const video = screen.getByRole('dialog').querySelector('video') as HTMLVideoElement;
     expect(video).toHaveAttribute('src', turntable.videoUrl);
     expect(video).toHaveAttribute('poster', turntable.posterUrl);
-    expect(video).not.toHaveAttribute('autoplay');
+    expect(video).toHaveAttribute('autoplay');
     expect(video).toHaveAttribute('loop');
-    expect((video as HTMLVideoElement).muted).toBe(true);
     expect(video).toHaveAttribute('playsinline');
-    expect(video).toHaveAttribute('preload', 'metadata');
-    expect(screen.getByTestId('turntable-poster')).toBeVisible();
-    expect(screen.getByTestId('turntable-fallback')).toBeVisible();
-    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    expect(video).toHaveAttribute('preload', 'auto');
+    expect((video as HTMLVideoElement).muted).toBe(true);
+    expect(screen.getByTestId('product-page-360-poster')).toHaveAttribute('src', turntable.posterUrl);
+    expect(screen.getByTestId('product-page-360-fallback')).toHaveAttribute('src', turntable.fallbackUrl);
+    await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce());
 
-    const playButton = screen.getByRole('button', { name: 'Запустить обзор 360°' });
-    fireEvent.click(playButton);
-    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
-
+    fireEvent.loadedMetadata(video);
     fireEvent.play(video);
-    expect(screen.getByRole('button', { name: 'Пауза обзора 360°' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Пауза обзора 360°' }));
+    Object.defineProperty(video, 'paused', { configurable: true, value: false });
+    expect(screen.getByRole('button', { name: 'Пауза' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Пауза' }));
     expect(HTMLMediaElement.prototype.pause).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть режим 360' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('keeps reduced-motion media static until explicit opt-in and disables looping', async () => {
-    reducedMotion = true;
-    render(<ProductMediaStage images={images} turntable={turntable} />);
+  it('pauses pointer drag and coalesces scrub seeks through existing video helpers', async () => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 1;
+    });
+    render(<ProductPage model={model} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+    const video = screen.getByRole('dialog').querySelector('video') as HTMLVideoElement;
+    Object.defineProperty(video, 'duration', { configurable: true, value: 10 });
+    Object.defineProperty(video, 'currentTime', { configurable: true, writable: true, value: 2 });
+    Object.defineProperty(video, 'seeking', { configurable: true, writable: true, value: true });
+    Object.assign(video, {
+      setPointerCapture: vi.fn(),
+      hasPointerCapture: vi.fn(() => true),
+      releasePointerCapture: vi.fn(),
+      getBoundingClientRect: () => ({ width: 100, height: 100, top: 0, left: 0, right: 100, bottom: 100 }),
+    });
 
-    const video = screen.getByTestId('turntable-video');
-    await waitFor(() => expect(video).not.toHaveAttribute('loop'));
-    expect(screen.getByTestId('turntable-poster')).toBeVisible();
-    expect(screen.getByTestId('turntable-fallback')).toBeVisible();
+    fireEvent.pointerDown(video, { pointerId: 1, clientX: 20 });
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalledOnce();
+    fireEvent.pointerMove(video, { pointerId: 1, clientX: 40 });
+    expect(video.currentTime).toBe(2);
+    (video as HTMLVideoElement & { seeking: boolean }).seeking = false;
+    fireEvent.seeked(video);
+    fireEvent.pointerUp(video, { pointerId: 1, clientX: 40 });
+    await waitFor(() => expect(video.currentTime).not.toBe(2));
+  });
+
+  it('keeps reduced-motion mode non-autoplaying and non-looping until explicit click', async () => {
+    reducedMotion = true;
+    render(<ProductPage model={model} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+
+    const video = screen.getByRole('dialog').querySelector('video') as HTMLVideoElement;
+    await waitFor(() => expect(video).not.toHaveAttribute('autoplay'));
+    expect(video).not.toHaveAttribute('loop');
     expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Запустить обзор 360°' }));
+    fireEvent.loadedMetadata(video);
+    fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }));
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
   });
 
-  it('announces a polite static fallback when the turntable video fails', () => {
-    render(<ProductMediaStage images={images} turntable={turntable} />);
+  it('shows exact static fallback after video failure', () => {
+    render(<ProductPage model={model} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.error(dialog.querySelector('video') as HTMLVideoElement);
 
-    fireEvent.error(screen.getByTestId('turntable-video'));
-
-    expect(screen.queryByTestId('turntable-video')).toBeNull();
-    expect(screen.getByTestId('turntable-fallback')).toBeVisible();
-    expect(screen.getByTestId('turntable-fallback')).toHaveAttribute('data-media-state', 'visible');
-    expect(screen.getByTestId('turntable-poster')).toHaveAttribute('data-media-state', 'hidden');
-    expect(screen.queryByRole('button', { name: /обзор 360°/ })).toBeNull();
+    expect(screen.queryByRole('dialog')?.querySelector('video')).toBeNull();
+    expect(screen.getByTestId('product-page-360-fallback')).toBeVisible();
     expect(screen.getByRole('status')).toHaveTextContent('360° недоступен, показано статичное изображение');
-  });
-
-  it('keeps layout concerns in Tailwind and media behavior in the CSS module', () => {
-    const source = readFileSync('components/shared/product/product-media-stage.module.css', 'utf8');
-
-    expect(source).not.toMatch(/aspect-ratio|border-radius|background\s*:|^\.stage|^\.media\s*\{/m);
-  });
-
-  it('renders an image gallery without turntable controls', () => {
-    const gallery = [...images, { url: '/assets/products/03-ivory-lounge-side.webp', alt: 'Noma Woven Lounge side' }];
-    render(<ProductMediaStage images={gallery} turntable={null} />);
-
-    expect(screen.queryByTestId('turntable-video')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Запустить обзор 360°' })).toBeNull();
-    expect(screen.getByRole('img', { name: 'Noma Woven Lounge' })).toHaveAttribute('src', images[0].url);
-    expect(screen.getByRole('button', { name: 'Фото 2' })).toBeVisible();
-  });
-
-  it('renders a neutral state when no media is available', () => {
-    render(<ProductMediaStage images={[]} turntable={null} />);
-
-    expect(screen.getByText('Изображение недоступно')).toBeVisible();
   });
 });

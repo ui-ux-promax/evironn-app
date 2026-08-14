@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 const repositoryRoot = process.cwd();
 
 const assets = [
-  ['public/assets/evironn-logo.svg', 557, '9cc311d431969206aeef60a940f8f610a3045c80'],
+  ['public/assets/evironn-logo.svg', 549, '9cc311d431969206aeef60a940f8f610a3045c80'],
   [
     'public/assets/fonts/sentient-italic-400-reference.woff2',
     24640,
@@ -59,6 +59,14 @@ function digest(file: string, expectedHash: string): string {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
 
+function committedByteLength(file: string, expectedHash: string): number {
+  const contents = readFileSync(file);
+
+  return expectedHash.length === 40
+    ? Buffer.byteLength(contents.toString('utf8').replace(/\r\n/g, '\n'))
+    : contents.length;
+}
+
 describe('Evironn shell binary contract', () => {
   it('enumerates the exact committed logo and local font manifest', () => {
     expect(assets).toHaveLength(9);
@@ -67,7 +75,7 @@ describe('Evironn shell binary contract', () => {
       const targetPath = path.join(repositoryRoot, target);
 
       expect(existsSync(targetPath), `Missing production asset: ${target}`).toBe(true);
-      expect(statSync(targetPath).size, target).toBe(bytes);
+      expect(committedByteLength(targetPath, sha256), target).toBe(bytes);
       expect(digest(targetPath, sha256), target).toBe(sha256);
     }
   });

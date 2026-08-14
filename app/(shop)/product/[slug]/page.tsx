@@ -1,13 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { ProductView } from '@/components/shared/product/product-view';
+import { notFound, redirect } from 'next/navigation';
+import ProductPage from '@/components/evironn/product/ProductPage';
 import { getFurnitureProductBySlug } from '@/lib/get-furniture-product';
-import {
-  parseOptionParam,
-  resolveSelectedSku,
-  serializeOptionParam,
-  type ResolvedProductSelection,
-} from '@/lib/product-selection';
+import { buildShowcaseProductPageDto, SHOWCASE_PRODUCT_SLUG } from '@/lib/showcase-product';
 import { absoluteUrl, buildBreadcrumbListJsonLd, buildProductJsonLd, siteName } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -17,110 +12,74 @@ type ProductPageParams = { params: Promise<{ slug: string }>; searchParams: Prom
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
-function normalizeSpecs(value: unknown): Record<string, string> | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
-
-  const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string');
-  return entries.length > 0 ? Object.fromEntries(entries) : null;
-}
-
-function resolveSelection(
-  product: Awaited<ReturnType<typeof getFurnitureProductBySlug>>,
-  rawOption: string | undefined,
-): ResolvedProductSelection {
+async function getShowcaseModel(rawOption: string | undefined) {
+  const product = await getFurnitureProductBySlug(SHOWCASE_PRODUCT_SLUG);
   if (!product) notFound();
 
   try {
-    return resolveSelectedSku(product, parseOptionParam(rawOption));
+    return buildShowcaseProductPageDto({ ...product, description: product.description ?? undefined }, rawOption);
   } catch {
     notFound();
   }
 }
 
-function canonicalMedia(selection: ResolvedProductSelection): string[] {
-  const media = selection.images.map((image) => image.url);
-  const fallback = selection.turntable?.fallbackUrl;
-  return fallback && !media.includes(fallback) ? [...media, fallback] : media;
-}
-
-export async function generateMetadata({ params, searchParams }: ProductPageParams): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ searchParams }: ProductPageParams): Promise<Metadata> {
   const { option } = await searchParams;
-  const product = await getFurnitureProductBySlug(slug);
-  if (!product) return { title: 'Товар не найден', robots: { index: false, follow: false } };
-
-  const selection = resolveSelection(product, first(option));
-  const canonicalOption = serializeOptionParam(selection.canonicalSelection);
-  const canonicalPath = `/product/${slug}?option=${encodeURIComponent(canonicalOption)}`;
-  const primaryImage = selection.images[0];
-  const socialImage =
-    primaryImage ??
-    (selection.turntable ? { url: selection.turntable.fallbackUrl, alt: selection.turntable.alt } : null);
-  const description = product.description ?? undefined;
+  const model = await getShowcaseModel(first(option));
+  const canonicalPath = model.selected.canonicalPath;
+  const socialImage = absoluteUrl(model.turntable.posterUrl);
 
   return {
-    title: product.name,
-    description,
+    title: model.product.name,
+    description: model.product.description,
     alternates: { canonical: canonicalPath },
     openGraph: {
-      title: product.name,
-      description,
+      title: model.product.name,
+      description: model.product.description,
       url: canonicalPath,
       siteName,
       type: 'website',
-      ...(socialImage ? { images: [{ url: absoluteUrl(socialImage.url), alt: socialImage.alt }] } : {}),
+      images: [{ url: socialImage, alt: model.turntable.alt }],
     },
-    ...(socialImage
-      ? {
-          twitter: {
-            card: 'summary_large_image' as const,
-            title: product.name,
-            description,
-            images: [absoluteUrl(socialImage.url)],
-          },
-        }
-      : {}),
+    twitter: {
+      card: 'summary_large_image',
+      title: model.product.name,
+      description: model.product.description,
+      images: [socialImage],
+    },
   };
 }
 
-export default async function ProductPage({ params, searchParams }: ProductPageParams): Promise<React.JSX.Element> {
+export default async function ProductRoute({ params, searchParams }: ProductPageParams): Promise<React.JSX.Element> {
   const { slug } = await params;
   const { option } = await searchParams;
-  const product = await getFurnitureProductBySlug(slug);
-  if (!product) notFound();
+  const rawOption = first(option);
+  const model = await getShowcaseModel(rawOption);
 
-  const selection = resolveSelection(product, first(option));
-  const specs = normalizeSpecs(product.specs);
-  const canonicalOption = serializeOptionParam(selection.canonicalSelection);
-  const canonicalPath = `/product/${slug}?option=${encodeURIComponent(canonicalOption)}`;
+  if (slug !== SHOWCASE_PRODUCT_SLUG || rawOption !== model.selected.canonicalOption) {
+    redirect(model.selected.canonicalPath);
+  }
+
+  const canonicalPath = model.selected.canonicalPath;
   const productJsonLd = buildProductJsonLd({
-    name: product.name,
-    description: product.description,
-    images: canonicalMedia(selection),
-    variants: product.skus.map(({ price, stock }) => ({ price, stock, active: true })),
+    name: model.product.name,
+    description: model.product.description,
+    images: [model.turntable.posterUrl],
+    variants: model.combinations.map(({ sku }) => ({ price: sku.price, stock: sku.stock, active: true })),
     url: canonicalPath,
   });
   const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
-    { name: 'Главная', url: '/' },
-    { name: 'Каталог', url: '/catalog' },
-    { name: product.category.name, url: `/catalog?category=${product.category.slug}` },
-    { name: product.name, url: canonicalPath },
+    { name: '\u0413\u043b\u0430\u0432\u043d\u0430\u044f', url: '/' },
+    { name: '\u041a\u0430\u0442\u0430\u043b\u043e\u0433', url: '/catalog' },
+    { name: model.product.categoryName, url: `/catalog?category=${model.product.categorySlug}` },
+    { name: model.product.name, url: canonicalPath },
   ]);
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 pb-16 sm:px-6">
+    <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <ProductView
-        product={{
-          name: product.name,
-          slug: product.slug,
-          description: product.description,
-          specs,
-          category: product.category,
-        }}
-        selection={selection}
-      />
-    </div>
+      <ProductPage model={model} />
+    </>
   );
 }

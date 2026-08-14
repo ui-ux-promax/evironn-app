@@ -169,3 +169,10 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - TDD GREEN: focused Vitest 2 files, 23/23 passed; broader route/showcase Vitest 5 files, 57/57 passed.
 - Typecheck: `npm run typecheck` passed. Prettier check passed. `git diff --check` passed.
 - No full gate/build/push. Local visual acceptance remains required. Preview loading debt unchanged.
+
+## Phase 2C completion — 2026-08-14
+
+- User visual acceptance is complete for the exact showcase PDP, six option combinations, 360 controls/fallback, responsive layouts, reduced motion, keyboard interaction, recommendations, header, and footer.
+- Completion verification: `npm run format` passed; `npm run gate` passed with 151 test files / 789 tests and zero errors; `npm run build` completed successfully with existing warnings only.
+- PDP E2E passed 9/9 after aligning two stale assertions with the accepted canonical-option links and the loading-to-ready handoff; Prettier and `git diff --check` passed.
+- Phase 2C is closed on `phase/02-storefront` at the current delivery state. Preview loading remains recorded performance debt. No merge, pull request, or Phase 3 work starts here.

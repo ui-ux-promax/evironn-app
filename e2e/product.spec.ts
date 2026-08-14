@@ -102,13 +102,13 @@ test('showcase default redirects to exact canonical scene, panel, and recommenda
   await expect(page.getByRole('heading', { name: 'Также смотрят' })).toBeVisible();
   await expect(page.locator('.interactive-furniture__card')).toHaveCount(5);
   await expect(page.locator('.interactive-furniture__button')).toHaveCount(5);
-  await expect(page.locator('.interactive-furniture__button').first()).toHaveAttribute('href', productPath);
+  await expect(page.locator('.interactive-furniture__button').first()).toHaveAttribute('href', defaultCanonicalPath);
 });
 
 test('non-showcase product slug redirects to default showcase canonical URL', async ({ page }) => {
   await page.goto('/product/not-a-showcase-product', { waitUntil: 'domcontentloaded' });
   await expect(page).toHaveURL(productUrl(defaultCanonicalPath));
-  await expect(page.locator('main.product-page')).toBeVisible();
+  await expect(page.locator('main.product-page:not(.product-page--loading)')).toBeVisible();
 });
 
 test('all six combinations expose server facts, canonical URLs, exact layers, and unchanged cart count', async ({

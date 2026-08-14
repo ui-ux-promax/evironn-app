@@ -50,3 +50,14 @@ Commit subject: `test: cover showcase product acceptance`
 - Keyboard test uses actual Tab traversal from document start: upholstery, wood, launch, Enter, modal close, playback via Tab, Escape restore, four accordions, catalog, five recommendations. No forced click and no DOM inventory-only proof.
 - Exact computed positioning: 390 `50% 50%`; 412 `25% 50%`.
 - Focused remediation proof: `npm run e2e -- e2e/product.spec.ts --retries=0` — 9 passed in `1.2m`, exit 0. Browser range `206` accepted as valid Next static media behavior.
+
+## Final review remediation
+
+- Final findings: closed. Critical `0`; Important `0`.
+- Exact clone copy: DTO description fixed to `Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.`. Seed description cannot override. UI, metadata, Product JSON-LD same.
+- Duplicate option values: array length `> 1` redirects default canonical path, including canonical first value. Single canonical array value preserved.
+- Metadata: `generateMetadata` accepts `params.slug`; non-showcase slug uses default showcase DTO/path regardless requested option. Canonical, Open Graph, Twitter aligned.
+- TDD RED: `npx vitest run tests/evironn-showcase-product.test.ts tests/product-page-canonical.test.tsx` — 4 expected failures.
+- TDD GREEN: same command — 2 files, 23/23 passed. Broader focused route/showcase run — 5 files, 57/57 passed.
+- `npm run typecheck` — pass. Prettier check — pass. `git diff --check` — pass.
+- Full gate/build/push not run by bounded remediation request. Local visual acceptance remains stop gate.

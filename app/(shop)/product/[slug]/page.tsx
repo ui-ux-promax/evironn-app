@@ -35,10 +35,15 @@ async function getShowcaseModel(rawOption: string | undefined) {
   }
 }
 
-export async function generateMetadata({ searchParams }: ProductPageParams): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: ProductPageParams): Promise<Metadata> {
+  const { slug } = await params;
   const { option } = await searchParams;
   const rawOption = first(option);
-  const model = await getShowcaseModel(hasUnsupportedOptionGroup(rawOption) ? undefined : rawOption);
+  const useDefaultModel =
+    slug !== SHOWCASE_PRODUCT_SLUG ||
+    (Array.isArray(option) && option.length > 1) ||
+    hasUnsupportedOptionGroup(rawOption);
+  const model = await getShowcaseModel(useDefaultModel ? undefined : rawOption);
   const canonicalPath = model.selected.canonicalPath;
   const socialImage = absoluteUrl(model.turntable.posterUrl);
 
@@ -69,6 +74,11 @@ export default async function ProductRoute({ params, searchParams }: ProductPage
   const rawOption = first(option);
 
   if (slug !== SHOWCASE_PRODUCT_SLUG) {
+    const defaultModel = await getShowcaseModel(undefined);
+    redirect(defaultModel.selected.canonicalPath);
+  }
+
+  if (Array.isArray(option) && option.length > 1) {
     const defaultModel = await getShowcaseModel(undefined);
     redirect(defaultModel.selected.canonicalPath);
   }

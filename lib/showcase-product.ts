@@ -41,6 +41,8 @@ const canonicalFinishValues = new Set(Object.values(finishByWood));
 const canonicalUpholsteryValues = new Set(Object.values(canonicalByVisual));
 
 const SHOWCASE_PRODUCT_NAME = '\u041a\u0440\u0435\u0441\u043b\u043e Graphite' as const;
+const SHOWCASE_PRODUCT_DESCRIPTION =
+  'Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.' as const;
 
 export interface ShowcaseCombinationDto {
   upholstery: ShowcaseUpholsteryId;
@@ -186,7 +188,7 @@ export function buildShowcaseProductPageDto(
   return {
     product: {
       name: SHOWCASE_PRODUCT_NAME,
-      description: product.description ?? product.name,
+      description: SHOWCASE_PRODUCT_DESCRIPTION,
       categoryName: product.category?.name ?? '\u041a\u0440\u0435\u0441\u043b\u0430',
       categorySlug: product.category?.slug ?? 'armchairs',
     },

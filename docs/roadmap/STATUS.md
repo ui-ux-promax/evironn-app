@@ -7,7 +7,7 @@
 - Integration branch: `dev`.
 - Current branch: `phase/02-storefront` from updated `dev`.
 - Phase state: Phase 1 accepted and merged; Phase 2 migration strategy corrected and approved.
-- Current delivery: Phase 2C — exact showcase PDP; Task 5 review remediation in progress.
+- Current delivery: Phase 2C — exact showcase PDP; final implementation and review remediation complete; local visual acceptance pending.
 - Previous delivery: Phase 2B — selected Evironn catalog UI, automated-check complete.
 
 ## Bootstrap contents
@@ -158,3 +158,14 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - Normative CSS preserved: `styles/evironn/ProductPage.css` expected hash `735C66AA3C4579847FBFF64950C808B85D1CF5B55BE10D1E722AB677F9294270`.
 - Remaining debt: slow initial Preview loading. Measure asset/video delivery, image loading, bundle cost, cold start, and Core Web Vitals after storefront completion; no optimization rewrite mixed into Task 5.
 - Local acceptance stop gate: coordinator starts local server after review. User must inspect desktop, 390x844, 412x844, all six options, 360 controls/fallback, reduced motion, keyboard, recommendations, header, and footer. No push, PR, merge, branch deletion, or Phase 3.
+
+## Phase 2C final review remediation — 2026-08-14
+
+- Final review findings: closed. Critical `0`; Important `0`.
+- DTO copy fixed: exact clone description now constant, independent seed description; showcase UI, metadata, and Product JSON-LD use same copy.
+- Duplicate `option` query values now redirect default canonical path, even when first value is canonical. Single canonical array value remains valid.
+- `generateMetadata` now reads `params.slug`; non-showcase slug always resolves default showcase DTO/path, regardless requested option. Canonical, Open Graph, Twitter, and copy align with route behavior.
+- TDD RED: focused Vitest 2 files, 4 expected failures.
+- TDD GREEN: focused Vitest 2 files, 23/23 passed; broader route/showcase Vitest 5 files, 57/57 passed.
+- Typecheck: `npm run typecheck` passed. Prettier check passed. `git diff --check` passed.
+- No full gate/build/push. Local visual acceptance remains required. Preview loading debt unchanged.

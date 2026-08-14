@@ -179,6 +179,23 @@ describe('canonical showcase furniture product page', () => {
     expect(model.combinations).toHaveLength(6);
   });
 
+  it('preserves one canonical option value when query parser returns a single-item array', async () => {
+    const page = await ProductPage(pageInput('noma-woven-lounge', ['finish:walnut,upholstery:graphite']));
+
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    const productPage = readPageChildren(page).find((child) => child.props && 'model' in child.props);
+    expect(productPage?.props.model.selected.canonicalOption).toBe('finish:walnut,upholstery:graphite');
+  });
+
+  it('redirects duplicate option query values to the default canonical path', async () => {
+    await expectRedirect(
+      ProductPage(
+        pageInput('noma-woven-lounge', ['finish:walnut,upholstery:ivory-boucle', 'finish:oak,upholstery:graphite']),
+      ),
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+    );
+  });
+
   it('redirects every non-showcase slug to default showcase canonical URL', async () => {
     await expectRedirect(
       ProductPage(pageInput('other-chair')),
@@ -212,20 +229,27 @@ describe('canonical showcase furniture product page', () => {
     expect(mocks.notFound).toHaveBeenCalled();
   });
 
-  it('builds canonical metadata from DTO with audited poster and no redirect', async () => {
+  it('builds default canonical metadata for non-showcase slug with audited poster and no redirect', async () => {
     const metadata = await generateMetadata(pageInput('other-chair', 'finish:walnut,upholstery:graphite'));
 
     expect(mocks.redirect).not.toHaveBeenCalled();
+    expect(mocks.getFurnitureProductBySlug).toHaveBeenCalledWith('noma-woven-lounge');
     expect(metadata.title).toBe('\u041a\u0440\u0435\u0441\u043b\u043e Graphite');
-    expect(metadata.description).toBe(nomaProduct.description);
+    expect(metadata.description).toBe(
+      'Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.',
+    );
     expect(metadata.alternates?.canonical).toBe(
-      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite',
+      '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
     expect(metadata.openGraph).toMatchObject({
-      url: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite',
+      url: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+      description: 'Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.',
       images: [{ url: expect.stringContaining(AUDITED_POSTER) }],
     });
-    expect(metadata.twitter).toMatchObject({ images: [expect.stringContaining(AUDITED_POSTER)] });
+    expect(metadata.twitter).toMatchObject({
+      description: 'Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.',
+      images: [expect.stringContaining(AUDITED_POSTER)],
+    });
   });
 
   it('emits real Product JSON-LD with six offers and canonical BreadcrumbList URLs', async () => {
@@ -242,6 +266,7 @@ describe('canonical showcase furniture product page', () => {
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: '\u041a\u0440\u0435\u0441\u043b\u043e Graphite',
+      description: 'Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.',
       image: [`http://localhost:3000${AUDITED_POSTER}`],
       offers: {
         '@type': 'AggregateOffer',

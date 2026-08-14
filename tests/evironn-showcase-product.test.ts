@@ -151,7 +151,7 @@ describe('showcase product DTO', () => {
     });
     expect(dto.product).toEqual({
       name: '\u041a\u0440\u0435\u0441\u043b\u043e Graphite',
-      description: 'Noma lounge chair description',
+      description: 'Мягкое кресло с графитовой обивкой и каркасом из тёмного ореха для спокойных жилых пространств.',
       categoryName: 'Armchairs',
       categorySlug: 'armchairs',
     });

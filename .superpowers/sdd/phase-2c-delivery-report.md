@@ -40,3 +40,13 @@ Commit subject: `test: cover showcase product acceptance`
 - Coordinator must review, run final delivery gate later, start local acceptance server, and stop for user inspection.
 - User acceptance checks: desktop; 390x844; 412x844; six options; 360 drag/play/pause/Escape/backdrop/close; fallback; reduced motion; keyboard; recommendations; header; footer.
 - No push, PR, merge, branch deletion, or Phase 3.
+
+## Review remediation
+
+- Review result: Critical `0`, Important `4`. Same owner fixed all four.
+- Six SKU proof now starts each case at default canonical. Test clicks real hydrated upholstery button, then real wood button. URL, chair source, server facts, and cart count follow `selectCombination` and `history.replaceState`.
+- Desktop no longer installs media harness. No synthetic duration, currentTime, play, pause, or loadedmetadata. Browser response proves HTTP `200` or valid range `206`, `video/webm`, and exact total `28,717,710` in `Content-Range` for range responses; full `200` proves exact body size. Test waits real `loadedmetadata` with duration `> 0`; real video handles drag/play/pause.
+- Fallback test waits exactly one video or fallback. Video branch checks exact src/poster and dispatches explicit error. Fallback branch accepts natural onError, then checks exact poster/status. Reduced motion uses same natural branch; no error masking. Desktop remains strict video interaction.
+- Keyboard test uses actual Tab traversal from document start: upholstery, wood, launch, Enter, modal close, playback via Tab, Escape restore, four accordions, catalog, five recommendations. No forced click and no DOM inventory-only proof.
+- Exact computed positioning: 390 `50% 50%`; 412 `25% 50%`.
+- Focused remediation proof: `npm run e2e -- e2e/product.spec.ts --retries=0` — 9 passed in `1.2m`, exit 0. Browser range `206` accepted as valid Next static media behavior.

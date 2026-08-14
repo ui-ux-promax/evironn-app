@@ -35,3 +35,13 @@ Stop gate:
 - Coordinator review and final gate come later.
 - Local acceptance must inspect desktop, both mobile widths, six options, 360 states, fallback, reduced motion, keyboard, recommendations, header, footer.
 - No push, PR, merge, branch deletion, or Phase 3.
+
+Review remediation:
+
+- Review: Critical `0`, Important `4`. Same owner fix.
+- Six choices now real path: default canonical -> click upholstery -> click wood -> assert replaceState URL, exact chair, price, old price, stock, cart unchanged.
+- Desktop real media only. No harness. No fake media properties/events. Browser response: HTTP `200` or range `206`; content type `video/webm`; `206` Content-Range total exact `28,717,710`, `200` body exact bytes. Real metadata duration positive. Real drag/play/pause.
+- Fallback and reduced motion: wait exactly one natural video/fallback. Video exact src/poster then explicit error only in fallback test. Natural fallback exact poster/status. Desktop never “video or fallback”.
+- Keyboard real Tab from document start. Selector buttons, launch, Enter, modal close, playback, Escape, four accordions, catalog, five recommendations. No force click. No DOM inventory-only proof.
+- Position exact: 390 `50% 50%`; 412 `25% 50%`.
+- Final remediation E2E: `npm run e2e -- e2e/product.spec.ts --retries=0` — 9 passed in `1.2m`, exit 0. `206 Partial Content` is valid browser range delivery.

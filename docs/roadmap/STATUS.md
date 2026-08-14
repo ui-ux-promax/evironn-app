@@ -7,8 +7,8 @@
 - Integration branch: `dev`.
 - Current branch: `phase/02-storefront` from updated `dev`.
 - Phase state: Phase 1 accepted and merged; Phase 2 migration strategy corrected and approved.
-- Current delivery: Phase 2B — selected Evironn catalog UI.
-- Previous delivery: Phase 2A is automated-check complete, deployed to Vercel Preview, and visually accepted by the user.
+- Current delivery: Phase 2C — exact showcase PDP; Task 5 review remediation in progress.
+- Previous delivery: Phase 2B — selected Evironn catalog UI, automated-check complete.
 
 ## Bootstrap contents
 

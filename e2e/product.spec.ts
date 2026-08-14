@@ -1,11 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const productPath = '/product/noma-woven-lounge';
 const defaultCanonicalPath = '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle';
 const sceneBackground = '/assets/products/05-graphite-walnut-room-background-fixed.png';
 const turntableVideo = '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm';
 const turntablePoster = '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png';
+const turntableBytes = 28_717_710;
 const price = '89 990 ₽';
 const oldPrice = '109 990 ₽';
 const fallbackStatus = '360° недоступен, показано статичное изображение';
@@ -43,27 +44,46 @@ async function readCartText(page: Page) {
   return (await page.locator('a[href="/cart"]').first().textContent())?.trim() ?? '';
 }
 
-async function installStableTurntableMediaHarness(page: Page) {
-  await page.addInitScript((videoSource) => {
-    const state = window as Window & { __allowProductMediaFailure?: boolean };
-    state.__allowProductMediaFailure = false;
-    document.addEventListener(
-      'error',
-      (event) => {
-        const target = event.target;
-        if (
-          !state.__allowProductMediaFailure &&
-          target instanceof HTMLVideoElement &&
-          target.getAttribute('src') === videoSource
-        ) {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
-        }
-      },
-      true,
-    );
-  }, turntableVideo);
+async function waitForVideoOrFallback(page: Page) {
+  const video = page.locator('video.product-page__product-media');
+  const fallback = page.getByTestId('product-page-360-fallback');
+  await expect.poll(async () => (await video.count()) + (await fallback.count()), { timeout: 10000 }).toBe(1);
+  return { video, fallback, hasVideo: (await video.count()) === 1 };
+}
+
+async function tabUntilFocused(page: Page, target: Locator, label: string) {
+  for (let index = 0; index < 80; index += 1) {
+    await page.keyboard.press('Tab');
+    if (await target.evaluate((element) => element === document.activeElement)) return;
+  }
+  throw new Error(`Tab traversal did not reach ${label}`);
+}
+
+async function waitForRealVideoMetadata(video: Locator) {
+  await video.evaluate((element) => {
+    const media = element as HTMLVideoElement;
+    return new Promise<void>((resolve, reject) => {
+      if (media.readyState >= HTMLMediaElement.HAVE_METADATA && media.duration > 0) {
+        resolve();
+        return;
+      }
+      const cleanup = () => {
+        media.removeEventListener('loadedmetadata', onMetadata);
+        media.removeEventListener('error', onError);
+      };
+      const onMetadata = () => {
+        cleanup();
+        if (media.duration > 0) resolve();
+        else reject(new Error(`WebM metadata duration invalid: ${media.duration}`));
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error('Browser emitted video error before loadedmetadata'));
+      };
+      media.addEventListener('loadedmetadata', onMetadata, { once: true });
+      media.addEventListener('error', onError, { once: true });
+    });
+  });
 }
 
 test('showcase default redirects to exact canonical scene, panel, and recommendations', async ({ page }) => {
@@ -98,7 +118,10 @@ test('all six combinations expose server facts, canonical URLs, exact layers, an
   const initialCart = await readCartText(page);
 
   for (const [upholstery, wood, option, chairAsset] of combinations) {
-    await gotoProduct(page, `${productPath}?option=${option}`);
+    await gotoProduct(page, defaultCanonicalPath);
+
+    await page.getByRole('button', { name: `Обивка: ${upholsteryLabels[upholstery]}` }).click();
+    await page.getByRole('button', { name: `Дерево: ${woodLabels[wood]}` }).click();
 
     await expect(page).toHaveURL(productUrl(`${productPath}?option=${option}`));
     await expect(page.locator('.product-page__scene-chair')).toHaveAttribute('src', `/assets/products/${chairAsset}`);
@@ -120,13 +143,13 @@ test('all six combinations expose server facts, canonical URLs, exact layers, an
 test('desktop 360 supports lock, focus, poster/WebM, drag, playback, Escape, backdrop, and restoration', async ({
   page,
 }) => {
-  await installStableTurntableMediaHarness(page);
   await gotoProduct(page, defaultCanonicalPath);
   await page.evaluate(() => window.scrollTo(0, 240));
   const expectedScrollY = await page.evaluate(() => window.scrollY);
 
   const launch = page.locator('.product-page__360-launch');
   await launch.focus();
+  const mediaResponsePromise = page.waitForResponse((response) => response.url().endsWith(turntableVideo));
   await launch.click();
 
   const dialog = page.getByRole('dialog');
@@ -138,38 +161,16 @@ test('desktop 360 supports lock, focus, poster/WebM, drag, playback, Escape, bac
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
   await expect(video).toHaveAttribute('src', turntableVideo);
   await expect(video).toHaveAttribute('poster', turntablePoster);
-
-  await video.evaluate((element) => {
-    const media = element as HTMLVideoElement;
-    let time = 0;
-    let paused = true;
-    Object.defineProperty(media, 'duration', { configurable: true, get: () => 12 });
-    Object.defineProperty(media, 'currentTime', {
-      configurable: true,
-      get: () => time,
-      set: (value: number) => {
-        time = value;
-        media.dispatchEvent(new Event('timeupdate'));
-      },
-    });
-    Object.defineProperty(media, 'paused', { configurable: true, get: () => paused });
-    Object.defineProperty(media, 'play', {
-      configurable: true,
-      value: () => {
-        paused = false;
-        media.dispatchEvent(new Event('play'));
-        return Promise.resolve();
-      },
-    });
-    Object.defineProperty(media, 'pause', {
-      configurable: true,
-      value: () => {
-        paused = true;
-        media.dispatchEvent(new Event('pause'));
-      },
-    });
-  });
-  await video.dispatchEvent('loadedmetadata');
+  const mediaResponse = await mediaResponsePromise;
+  const mediaStatus = mediaResponse.status();
+  expect([200, 206]).toContain(mediaStatus);
+  expect(mediaResponse.headers()['content-type']).toContain('video/webm');
+  if (mediaStatus === 206) {
+    expect(mediaResponse.headers()['content-range']).toMatch(new RegExp(`^bytes \\d+-\\d+/${turntableBytes}$`));
+  } else {
+    expect((await mediaResponse.body()).byteLength).toBe(turntableBytes);
+  }
+  await waitForRealVideoMetadata(video);
   await expect(page.locator('.product-page__video-controls button')).toBeEnabled();
 
   const box = await video.boundingBox();
@@ -205,20 +206,14 @@ test('desktop 360 supports lock, focus, poster/WebM, drag, playback, Escape, bac
 });
 
 test('360 video failure leaves exact static fallback and polite status', async ({ page }) => {
-  await installStableTurntableMediaHarness(page);
   await gotoProduct(page, defaultCanonicalPath);
   await page.locator('.product-page__360-launch').click();
 
-  const video = page.locator('video.product-page__product-media');
-  const fallback = page.getByTestId('product-page-360-fallback');
-  await expect.poll(async () => (await video.count()) + (await fallback.count()), { timeout: 10000 }).toBe(1);
+  const { video, fallback, hasVideo } = await waitForVideoOrFallback(page);
 
-  if ((await video.count()) === 1) {
+  if (hasVideo) {
     await expect(video).toHaveAttribute('src', turntableVideo);
     await expect(video).toHaveAttribute('poster', turntablePoster);
-    await page.evaluate(() => {
-      (window as Window & { __allowProductMediaFailure?: boolean }).__allowProductMediaFailure = true;
-    });
     await video.dispatchEvent('error');
   }
 
@@ -234,8 +229,8 @@ test('390x844 keeps fixed scene positioning, stacked glass panel, selectors, and
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoProduct(page, defaultCanonicalPath);
 
-  await expect(page.locator('.product-page__scene')).toHaveCSS('background-position', /50%/);
-  await expect(page.locator('.product-page__scene-chair')).toHaveCSS('object-position', /50%/);
+  await expect(page.locator('.product-page__scene')).toHaveCSS('background-position', '50% 50%');
+  await expect(page.locator('.product-page__scene-chair')).toHaveCSS('object-position', '50% 50%');
   await expect(page.locator('.product-page__panel')).toHaveCSS('position', 'relative');
   await expect(page.locator('.product-page__panel')).toBeVisible();
   await expect(page.locator('.product-page__selectors fieldset')).toHaveCount(2);
@@ -255,8 +250,8 @@ test('412x844 applies wider-mobile 25% room and chair positioning', async ({ pag
   await page.setViewportSize({ width: 412, height: 844 });
   await gotoProduct(page, defaultCanonicalPath);
 
-  await expect(page.locator('.product-page__scene')).toHaveCSS('background-position', /25%/);
-  await expect(page.locator('.product-page__scene-chair')).toHaveCSS('object-position', /25%/);
+  await expect(page.locator('.product-page__scene')).toHaveCSS('background-position', '25% 50%');
+  await expect(page.locator('.product-page__scene-chair')).toHaveCSS('object-position', '25% 50%');
 });
 
 test('reduced motion removes meaningful motion and keeps static media before opt-in', async ({ browser }) => {
@@ -279,44 +274,47 @@ test('reduced motion removes meaningful motion and keeps static media before opt
   expect(maxMotionMs).toBeLessThanOrEqual(1);
 
   await page.locator('.product-page__360-launch').click();
-  const video = page.locator('video.product-page__product-media');
-  await expect(video).toHaveAttribute('poster', turntablePoster);
-  await expect(video).not.toHaveAttribute('autoplay');
-  await expect(video).not.toHaveAttribute('loop');
-  expect(await video.evaluate((element) => (element as HTMLVideoElement).paused)).toBe(true);
+  const { video, fallback, hasVideo } = await waitForVideoOrFallback(page);
+  if (hasVideo) {
+    await expect(video).toHaveAttribute('poster', turntablePoster);
+    await expect(video).not.toHaveAttribute('autoplay');
+    await expect(video).not.toHaveAttribute('loop');
+    expect(await video.evaluate((element) => (element as HTMLVideoElement).paused)).toBe(true);
+  } else {
+    await expect(fallback).toHaveAttribute('src', turntablePoster);
+    await expect(page.getByRole('status')).toHaveText(fallbackStatus);
+  }
   await context.close();
 });
 
 test('keyboard reaches product controls and axe finds no critical or serious product violations', async ({ page }) => {
   await gotoProduct(page, defaultCanonicalPath);
   const product = page.locator('.product-page');
-
-  const tabStops = product.locator('button:not([disabled]), a[href]');
-  const stopCount = await tabStops.count();
-  expect(stopCount).toBeGreaterThan(0);
-  const stopLabels = await tabStops.evaluateAll((elements) =>
-    elements.map((element) => `${element.textContent?.trim() ?? ''} ${element.getAttribute('aria-label') ?? ''}`),
-  );
-  expect(stopLabels.some((label) => label.includes('Айвори'))).toBe(true);
-  expect(stopLabels.some((label) => label.includes('Сосна'))).toBe(true);
-  expect(stopLabels.some((label) => label.includes('Смотреть кресло'))).toBe(true);
-  expect(await product.locator('.product-page__accordion button').count()).toBe(4);
-  await expect(product.locator('.product-page__catalog-link')).toBeVisible();
-  await expect(page.locator('.interactive-furniture__button').first()).toBeVisible();
-
   const launch = product.locator('.product-page__360-launch');
-  await launch.focus();
-  await expect(launch).toBeFocused();
-  await launch.click({ force: true });
+  const upholstery = page.getByRole('button', { name: 'Обивка: Айвори' });
+  const wood = page.getByRole('button', { name: 'Дерево: Сосна' });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await tabUntilFocused(page, upholstery, 'ivory upholstery selector');
+  await tabUntilFocused(page, wood, 'pine wood selector');
+  await tabUntilFocused(page, launch, '360 launch');
+
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.locator('.product-page__360-close')).toBeFocused();
   const playback = page.locator('.product-page__video-controls button');
-  for (let index = 0; index < 4; index += 1) {
-    if (await playback.evaluate((element) => document.activeElement === element)) break;
-    await page.keyboard.press('Tab');
-  }
-  await expect(playback).toBeFocused();
+  await tabUntilFocused(page, playback, '360 playback');
   await page.keyboard.press('Escape');
   await expect(launch).toBeFocused();
+
+  const accordions = product.locator('.product-page__accordion button');
+  for (let index = 0; index < 4; index += 1) {
+    await tabUntilFocused(page, accordions.nth(index), `accordion ${index + 1}`);
+  }
+  await tabUntilFocused(page, product.locator('.product-page__catalog-link'), 'catalog link');
+  const recommendations = page.locator('.interactive-furniture__button');
+  for (let index = 0; index < 5; index += 1) {
+    await tabUntilFocused(page, recommendations.nth(index), `recommendation link ${index + 1}`);
+  }
 
   const results = await new AxeBuilder({ page }).include('.product-page').analyze();
   const seriousOrCritical = results.violations.filter(

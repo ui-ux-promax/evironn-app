@@ -1,6 +1,11 @@
 export default function ProductLoading() {
   return (
-    <main className="product-page product-page--loading" aria-busy="true" aria-label="Загрузка страницы товара">
+    <main
+      className="product-page product-page--loading"
+      aria-busy="true"
+      aria-label="Загрузка страницы товара"
+      style={{ minHeight: '100dvh' }}
+    >
       <div className="product-page__scene product-page__loading-scene" aria-hidden="true">
         <div className="product-page__loading-orb" />
         <div className="product-page__loading-shadow" />

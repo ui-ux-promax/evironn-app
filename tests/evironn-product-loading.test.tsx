@@ -15,6 +15,7 @@ describe('Evironn product loading boundary', () => {
 
     expect(main).toHaveClass('product-page', 'product-page--loading');
     expect(main).toHaveAttribute('aria-busy', 'true');
+    expect(main).toHaveStyle({ minHeight: '100dvh' });
     expect(main.querySelector('.product-page__scene')).toBeInTheDocument();
     expect(main.querySelector('.product-page__loading-panel')).toBeInTheDocument();
   });

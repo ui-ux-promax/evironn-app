@@ -32,6 +32,16 @@ describe('resolveE2eDatabaseEnvironment', () => {
     ).toThrow('E2E_DATABASE_URL_UNPOOLED');
   });
 
+  it('rejects an explicitly supplied empty optional unpooled E2E database URL', () => {
+    expect(() =>
+      resolveE2eDatabaseEnvironment({
+        E2E_DATABASE_ALLOW_WRITES: '1',
+        E2E_DATABASE_URL: pooledUrl,
+        E2E_DATABASE_URL_UNPOOLED: '',
+      }),
+    ).toThrow('E2E_DATABASE_URL_UNPOOLED');
+  });
+
   it('uses only explicit E2E database values instead of ambient application values', () => {
     expect(
       resolveE2eDatabaseEnvironment({

@@ -27,7 +27,8 @@ export function resolveE2eDatabaseEnvironment(env: Record<string, string | undef
   }
 
   const pooledUrl = requirePostgresUrl('E2E_DATABASE_URL', env.E2E_DATABASE_URL);
-  const unpooledUrl = env.E2E_DATABASE_URL_UNPOOLED
+  const hasUnpooledUrl = Object.prototype.hasOwnProperty.call(env, 'E2E_DATABASE_URL_UNPOOLED');
+  const unpooledUrl = hasUnpooledUrl
     ? requirePostgresUrl('E2E_DATABASE_URL_UNPOOLED', env.E2E_DATABASE_URL_UNPOOLED)
     : pooledUrl;
 

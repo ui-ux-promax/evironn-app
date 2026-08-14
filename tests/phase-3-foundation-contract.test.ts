@@ -1,11 +1,65 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
+
+import * as ts from 'typescript';
 
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(__dirname, '..');
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), 'utf8');
+const forbiddenImportPaths = ['d:/projects/fashion-shop', 'd:/новая папка (2)/evironn-clone'];
+
+type SourceEntry = { file: string; source: string };
+type ImportViolation = { file: string; specifier: string };
+
+function collectImportSpecifiers(source: string): string[] {
+  const sourceFile = ts.createSourceFile('phase-3-import-fixture.ts', source, ts.ScriptTarget.Latest, true);
+  const specifiers: string[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      specifiers.push(node.moduleSpecifier.text);
+    }
+
+    if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      ts.isStringLiteral(node.moduleReference.expression)
+    ) {
+      specifiers.push(node.moduleReference.expression.text);
+    }
+
+    if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      specifiers.push(node.moduleSpecifier.text);
+    }
+
+    if (ts.isCallExpression(node) && node.arguments.length === 1 && ts.isStringLiteral(node.arguments[0])) {
+      const isDynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
+      const isRequire = ts.isIdentifier(node.expression) && node.expression.text === 'require';
+      if (isDynamicImport || isRequire) specifiers.push(node.arguments[0].text);
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return specifiers;
+}
+
+function findForbiddenProductionImports(entries: SourceEntry[]): ImportViolation[] {
+  return entries
+    .slice()
+    .sort((left, right) => left.file.localeCompare(right.file))
+    .flatMap(({ file, source }) =>
+      collectImportSpecifiers(source)
+        .filter((specifier) => {
+          const normalized = specifier.replaceAll('\\', '/').toLowerCase();
+          return forbiddenImportPaths.some((path) => normalized.includes(path));
+        })
+        .map((specifier) => ({ file, specifier })),
+    );
+}
 
 describe('Phase 3 foundation boundary', () => {
   it('keeps canonical SKU, cart, and order relations in the Prisma schema', () => {
@@ -54,15 +108,31 @@ describe('Phase 3 foundation boundary', () => {
       'auth.ts',
       'auth.config.ts',
       'middleware.ts',
-    ];
-    const forbidden = /D:\\Projects\\fashion-shop|D:\\Новая папка \(2\)\\evironn-clone|fashion-shop|evironn-clone/iu;
+    ].sort();
 
-    for (const file of productionFiles) {
-      const source = read(file);
-      for (const line of source.split(/\r?\n/)) {
-        if (/\bfrom\s+['"]/.test(line)) expect(line).not.toMatch(forbidden);
+    expect(findForbiddenProductionImports(productionFiles.map((file) => ({ file, source: read(file) })))).toEqual([]);
+  });
+
+  it('rejects clone and technical-source paths in side-effect, dynamic, and require imports', () => {
+    const fixtures = [
+      { syntax: 'side-effect', template: (path: string) => `import '${path}';` },
+      { syntax: 'dynamic', template: (path: string) => `void import('${path}');` },
+      { syntax: 'require', template: (path: string) => `require('${path}');` },
+    ];
+
+    for (const { syntax, template } of fixtures) {
+      for (const path of ['D:/Projects/fashion-shop/src/legacy', 'D:/Новая папка (2)/evironn-clone/src/legacy']) {
+        expect(findForbiddenProductionImports([{ file: `fixture-${syntax}.ts`, source: template(path) }])).toEqual([
+          { file: `fixture-${syntax}.ts`, specifier: path },
+        ]);
       }
     }
+  });
+
+  it('ignores clone and technical-source paths outside production import expressions', () => {
+    const source = `const note = 'D:/Projects/fashion-shop'; // D:/Новая папка (2)/evironn-clone`;
+
+    expect(findForbiddenProductionImports([{ file: 'fixture.ts', source }])).toEqual([]);
   });
 
   it('uses read-only HTTP keep-warm and disposable database environment keys', () => {

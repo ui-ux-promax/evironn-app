@@ -108,3 +108,10 @@
 - Source contracts cover canonical SKU/cart/order relations, Auth.js role and safe callback boundaries, guest cart/wishlist sign-in merges, production import isolation, the GET-only warmup contract, and all three blank E2E environment keys.
 - Foundation audit conclusion: No new architecture decision; ADR-001/007/010/012/013/014 and the canonical SKU schema govern implementation. Local audit: `.superpowers/sdd/phase-3-foundation-audit.md` (ignored). Task report: `.superpowers/sdd/phase-3-task-1-report.md` (ignored).
 - Focused validation: the seven-file Vitest command passed 46/46 tests; the required Prettier check passed with all matched files using Prettier code style. Playwright was not run because the disposable E2E environment keys are absent.
+
+## Phase 3 foundation — Task 1 review remediation
+
+- Important 1 fixed: `E2E_DATABASE_URL_UNPOOLED` now falls back only when the key is absent. An explicitly supplied empty value, as well as a non-PostgreSQL value, is rejected. Regression coverage is in `tests/e2e-database-guard.test.ts`.
+- Important 2 fixed: the production import boundary now parses TypeScript imports deterministically and rejects forbidden clone/source paths in static, side-effect, dynamic, `require`, import-equals, and export-from module references. Focused fixtures verify side-effect, dynamic, and `require` forms while ignoring non-import strings.
+- Minor wording fixed: `.env.example` now states that the pooled URL and write opt-in are required while the direct/unpooled URL is optional.
+- Review-remediation RED: the new empty-unpooled regression failed because the old guard treated present empty as absent. GREEN: the focused pair passed 17/17 tests.

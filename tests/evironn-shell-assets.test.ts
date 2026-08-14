@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
@@ -7,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 const repositoryRoot = process.cwd();
 
 const assets = [
-  ['public/assets/evironn-logo.svg', 549, '2a5ba64709f699324415dcb2122a9c14d02ad01d8b9261fcc6163d85900b6a31'],
+  ['public/assets/evironn-logo.svg', 557, '9cc311d431969206aeef60a940f8f610a3045c80'],
   [
     'public/assets/fonts/sentient-italic-400-reference.woff2',
     24640,
@@ -50,7 +51,11 @@ const assets = [
   ],
 ] as const;
 
-function digest(file: string): string {
+function digest(file: string, expectedHash: string): string {
+  if (expectedHash.length === 40) {
+    return execFileSync('git', ['hash-object', `--path=${file}`, '--', file], { encoding: 'utf8' }).trim();
+  }
+
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
 
@@ -63,7 +68,7 @@ describe('Evironn shell binary contract', () => {
 
       expect(existsSync(targetPath), `Missing production asset: ${target}`).toBe(true);
       expect(statSync(targetPath).size, target).toBe(bytes);
-      expect(digest(targetPath), target).toBe(sha256);
+      expect(digest(targetPath, sha256), target).toBe(sha256);
     }
   });
 

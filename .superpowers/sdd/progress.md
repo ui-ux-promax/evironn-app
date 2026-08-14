@@ -100,3 +100,11 @@
 - Room switching (living/kitchen/bedroom/terrace) is in scope (Task 3 interactive hero); the earlier "working, no fix required" reading was WRONG — user reported the non-active pills were literally unclickable, root-caused to the SSR/hydration `onLoad` race and fixed in `113019a`.
 - Fresh checks at HEAD `113019a`: gate pass (137 files / 701 tests; Prettier/ESLint/tsc clean); build exit 0; home E2E 5/5, zero UntrustedHost/console errors. Protected Task 3 plan hash `f1be0e06…c503a7e2` unchanged; both plan files untracked/unmodified; identity `ui-ux-promax <gojjoy22@gmail.com>`, no AI/bot/co-author trailers.
 - Environment cleanup (not repo scope): the local `impeccable` Claude Code plugin was uninstalled at the user's request (removed from settings.json `enabledPlugins`/`extraKnownMarketplaces`, `installed_plugins.json`, `known_marketplaces.json`, and its cache/marketplace/data dirs; project `.impeccable/` cache deleted). Full effect after a Claude Code restart.
+
+## Phase 3 foundation — Task 1
+
+- Task 1 complete in the focused working tree: `e2e/database-guard.ts` now requires `E2E_DATABASE_ALLOW_WRITES=1`, validates explicit PostgreSQL E2E URLs, ignores ambient application URLs, falls back only from the explicit pooled E2E URL, and forces blank `RESEND_API_KEY`.
+- Playwright now injects only the guarded disposable database environment. Global setup uses one Playwright request context, GET-only warmup routes, a read-only `/catalog` interval every 15 seconds, and teardown cleanup/disposal. No direct Neon SQL or write warmup remains.
+- Source contracts cover canonical SKU/cart/order relations, Auth.js role and safe callback boundaries, guest cart/wishlist sign-in merges, production import isolation, the GET-only warmup contract, and all three blank E2E environment keys.
+- Foundation audit conclusion: No new architecture decision; ADR-001/007/010/012/013/014 and the canonical SKU schema govern implementation. Local audit: `.superpowers/sdd/phase-3-foundation-audit.md` (ignored). Task report: `.superpowers/sdd/phase-3-task-1-report.md` (ignored).
+- Focused validation: the seven-file Vitest command passed 46/46 tests; the required Prettier check passed with all matched files using Prettier code style. Playwright was not run because the disposable E2E environment keys are absent.

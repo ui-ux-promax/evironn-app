@@ -216,7 +216,11 @@ export const furnitureProducts: SeedProduct[] = [
         { name: 'Натуральный дуб', slug: 'oak', swatchHex: '#c8a97e' },
         { name: 'Орех', slug: 'walnut', swatchHex: '#6b4a30' },
       ]),
-      upholstery([{ name: 'Кремовая букле', slug: 'ivory-boucle', swatchHex: '#efe7d8' }]),
+      upholstery([
+        { name: 'Кремовая букле', slug: 'ivory-boucle', swatchHex: '#efe7d8' },
+        { name: 'Graphite', slug: 'graphite', swatchHex: '#31312f' },
+        { name: 'Terracotta', slug: 'terracotta', swatchHex: '#a85b43' },
+      ]),
     ],
     skus: [
       sku(
@@ -225,8 +229,9 @@ export const furnitureProducts: SeedProduct[] = [
           { groupSlug: 'finish', valueSlug: 'oak' },
           { groupSlug: 'upholstery', valueSlug: 'ivory-boucle' },
         ],
-        124000,
+        89990,
         3,
+        109990,
       ),
       sku(
         'EV-NWL-WAL',
@@ -234,27 +239,68 @@ export const furnitureProducts: SeedProduct[] = [
           { groupSlug: 'finish', valueSlug: 'walnut' },
           { groupSlug: 'upholstery', valueSlug: 'ivory-boucle' },
         ],
-        129000,
-        2,
+        89990,
+        3,
+        109990,
+      ),
+      sku(
+        'EV-NWL-GPH-OAK',
+        [
+          { groupSlug: 'finish', valueSlug: 'oak' },
+          { groupSlug: 'upholstery', valueSlug: 'graphite' },
+        ],
+        89990,
+        3,
+        109990,
+      ),
+      sku(
+        'EV-NWL-GPH-WAL',
+        [
+          { groupSlug: 'finish', valueSlug: 'walnut' },
+          { groupSlug: 'upholstery', valueSlug: 'graphite' },
+        ],
+        89990,
+        3,
+        109990,
+      ),
+      sku(
+        'EV-NWL-TER-OAK',
+        [
+          { groupSlug: 'finish', valueSlug: 'oak' },
+          { groupSlug: 'upholstery', valueSlug: 'terracotta' },
+        ],
+        89990,
+        3,
+        109990,
+      ),
+      sku(
+        'EV-NWL-TER-WAL',
+        [
+          { groupSlug: 'finish', valueSlug: 'walnut' },
+          { groupSlug: 'upholstery', valueSlug: 'terracotta' },
+        ],
+        89990,
+        3,
+        109990,
       ),
     ],
     media: [
-      image('/assets/products/03-ivory-lounge-idle.webp', 'Noma Woven Lounge'),
+      image('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png', 'Noma Woven Lounge'),
       {
         kind: 'TURN_TABLE_VIDEO',
-        url: '/assets/products/03-ivory-lounge-turntable.mp4',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
         alt: 'Noma Woven Lounge 360',
         sortOrder: 0,
       },
       {
         kind: 'TURN_TABLE_POSTER',
-        url: '/assets/products/03-ivory-lounge-turntable-alpha-poster.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
         alt: 'Noma Woven Lounge 360 poster',
         sortOrder: 0,
       },
       {
         kind: 'TURN_TABLE_FALLBACK',
-        url: '/assets/products/03-ivory-lounge-cutout.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
         alt: 'Noma Woven Lounge static view',
         sortOrder: 0,
       },

@@ -30,6 +30,54 @@ describe('furniture SKU combinations', () => {
 });
 
 describe('furniture seed integrity', () => {
+  it('defines the six canonical Noma showcase SKUs and audited turntable media', () => {
+    const noma = furnitureProducts.find((product) => product.slug === 'noma-woven-lounge');
+
+    expect(noma).toBeDefined();
+    expect(noma?.optionGroups.find((group) => group.slug === 'finish')?.values.map((value) => value.slug)).toEqual([
+      'oak',
+      'walnut',
+    ]);
+    expect(noma?.optionGroups.find((group) => group.slug === 'upholstery')?.values.map(({ slug, swatchHex }) => [slug, swatchHex])).toEqual([
+      ['ivory-boucle', '#efe7d8'],
+      ['graphite', '#31312f'],
+      ['terracotta', '#a85b43'],
+    ]);
+
+    const skus = noma?.skus ?? [];
+    expect(skus).toHaveLength(6);
+    expect(skus.every((sku) => sku.active)).toBe(true);
+    expect(new Set(skus.map((sku) => sku.combinationKey)).size).toBe(6);
+    expect(new Set(skus.map((sku) => sku.price))).toEqual(new Set([89990]));
+    expect(new Set(skus.map((sku) => sku.oldPrice))).toEqual(new Set([109990]));
+    expect(noma?.media).toEqual([
+      {
+        kind: 'IMAGE',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        alt: 'Noma Woven Lounge',
+        sortOrder: 0,
+      },
+      {
+        kind: 'TURN_TABLE_VIDEO',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
+        alt: 'Noma Woven Lounge 360',
+        sortOrder: 0,
+      },
+      {
+        kind: 'TURN_TABLE_POSTER',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        alt: 'Noma Woven Lounge 360 poster',
+        sortOrder: 0,
+      },
+      {
+        kind: 'TURN_TABLE_FALLBACK',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        alt: 'Noma Woven Lounge static view',
+        sortOrder: 0,
+      },
+    ]);
+  });
+
   it('contains 12 to 15 furniture products with unique SKU identities', () => {
     expect(furnitureProducts.length).toBeGreaterThanOrEqual(12);
     expect(furnitureProducts.length).toBeLessThanOrEqual(15);

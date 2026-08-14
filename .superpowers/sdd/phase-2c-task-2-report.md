@@ -12,14 +12,14 @@ Caveman report. Task 2 done. Task 3 not started.
 
 ## Six article/canonical mappings
 
-| Article | Visual | Canonical option | Canonical path |
-| --- | --- | --- | --- |
-| EV-NWL-OAK | ivory / pine | `finish:oak,upholstery:ivory-boucle` | `/product/noma-woven-lounge?option=finish%3Aoak%2Cupholstery%3Aivory-boucle` |
-| EV-NWL-WAL | ivory / walnut | `finish:walnut,upholstery:ivory-boucle` | `/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle` |
-| EV-NWL-GPH-OAK | charcoal / pine | `finish:oak,upholstery:graphite` | `/product/noma-woven-lounge?option=finish%3Aoak%2Cupholstery%3Agraphite` |
-| EV-NWL-GPH-WAL | charcoal / walnut | `finish:walnut,upholstery:graphite` | `/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite` |
-| EV-NWL-TER-OAK | terracotta / pine | `finish:oak,upholstery:terracotta` | `/product/noma-woven-lounge?option=finish%3Aoak%2Cupholstery%3Aterracotta` |
-| EV-NWL-TER-WAL | terracotta / walnut | `finish:walnut,upholstery:terracotta` | `/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aterracotta` |
+| Article        | Visual              | Canonical option                        | Canonical path                                                                  |
+| -------------- | ------------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| EV-NWL-OAK     | ivory / pine        | `finish:oak,upholstery:ivory-boucle`    | `/product/noma-woven-lounge?option=finish%3Aoak%2Cupholstery%3Aivory-boucle`    |
+| EV-NWL-WAL     | ivory / walnut      | `finish:walnut,upholstery:ivory-boucle` | `/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle` |
+| EV-NWL-GPH-OAK | charcoal / pine     | `finish:oak,upholstery:graphite`        | `/product/noma-woven-lounge?option=finish%3Aoak%2Cupholstery%3Agraphite`        |
+| EV-NWL-GPH-WAL | charcoal / walnut   | `finish:walnut,upholstery:graphite`     | `/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Agraphite`     |
+| EV-NWL-TER-OAK | terracotta / pine   | `finish:oak,upholstery:terracotta`      | `/product/noma-woven-lounge?option=finish%3Aoak%2Cupholstery%3Aterracotta`      |
+| EV-NWL-TER-WAL | terracotta / walnut | `finish:walnut,upholstery:terracotta`   | `/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aterracotta`   |
 
 All six: price `89990`, old price `109990`, stock `3`, active. Exact chair paths come from `PRODUCT_SCENE_CHAIRS`. Exact scene background comes from `PRODUCT_SCENE_BACKGROUND`.
 

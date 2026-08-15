@@ -89,6 +89,20 @@ function reconcileProfileDto(
   };
 }
 
+function rollbackFavorite(
+  current: ProfilePageDto,
+  productId: string,
+  toggledProduct: CatalogBCard | undefined,
+): ProfilePageDto {
+  const favorites = toggledProduct
+    ? current.favorites.some((product) => product.id === productId)
+      ? current.favorites
+      : [...current.favorites, toggledProduct]
+    : current.favorites.filter((product) => product.id !== productId);
+
+  return { ...current, favorites, stats: { ...current.stats, favorites: favorites.length } };
+}
+
 export function useProfileVariantA(dto: ProfilePageDto) {
   const router = useRouter();
   const addCartItem = useCartStore((state) => state.addCartItem);
@@ -218,8 +232,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
 
   const toggleFavorite = useCallback(
     async (productId: string) => {
-      const previous = data.favorites;
-      const toggledProduct = previous.find((product) => product.id === productId);
+      const toggledProduct = data.favorites.find((product) => product.id === productId);
       const token = Symbol(productId);
       optimisticFavorites.current.set(productId, { active: false, product: toggledProduct, token });
       setData((current) => ({
@@ -231,11 +244,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
       try {
         const result = await toggleWishlist({ productId });
         if (!result.ok) {
-          setData((current) => ({
-            ...current,
-            favorites: previous,
-            stats: { ...current.stats, favorites: previous.length },
-          }));
+          setData((current) => rollbackFavorite(current, productId, toggledProduct));
           setError(result.error);
           return result;
         }
@@ -251,11 +260,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
         router.refresh();
         return result;
       } catch (reason) {
-        setData((current) => ({
-          ...current,
-          favorites: previous,
-          stats: { ...current.stats, favorites: previous.length },
-        }));
+        setData((current) => rollbackFavorite(current, productId, toggledProduct));
         setError(messageFor(reason));
         return { ok: false as const, error: messageFor(reason) };
       } finally {

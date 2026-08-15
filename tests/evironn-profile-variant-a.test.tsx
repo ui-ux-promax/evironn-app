@@ -342,6 +342,45 @@ describe('Profile Variant A', () => {
     });
   });
 
+  it('rolls back only the failed favorite after an in-flight profile refresh', async () => {
+    let rejectToggle: ((reason?: unknown) => void) | undefined;
+    mocks.toggleWishlist.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectToggle = reject;
+        }),
+    );
+    const refreshedFavorite = { ...soldOutFavorite, id: 'product-3', name: 'Refreshed favorite' };
+    const refreshedDto: ProfilePageDto = {
+      ...dto,
+      user: { ...dto.user, name: 'Обновлённый профиль' },
+      stats: { orders: 7, favorites: 2, addresses: 4 },
+      favorites: [favorite, refreshedFavorite],
+    };
+    const view = render(<ProfileDataProbe dto={dto} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle favorite' }));
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-2']);
+    });
+
+    view.rerender(<ProfileDataProbe dto={refreshedDto} />);
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.user.name).toBe('Обновлённый профиль');
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-3']);
+      expect(data.stats).toMatchObject({ orders: 7, addresses: 4, favorites: 1 });
+    });
+
+    rejectToggle?.(new Error('wishlist unavailable'));
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-3', 'product-1']);
+      expect(data.stats).toEqual({ orders: 7, favorites: 2, addresses: 4 });
+    });
+  });
+
   it('submits profile and password forms while keeping email read-only', async () => {
     render(<ProfileVariantA dto={dto} />);
     openSection('Профиль');

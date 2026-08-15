@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { addToWishlist, toggleWishlist } from '@/app/actions/wishlist';
 import { validateCoupon } from '@/app/actions/coupon';
 import { useCartStore } from '@/store/cart';
 import { useCouponStore } from '@/store/coupon';
+import { useWishlistStore } from '@/store/wishlist';
 import type { CartLineDto, CartTotalsDto } from '@/services/dto/commerce-cart.dto';
+import type { WishlistMutationResult } from '@/services/dto/wishlist.dto';
 import type { PromoState } from './cart-primitives';
 
 export interface CartVariantAActions {
@@ -15,6 +17,7 @@ export interface CartVariantAActions {
   undo(): Promise<void>;
   saveToWishlist(item: CartLineDto): Promise<void>;
   addRelated(skuId: string): Promise<void>;
+  toggleWishlist(productId: string): Promise<WishlistMutationResult>;
   applyCoupon(code: string): Promise<void>;
   clearCoupon(): void;
 }
@@ -25,24 +28,41 @@ function errorMessage(error: unknown): string {
   return error instanceof Error && error.message ? error.message : 'Не удалось обновить корзину';
 }
 
-export function useCartVariantA() {
+function isCompleteCartTotals(value: unknown): value is CartTotalsDto {
+  if (!value || typeof value !== 'object') return false;
+  const totals = value as Record<string, unknown>;
+  return ['subtotal', 'compareAtSubtotal', 'saleDiscount', 'couponDiscount', 'total', 'itemCount', 'lineCount'].every(
+    (key) => typeof totals[key] === 'number' && Number.isFinite(totals[key]),
+  );
+}
+
+export function useCartVariantA(initialWishlistedIds: string[]) {
   const cart = useCartStore((state) => state);
   const fetchCartItems = useCartStore((state) => state.fetchCartItems);
   const coupon = useCouponStore((state) => state.coupon);
   const setStoredCoupon = useCouponStore((state) => state.setCoupon);
   const clearStoredCoupon = useCouponStore((state) => state.clearCoupon);
+  const refreshWishlistCount = useWishlistStore((state) => state.refreshAfterMutation);
   const [promoInput, setPromoInput] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoPending, setPromoPending] = useState(false);
   const [removed, setRemoved] = useState<RemovedItem | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [wishlistedIds, setWishlistedIds] = useState(() => new Set(initialWishlistedIds));
+  const cartRevisionRef = useRef(0);
+  const couponRequestRef = useRef(0);
+  const initialWishlistedKey = JSON.stringify(initialWishlistedIds);
+
+  useEffect(() => setWishlistedIds(new Set(initialWishlistedIds)), [initialWishlistedKey]);
 
   useEffect(() => {
     void fetchCartItems();
   }, [fetchCartItems]);
 
   const clearAppliedCoupon = useCallback(() => {
+    couponRequestRef.current += 1;
+    setPromoPending(false);
     clearStoredCoupon();
     setPromoInput('');
     setPromoError(null);
@@ -50,6 +70,9 @@ export function useCartVariantA() {
 
   const runMutation = useCallback(
     async (mutation: () => Promise<unknown>) => {
+      cartRevisionRef.current += 1;
+      couponRequestRef.current += 1;
+      setPromoPending(false);
       setError(null);
       try {
         await mutation();
@@ -86,7 +109,17 @@ export function useCartVariantA() {
         try {
           const result = await addToWishlist({ productId: item.productId });
           if (!result.ok) throw new Error(result.error);
+          setWishlistedIds((current) => {
+            const next = new Set(current);
+            if (result.active) next.add(item.productId);
+            else next.delete(item.productId);
+            return next;
+          });
+          await refreshWishlistCount();
           const index = cart.items.findIndex((current) => current.id === item.id);
+          cartRevisionRef.current += 1;
+          couponRequestRef.current += 1;
+          setPromoPending(false);
           await cart.removeCartItem(item.id);
           clearAppliedCoupon();
           setRemoved({ item, index: Math.max(0, index) });
@@ -97,17 +130,58 @@ export function useCartVariantA() {
         }
       },
       addRelated: async (skuId: string) => runMutation(() => cart.addCartItem({ skuId, quantity: 1 })),
+      toggleWishlist: async (productId: string): Promise<WishlistMutationResult> => {
+        const wasWishlisted = wishlistedIds.has(productId);
+        setWishlistedIds((current) => {
+          const next = new Set(current);
+          if (wasWishlisted) next.delete(productId);
+          else next.add(productId);
+          return next;
+        });
+        try {
+          const result = await toggleWishlist({ productId });
+          if (!result.ok) {
+            setWishlistedIds((current) => {
+              const next = new Set(current);
+              if (wasWishlisted) next.add(productId);
+              else next.delete(productId);
+              return next;
+            });
+            return result;
+          }
+          setWishlistedIds((current) => {
+            const next = new Set(current);
+            if (result.active) next.add(productId);
+            else next.delete(productId);
+            return next;
+          });
+          await refreshWishlistCount();
+          return result;
+        } catch (reason) {
+          setWishlistedIds((current) => {
+            const next = new Set(current);
+            if (wasWishlisted) next.add(productId);
+            else next.delete(productId);
+            return next;
+          });
+          throw reason;
+        }
+      },
       applyCoupon: async (code: string) => {
+        const requestRevision = ++couponRequestRef.current;
+        const cartRevision = cartRevisionRef.current;
         setPromoPending(true);
         setPromoError(null);
         setError(null);
         try {
           const result = await validateCoupon(code);
+          if (requestRevision !== couponRequestRef.current || cartRevision !== cartRevisionRef.current) return;
           if (!result.ok) {
             clearStoredCoupon();
             setPromoError(result.error);
             return;
           }
+          if (!isCompleteCartTotals(result.totals)) throw new Error('Некорректный ответ сервера');
           setStoredCoupon({
             code: result.code,
             percent: result.percent,
@@ -116,14 +190,14 @@ export function useCartVariantA() {
           });
           setPromoInput(result.code);
         } catch (reason) {
+          if (requestRevision !== couponRequestRef.current || cartRevision !== cartRevisionRef.current) return;
           setPromoError(errorMessage(reason));
           clearStoredCoupon();
         } finally {
-          setPromoPending(false);
+          if (requestRevision === couponRequestRef.current) setPromoPending(false);
         }
       },
       clearCoupon: clearAppliedCoupon,
-      toggleWishlist,
       dismissUndo: () => setRemoved(null),
       typePromo: (input: string) => {
         if (coupon) clearAppliedCoupon();
@@ -131,7 +205,17 @@ export function useCartVariantA() {
         setPromoError(null);
       },
     }),
-    [cart, clearAppliedCoupon, clearStoredCoupon, coupon, removed, runMutation, setStoredCoupon],
+    [
+      cart,
+      clearAppliedCoupon,
+      clearStoredCoupon,
+      coupon,
+      refreshWishlistCount,
+      removed,
+      runMutation,
+      setStoredCoupon,
+      wishlistedIds,
+    ],
   );
 
   const totals: CartTotalsDto = coupon?.totals ?? cart.totals;
@@ -147,6 +231,7 @@ export function useCartVariantA() {
 
   return {
     items: cart.items,
+    wishlistedIds,
     totals,
     loading: cart.loading,
     error: error ?? (cart.error ? 'Не удалось обновить корзину' : null),

@@ -60,6 +60,9 @@ describe('Evironn Cart Variant A source boundary', () => {
       expect(presentation).toContain(field);
     expect(variant).toContain('aria-disabled');
     expect(variant).toContain('Оформление заказа будет доступно на следующем этапе.');
+    expect(variant).not.toContain('role="radiogroup"');
+    expect(variant).toContain('aria-label={`Добавить ${product.name} в корзину`}');
+    expect(`${variant}\n${readFileSync('app/(shop)/cart/page.tsx', 'utf8')}`).toContain('relatedProductHref');
   });
 
   it('builds related cards from canonical furniture data', () => {

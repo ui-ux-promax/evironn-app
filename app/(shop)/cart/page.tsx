@@ -10,6 +10,11 @@ import { CartView } from './cart-view';
 
 export const dynamic = 'force-dynamic';
 
+function relatedProductHref(product: Pick<CatalogBCard, 'slug' | 'primarySkuId'>): string {
+  const path = `/product/${encodeURIComponent(product.slug)}`;
+  return product.primarySkuId ? `${path}?sku=${encodeURIComponent(product.primarySkuId)}` : path;
+}
+
 export default async function CartPage() {
   const now = new Date();
   const [session, store] = await Promise.all([auth(), cookies()]);
@@ -22,14 +27,15 @@ export default async function CartPage() {
     }),
     getWishlistProductIds(session, store.get(wishlistCookieName)?.value),
   ]);
-  const related: CatalogBCard[] = raw.map((product) =>
-    buildCatalogBCard(
+  const related: CatalogBCard[] = raw.map((product) => {
+    const card = buildCatalogBCard(
       buildFurnitureProductCardData(product, now, {
         newWindowDays: NEW_PRODUCT_WINDOW_DAYS,
         lowStock: LOW_STOCK_THRESHOLD,
       }),
-    ),
-  );
+    );
+    return { ...card, href: relatedProductHref(card) } as CatalogBCard;
+  });
 
   return <CartView related={related} initialWishlistedIds={[...wishlistedIds]} />;
 }

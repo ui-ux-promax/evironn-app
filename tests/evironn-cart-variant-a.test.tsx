@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   clearCart: vi.fn(),
   addToWishlist: vi.fn(),
   toggleWishlist: vi.fn(),
+  refreshWishlistCount: vi.fn(),
   validateCoupon: vi.fn(),
 }));
 
@@ -31,8 +32,30 @@ vi.mock('@/services/api-client', () => ({
 }));
 vi.mock('@/app/actions/wishlist', () => ({ addToWishlist: mocks.addToWishlist, toggleWishlist: mocks.toggleWishlist }));
 vi.mock('@/app/actions/coupon', () => ({ validateCoupon: mocks.validateCoupon }));
+vi.mock('@/store/wishlist', () => ({
+  useWishlistStore: (selector: (state: { refreshAfterMutation: typeof mocks.refreshWishlistCount }) => unknown) =>
+    selector({ refreshAfterMutation: mocks.refreshWishlistCount }),
+}));
 vi.mock('@/components/evironn/catalog/catalog-card', () => ({
-  CatalogCard: ({ product }: { product: CatalogBCard }) => <article data-testid="related-card">{product.name}</article>,
+  CatalogCard: ({
+    product,
+    wishlisted,
+    onWishlistToggle,
+  }: {
+    product: CatalogBCard;
+    wishlisted: boolean;
+    onWishlistToggle: (productId: string) => Promise<unknown>;
+  }) => (
+    <article data-testid="related-card">
+      <a href={product.href}>{product.name}</a>
+      <button
+        type="button"
+        aria-pressed={wishlisted}
+        aria-label={wishlisted ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`}
+        onClick={() => void onWishlistToggle(product.id).catch(() => undefined)}
+      />
+    </article>
+  ),
 }));
 
 import { CartVariantA } from '@/components/evironn/cart/cart-variant-a';
@@ -81,10 +104,19 @@ const related = {
   badges: [],
   soldOut: false,
   optionSwatches: [],
-  href: '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
+  href: '/product/related?sku=sku-related',
   media: { idle: '', forward: '', reverse: '' },
   note: 'Кресла',
   colors: [],
+} as unknown as CatalogBCard;
+
+const secondRelated = {
+  ...related,
+  id: 'product-second',
+  slug: 'second-product',
+  primarySkuId: 'sku-second',
+  name: 'Second Product',
+  href: '/product/second-product?sku=sku-second',
 } as unknown as CatalogBCard;
 
 function cart(items: CartLineDto[] = [line]): CartDto {
@@ -106,7 +138,7 @@ const empty = cart([]);
 
 function renderCart(snapshot = cart()) {
   mocks.getCart.mockResolvedValue(snapshot);
-  return render(<CartVariantA related={[related]} initialWishlistedIds={[]} />);
+  return render(<CartVariantA related={[related, secondRelated]} initialWishlistedIds={[]} />);
 }
 
 beforeEach(() => {
@@ -123,7 +155,7 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
 
     expect(screen.getByText(/Отделка: Орех/)).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Отделка: Орех' })).toBeDisabled();
+    expect(screen.getByRole('img', { name: 'Отделка: Орех' })).toBeInTheDocument();
     expect(screen.getAllByText(/89/).length).toBeGreaterThan(0);
 
     const increase = screen.getByRole('button', { name: 'Добавить одну штуку Noma Woven Lounge' });
@@ -134,6 +166,41 @@ describe('Cart Variant A', () => {
     fireEvent.click(increase);
     await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
     expect(screen.getByRole('button', { name: 'Добавить одну штуку Noma Woven Lounge' })).toBeDisabled();
+  });
+
+  it('controls related wishlist pressed state, rolls back failed toggles, and refreshes count', async () => {
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+    const add = screen.getByRole('button', { name: 'Добавить Related Chair в избранное' });
+    mocks.toggleWishlist.mockResolvedValueOnce({ ok: true, active: true });
+
+    fireEvent.click(add);
+    await waitFor(() => expect(add).toHaveAttribute('aria-pressed', 'true'));
+    expect(mocks.refreshWishlistCount).toHaveBeenCalledTimes(1);
+
+    mocks.toggleWishlist.mockRejectedValueOnce(new Error('Сбой избранного'));
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать Related Chair из избранного' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Убрать Related Chair из избранного' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+    expect(mocks.refreshWishlistCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses distinct canonical related product hrefs', async () => {
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.getByRole('link', { name: 'Related Chair' })).toHaveAttribute(
+      'href',
+      '/product/related?sku=sku-related',
+    );
+    expect(screen.getByRole('link', { name: 'Second Product' })).toHaveAttribute(
+      'href',
+      '/product/second-product?sku=sku-second',
+    );
   });
 
   it('shows server coupon totals and disabled honest checkout controls without shipping rows', async () => {
@@ -162,6 +229,44 @@ describe('Cart Variant A', () => {
     ).toBe(true);
   });
 
+  it('discards stale coupon validation after a cart mutation', async () => {
+    let resolveCoupon!: (value: unknown) => void;
+    mocks.validateCoupon.mockReturnValue(new Promise((resolve) => (resolveCoupon = resolve)));
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Промокод' }), { target: { value: 'WELCOME10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Применить' }));
+    await waitFor(() => expect(mocks.validateCoupon).toHaveBeenCalledWith('WELCOME10'));
+
+    mocks.updateItemQuantity.mockResolvedValue(
+      cart([{ ...line, quantity: 2, lineTotal: 178000, oldLineTotal: 198000 }]),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить одну штуку Noma Woven Lounge' }));
+    await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
+
+    resolveCoupon({
+      ok: true,
+      code: 'WELCOME10',
+      percent: 10,
+      discount: 8900,
+      totals: { ...cart().totals, couponDiscount: 8900, total: 80100 },
+    });
+    await waitFor(() => expect(useCouponStore.getState().coupon).toBeNull());
+    expect(screen.queryByText(/Промокод WELCOME10 принят/)).not.toBeInTheDocument();
+  });
+
+  it('rejects incomplete server coupon snapshots', async () => {
+    mocks.validateCoupon.mockResolvedValue({ ok: true, code: 'WELCOME10', percent: 10, discount: 8900 });
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Промокод' }), { target: { value: 'WELCOME10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Применить' }));
+    expect(await screen.findByText('Некорректный ответ сервера')).toBeInTheDocument();
+    expect(useCouponStore.getState().coupon).toBeNull();
+  });
+
   it('removes then undoes by canonical skuId and original quantity', async () => {
     renderCart();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
@@ -185,6 +290,7 @@ describe('Cart Variant A', () => {
     expect(mocks.addToWishlist.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.removeCartItem.mock.invocationCallOrder[0],
     );
+    expect(mocks.refreshWishlistCount).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Товар сохранён в избранное')).toBeInTheDocument();
   });
 
@@ -192,7 +298,7 @@ describe('Cart Variant A', () => {
     renderCart();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
     mocks.addCartItem.mockResolvedValue(cart());
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить в корзину' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить Related Chair в корзину' }));
     await waitFor(() => expect(mocks.addCartItem).toHaveBeenCalledWith({ skuId: 'sku-related', quantity: 1 }));
 
     mocks.clearCart.mockResolvedValue(empty);

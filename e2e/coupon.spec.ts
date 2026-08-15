@@ -11,10 +11,17 @@ async function addNomaSku(page: Page) {
 test.describe('cart-only coupons', () => {
   test('valid coupon renders server-returned totals without checkout or order navigation', async ({ page }) => {
     await addNomaSku(page);
-    await page.getByRole('textbox', { name: 'Промокод' }).fill('RITM10');
+    await page.getByRole('textbox', { name: 'Промокод' }).fill('WELCOME10');
     await page.getByRole('button', { name: 'Применить' }).click();
-    await expect(page.getByText(/Промокод RITM10 принят/)).toBeVisible();
-    await expect(page.getByText(/Промокод −10%/)).toBeVisible();
+    await expect(page.getByText(/Промокод WELCOME10 принят/)).toBeVisible();
+    await expect(page.locator('.crt-sum__row').filter({ hasText: '1 товар' }).locator('dd')).toHaveText('109 990 ₽');
+    await expect(page.locator('.crt-sum__row').filter({ hasText: 'Выгода по акции' }).locator('dd')).toHaveText(
+      '−20 000 ₽',
+    );
+    await expect(page.locator('.crt-sum__row').filter({ hasText: 'Промокод −10%' }).locator('dd')).toHaveText(
+      '−8 999 ₽',
+    );
+    await expect(page.locator('.crt-sum__row.is-total dd')).toHaveText('80 991 ₽');
     await expect(page).toHaveURL(/\/cart$/);
     await expect(
       page.getByRole('button', { name: 'Оформление заказа будет доступно на следующем этапе.' }),

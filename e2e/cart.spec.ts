@@ -23,7 +23,23 @@ test.describe('canonical cart', () => {
       (response) => response.url().includes('/api/cart/') && response.request().method() === 'PATCH',
     );
     await increase.click();
-    await quantityResponse.catch(() => undefined);
+    const response = await quantityResponse;
+    expect(response.status()).toBe(200);
+    const body = (await response.json()) as {
+      items: Array<{ skuId: string; quantity: number; stock: number }>;
+      totals: { itemCount: number; lineCount: number; subtotal: number; total: number };
+    };
+    expect(body.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ skuId: expect.any(String), quantity: 2 })]),
+    );
+    expect(body.items[0].stock).toBeGreaterThanOrEqual(body.items[0].quantity);
+    expect(body.totals).toMatchObject({
+      itemCount: 2,
+      lineCount: 1,
+      subtotal: expect.any(Number),
+      total: expect.any(Number),
+    });
+    await expect(increase).toBeDisabled();
     await page.reload();
     await expect(page.getByText(/2 товаров|Количество 2/)).toBeVisible();
 

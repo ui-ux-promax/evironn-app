@@ -15,7 +15,8 @@ export interface CartVariantAProps {
 const CHECKOUT_DISABLED_LABEL = 'Оформление заказа будет доступно на следующем этапе.';
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
-  const { items, totals, loading, error, removed, savedMessage, promo, promoPending, actions } = useCartVariantA();
+  const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
+    useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
 
   return (
@@ -26,7 +27,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
         <p className="cart-a__lede">
           {items.length > 0
             ? `${totals.itemCount} товаров на ${totals.total.toLocaleString('ru-RU')} ₽ — количество и состав меняются здесь, без перехода к оплате.`
-            : 'Соберите заказ в каталоге — доставку и промокод посчитаем на этом шаге.'}
+            : 'Соберите заказ в каталоге — доставку посчитаем на следующем этапе.'}
         </p>
       </header>
 
@@ -74,18 +75,15 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                         {!item.available && <em className="cart-a__order">Нет в наличии</em>}
                       </p>
                       {item.configuration.some((option) => option.swatchHex) && (
-                        <div className="cart-a__swatches" role="radiogroup" aria-label={`Конфигурация ${item.name}`}>
+                        <div className="cart-a__swatches" aria-label={`Конфигурация ${item.name}`}>
                           {item.configuration
                             .filter((option) => option.swatchHex)
                             .map((option) => (
-                              <button
+                              <span
                                 key={`${option.groupSlug}:${option.valueSlug}`}
-                                type="button"
-                                role="radio"
-                                aria-checked="true"
+                                role="img"
                                 aria-label={`${option.groupLabel}: ${option.valueLabel}`}
                                 title={`${option.groupLabel}: ${option.valueLabel}`}
-                                disabled
                                 className="is-on"
                                 style={{ background: option.swatchHex ?? undefined }}
                               />
@@ -171,12 +169,13 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
               <div className="cart-a__also-cell" key={product.id}>
                 <CatalogCard
                   product={product}
-                  wishlisted={initialWishlistedIds.includes(product.id)}
+                  wishlisted={wishlistedIds.has(product.id)}
                   onWishlistToggle={actions.toggleWishlist}
                 />
                 <button
                   type="button"
                   disabled={!product.primarySkuId || product.soldOut}
+                  aria-label={`Добавить ${product.name} в корзину`}
                   onClick={() => product.primarySkuId && void actions.addRelated(product.primarySkuId)}
                 >
                   Добавить в корзину

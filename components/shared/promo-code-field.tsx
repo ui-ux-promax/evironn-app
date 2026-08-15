@@ -22,7 +22,7 @@ export function PromoCodeField() {
         setError(result.error);
         return;
       }
-      setCoupon({ code: result.code, percent: result.percent });
+      setCoupon({ code: result.code, percent: result.percent, discount: result.discount, totals: result.totals });
     } finally {
       setPending(false);
     }

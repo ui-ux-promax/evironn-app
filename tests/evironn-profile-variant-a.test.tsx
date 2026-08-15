@@ -6,6 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import type { ProfilePageDto } from '@/services/dto/profile-page.dto';
+import { useProfileVariantA } from '@/components/evironn/profile/use-profile-variant-a';
 
 const mocks = vi.hoisted(() => ({
   updateProfile: vi.fn(),
@@ -56,6 +57,29 @@ vi.mock('@/components/evironn/catalog/catalog-card', () => ({
 }));
 
 import { ProfileVariantA } from '@/components/evironn/profile/profile-variant-a';
+
+function ProfileDataProbe({ dto }: { dto: ProfilePageDto }) {
+  const profile = useProfileVariantA(dto);
+  return (
+    <>
+      <output data-testid="profile-data">{JSON.stringify(profile.data)}</output>
+      <button
+        type="button"
+        onClick={() =>
+          void profile.actions.saveProfile({ name: 'Локальное имя', phone: ' +7 999 ', birthdate: '1991-06-15' })
+        }
+      >
+        Save profile
+      </button>
+      <button type="button" onClick={() => void profile.actions.setDefaultAddress('address-2')}>
+        Set default address
+      </button>
+      <button type="button" onClick={() => void profile.actions.toggleFavorite('product-1')}>
+        Toggle favorite
+      </button>
+    </>
+  );
+}
 
 const favorite = {
   id: 'product-1',
@@ -214,8 +238,8 @@ describe('Profile Variant A', () => {
     const refreshedDto: ProfilePageDto = {
       ...dto,
       user: { ...dto.user, name: 'Мария Петрова', initials: 'МП' },
-      favorites: [],
-      stats: { ...dto.stats, favorites: 0 },
+      favorites: [soldOutFavorite],
+      stats: { ...dto.stats, favorites: 1 },
     };
     const view = render(<ProfileVariantA dto={dto} />);
     openSection('Избранное');
@@ -231,6 +255,91 @@ describe('Profile Variant A', () => {
 
     resolveToggle?.({ ok: true, active: false });
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+  });
+
+  it('accepts normalized server profile, sorted addresses, and refreshed stats after local updates', async () => {
+    const refreshedDto: ProfilePageDto = {
+      ...dto,
+      user: {
+        ...dto.user,
+        name: 'Серверное имя',
+        phone: '+7 900',
+        birthdate: '1991-06-15T00:00:00.000Z',
+        initials: 'СИ',
+      },
+      stats: { orders: 4, favorites: 3, addresses: 2 },
+      addresses: [
+        { ...dto.addresses[1], isDefault: true },
+        { ...dto.addresses[0], isDefault: false },
+      ],
+    };
+    const view = render(<ProfileDataProbe dto={dto} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+    await waitFor(() => expect(mocks.updateProfile).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Set default address' }));
+    await waitFor(() => expect(mocks.setDefaultAddress).toHaveBeenCalledTimes(1));
+
+    view.rerender(<ProfileDataProbe dto={refreshedDto} />);
+
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.user).toMatchObject({
+        name: 'Серверное имя',
+        phone: '+7 900',
+        birthdate: '1991-06-15T00:00:00.000Z',
+        initials: 'СИ',
+      });
+      expect(data.addresses.map((address) => address.id)).toEqual(['address-2', 'address-1']);
+      expect(data.addresses[0].isDefault).toBe(true);
+      expect(data.stats).toEqual({ orders: 4, favorites: 3, addresses: 2 });
+    });
+  });
+
+  it('preserves only an in-flight favorite mutation and releases it for later server refreshes', async () => {
+    let resolveToggle: ((result: { ok: true; active: false }) => void) | undefined;
+    mocks.toggleWishlist.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToggle = resolve;
+        }),
+    );
+    const view = render(<ProfileDataProbe dto={dto} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle favorite' }));
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-2']);
+    });
+
+    const staleRefresh: ProfilePageDto = {
+      ...dto,
+      user: { ...dto.user, name: 'Обновлённое имя', birthdate: '1992-07-16' },
+      stats: { orders: 5, favorites: 2, addresses: 2 },
+      addresses: [
+        { ...dto.addresses[1], isDefault: true },
+        { ...dto.addresses[0], isDefault: false },
+      ],
+    };
+    view.rerender(<ProfileDataProbe dto={staleRefresh} />);
+
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.user.birthdate).toBe('1992-07-16T00:00:00.000Z');
+      expect(data.addresses.map((address) => address.id)).toEqual(['address-2', 'address-1']);
+      expect(data.stats.orders).toBe(5);
+      expect(data.stats.favorites).toBe(1);
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-2']);
+    });
+
+    resolveToggle?.({ ok: true, active: false });
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+
+    view.rerender(<ProfileDataProbe dto={{ ...staleRefresh }} />);
+    await waitFor(() => {
+      const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-1', 'product-2']);
+      expect(data.stats.favorites).toBe(2);
+    });
   });
 
   it('submits profile and password forms while keeping email read-only', async () => {

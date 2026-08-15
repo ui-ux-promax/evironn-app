@@ -264,3 +264,11 @@
 - RED: new stale-wishlist and initials assertions failed on `da49ee2`. GREEN: focused Task 7 command passed 10 files / 61 tests; typecheck, Prettier, and diff-check passed.
 - Profile E2E invocation stopped at disposable-DB guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent. No ambient database used. Full gate/build/all E2E not run.
 - CSS unchanged; clone fingerprint remains `e55a53ded3f4fd65dfc341470a0f686e8b3b9a4402d26a21ba9ae298a713ea10`. Commit subject reserved: `fix: remediate profile variant review findings`.
+
+### Phase 3 Task 7 final review remediation — 2026-08-15
+
+- Replaced raw DTO equality retention with normalized server-refresh reconciliation in `useProfileVariantA`. Incoming profile dates normalize to ISO, server address order/defaults and non-favorite stats apply directly, and only active per-product optimistic favorite state overlays the refreshed favorite slice.
+- Per-request optimistic favorite tokens clear in `finally`; later refreshes accept authoritative server state. Added regressions for normalized profile/birthdate, server-sorted addresses/defaults, updated stats, in-flight preservation, and stale-state release.
+- Wishlist-removal E2E now parses Next Flight `{ok:boolean}` action results, requires success, reloads `/profile`, and asserts durable server-backed empty favorites. Disposable DB guard remains unchanged.
+- RED: 2 expected failures before implementation. GREEN: focused Task 7 command passed 10 files / 64 tests. Typecheck, touched-file Prettier, and `git diff --check` passed.
+- Profile E2E stopped at disposable guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent. No ambient DB. Full gate/build/all E2E not run. Commit subject: `fix: harden profile DTO reconciliation`.

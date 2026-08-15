@@ -1,6 +1,21 @@
 import { expect, test, type Page } from '@playwright/test';
 import { E2E_PASSWORD, registerAndVerify, uniqueEmail } from './helpers';
 
+function parseServerActionResult(body: string): { ok: boolean; error?: string } {
+  const candidates = body.match(/\{[^{}\r\n]*"ok"\s*:\s*(?:true|false)[^{}\r\n]*\}/g) ?? [];
+  for (const candidate of candidates.reverse()) {
+    try {
+      const result = JSON.parse(candidate) as unknown;
+      if (result && typeof result === 'object' && 'ok' in result && typeof result.ok === 'boolean') {
+        return result as { ok: boolean; error?: string };
+      }
+    } catch {
+      // Next Flight prefixes action JSON with a stream segment marker.
+    }
+  }
+  throw new Error('Next server-action response did not contain an {ok: boolean} result');
+}
+
 async function expectServerActionSuccess(page: Page, action: () => Promise<void>) {
   const responsePromise = page.waitForResponse((response) => {
     const headers = response.request().headers();
@@ -9,6 +24,8 @@ async function expectServerActionSuccess(page: Page, action: () => Promise<void>
   await action();
   const response = await responsePromise;
   expect(response.status()).toBe(200);
+  const result = parseServerActionResult(await response.text());
+  expect(result).toEqual(expect.objectContaining({ ok: true }));
 }
 
 test('protects profile and renders verified account shell', async ({ page }) => {
@@ -95,6 +112,8 @@ test('displays favorites, removes them, and adds canonical SKU to cart', async (
   await expect(page.getByRole('link', { name: `Корзина (${cart.totals.itemCount})` })).toBeVisible();
 
   await expectServerActionSuccess(page, () => page.getByRole('button', { name: /Убрать .* из избранного/ }).click());
+  await page.reload();
+  await page.getByRole('button', { name: 'Избранное' }).click();
   await expect(page.getByText('Избранное пока пусто')).toBeVisible();
 });
 

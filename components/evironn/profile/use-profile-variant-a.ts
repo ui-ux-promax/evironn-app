@@ -7,6 +7,7 @@ import { addAddress, deleteAddress, setDefaultAddress } from '@/app/actions/addr
 import { updatePassword, updateProfile } from '@/app/actions/profile';
 import { toggleWishlist } from '@/app/actions/wishlist';
 import { useCartStore } from '@/store/cart';
+import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import type { ProfileAddressDto, ProfilePageDto, ProfileSection } from '@/services/dto/profile-page.dto';
 import type { ProfileValues } from '@/services/dto/auth.dto';
 
@@ -33,45 +34,74 @@ function initialsFor(name: string, email: string): string {
   return (words[0] ?? email.split('@')[0] ?? '').slice(0, 2).toUpperCase();
 }
 
-function sameValue(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
+function normalizeIsoDate(value: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }
 
-function keepLocalUntilRefreshed<T>(local: T, previousDto: T, nextDto: T): T {
-  return !sameValue(local, previousDto) && !sameValue(nextDto, local) ? local : nextDto;
+function normalizeProfileDto(dto: ProfilePageDto): ProfilePageDto {
+  const name = dto.user.name.trim();
+  return {
+    ...dto,
+    user: {
+      ...dto.user,
+      name,
+      phone: dto.user.phone.trim(),
+      birthdate: normalizeIsoDate(dto.user.birthdate),
+      createdAt: normalizeIsoDate(dto.user.createdAt),
+      initials: initialsFor(name, dto.user.email),
+    },
+    stats: { ...dto.stats },
+    orders: [...dto.orders],
+    favorites: [...dto.favorites],
+    addresses: [...dto.addresses],
+  };
+}
+
+type OptimisticFavoriteMutation = {
+  active: boolean;
+  product?: CatalogBCard;
+  token: symbol;
+};
+
+function reconcileProfileDto(
+  dto: ProfilePageDto,
+  optimisticFavorites: Map<string, OptimisticFavoriteMutation>,
+): ProfilePageDto {
+  const normalized = normalizeProfileDto(dto);
+  if (optimisticFavorites.size === 0) return normalized;
+
+  const favorites = [...normalized.favorites];
+  for (const [productId, mutation] of optimisticFavorites) {
+    const index = favorites.findIndex((product) => product.id === productId);
+    if (!mutation.active) {
+      if (index !== -1) favorites.splice(index, 1);
+      continue;
+    }
+    if (index === -1 && mutation.product) favorites.push(mutation.product);
+  }
+
+  return {
+    ...normalized,
+    favorites,
+    stats: { ...normalized.stats, favorites: favorites.length },
+  };
 }
 
 export function useProfileVariantA(dto: ProfilePageDto) {
   const router = useRouter();
   const addCartItem = useCartStore((state) => state.addCartItem);
-  const [data, setData] = useState(dto);
-  const previousDto = useRef(dto);
+  const normalizedDto = useMemo(() => normalizeProfileDto(dto), [dto]);
+  const [data, setData] = useState(normalizedDto);
+  const optimisticFavorites = useRef(new Map<string, OptimisticFavoriteMutation>());
   const [section, setSection] = useState<ProfileSection>('overview');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    const prior = previousDto.current;
-    previousDto.current = dto;
-    if (prior === dto) return;
-
-    setData((current) => {
-      const favorites = keepLocalUntilRefreshed(current.favorites, prior.favorites, dto.favorites);
-      const addresses = keepLocalUntilRefreshed(current.addresses, prior.addresses, dto.addresses);
-      const user = keepLocalUntilRefreshed(current.user, prior.user, dto.user);
-      const next = {
-        ...dto,
-        user,
-        favorites,
-        addresses,
-        stats: {
-          ...dto.stats,
-          favorites: keepLocalUntilRefreshed(current.stats.favorites, prior.stats.favorites, dto.stats.favorites),
-        },
-      };
-      return sameValue(current, next) ? current : next;
-    });
-  }, [dto]);
+    setData(reconcileProfileDto(normalizedDto, optimisticFavorites.current));
+  }, [normalizedDto]);
 
   const run = useCallback(async (operation: () => Promise<{ ok: true } | { ok: false; error: string }>) => {
     setPending(true);
@@ -97,12 +127,14 @@ export function useProfileVariantA(dto: ProfilePageDto) {
       if (ok) {
         setData((current) => {
           const name = values.name?.trim() ?? current.user.name;
+          const phone = values.phone?.trim() ?? current.user.phone;
           return {
             ...current,
             user: {
               ...current.user,
-              ...values,
               name,
+              phone,
+              birthdate: normalizeIsoDate(values.birthdate ?? current.user.birthdate),
               email: current.user.email,
               initials: initialsFor(name, current.user.email),
             },
@@ -188,6 +220,8 @@ export function useProfileVariantA(dto: ProfilePageDto) {
     async (productId: string) => {
       const previous = data.favorites;
       const toggledProduct = previous.find((product) => product.id === productId);
+      const token = Symbol(productId);
+      optimisticFavorites.current.set(productId, { active: false, product: toggledProduct, token });
       setData((current) => ({
         ...current,
         favorites: current.favorites.filter((product) => product.id !== productId),
@@ -205,6 +239,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
           setError(result.error);
           return result;
         }
+        optimisticFavorites.current.set(productId, { active: result.active, product: toggledProduct, token });
         setData((current) => {
           const favorites = result.active
             ? toggledProduct && !current.favorites.some((product) => product.id === productId)
@@ -223,6 +258,8 @@ export function useProfileVariantA(dto: ProfilePageDto) {
         }));
         setError(messageFor(reason));
         return { ok: false as const, error: messageFor(reason) };
+      } finally {
+        if (optimisticFavorites.current.get(productId)?.token === token) optimisticFavorites.current.delete(productId);
       }
     },
     [data.favorites, router],

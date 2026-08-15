@@ -6,14 +6,10 @@ import { NEW_PRODUCT_WINDOW_DAYS, LOW_STOCK_THRESHOLD } from '@/constants/config
 import { buildCatalogBCard, type CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import { getWishlistProductIds } from '@/lib/wishlist';
 import { wishlistCookieName } from '@/lib/wishlist-cookie';
+import { relatedProductHref } from '@/lib/cart-related-href';
 import { CartView } from './cart-view';
 
 export const dynamic = 'force-dynamic';
-
-function relatedProductHref(product: Pick<CatalogBCard, 'slug' | 'primarySkuId'>): string {
-  const path = `/product/${encodeURIComponent(product.slug)}`;
-  return product.primarySkuId ? `${path}?sku=${encodeURIComponent(product.primarySkuId)}` : path;
-}
 
 export default async function CartPage() {
   const now = new Date();
@@ -34,7 +30,7 @@ export default async function CartPage() {
         lowStock: LOW_STOCK_THRESHOLD,
       }),
     );
-    return { ...card, href: relatedProductHref(card) } as CatalogBCard;
+    return { ...card, href: relatedProductHref(card) };
   });
 
   return <CartView related={related} initialWishlistedIds={[...wishlistedIds]} />;

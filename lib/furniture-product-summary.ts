@@ -35,6 +35,7 @@ export interface FurnitureProductCardData {
   imageUrl: string | null;
   imageAlt: string;
   primarySkuId: string | null;
+  primaryOption?: string | null;
   minPrice: number;
   minOldPrice: number | null;
   badges: ProductBadge[];
@@ -96,6 +97,10 @@ export function buildFurnitureProductCardData(
     imageUrl: primaryMedia?.url ?? null,
     imageAlt: primaryMedia?.alt ?? product.name,
     primarySkuId: primarySku?.id ?? null,
+    primaryOption:
+      primarySku?.selections
+        .map(({ optionGroup, optionValue }) => `${optionGroup.slug}:${optionValue.slug}`)
+        .join(',') ?? null,
     minPrice,
     minOldPrice,
     badges,

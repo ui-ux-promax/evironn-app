@@ -218,3 +218,10 @@
 - TDD RED showed the expected missing Cart Variant A/source files and legacy coupon action failure. GREEN passed the required four-file command at 33/33 and the broader focused regression command at 72/72.
 - `npm run typecheck`, the required touched-file Prettier check, and `git diff --check` passed. Playwright was skipped because disposable E2E keys are absent; no ambient database was used. Full gate, build, and all E2E were not run per Task 5 scope.
 - Report: `.superpowers/sdd/phase-3-task-5-report.md`.
+
+### Phase 3 Task 5 final Important review remediation — 2026-08-15
+
+- Related cart links now derive canonical primary SKU option selections and emit encoded product slug plus supported `?option=` query; unsupported `?sku=` query removed. Added focused route regression.
+- Display-only configuration swatches retain noninteractive `span` semantics with clone-compatible geometry/state CSS. Disabled mobile checkout button now receives clone CTA geometry and responsive padding without enabling checkout.
+- RED: route/CSS contract assertions failed before fixes. GREEN: focused cart/catalog/product command passed 12 files / 82 tests; typecheck, Prettier, and `git diff --check` passed.
+- Full gate, build, and all E2E not run per remediation scope. Report: `.superpowers/sdd/phase-3-task-5-report.md`.

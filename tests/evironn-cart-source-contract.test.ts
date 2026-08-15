@@ -62,7 +62,10 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(variant).toContain('Оформление заказа будет доступно на следующем этапе.');
     expect(variant).not.toContain('role="radiogroup"');
     expect(variant).toContain('aria-label={`Добавить ${product.name} в корзину`}');
-    expect(`${variant}\n${readFileSync('app/(shop)/cart/page.tsx', 'utf8')}`).toContain('relatedProductHref');
+    const page = readFileSync('app/(shop)/cart/page.tsx', 'utf8');
+    expect(`${variant}\n${page}`).toContain('relatedProductHref');
+    expect(page).toContain('relatedProductHref(card)');
+    expect(page).not.toContain('?sku=');
   });
 
   it('builds related cards from canonical furniture data', () => {
@@ -71,5 +74,16 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(page).toContain('buildFurnitureProductCardData');
     expect(page).toContain('buildCatalogBCard');
     expect(`${page}\n${source('components/evironn/cart/cart-variant-a.tsx')}`).toContain('primarySkuId');
+  });
+
+  it('keeps display-only swatches and disabled checkout controls clone-styled', () => {
+    const variant = source('components/evironn/cart/cart-variant-a.tsx');
+    const css = source('styles/evironn/CartVariantA.css');
+
+    expect(variant).toContain('<span');
+    expect(css).toContain('.cart-a__swatches span');
+    expect(css).toContain('.cart-a__mobile-bar button');
+    expect(css).not.toContain('.cart-a__swatches button');
+    expect(css).not.toContain('.cart-a__mobile-bar a');
   });
 });

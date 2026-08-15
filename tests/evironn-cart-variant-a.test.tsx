@@ -104,7 +104,7 @@ const related = {
   badges: [],
   soldOut: false,
   optionSwatches: [],
-  href: '/product/related?sku=sku-related',
+  href: '/product/related?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
   media: { idle: '', forward: '', reverse: '' },
   note: 'Кресла',
   colors: [],
@@ -116,7 +116,7 @@ const secondRelated = {
   slug: 'second-product',
   primarySkuId: 'sku-second',
   name: 'Second Product',
-  href: '/product/second-product?sku=sku-second',
+  href: '/product/second-product?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
 } as unknown as CatalogBCard;
 
 function cart(items: CartLineDto[] = [line]): CartDto {
@@ -195,11 +195,11 @@ describe('Cart Variant A', () => {
 
     expect(screen.getByRole('link', { name: 'Related Chair' })).toHaveAttribute(
       'href',
-      '/product/related?sku=sku-related',
+      '/product/related?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
     expect(screen.getByRole('link', { name: 'Second Product' })).toHaveAttribute(
       'href',
-      '/product/second-product?sku=sku-second',
+      '/product/second-product?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
   });
 

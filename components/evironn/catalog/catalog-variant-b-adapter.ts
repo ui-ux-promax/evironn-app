@@ -9,7 +9,7 @@ export type CatalogBMedia = {
 };
 
 export type CatalogBCard = FurnitureProductCardData & {
-  href: typeof SHOWCASE_DEFAULT_PRODUCT_PATH;
+  href: string;
   media: CatalogBMedia;
   note: string;
   colors: Array<{ label: string; swatchHex: string | null }>;

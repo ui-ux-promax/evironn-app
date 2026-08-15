@@ -186,3 +186,10 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - `prisma/schema.prisma` and `prisma/migrations` are unchanged. No new architecture decision was found; ADR-001/007/010/012/013/014 and the canonical SKU schema remain governing decisions. Secret scan found only the intentionally empty `.env.example` `RESEND_API_KEY` entry.
 - Real Google OAuth Preview smoke is `pending Preview acceptance`; no push or Preview was authorized. Initial Preview loading remains performance debt. Checkout, payment, order mutation, admin, and Phase 4 work remain excluded.
 - Phase 3 is awaiting desktop/mobile visual acceptance for Auth Variant B, Cart Variant A, and Profile Variant A. No push, pull request, merge, branch deletion, or Phase 4 start performed.
+
+## Phase 3 visual acceptance fixes — 2026-08-15
+
+- `82c8bf8` reserves the full viewport for the cart route loading skeleton so the shared footer stays below the initial viewport; focused cart source-contract tests pass.
+- `fe16df8` adds a scoped 16px top margin above the profile password submit button; focused profile source-contract and component tests pass 17/17.
+- No schema, migration, environment, server-action, or dependency changes were made.
+- The phase branch is authorized for push and pull-request creation. Merge and final Phase 3 visual acceptance remain separate gates.

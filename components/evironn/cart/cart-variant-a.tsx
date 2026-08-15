@@ -204,7 +204,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
             {totals.itemCount} товаров
           </span>
           <a
-            href="#"
+            role="button"
             aria-disabled="true"
             tabIndex={-1}
             title={CHECKOUT_DISABLED_LABEL}

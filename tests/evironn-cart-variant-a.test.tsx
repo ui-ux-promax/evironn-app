@@ -219,11 +219,11 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(screen.getByText(/Промокод EVIRONN10 принят/)).toBeInTheDocument());
     expect(screen.getAllByText(/80/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Доставка/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Оформление заказа будет доступно на следующем этапе.' })).toBeDisabled();
-    expect(screen.getByRole('link', { name: 'Оформление заказа будет доступно на следующем этапе.' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    const checkoutControls = screen.getAllByRole('button', {
+      name: 'Оформление заказа будет доступно на следующем этапе.',
+    });
+    expect(checkoutControls[0]).toBeDisabled();
+    expect(checkoutControls[1]).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('discards stale coupon validation after a cart mutation', async () => {

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma-client';
 import { ProfileView, type ProfileOrder } from '@/components/shared/profile/profile-view';
 import { getWishlistItems } from '@/lib/wishlist';
 import { wishlistCookieName } from '@/lib/wishlist-cookie';
-import type { ProductCardData } from '@/lib/product-summary';
+import { toProfileProductCardData } from '@/lib/profile-product-adapter';
 import type { ProfileValues } from '@/services/dto/auth.dto';
 
 export const dynamic = 'force-dynamic';
@@ -125,7 +125,7 @@ export default async function ProfilePage() {
       initial={initial}
       isAdmin={user.role === 'ADMIN'}
       orders={orders}
-      wishlist={wishlistProducts}
+      wishlist={wishlistProducts.map(toProfileProductCardData)}
       addresses={user.addresses.map((a) => ({
         id: a.id,
         label: a.label,

@@ -34,6 +34,7 @@ vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => undefined)
 
 import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
+import type { WishlistMutationResult } from '@/services/dto/wishlist.dto';
 
 const cardFixture: CatalogBCard = {
   id: 'product-1',
@@ -65,6 +66,23 @@ const cardFixture: CatalogBCard = {
   ],
 };
 
+type WishlistToggle = (productId: string) => Promise<WishlistMutationResult>;
+const defaultWishlistToggle: WishlistToggle = async () => ({ ok: true, active: false });
+
+function renderCard(
+  product: CatalogBCard = cardFixture,
+  options: { eager?: boolean; wishlisted?: boolean; onWishlistToggle?: WishlistToggle } = {},
+) {
+  return render(
+    <CatalogCard
+      product={product}
+      eager={options.eager}
+      wishlisted={options.wishlisted ?? false}
+      onWishlistToggle={options.onWishlistToggle ?? defaultWishlistToggle}
+    />,
+  );
+}
+
 afterEach(() => {
   cleanup();
   finePointer = true;
@@ -74,7 +92,7 @@ afterEach(() => {
 
 describe('CatalogCard', () => {
   it('renders compact furniture card with showcase destination and canonical values', () => {
-    render(<CatalogCard product={cardFixture} eager />);
+    renderCard(cardFixture, { eager: true });
 
     expect(screen.getByRole('link', { name: /Noma Woven Lounge/i })).toHaveAttribute(
       'href',
@@ -96,7 +114,7 @@ describe('CatalogCard', () => {
   });
 
   it('keeps idle media visible when hover playback errors', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
     const frame = screen.getByRole('link', { name: /Noma/i });
     fireEvent.pointerEnter(frame);
     const video = frame.querySelector('video') as HTMLVideoElement;
@@ -105,19 +123,29 @@ describe('CatalogCard', () => {
     expect(video).not.toHaveClass('is-frame-ready');
   });
 
-  it('keeps favorite local and renders sold-out server state', () => {
-    render(<CatalogCard product={{ ...cardFixture, badges: [], soldOut: true }} />);
+  it('renders controlled wishlist state and sold-out server state', async () => {
+    const onWishlistToggle = vi.fn<WishlistToggle>().mockResolvedValue({ ok: true, active: true });
+    const { rerender } = renderCard({ ...cardFixture, badges: [], soldOut: true }, { onWishlistToggle });
 
     const favorite = screen.getByRole('button', { name: /Добавить Noma Woven Lounge/i });
     fireEvent.click(favorite);
-    expect(favorite).toHaveAttribute('aria-pressed', 'true');
+    await vi.waitFor(() => expect(onWishlistToggle).toHaveBeenCalledWith('product-1'));
+    expect(favorite).toHaveAttribute('aria-pressed', 'false');
+    rerender(
+      <CatalogCard
+        product={{ ...cardFixture, badges: [], soldOut: true }}
+        wishlisted
+        onWishlistToggle={onWishlistToggle}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /Убрать Noma Woven Lounge/i })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Под заказ')).toBeInTheDocument();
     expect(screen.getByRole('article')).toHaveClass('is-out');
     expect(screen.queryByText('Распродано')).not.toBeInTheDocument();
   });
 
   it('activates forward playback on fine-pointer hover and reverse on leave', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const video = document.querySelector<HTMLVideoElement>('.cat-card__media video');
@@ -137,7 +165,7 @@ describe('CatalogCard', () => {
   });
 
   it('plays forward on focus and starts reverse on blur', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const video = document.querySelector<HTMLVideoElement>('.cat-card__media video')!;
@@ -149,7 +177,7 @@ describe('CatalogCard', () => {
   });
 
   it('does not reverse on pointer leave while card link remains focused', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const video = document.querySelector<HTMLVideoElement>('.cat-card__media video')!;
@@ -162,7 +190,7 @@ describe('CatalogCard', () => {
   });
 
   it('does not reverse on blur while pointer remains over card link', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const video = document.querySelector<HTMLVideoElement>('.cat-card__media video')!;
@@ -175,7 +203,7 @@ describe('CatalogCard', () => {
   });
 
   it('keeps stale forward events from revealing or playing media after reverse wins the race', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const video = document.querySelector<HTMLVideoElement>('.cat-card__media video')!;
@@ -194,7 +222,7 @@ describe('CatalogCard', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
     } as unknown as CanvasRenderingContext2D);
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const media = document.querySelector('.cat-card__media')!;
@@ -231,7 +259,7 @@ describe('CatalogCard', () => {
 
   it('rejects hover playback on coarse pointers', () => {
     finePointer = false;
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const video = document.querySelector<HTMLVideoElement>('.cat-card__media video')!;
@@ -243,7 +271,7 @@ describe('CatalogCard', () => {
 
   it('keeps reduced-motion cards static while preserving idle fallback', () => {
     reducedMotion = true;
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     const link = screen.getByRole('link', { name: /Noma Woven Lounge/i });
     const media = document.querySelector('.cat-card__media')!;
@@ -260,7 +288,7 @@ describe('CatalogCard', () => {
   });
 
   it('uses lazy idle image and no video preload by default', () => {
-    render(<CatalogCard product={cardFixture} />);
+    renderCard();
 
     expect(document.querySelector('.cat-card__media img')).toHaveAttribute('loading', 'lazy');
     expect(document.querySelector('.cat-card__media video')).toHaveAttribute('preload', 'none');
@@ -293,6 +321,12 @@ describe('CatalogCard', () => {
     expect(source).toMatch(/playsInline/);
     expect(source).toMatch(/preload="none"/);
     expect(source).toMatch(/prefers-reduced-motion/);
-    expect(source).not.toMatch(/wishlist|addToCart|toggleWishlist/i);
+    expect(source).toMatch(/wishlisted/);
+    expect(source).toMatch(/onWishlistToggle/);
+    expect(source).toMatch(/aria-pressed=\{wishlisted\}/);
+    expect(source).toMatch(/onWishlistToggle\(product\.id\)/);
+    expect(source).not.toMatch(/setFavorite/);
+    expect(source).not.toMatch(/LegacyCatalogCardProps/);
+    expect(source).not.toMatch(/async \(\) => \(\{ ok: true, active: true \}\)/);
   });
 });

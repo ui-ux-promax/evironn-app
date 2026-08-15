@@ -74,7 +74,11 @@ describe('controlled catalog wishlist', () => {
   });
 
   it('uses successful server result and rolls back controller state on failure', async () => {
-    toggleMock.mockResolvedValueOnce({ ok: true, active: true }).mockRejectedValueOnce(new Error('network'));
+    let rejectMutation!: (error: Error) => void;
+    const failedMutation = new Promise<never>((_, reject) => {
+      rejectMutation = reject;
+    });
+    toggleMock.mockResolvedValueOnce({ ok: true, active: true }).mockReturnValueOnce(failedMutation);
     render(<CatalogVariantB model={model} initialWishlistedIds={[]} />);
     const button = screen.getByRole('button', { name: /Добавить Chair/i });
 
@@ -83,8 +87,10 @@ describe('controlled catalog wishlist', () => {
     expect(toggleMock).toHaveBeenCalledWith({ productId: 'p1' });
 
     fireEvent.click(screen.getByRole('button', { name: /Убрать Chair/i }));
+    rejectMutation(new Error('network'));
+    await expect(failedMutation).rejects.toThrow('network');
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Добавить Chair/i })).toHaveAttribute('aria-pressed', 'false'),
+      expect(screen.getByRole('button', { name: /Убрать Chair/i })).toHaveAttribute('aria-pressed', 'true'),
     );
   });
 });

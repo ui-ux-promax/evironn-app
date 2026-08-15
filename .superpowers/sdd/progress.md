@@ -183,3 +183,10 @@
 - `npm run typecheck` reports the unowned legacy profile consumer mismatch: `app/(shop)/profile/page.tsx` still expects `ProductCardData[]` while canonical wishlist reads return `FurnitureProductCardData[]`. The preserved legacy catalog-card test also expects retired local favorite behavior; neither file was changed because both are outside exact Task 4 ownership.
 - Playwright skipped because disposable E2E keys are absent. No ambient database used. Full gate, build, and all E2E intentionally not run.
 - Report: `.superpowers/sdd/phase-3-task-4-report.md`.
+
+### Phase 3 Task 4 review remediation — 2026-08-15
+
+- Exact findings fixed: profile canonical wishlist now crosses explicit `toProfileProductCardData` DTO boundary; CatalogCard legacy overload/no-op fallback removed; controlled card tests updated; rollback test awaits rejection and verifies prior `true` restored.
+- RED: baseline focused catalog/profile run failed 2 stale card assertions; `npm run typecheck` failed canonical wishlist to legacy profile prop assignment.
+- GREEN: focused Vitest passed 7 files / 48 tests; typecheck passed; Prettier passed; `git diff --check` passed.
+- Broader `tests/evironn-catalog-variant-b.test.tsx` is blocked before tests by the local `next-auth` `next\\server` module-resolution error. No full gate/build/E2E run.

@@ -18,26 +18,24 @@ const finePointerQuery = '(hover: hover) and (pointer: fine)';
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
 
 type CardPhase = 'idle' | 'forward' | 'reverse';
-type ControlledCatalogCardProps = {
+type CatalogCardProps = {
   product: CatalogBCard;
   wishlisted: boolean;
   onWishlistToggle: (productId: string) => Promise<WishlistMutationResult>;
   eager?: boolean;
 };
-type LegacyCatalogCardProps = { product: CatalogBCard; eager?: boolean };
 
 function badgeClass(tone: string): string {
   if (tone === 'discount') return 'sale';
   return tone;
 }
 
-export function CatalogCard(props: ControlledCatalogCardProps): React.ReactElement;
-export function CatalogCard(props: LegacyCatalogCardProps): React.ReactElement;
-export function CatalogCard(props: ControlledCatalogCardProps | LegacyCatalogCardProps): React.ReactElement {
-  const { product, eager = false } = props;
-  const wishlisted = 'wishlisted' in props ? props.wishlisted : false;
-  const onWishlistToggle =
-    'onWishlistToggle' in props ? props.onWishlistToggle : async () => ({ ok: true, active: true });
+export function CatalogCard({
+  product,
+  wishlisted,
+  onWishlistToggle,
+  eager = false,
+}: CatalogCardProps): React.ReactElement {
   const [frameReady, setFrameReady] = useState(false);
   const [fallback, setFallback] = useState<MediaFallbackMode>('idle');
   const [wishlistPending, setWishlistPending] = useState(false);

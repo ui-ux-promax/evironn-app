@@ -91,4 +91,14 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(css).not.toContain('.cart-a__swatches button');
     expect(css).not.toContain('.cart-a__mobile-bar a');
   });
+
+  it('handles rejected clear, related-add, and undo mutations at the click boundary', () => {
+    const variant = source('components/evironn/cart/cart-variant-a.tsx');
+
+    expect(variant).toContain('onClick={() => void actions.clear().catch(() => undefined)}');
+    expect(variant).toMatch(
+      /onClick=\{\(\) =>\s*product\.primarySkuId && void actions\.addRelated\(product\.primarySkuId\)\.catch\(\(\) => undefined\)\s*\}/,
+    );
+    expect(variant).toMatch(/<UndoBar[\s\S]*onUndo=\{\(\) => void actions\.undo\(\)\.catch\(\(\) => undefined\)\}/);
+  });
 });

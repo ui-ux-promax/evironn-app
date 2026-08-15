@@ -44,7 +44,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
           <section className="cart-a__list" aria-label="Позиции заказа">
             <div className="cart-a__list-head">
               <p>{totals.itemCount} товаров</p>
-              <button type="button" onClick={() => void actions.clear()}>
+              <button type="button" onClick={() => void actions.clear().catch(() => undefined)}>
                 Очистить корзину
               </button>
             </div>
@@ -176,7 +176,9 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                   type="button"
                   disabled={!product.primarySkuId || product.soldOut}
                   aria-label={`Добавить ${product.name} в корзину`}
-                  onClick={() => product.primarySkuId && void actions.addRelated(product.primarySkuId)}
+                  onClick={() =>
+                    product.primarySkuId && void actions.addRelated(product.primarySkuId).catch(() => undefined)
+                  }
                 >
                   Добавить в корзину
                 </button>
@@ -186,7 +188,11 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
         </section>
       )}
 
-      <UndoBar label={removedName} onUndo={() => void actions.undo()} onDismiss={actions.dismissUndo} />
+      <UndoBar
+        label={removedName}
+        onUndo={() => void actions.undo().catch(() => undefined)}
+        onDismiss={actions.dismissUndo}
+      />
 
       {items.length > 0 && (
         <div className="cart-a__mobile-bar">

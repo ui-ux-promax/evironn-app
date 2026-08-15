@@ -272,3 +272,10 @@
 - Wishlist-removal E2E now parses Next Flight `{ok:boolean}` action results, requires success, reloads `/profile`, and asserts durable server-backed empty favorites. Disposable DB guard remains unchanged.
 - RED: 2 expected failures before implementation. GREEN: focused Task 7 command passed 10 files / 64 tests. Typecheck, touched-file Prettier, and `git diff --check` passed.
 - Profile E2E stopped at disposable guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent. No ambient DB. Full gate/build/all E2E not run. Commit subject: `fix: harden profile DTO reconciliation`.
+
+### Phase 3 Task 7 final approval — 2026-08-15
+
+- Closed final review findings: wishlist rollback is target-only and preserves concurrent DTO refreshes; profile E2E scopes the removal control uniquely and verifies successful server action plus durable post-reload absence.
+- Root-cause CSS line-ending drift was diagnosed and corrected against the read-only clone; exact `ProfilePage.css` SHA is restored. Full focused profile command passes 10 files / 65 tests; typecheck, Prettier, and `git diff --check` pass.
+- Final Sol review approved full Task 7 delivery diff `0bce983..912e49d`: Critical 0 / Important 0. Profile E2E remains guarded by absent disposable database keys; no ambient DB used.
+- Task 7: complete (commits `da49ee2..912e49d`, review clean). Resume from Task 8 implementation.

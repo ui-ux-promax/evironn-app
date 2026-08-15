@@ -255,3 +255,12 @@
 - TDD RED: focused UI/source tests caught CSS fingerprint drift and uncaught address-action rejection. GREEN: full focused profile command passed 10 files / 60 tests.
 - `npm run typecheck`, focused Prettier, and `git diff --check` passed. Clone CSS fingerprint matches source. Profile E2E was added but skipped because all disposable E2E keys are absent; no ambient database used.
 - Full gate/build intentionally not run. Existing untracked plans preserved. Commit subject reserved: `feat: port production profile variant a`.
+
+### Task 7 review remediation — 2026-08-15
+
+- Reconciled profile wishlist state against `toggleWishlist` result `active`, preserving controlled favorites and exact counts on stale/multi-tab responses while refreshing after success.
+- Recomputed initials from saved profile name and DTO email after successful profile update.
+- Strengthened only `e2e/profile.spec.ts`: password success before logout/re-login; successful non-default set-default state before delete; successful favorites cart mutation with response items/count and header count before removal.
+- RED: new stale-wishlist and initials assertions failed on `da49ee2`. GREEN: focused Task 7 command passed 10 files / 61 tests; typecheck, Prettier, and diff-check passed.
+- Profile E2E invocation stopped at disposable-DB guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent. No ambient database used. Full gate/build/all E2E not run.
+- CSS unchanged; clone fingerprint remains `e55a53ded3f4fd65dfc341470a0f686e8b3b9a4402d26a21ba9ae298a713ea10`. Commit subject reserved: `fix: remediate profile variant review findings`.

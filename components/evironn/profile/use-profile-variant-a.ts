@@ -27,6 +27,12 @@ function messageFor(reason: unknown): string {
   return reason instanceof Error && reason.message ? reason.message : 'Не удалось выполнить действие';
 }
 
+function initialsFor(name: string, email: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  return (words[0] ?? email.split('@')[0] ?? '').slice(0, 2).toUpperCase();
+}
+
 export function useProfileVariantA(dto: ProfilePageDto) {
   const router = useRouter();
   const addCartItem = useCartStore((state) => state.addCartItem);
@@ -57,7 +63,19 @@ export function useProfileVariantA(dto: ProfilePageDto) {
     async (values: ProfileValues) => {
       const ok = await run(() => updateProfile(values));
       if (ok) {
-        setData((current) => ({ ...current, user: { ...current.user, ...values, email: current.user.email } }));
+        setData((current) => {
+          const name = values.name?.trim() ?? current.user.name;
+          return {
+            ...current,
+            user: {
+              ...current.user,
+              ...values,
+              name,
+              email: current.user.email,
+              initials: initialsFor(name, current.user.email),
+            },
+          };
+        });
         router.refresh();
       }
     },
@@ -137,6 +155,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
   const toggleFavorite = useCallback(
     async (productId: string) => {
       const previous = data.favorites;
+      const toggledProduct = previous.find((product) => product.id === productId);
       setData((current) => ({
         ...current,
         favorites: current.favorites.filter((product) => product.id !== productId),
@@ -154,6 +173,14 @@ export function useProfileVariantA(dto: ProfilePageDto) {
           setError(result.error);
           return result;
         }
+        setData((current) => {
+          const favorites = result.active
+            ? toggledProduct && !current.favorites.some((product) => product.id === productId)
+              ? [...current.favorites, toggledProduct]
+              : current.favorites
+            : current.favorites.filter((product) => product.id !== productId);
+          return { ...current, favorites, stats: { ...current.stats, favorites: favorites.length } };
+        });
         router.refresh();
         return result;
       } catch (reason) {

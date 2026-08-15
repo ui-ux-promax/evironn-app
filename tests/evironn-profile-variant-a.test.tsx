@@ -189,6 +189,20 @@ describe('Profile Variant A', () => {
     await waitFor(() => expect(mocks.toggleWishlist).toHaveBeenCalledWith({ productId: 'product-1' }));
   });
 
+  it('reconciles a stale wishlist toggle result and preserves the favorite when active', async () => {
+    mocks.toggleWishlist.mockResolvedValueOnce({ ok: true, active: true });
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Избранное');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать Noma из избранного' }));
+
+    await waitFor(() => expect(mocks.toggleWishlist).toHaveBeenCalledWith({ productId: 'product-1' }));
+    expect(screen.getByText('Noma')).toBeInTheDocument();
+    expect(screen.getByTestId('wishlisted-product-1')).toHaveTextContent('true');
+    expect(screen.getByRole('button', { name: /^Избранное/ })).toHaveTextContent('2');
+    expect(mocks.refresh).toHaveBeenCalled();
+  });
+
   it('submits profile and password forms while keeping email read-only', async () => {
     render(<ProfileVariantA dto={dto} />);
     openSection('Профиль');
@@ -200,6 +214,7 @@ describe('Profile Variant A', () => {
     await waitFor(() =>
       expect(mocks.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'Анна Новая' })),
     );
+    expect(document.querySelector('.prf__avatar')).toHaveTextContent('АН');
 
     fireEvent.change(screen.getByLabelText('Текущий пароль'), { target: { value: 'old-password' } });
     fireEvent.change(screen.getByLabelText('Новый пароль'), { target: { value: 'new-password' } });

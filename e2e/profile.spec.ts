@@ -1,5 +1,15 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { E2E_PASSWORD, registerAndVerify, uniqueEmail } from './helpers';
+
+async function expectServerActionSuccess(page: Page, action: () => Promise<void>) {
+  const responsePromise = page.waitForResponse((response) => {
+    const headers = response.request().headers();
+    return response.request().method() === 'POST' && Boolean(headers['next-action']);
+  });
+  await action();
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
+}
 
 test('protects profile and renders verified account shell', async ({ page }) => {
   await page.goto('/profile');
@@ -23,8 +33,7 @@ test('edits profile, changes password, and signs in again', async ({ page }) => 
   await page.getByLabel('Текущий пароль').fill(E2E_PASSWORD);
   await page.getByLabel('Новый пароль').fill('NewPassw0rd!2');
   await page.getByLabel('Повторите пароль').fill('NewPassw0rd!2');
-  await page.getByRole('button', { name: 'Изменить пароль' }).click();
-  await expect(page.getByRole('button', { name: 'Изменить пароль' })).toBeVisible();
+  await expectServerActionSuccess(page, () => page.getByRole('button', { name: 'Изменить пароль' }).click());
 
   await page.getByRole('button', { name: 'Выйти' }).click();
   await page.getByRole('link', { name: 'Войти' }).click();
@@ -43,15 +52,18 @@ test('adds, defaults, and deletes owner-scoped addresses', async ({ page }) => {
     await page.getByLabel('Название').fill(label);
     await page.getByLabel('Город').fill('Москва');
     await page.getByLabel('Улица и дом').fill(street);
-    await page.getByRole('button', { name: 'Сохранить адрес' }).click();
+    await expectServerActionSuccess(page, () => page.getByRole('button', { name: 'Сохранить адрес' }).click());
     await expect(page.getByText(label, { exact: true })).toBeVisible();
   };
 
   await addAddress('Дом', 'Ленина, 1');
   await addAddress('Студия', 'Тверская, 10');
-  await page.getByRole('button', { name: 'Сделать адрес Студия основным' }).click();
-  await expect(page.getByText('По умолчанию')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Удалить Студия' }).click();
+  await expectServerActionSuccess(page, () =>
+    page.getByRole('button', { name: 'Сделать адрес Студия основным' }).click(),
+  );
+  const studioCard = page.locator('.prf__address-list article').filter({ hasText: 'Студия' });
+  await expect(studioCard.getByText('По умолчанию')).toBeVisible();
+  await expectServerActionSuccess(page, () => page.getByRole('button', { name: 'Удалить Студия' }).click());
   await expect(page.getByText('Студия', { exact: true })).toHaveCount(0);
 });
 
@@ -59,13 +71,25 @@ test('displays favorites, removes them, and adds canonical SKU to cart', async (
   await registerAndVerify(page);
   await page.goto('/catalog');
   const firstCard = page.getByTestId('catalog-card').first();
-  await firstCard.getByRole('button', { name: /Добавить .* в избранное/ }).click();
+  await expectServerActionSuccess(page, () =>
+    firstCard.getByRole('button', { name: /Добавить .* в избранное/ }).click(),
+  );
 
   await page.goto('/profile');
   await page.getByRole('button', { name: 'Избранное' }).click();
   await expect(page.getByRole('button', { name: 'В корзину' }).first()).toBeEnabled();
+  const cartResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith('/api/cart') && response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'В корзину' }).first().click();
-  await page.getByRole('button', { name: /Убрать .* из избранного/ }).click();
+  const cartResponse = await cartResponsePromise;
+  expect(cartResponse.status()).toBe(200);
+  const cart = (await cartResponse.json()) as { items: unknown[]; totals: { itemCount: number } };
+  expect(cart.items.length).toBeGreaterThan(0);
+  expect(cart.totals.itemCount).toBeGreaterThan(0);
+  await expect(page.getByRole('link', { name: `Корзина (${cart.totals.itemCount})` })).toBeVisible();
+
+  await expectServerActionSuccess(page, () => page.getByRole('button', { name: /Убрать .* из избранного/ }).click());
   await expect(page.getByText('Избранное пока пусто')).toBeVisible();
 });
 

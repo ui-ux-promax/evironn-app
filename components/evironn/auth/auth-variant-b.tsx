@@ -1,6 +1,7 @@
 'use client';
 
 import { type FormEvent, type KeyboardEvent, type Ref, useRef, useState } from 'react';
+import Link from 'next/link';
 import { FiArrowRight, FiCheck, FiEye, FiEyeOff, FiLock, FiMail, FiRefreshCw, FiShield, FiUser } from 'react-icons/fi';
 import { ConsentBlock, Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
 import {
@@ -385,9 +386,9 @@ export function AuthVariantB({
           )}
         </div>
         <footer className="auth-page__foot">
-          <a href="/">
+          <Link href="/">
             <FiUser aria-hidden="true" /> Вернуться на главную <FiArrowRight aria-hidden="true" />
-          </a>
+          </Link>
         </footer>
       </section>
     </main>

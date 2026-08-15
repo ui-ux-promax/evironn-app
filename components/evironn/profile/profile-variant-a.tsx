@@ -1,6 +1,7 @@
 'use client';
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { FiHeart, FiHome, FiLogOut, FiMapPin, FiPackage, FiPlus, FiTrash2, FiUser } from 'react-icons/fi';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import { Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
@@ -48,7 +49,7 @@ export function ProfileVariantA({ dto }: { dto: ProfilePageDto }) {
     <main className="prf prf--a" id="main-content">
       <header className="prf__head">
         <p className="prf__crumbs">
-          <a href="/">Главная</a>
+          <Link href="/">Главная</Link>
           <span>/</span>Личный кабинет
         </p>
         <div className="prf__identity">

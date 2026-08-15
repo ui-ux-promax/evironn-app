@@ -283,7 +283,7 @@
 ## Phase 3 Task 8 — purchase-gated review readiness
 
 - Task 8 consolidates the server-owned purchase predicate across eligibility, canReview, submit, and pruning. Canonical SKU and legacy ProductVariant fallback are supported; online payment/cancellation and delivered-COD gates are enforced; pending/processing COD cannot qualify; duplicate submit races remain safe.
-- Added Phase 3 integration contract with a complete 114-file delivery manifest, forbidden-path coverage, canonical cart/wishlist/profile boundaries, unchanged schema contract, and no Phase 4 UI/checkout/payment/order/admin/performance scope. Review readiness uses a guarded deterministic seeded-order ownership probe and creates no fixtures.
+- Added Phase 3 integration contract with a complete 115-file delivery manifest, independent pinned count/SHA checks, forbidden-path coverage, canonical cart/wishlist/profile boundaries, unchanged schema contract, and no Phase 4 UI/checkout/payment/order/admin/performance scope. Review readiness uses a guarded deterministic seeded-order ownership probe and creates no fixtures.
 - GREEN: focused review/integration command passed 9 files / 74 tests; typecheck, Prettier, and `git diff --check` passed. E2E remains blocked by absent disposable database keys; no ambient DB used.
 - Final Sol review approved `b521a00..6b65f48`: Critical 0 / Important 0. Task 8 complete (commits `9862c59..6b65f48`, review clean). Resume from Task 9 completion gate.
 
@@ -296,3 +296,12 @@
 - GREEN: focused core command passed 3 files / 32 tests. Required focused regression passed 9 files / 71 tests. Touched-file Prettier passed.
 - Review E2E stopped at the disposable database guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent; no ambient database used. Full gate, build, typecheck, and all E2E not run.
 - Report: `.superpowers/sdd/phase-3-task-8-report.md`. Commit subject: `test: enforce purchase-gated reviews`.
+
+## Phase 3 Task 9 — completion gate and delivery close (2026-08-15)
+
+- Base `origin/dev`: `b31194ab07de4ed396d9bfcc5c9d16734d113f95d`. Current code head before durable docs close: `4ff8070`.
+- Final remediation aligned stale regression contracts, pinned the 115-file delivery manifest and exact Cart A CSS, prevented legacy IDs entering canonical undo writes, surfaced PDP and 360-modal add failures, and kept disabled cart controls route-safe (`c596187`, `91dc837`, `1bef496`, `f2f8d7b`, `078e592`, `4ff8070`).
+- Completion evidence: `npm run format` passed; final `npm run gate` passed — 170 test files / 930 tests, 0 ESLint errors and 59 warnings; `npm run build` passed with expected existing warnings.
+- Required Phase 3 E2E command was invoked but the disposable database guard stopped it before Playwright because `E2E_DATABASE_ALLOW_WRITES=1` and disposable E2E URLs are absent. No ambient database was used; email sending remains suppressed with blank `RESEND_API_KEY`.
+- Schema/migrations unchanged; no new architecture decision; secret scan found no credential value. Google OAuth external smoke is `pending Preview acceptance` because push/Preview authorization is not granted.
+- Delivery report: `.superpowers/sdd/phase-3-delivery-report.md` (ignored local artifact). Phase 3 now awaits desktop/mobile visual acceptance. Stop here: no push, PR, merge, branch deletion, or Phase 4.

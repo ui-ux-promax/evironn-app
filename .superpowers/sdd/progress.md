@@ -279,3 +279,13 @@
 - Root-cause CSS line-ending drift was diagnosed and corrected against the read-only clone; exact `ProfilePage.css` SHA is restored. Full focused profile command passes 10 files / 65 tests; typecheck, Prettier, and `git diff --check` pass.
 - Final Sol review approved full Task 7 delivery diff `0bce983..912e49d`: Critical 0 / Important 0. Profile E2E remains guarded by absent disposable database keys; no ambient DB used.
 - Task 7: complete (commits `da49ee2..912e49d`, review clean). Resume from Task 8 implementation.
+
+## Phase 3 commerce and authentication — Task 8
+
+- Centralized the owner/product qualifying-purchase predicate in `lib/review.ts`. Canonical SKU and legacy ProductVariant order lines remain read-compatible; online orders require successful payment and non-cancelled status; COD requires `DELIVERED`.
+- `getReviewEligibility`, `canReview`, `submitReview`, and `pruneReviewsAfterCancel` remain server-owned. `reviewSchema` is strict, Auth.js supplies `userId`, and duplicate review creation retains the P2002 race-safe response.
+- Replaced the old review E2E order/payment fixture with a guarded readiness check for a newly verified user without a qualifying purchase. Added the Phase 3 source integration contract; no review UI, order/payment fixture, API route, or schema change.
+- TDD RED: `npx vitest run tests/review.test.ts tests/submit-review.test.ts tests/phase-3-integration-contract.test.ts` failed on the missing delivered-COD/online predicate and shared integration boundary.
+- GREEN: focused core command passed 3 files / 32 tests. Required focused regression passed 9 files / 71 tests. Touched-file Prettier passed.
+- Review E2E stopped at the disposable database guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent; no ambient database used. Full gate, build, typecheck, and all E2E not run.
+- Report: `.superpowers/sdd/phase-3-task-8-report.md`. Commit subject: `test: enforce purchase-gated reviews`.

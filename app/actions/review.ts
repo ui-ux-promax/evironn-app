@@ -20,7 +20,8 @@ export async function submitReview(raw: unknown): Promise<SubmitReviewResult> {
   if (!isValidRating(rating)) return { ok: false, error: 'Оценка должна быть от 1 до 5' };
 
   // Источник истины — клиентскому праву на отзыв не доверяем.
-  if (!(await canReview(userId, productId))) {
+  const eligible = await canReview(userId, productId);
+  if (!eligible) {
     return { ok: false, error: 'Отзыв доступен после покупки' };
   }
 

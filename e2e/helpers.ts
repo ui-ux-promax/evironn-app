@@ -19,3 +19,13 @@ export async function registerAndVerify(page: Page, email = uniqueEmail()): Prom
   await expect(page).toHaveURL(/\/profile/);
   return email;
 }
+
+export async function expectNoEnabledReviewSubmission(page: Page): Promise<void> {
+  const reviewButtons = page.getByRole('button', { name: /оставить отзыв/i });
+  await expect(reviewButtons).toHaveCount(0);
+}
+
+export async function expectMissingProtectedOrder(page: Page): Promise<void> {
+  const response = await page.goto('/orders/999999999');
+  expect(response?.status()).toBe(404);
+}

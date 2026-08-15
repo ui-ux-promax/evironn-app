@@ -36,9 +36,9 @@ Add this test to `tests/evironn-cart-source-contract.test.ts`:
 
 ```ts
 it('keeps the cart loading skeleton above the shared footer', () => {
-  const loading = readFileSync('app/(shop)/cart/loading.tsx', 'utf8');
-  const layout = readFileSync('app/layout.tsx', 'utf8');
-  const css = readFileSync('styles/evironn/CartLoading.css', 'utf8');
+  const loading = source('app/(shop)/cart/loading.tsx');
+  const layout = source('app/layout.tsx');
+  const css = source('styles/evironn/CartLoading.css');
 
   expect(loading).toContain('className="cart-loading mx-auto max-w-[1240px]');
   expect(loading).toContain('aria-hidden');

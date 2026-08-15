@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -6,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '..');
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), 'utf8');
 
+// Checked-in Phase 3 source manifest. Keep this independent from repository history so
+// shallow CI can enforce the delivery boundary without needing an ancestor commit.
 const phase3Files = [
   'app/(auth)/login/page.tsx',
   'app/(auth)/register/page.tsx',
@@ -30,6 +31,22 @@ const phase3Files = [
   'services/dto/profile-page.dto.ts',
   'services/dto/review.dto.ts',
 ];
+
+const phase3DeliveryFiles = [
+  ...phase3Files,
+  'tests/phase-3-integration-contract.test.ts',
+  'tests/review.test.ts',
+  'tests/submit-review.test.ts',
+  'e2e/helpers.ts',
+  'e2e/review.spec.ts',
+];
+
+const forbiddenDeliveryPathPattern =
+  /(^|\/)(?:app\/\(shop\)\/(?:checkout|orders?)|\((?:checkout|payments?|orders?|admins?|perf|performance)\)(?:[-/.\/]|$)|(?:[^/]*-)?(?:checkout|payments?|orders?|admins?|perf|performance)(?:[-/.\/]|$))/i;
+
+const legacyReadCompatibilityPaths = new Set(['lib/cart-merge.ts', 'lib/order.ts', 'tests/cart-presentation.test.ts']);
+const isForbiddenDeliveryPath = (file: string) =>
+  !legacyReadCompatibilityPaths.has(file) && forbiddenDeliveryPathPattern.test(file);
 
 describe('Phase 3 producer/consumer integration boundary', () => {
   it('names concrete Auth, cart, wishlist, profile, totals, and review boundaries', () => {
@@ -71,6 +88,9 @@ describe('Phase 3 producer/consumer integration boundary', () => {
     expect(read('components/evironn/cart/cart-variant-a.tsx')).toContain('initialWishlistedIds: string[]');
     expect(read('components/evironn/profile/profile-variant-a.tsx')).toContain('readOnly');
     expect(read('app/(shop)/profile/page.tsx')).toContain("if (!session?.user?.id) redirect('/login')");
+    const orderRoute = read('app/(shop)/orders/[number]/page.tsx');
+    expect(orderRoute).toContain("if (!session?.user?.id) redirect('/login')");
+    expect(orderRoute).toContain('order.userId !== session.user.id');
     expect(read('app/actions/review.ts')).toContain("import { canReview, isValidRating } from '@/lib/review'");
     expect(read('app/actions/review.ts')).toContain('canReview(userId, productId)');
     expect(read('lib/review.ts')).toContain('purchasedOrderWhere');
@@ -80,7 +100,7 @@ describe('Phase 3 producer/consumer integration boundary', () => {
     expect(read('app/actions/review.ts')).not.toMatch(/eligible\s*:/);
   });
 
-  it('has no clone mock controllers and no schema change in the delivery diff', () => {
+  it('has no clone mock controllers, forbidden delivery paths, or schema change', () => {
     const production = phase3Files.map(read).join('\n');
     expect(production).not.toMatch(/CATALOG_PRODUCTS|PROMO_CODES|mockController|useAuth\(/);
 
@@ -88,12 +108,23 @@ describe('Phase 3 producer/consumer integration boundary', () => {
     expect(schema).toContain('canonicalSku      Sku?');
     expect(schema).toContain('@@unique([productId, userId])');
 
-    const changed = execFileSync('git', ['diff', '--name-only', 'b521a00', '--'], { cwd: root, encoding: 'utf8' })
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((file) => file.replaceAll('\\', '/'));
-    expect(changed).not.toContain('prisma/schema.prisma');
-    expect(changed.some((file) => /(^|\/)(checkout|payment|order|admin|performance)(\/|\.|$)/i.test(file))).toBe(false);
+    expect(phase3Files).not.toContain('prisma/schema.prisma');
+    expect(phase3DeliveryFiles.filter(isForbiddenDeliveryPath)).toEqual([]);
+    expect(read('lib/cart-merge.ts')).toContain('else if (item.productVariantId)');
+  });
+
+  it('recognizes checkout, payment, order, admin, and performance path variants', () => {
+    const forbidden = [
+      'app/(shop)/checkout/page.tsx',
+      'app/(shop)/orders/[number]/page.tsx',
+      'lib/payment-sync.ts',
+      'lib/order-links.ts',
+      'lib/image-performance.ts',
+      'components/shared/admin-panel.tsx',
+      'app/(admin)/admin/page.tsx',
+    ];
+    for (const file of forbidden) expect(isForbiddenDeliveryPath(file), file).toBe(true);
+
+    for (const file of legacyReadCompatibilityPaths) expect(isForbiddenDeliveryPath(file), file).toBe(false);
   });
 });

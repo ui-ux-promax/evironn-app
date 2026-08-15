@@ -25,7 +25,16 @@ export async function expectNoEnabledReviewSubmission(page: Page): Promise<void>
   await expect(reviewButtons).toHaveCount(0);
 }
 
-export async function expectMissingProtectedOrder(page: Page): Promise<void> {
-  const response = await page.goto('/orders/999999999');
-  expect(response?.status()).toBe(404);
+export async function expectProtectedOrderBoundary(page: Page): Promise<void> {
+  // Probe order 1 without creating an order fixture. A fresh E2E user cannot own it;
+  // if it exists, owner scoping must still prevent its contents from rendering.
+  const foreignOrderPath = '/orders/1';
+  const authenticatedResponse = await page.goto(foreignOrderPath);
+  expect(authenticatedResponse?.status()).toBe(404);
+  await expect(page.getByText('EV-1', { exact: false })).toHaveCount(0);
+
+  await page.context().clearCookies();
+  await page.goto(foreignOrderPath);
+  await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+  expect(page.url()).not.toContain(foreignOrderPath);
 }

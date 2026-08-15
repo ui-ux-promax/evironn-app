@@ -7,6 +7,7 @@ import { buildCatalogBCard, type CatalogBCard } from '@/components/evironn/catal
 import { getWishlistProductIds } from '@/lib/wishlist';
 import { wishlistCookieName } from '@/lib/wishlist-cookie';
 import { relatedProductHref } from '@/lib/cart-related-href';
+import { SHOWCASE_PRODUCT_SLUG } from '@/lib/showcase-product';
 import { CartView } from './cart-view';
 
 export const dynamic = 'force-dynamic';
@@ -16,21 +17,26 @@ export default async function CartPage() {
   const [session, store] = await Promise.all([auth(), cookies()]);
   const [raw, wishlistedIds] = await Promise.all([
     prisma.product.findMany({
-      where: { active: true, skus: { some: { active: true, stock: { gt: 0 } } } },
+      where: {
+        active: true,
+        slug: SHOWCASE_PRODUCT_SLUG,
+        skus: { some: { active: true, stock: { gt: 0 } } },
+      },
       take: 4,
       orderBy: { createdAt: 'desc' },
       include: furnitureProductCardInclude,
     }),
     getWishlistProductIds(session, store.get(wishlistCookieName)?.value),
   ]);
-  const related: CatalogBCard[] = raw.map((product) => {
+  const related: CatalogBCard[] = raw.flatMap((product) => {
     const card = buildCatalogBCard(
       buildFurnitureProductCardData(product, now, {
         newWindowDays: NEW_PRODUCT_WINDOW_DAYS,
         lowStock: LOW_STOCK_THRESHOLD,
       }),
     );
-    return { ...card, href: relatedProductHref(card) };
+    const href = relatedProductHref(card);
+    return href ? [{ ...card, href }] : [];
   });
 
   return <CartView related={related} initialWishlistedIds={[...wishlistedIds]} />;

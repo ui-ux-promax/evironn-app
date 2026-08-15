@@ -65,6 +65,8 @@ describe('Evironn Cart Variant A source boundary', () => {
     const page = readFileSync('app/(shop)/cart/page.tsx', 'utf8');
     expect(`${variant}\n${page}`).toContain('relatedProductHref');
     expect(page).toContain('relatedProductHref(card)');
+    expect(page).toContain('SHOWCASE_PRODUCT_SLUG');
+    expect(page).toMatch(/slug:\s*SHOWCASE_PRODUCT_SLUG/);
     expect(page).not.toContain('?sku=');
   });
 
@@ -74,6 +76,9 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(page).toContain('buildFurnitureProductCardData');
     expect(page).toContain('buildCatalogBCard');
     expect(`${page}\n${source('components/evironn/cart/cart-variant-a.tsx')}`).toContain('primarySkuId');
+    expect(source('components/evironn/cart/cart-variant-a.tsx')).toContain(
+      'disabled={!product.primarySkuId || product.soldOut}',
+    );
   });
 
   it('keeps display-only swatches and disabled checkout controls clone-styled', () => {

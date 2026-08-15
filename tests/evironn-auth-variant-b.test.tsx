@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 const { signIn, registerUser, ensureVerificationGate, verifyEmailCode, resendVerificationCode } = mocks;
 
 vi.mock('next-auth/react', () => ({ signIn: mocks.signIn }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/app/actions/auth', () => ({ registerUser: mocks.registerUser }));
 vi.mock('@/app/actions/verification', () => ({
   ensureVerificationGate: mocks.ensureVerificationGate,

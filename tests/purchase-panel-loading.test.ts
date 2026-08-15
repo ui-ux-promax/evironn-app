@@ -71,25 +71,36 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('showcase ProductPage decorative purchase controls', () => {
-  it('keeps both add controls disabled and free of cart/store/action behavior', () => {
+describe('showcase ProductPage purchase controls', () => {
+  it('uses canonical cart writes and disables both controls only for unavailable stock', () => {
     const source = readFileSync('components/evironn/product/ProductPage.tsx', 'utf8');
-    expect(source).not.toMatch(/cartCountStore|useCartCount|setCartCount|addProductToCart|useCartStore/);
+    expect(source).toContain('useCartStore');
+    expect(source).toContain('addCartItem');
+    expect(source).toContain('currentCombination.sku.id');
+    expect(source).not.toContain('productVariantId');
 
     render(React.createElement(ProductPage, { model }));
     fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
 
     const controls = screen.getAllByRole('button', { name: 'Добавить в корзину', hidden: true });
     expect(controls).toHaveLength(2);
-    expect(controls.every((control) => (control as HTMLButtonElement).disabled)).toBe(true);
-    expect(new Set(controls.map((control) => control.getAttribute('aria-disabled')))).toEqual(new Set(['true']));
-    expect(new Set(controls.map((control) => control.getAttribute('aria-describedby'))).size).toBe(1);
+    expect(controls.every((control) => !(control as HTMLButtonElement).disabled)).toBe(true);
 
-    const noticeId = controls[0].getAttribute('aria-describedby');
-    expect(noticeId).toBeTruthy();
-    expect(document.getElementById(noticeId as string)).toHaveTextContent(
-      'Добавление в корзину будет доступно после завершения пилота',
-    );
-    expect(document.getElementById(noticeId as string)).toHaveClass('product-page__visually-hidden');
+    cleanup();
+    const unavailableModel = {
+      ...model,
+      selected: { ...model.selected, sku: { ...model.selected.sku, stock: 0 } },
+      combinations: model.combinations.map((combination) => ({
+        ...combination,
+        sku: { ...combination.sku, stock: 0 },
+      })),
+    };
+    render(React.createElement(ProductPage, { model: unavailableModel }));
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+    expect(
+      screen
+        .getAllByRole('button', { name: 'Добавить в корзину', hidden: true })
+        .every((control) => (control as HTMLButtonElement).disabled),
+    ).toBe(true);
   });
 });

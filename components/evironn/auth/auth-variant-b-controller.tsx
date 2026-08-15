@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { registerUser } from '@/app/actions/auth';
 import { ensureVerificationGate, resendVerificationCode, verifyEmailCode } from '@/app/actions/verification';
 import { safeCallbackUrl } from '@/lib/safe-redirect';
@@ -36,16 +37,13 @@ function zodErrors(error: { issues: Array<{ path: (string | number)[]; message: 
   return Object.fromEntries(error.issues.map((issue) => [String(issue.path[0]), issue.message]));
 }
 
-function navigate(callbackUrl: string) {
-  window.location.assign(safeCallbackUrl(callbackUrl));
-}
-
 export function AuthVariantBController({
   initialMode,
   callbackUrl,
   initialVerificationPending,
   oauthError,
 }: AuthVariantBControllerProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<AuthVariantBMode>(initialVerificationPending ? 'verify' : initialMode);
   const [values, setValues] = useState<AuthVariantBValues>(emptyAuthVariantBValues);
   const [errors, setErrors] = useState<AuthVariantBErrors>({});
@@ -87,7 +85,7 @@ export function AuthVariantBController({
         setError('Неверный email или пароль');
         return;
       }
-      navigate(safeCallback);
+      router.push(safeCallback);
     } catch {
       setError('Неверный email или пароль');
     } finally {
@@ -141,7 +139,7 @@ export function AuthVariantBController({
     try {
       const result = await verifyEmailCode(parsed.data);
       if (result.ok) {
-        navigate(safeCallback);
+        router.push(safeCallback);
         return;
       }
       setErrors({ code: VERIFY_MESSAGES[result.reason] ?? 'Не удалось подтвердить код.' });

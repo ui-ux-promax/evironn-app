@@ -171,4 +171,5 @@
 - RED: new regression set failed 6 expected contract assertions and emitted one unhandled rejection from the old line consumer. Test isolation correction rerun retained expected production failures.
 - GREEN: focused regression command passed 5 files / 28 tests; affected cart/presentation/store, related cart, product summary, cart line, storefront shell, and PDP command passed 15 files / 77 tests.
 - `npm run typecheck` passed. Touched source/test Prettier check passed. `git diff --check` passed.
-- Current state: remediation evidence complete, fresh Task 3 review pending. No full gate, build, E2E, push, PR, merge, or Task 4 work.
+- Fresh Task 3 review approved: Critical 0 / Important 0 / Minor 0. Review range `2e3ec75..d6dab3b`; exact DTO/error contract, server authority, retries, owner scope, and Phase 2 preservation confirmed.
+- Task 3: complete (commits `671f80a..d6dab3b`, review clean; Critical 0 / Important 0 / Minor 0). No full gate, build, E2E, push, PR, or merge.

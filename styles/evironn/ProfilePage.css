@@ -539,6 +539,9 @@
   font-size: 22px;
   font-weight: 500;
 }
+.prf__subsection form > .chk-submit {
+  margin-top: 16px;
+}
 .prf__strength {
   display: flex;
   gap: 6px;

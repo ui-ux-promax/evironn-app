@@ -60,7 +60,11 @@ describe('production profile Variant A source contract', () => {
     expect(css).toMatch(/@media \(max-width: 580px\)/);
     expect(css).toMatch(/\.prf__favorites[\s\S]*grid-template-columns/);
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      'e55a53ded3f4fd65dfc341470a0f686e8b3b9a4402d26a21ba9ae298a713ea10',
+      '47fa4a0e6fb846e9ff5cc70f9e6bda443ebe40dea54b2c83f017aab43ab98e08',
     );
+  });
+
+  it('adds separation above the password submit button', () => {
+    expect(css).toMatch(/\.prf__subsection form > \.chk-submit\s*\{[\s\S]*margin-top:\s*16px;/);
   });
 });

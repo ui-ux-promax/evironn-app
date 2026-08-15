@@ -111,7 +111,10 @@ test('displays favorites, removes them, and adds canonical SKU to cart', async (
   expect(cart.totals.itemCount).toBeGreaterThan(0);
   await expect(page.getByRole('link', { name: `Корзина (${cart.totals.itemCount})` })).toBeVisible();
 
-  await expectServerActionSuccess(page, () => page.getByRole('button', { name: /Убрать .* из избранного/ }).click());
+  const favoriteControls = page.locator('.prf__favorite > div');
+  await expectServerActionSuccess(page, () =>
+    favoriteControls.getByRole('button', { name: /Убрать .* из избранного/ }).click(),
+  );
   await page.reload();
   await page.getByRole('button', { name: 'Избранное' }).click();
   await expect(page.getByText('Избранное пока пусто')).toBeVisible();

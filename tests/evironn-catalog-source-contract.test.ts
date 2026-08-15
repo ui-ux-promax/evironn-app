@@ -42,6 +42,9 @@ describe('Evironn catalog source boundary', () => {
     assertImport(shellSource, 'CatalogBModel', '@/components/evironn/catalog/catalog-variant-b-adapter');
     assertImport(cardSource, 'CatalogBCard', '@/components/evironn/catalog/catalog-variant-b-adapter');
     expect(shellSource).toContain('initialWishlistedIds');
+    expect(shellSource).toMatch(/initialWishlistedIds:\s*string\[\]/);
+    expect(shellSource).not.toMatch(/initialWishlistedIds\?:\s*string\[\]/);
+    expect(shellSource).not.toContain('initialWishlistedIds = []');
     expect(shellSource).toContain('toggleWishlist');
     expect(cardSource).toContain('wishlisted');
     expect(cardSource).toContain('onWishlistToggle');

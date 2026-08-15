@@ -208,10 +208,10 @@ function FacetControl({
 
 export function CatalogVariantB({
   model,
-  initialWishlistedIds = [],
+  initialWishlistedIds,
 }: {
   model: CatalogBModel;
-  initialWishlistedIds?: string[];
+  initialWishlistedIds: string[];
 }): React.ReactElement {
   const router = useRouter();
   const pathname = usePathname();

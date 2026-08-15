@@ -198,3 +198,12 @@
 - GREEN: `npx vitest run tests/evironn-catalog-variant-b.test.tsx` passed 1 file / 11 tests.
 - Prettier check for touched test passed. `git diff --check` passed. Typecheck skipped because change is test-only.
 - No full gate, build, E2E, or broader focused suite rerun per stop instruction. Report: `.superpowers/sdd/phase-3-task-4-report.md`.
+
+### Phase 3 Task 4 Important review remediation — 2026-08-15
+
+- Made `CatalogVariantB.initialWishlistedIds` required as `string[]`; removed the default empty-array allocation.
+- Root cause: omitted prop recreated `[]` on every render, while the synchronization effect created a fresh `Set` and scheduled an unbounded rerender.
+- Verified production route and all test renders pass explicit arrays; accepted Catalog Variant B markup and controlled wishlist behavior preserved.
+- RED: source-contract test failed on optional/default prop contract.
+- GREEN: focused Catalog Variant B/wishlist/source suites passed 3 files / 17 tests; `npm run typecheck` passed.
+- Full gate, build, E2E, and unrelated suites not run per Task 4 scope. Report: `.superpowers/sdd/phase-3-task-4-report.md`.

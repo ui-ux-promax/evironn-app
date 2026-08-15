@@ -225,3 +225,11 @@
 - Display-only configuration swatches retain noninteractive `span` semantics with clone-compatible geometry/state CSS. Disabled mobile checkout button now receives clone CTA geometry and responsive padding without enabling checkout.
 - RED: route/CSS contract assertions failed before fixes. GREEN: focused cart/catalog/product command passed 12 files / 82 tests; typecheck, Prettier, and `git diff --check` passed.
 - Full gate, build, and all E2E not run per remediation scope. Report: `.superpowers/sdd/phase-3-task-5-report.md`.
+
+### Phase 3 Task 5 final approval — 2026-08-15
+
+- Closed review findings across six remediation commits: controlled wishlist/count refresh and rollback; canonical related route boundary; complete coupon snapshots with external cart-mutation invalidation; honest E2E stock/coupon assertions; clone-compatible swatch/mobile CTA styling; and rejection handlers for clear/related-add/undo mutations.
+- Related product query is constrained to the supported PDP slug; unsupported related products have no navigable URL and cannot route to the wrong product.
+- Fresh focused evidence across remediation passed, including 43/43 and 23/23 targeted checks, typecheck, Prettier, and `git diff --check`. Playwright remains blocked by absent disposable database write keys; no ambient DB used.
+- Final Sol review approved the full Task 5 delivery diff `d65edec..4a04579`: Critical 0 / Important 0. No full gate, build, push, PR, merge, or Task 6 work started.
+- Task 5: complete (commits `ae04de0..4a04579`, review clean). Resume from Task 6 implementation.

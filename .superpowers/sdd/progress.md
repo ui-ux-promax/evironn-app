@@ -233,3 +233,11 @@
 - Fresh focused evidence across remediation passed, including 43/43 and 23/23 targeted checks, typecheck, Prettier, and `git diff --check`. Playwright remains blocked by absent disposable database write keys; no ambient DB used.
 - Final Sol review approved the full Task 5 delivery diff `d65edec..4a04579`: Critical 0 / Important 0. No full gate, build, push, PR, merge, or Task 6 work started.
 - Task 5: complete (commits `ae04de0..4a04579`, review clean). Resume from Task 6 implementation.
+
+## Phase 3 commerce and authentication — Task 6
+
+- Task 6 implementation is complete in the focused working tree. `ProfilePageDto` and `getProfilePageDto` use bounded, owner-scoped Prisma selections, ISO dates, initials, counts, active canonical furniture favorites, deterministic default-first addresses, and immutable order-item snapshot lines formatted through `formatOrderItemConfiguration`.
+- Profile updates never forward email. Password updates require current-password verification, validate replacement input, and write only the replacement hash. Address mutations enforce owner scope, exactly one default address, first-address defaulting, oldest-address promotion after default deletion, serializable transactions, and three bounded P2034 retries with fresh owned-address rereads.
+- TDD RED was observed for the missing DTO, incomplete address invariants, and malformed password input. GREEN focused Vitest passed 6 files / 38 tests; `npm run typecheck` passed; touched-file Prettier check passed.
+- Report: `.superpowers/sdd/phase-3-task-6-report.md`. Full gate, build, and all E2E were not run by Task 6 scope. Existing untracked plans remain preserved and unmodified.
+- Task 6: complete in the working tree; commit subject is reserved as `feat: harden profile data boundaries`.

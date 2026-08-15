@@ -234,6 +234,13 @@
 - Final Sol review approved the full Task 5 delivery diff `d65edec..4a04579`: Critical 0 / Important 0. No full gate, build, push, PR, merge, or Task 6 work started.
 - Task 5: complete (commits `ae04de0..4a04579`, review clean). Resume from Task 6 implementation.
 
+## Phase 3 Task 6 — profile, password, and address boundaries
+
+- Task 6 adds bounded `ProfilePageDto` serialization and authenticated profile reads, immutable order-item snapshots, canonical furniture-card adaptation, password current-secret/hash enforcement, and owner-scoped address actions with exactly-one-default invariants and bounded transaction retries.
+- GREEN: focused profile/password/address/update-profile command passed 6 files / 38 tests; typecheck, touched-file Prettier, and `git diff --check` passed. Playwright/full gate/build not run per task scope.
+- Fresh Sol review approved `f218448..93bea3b`: Critical 0 / Important 0 / Minor 0. No schema, auth-model, UI, order-mutation, or Phase 4 scope entered.
+- Task 6: complete (commit `93bea3b`, review clean). Resume from Task 7 implementation.
+
 ## Phase 3 commerce and authentication — Task 6
 
 - Task 6 implementation is complete in the focused working tree. `ProfilePageDto` and `getProfilePageDto` use bounded, owner-scoped Prisma selections, ISO dates, initials, counts, active canonical furniture favorites, deterministic default-first addresses, and immutable order-item snapshot lines formatted through `formatOrderItemConfiguration`.

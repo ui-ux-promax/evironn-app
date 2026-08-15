@@ -121,6 +121,8 @@ describe('showcase ProductPage purchase controls', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Добавить в корзину' }));
 
-    await waitFor(() => expect(within(dialog).getByRole('alert')).toHaveTextContent('Не удалось добавить товар в корзину'));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('alert')).toHaveTextContent('Не удалось добавить товар в корзину'),
+    );
   });
 });

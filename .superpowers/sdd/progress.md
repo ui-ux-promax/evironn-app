@@ -280,6 +280,13 @@
 - Final Sol review approved full Task 7 delivery diff `0bce983..912e49d`: Critical 0 / Important 0. Profile E2E remains guarded by absent disposable database keys; no ambient DB used.
 - Task 7: complete (commits `da49ee2..912e49d`, review clean). Resume from Task 8 implementation.
 
+## Phase 3 Task 8 — purchase-gated review readiness
+
+- Task 8 consolidates the server-owned purchase predicate across eligibility, canReview, submit, and pruning. Canonical SKU and legacy ProductVariant fallback are supported; online payment/cancellation and delivered-COD gates are enforced; pending/processing COD cannot qualify; duplicate submit races remain safe.
+- Added Phase 3 integration contract with a complete 114-file delivery manifest, forbidden-path coverage, canonical cart/wishlist/profile boundaries, unchanged schema contract, and no Phase 4 UI/checkout/payment/order/admin/performance scope. Review readiness uses a guarded deterministic seeded-order ownership probe and creates no fixtures.
+- GREEN: focused review/integration command passed 9 files / 74 tests; typecheck, Prettier, and `git diff --check` passed. E2E remains blocked by absent disposable database keys; no ambient DB used.
+- Final Sol review approved `b521a00..6b65f48`: Critical 0 / Important 0. Task 8 complete (commits `9862c59..6b65f48`, review clean). Resume from Task 9 completion gate.
+
 ## Phase 3 commerce and authentication — Task 8
 
 - Centralized the owner/product qualifying-purchase predicate in `lib/review.ts`. Canonical SKU and legacy ProductVariant order lines remain read-compatible; online orders require successful payment and non-cancelled status; COD requires `DELIVERED`.

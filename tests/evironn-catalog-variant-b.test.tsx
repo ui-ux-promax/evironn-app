@@ -8,7 +8,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CatalogVariantB } from '@/components/evironn/catalog/catalog-variant-b';
 import type { CatalogBModel } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 
-const push = vi.fn();
+const { push, toggleMock } = vi.hoisted(() => ({
+  push: vi.fn(),
+  toggleMock: vi.fn(),
+}));
 let currentQuery = new URLSearchParams();
 
 vi.mock('next/navigation', () => ({
@@ -16,6 +19,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace: vi.fn() }),
   useSearchParams: () => currentQuery,
 }));
+
+vi.mock('@/app/actions/wishlist', () => ({ toggleWishlist: toggleMock }));
 
 vi.mock('@/components/evironn/catalog/catalog-card', () => ({
   CatalogCard: ({ product }: { product: CatalogBModel['cards'][number] }) => (
@@ -76,6 +81,7 @@ const modelFixture: CatalogBModel = {
   ],
   price: { min: 89000, max: 89000 },
 };
+const initialWishlistedIds: string[] = [];
 
 describe('Catalog Variant B shell', () => {
   afterEach(() => {
@@ -102,7 +108,7 @@ describe('Catalog Variant B shell', () => {
   });
 
   it('composes Variant B shell from serializable model', () => {
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
 
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
     expect(screen.getByRole('heading', { name: /Мебель под комнату/i })).toBeInTheDocument();
@@ -115,7 +121,7 @@ describe('Catalog Variant B shell', () => {
   });
 
   it('opens drawer with filter controls and closes on Escape', () => {
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
 
     fireEvent.click(screen.getByRole('button', { name: '\u0424\u0438\u043b\u044c\u0442\u0440\u044b' }));
     expect(screen.getByRole('dialog', { name: '\u0424\u0438\u043b\u044c\u0442\u0440\u044b' })).toBeVisible();
@@ -127,7 +133,7 @@ describe('Catalog Variant B shell', () => {
 
   it('resets page on room and sort changes', () => {
     currentQuery = new URLSearchParams('room=living&sort=new&page=3');
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
     fireEvent.click(screen.getAllByRole('tab')[3]);
     expect(push).toHaveBeenLastCalledWith('/catalog?room=bedroom&sort=new');
     fireEvent.click(document.querySelectorAll('.cat-b__seg-control--sm button')[2]);
@@ -136,7 +142,7 @@ describe('Catalog Variant B shell', () => {
 
   it('keeps drawer facet changes local until apply and restores body scroll on scrim', () => {
     document.body.style.overflow = 'clip';
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
     fireEvent.click(screen.getByRole('button', { name: 'Фильтры' }));
     const drawer = document.querySelector('.cat-b__drawer') as HTMLElement;
     fireEvent.click(within(drawer).getAllByRole('button')[1]);
@@ -149,7 +155,7 @@ describe('Catalog Variant B shell', () => {
 
   it('renders price chips and removes one price bound without losing URL state', () => {
     currentQuery = new URLSearchParams('priceFrom=1000&priceTo=5000&inStock=1&page=2');
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
 
     expect(screen.getByRole('button', { name: /1\s*000/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /5\s*000/ })).toBeInTheDocument();
@@ -158,7 +164,7 @@ describe('Catalog Variant B shell', () => {
   });
 
   it('uses exact facet counts when one draft facet is changed', () => {
-    render(<CatalogVariantB model={{ ...modelFixture, total: 12 }} />);
+    render(<CatalogVariantB model={{ ...modelFixture, total: 12 }} initialWishlistedIds={initialWishlistedIds} />);
 
     fireEvent.click(document.querySelector('.cat-b__filter-button')!);
     const drawer = screen.getByRole('dialog');
@@ -172,7 +178,7 @@ describe('Catalog Variant B shell', () => {
   });
 
   it('does not present an unknown deferred count as zero', () => {
-    render(<CatalogVariantB model={{ ...modelFixture, total: 12 }} />);
+    render(<CatalogVariantB model={{ ...modelFixture, total: 12 }} initialWishlistedIds={initialWishlistedIds} />);
 
     fireEvent.click(document.querySelector('.cat-b__filter-button')!);
     const drawer = screen.getByRole('dialog');
@@ -183,7 +189,7 @@ describe('Catalog Variant B shell', () => {
   });
 
   it('opens an accessible dialog, traps Tab, closes on Escape, and restores trigger focus', () => {
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
 
     const trigger = screen.getByRole('button', { name: /Фильтры/ });
     fireEvent.click(trigger);
@@ -203,7 +209,7 @@ describe('Catalog Variant B shell', () => {
   });
 
   it('preserves clone sort labels and order while using canonical sort values', () => {
-    render(<CatalogVariantB model={modelFixture} />);
+    render(<CatalogVariantB model={modelFixture} initialWishlistedIds={initialWishlistedIds} />);
     const sort = document.querySelector('.cat-b__sort') as HTMLElement;
     expect(
       within(sort)
@@ -220,7 +226,7 @@ describe('Catalog Variant B shell', () => {
     });
     const scrollIntoView = vi.fn();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
-    render(<CatalogVariantB model={{ ...modelFixture, totalPages: 2 }} />);
+    render(<CatalogVariantB model={{ ...modelFixture, totalPages: 2 }} initialWishlistedIds={initialWishlistedIds} />);
     fireEvent.click(screen.getByRole('button', { name: 'Сбросить всё' }));
     expect(push).toHaveBeenLastCalledWith('/catalog');
     fireEvent.click(screen.getByRole('button', { name: '2' }));

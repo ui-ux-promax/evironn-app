@@ -190,3 +190,11 @@
 - RED: baseline focused catalog/profile run failed 2 stale card assertions; `npm run typecheck` failed canonical wishlist to legacy profile prop assignment.
 - GREEN: focused Vitest passed 7 files / 48 tests; typecheck passed; Prettier passed; `git diff --check` passed.
 - Broader `tests/evironn-catalog-variant-b.test.tsx` is blocked before tests by the local `next-auth` `next\\server` module-resolution error. No full gate/build/E2E run.
+
+### Phase 3 Task 4 legacy suite mock remediation — 2026-08-15
+
+- Added a hoisted `@/app/actions/wishlist` mock to `tests/evironn-catalog-variant-b.test.tsx`; production Catalog Variant B controlled wishlist behavior and assertions remain unchanged.
+- Legacy suite initially exposed a test-fixture loop after collection unblocked: omitted `initialWishlistedIds` recreated the default array on every render. The test now passes one stable empty array; production code unchanged.
+- GREEN: `npx vitest run tests/evironn-catalog-variant-b.test.tsx` passed 1 file / 11 tests.
+- Prettier check for touched test passed. `git diff --check` passed. Typecheck skipped because change is test-only.
+- No full gate, build, E2E, or broader focused suite rerun per stop instruction. Report: `.superpowers/sdd/phase-3-task-4-report.md`.

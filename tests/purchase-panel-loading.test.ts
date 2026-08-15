@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import React from 'react';
 import { readFileSync } from 'node:fs';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProductPage from '@/components/evironn/product/ProductPage';
@@ -117,8 +117,10 @@ describe('showcase ProductPage purchase controls', () => {
     cartMock.addCartItem.mockRejectedValueOnce(new Error('Недостаточно на складе'));
     render(React.createElement(ProductPage, { model }));
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Добавить в корзину', hidden: true })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Добавить в корзину' }));
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Не удалось добавить товар в корзину'));
+    await waitFor(() => expect(within(dialog).getByRole('alert')).toHaveTextContent('Не удалось добавить товар в корзину'));
   });
 });

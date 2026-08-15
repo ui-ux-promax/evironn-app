@@ -298,6 +298,20 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(mocks.addCartItem).toHaveBeenCalledWith({ skuId: 'sku-noma-walnut', quantity: 1 }));
   });
 
+  it('does not send a legacy ProductVariant id through the canonical undo write', async () => {
+    const legacyLine = { ...line, id: 'legacy-line', skuId: 'legacy-variant', isLegacy: true };
+    renderCart(cart([legacyLine]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+    mocks.removeCartItem.mockResolvedValue(empty);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить Noma Woven Lounge' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Вернуть/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Вернуть/ }));
+
+    expect(mocks.addCartItem).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Устаревшую позицию нельзя вернуть');
+  });
+
   it('saves idempotently before delete and confirms saved item', async () => {
     renderCart();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());

@@ -389,6 +389,11 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                     <span>Добавить в корзину</span>
                     <FiArrowUpRight aria-hidden="true" />
                   </motion.button>
+                  {cartAddError ? (
+                    <p className="product-page__cart-error" role="alert">
+                      {cartAddError}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="product-page__360-viewer">
                   <button
@@ -561,7 +566,7 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
             >
               Добавить в корзину
             </button>
-            {cartAddError ? (
+            {!is360Active && cartAddError ? (
               <p className="product-page__cart-error" role="alert">
                 {cartAddError}
               </p>

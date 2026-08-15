@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildProductCardData, type ProductForCard } from '@/lib/product-summary';
+import { buildProductCardData, productCardInclude, type ProductForCard } from '@/lib/product-summary';
 
 function fake(overrides: Partial<ProductForCard> = {}): ProductForCard {
   return {
@@ -61,5 +61,21 @@ describe('buildProductCardData', () => {
     const d = buildProductCardData(f, now, cfg);
     expect(d.soldOut).toBe(true);
     expect(d.badges).toEqual([{ tone: 'soldout', label: 'Распродано' }]);
+  });
+
+  it('uses only an active in-stock SKU as canonical cart identity', () => {
+    const d = buildProductCardData(
+      fake({
+        skus: [
+          { id: 'sku-sold-out', stock: 0 },
+          { id: 'sku-live', stock: 2 },
+        ] as never,
+      }),
+      now,
+      cfg,
+    );
+
+    expect(productCardInclude.skus).toMatchObject({ where: { active: true, stock: { gt: 0 } } });
+    expect(d.canonicalSkuId).toBe('sku-live');
   });
 });

@@ -55,13 +55,19 @@ beforeEach(() => {
 
 describe('cart store canonical snapshots', () => {
   it('replaces items and totals from every server response', async () => {
-    api.getCart.mockResolvedValue(snapshot(100));
-    await useCartStore.getState().fetchCartItems();
-    api.addCartItem.mockResolvedValue(snapshot(200, 2));
-    await useCartStore.getState().addCartItem({ skuId: 'sku-1', quantity: 1 });
-    api.updateItemQuantity.mockResolvedValue(snapshot(300, 3));
-    await useCartStore.getState().updateItemQuantity('line-1', 3);
-    api.removeCartItem.mockResolvedValue({
+    const fetched = snapshot(100);
+    api.getCart.mockResolvedValue(fetched);
+    expect(await useCartStore.getState().fetchCartItems()).toBe(fetched);
+
+    const added = snapshot(200, 2);
+    api.addCartItem.mockResolvedValue(added);
+    expect(await useCartStore.getState().addCartItem({ skuId: 'sku-1', quantity: 1 })).toBe(added);
+
+    const updated = snapshot(300, 3);
+    api.updateItemQuantity.mockResolvedValue(updated);
+    expect(await useCartStore.getState().updateItemQuantity('line-1', 3)).toBe(updated);
+
+    const removed: CartDto = {
       items: [],
       totals: {
         subtotal: 0,
@@ -72,8 +78,14 @@ describe('cart store canonical snapshots', () => {
         itemCount: 0,
         lineCount: 0,
       },
-    });
-    await useCartStore.getState().removeCartItem('line-1');
+    };
+    api.removeCartItem.mockResolvedValue(removed);
+    expect(await useCartStore.getState().removeCartItem('line-1')).toBe(removed);
+
+    const cleared: CartDto = { ...removed };
+    api.clearCart.mockResolvedValue(cleared);
+    expect(await useCartStore.getState().clearCart()).toBe(cleared);
+
     expect(useCartStore.getState().totalAmount).toBe(0);
     expect(useCartStore.getState().totals.itemCount).toBe(0);
   });

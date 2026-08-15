@@ -17,6 +17,8 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartLineDto; 
     setIsUpdatingQuantity(true);
     try {
       await updateItemQuantity(item.id, quantity);
+    } catch {
+      /* store sets visible error state */
     } finally {
       setIsUpdatingQuantity(false);
     }
@@ -115,7 +117,7 @@ export function CartLineItem({ item, wishlisted = false }: { item: CartLineDto; 
         <button
           type="button"
           aria-label="Удалить"
-          onClick={() => removeCartItem(item.id)}
+          onClick={() => void removeCartItem(item.id).catch(() => undefined)}
           className="w-[34px] h-[34px] grid place-items-center rounded-full border border-transparent text-ink-muted hover:text-danger hover:border-danger/40 transition-colors"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

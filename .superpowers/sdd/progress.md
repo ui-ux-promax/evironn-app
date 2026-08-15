@@ -164,3 +164,11 @@
 - Task 3 re-review is blocked with Critical 0 / Important 4 / Minor 0. Required next remediation: map malformed JSON to nested `INVALID_INPUT` HTTP 400; make every cart store action return `Promise<CartDto>` after replacing the server snapshot; select only in-stock related-cart SKUs and disable missing/unavailable buttons; catch quantity/remove failures in cart-line consumers.
 - Focused evidence remains green: 14 Vitest files / 67 tests, typecheck, and Prettier. No E2E, full gate, build, push, PR, merge, or Task 4 work started. Disposable E2E keys remain absent.
 - Resume from Task 3 remediation. Do not mark Task 3 complete or start Task 4 until affected focused checks pass and fresh Task 3 review is clean.
+
+### Phase 3 Task 3 review remediation — 2026-08-15
+
+- Four requested findings addressed only: malformed POST/PATCH JSON now returns nested `INVALID_INPUT` HTTP 400; all cart-store actions return `Promise<CartDto>` and replace/return successful snapshots while mutations retain prior state and rethrow; related-cart canonical SKU projection/CTA rejects stock-zero or unavailable products; cart-line quantity/remove rejections are caught with loading cleanup preserved.
+- RED: new regression set failed 6 expected contract assertions and emitted one unhandled rejection from the old line consumer. Test isolation correction rerun retained expected production failures.
+- GREEN: focused regression command passed 5 files / 28 tests; affected cart/presentation/store, related cart, product summary, cart line, storefront shell, and PDP command passed 15 files / 77 tests.
+- `npm run typecheck` passed. Touched source/test Prettier check passed. `git diff --check` passed.
+- Current state: remediation evidence complete, fresh Task 3 review pending. No full gate, build, E2E, push, PR, merge, or Task 4 work.

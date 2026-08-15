@@ -42,6 +42,15 @@ function request(body: unknown, token = 'token-1') {
   return { cookies: { get: () => ({ value: token }) }, json: async () => body };
 }
 
+function malformedRequest(token = 'token-1') {
+  return {
+    cookies: { get: () => ({ value: token }) },
+    json: async () => {
+      throw new SyntaxError('Unexpected end of JSON input');
+    },
+  };
+}
+
 async function json(response: Response) {
   return response.json() as Promise<Record<string, unknown>>;
 }
@@ -68,6 +77,22 @@ beforeEach(() => {
 });
 
 describe('canonical cart mutation boundaries', () => {
+  it('maps malformed POST JSON to nested INVALID_INPUT instead of generic 500', async () => {
+    const response = await POST(malformedRequest() as never);
+
+    expect(response.status).toBe(400);
+    expect(await json(response)).toEqual({ error: { code: 'INVALID_INPUT', message: 'Некорректные данные' } });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('maps malformed PATCH JSON to nested INVALID_INPUT instead of generic 500', async () => {
+    const response = await PATCH(malformedRequest() as never, { params: Promise.resolve({ id: 'line-1' }) });
+
+    expect(response.status).toBe(400);
+    expect(await json(response)).toEqual({ error: { code: 'INVALID_INPUT', message: 'Некорректное количество' } });
+    expect(cartItem.findFirst).not.toHaveBeenCalled();
+  });
+
   it('accepts only canonical skuId and writes inside a serializable transaction', async () => {
     const response = await POST(request({ skuId: 'sku-1', quantity: 1 }) as never);
     expect(response.status).toBe(200);

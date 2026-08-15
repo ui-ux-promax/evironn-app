@@ -9,11 +9,11 @@ export interface CartState {
   totalAmount: number;
   items: CartLineDto[];
   totals: CartTotalsDto;
-  fetchCartItems: () => Promise<void>;
-  addCartItem: (values: CreateCartItemValues) => Promise<void>;
-  updateItemQuantity: (id: string, quantity: number) => Promise<void>;
-  removeCartItem: (id: string) => Promise<void>;
-  clearCart: () => Promise<void>;
+  fetchCartItems: () => Promise<CartDto>;
+  addCartItem: (values: CreateCartItemValues) => Promise<CartDto>;
+  updateItemQuantity: (id: string, quantity: number) => Promise<CartDto>;
+  removeCartItem: (id: string) => Promise<CartDto>;
+  clearCart: () => Promise<CartDto>;
 }
 
 const emptyTotals: CartTotalsDto = {
@@ -30,7 +30,7 @@ function setSnapshot(data: CartDto): Pick<CartState, 'items' | 'totals' | 'total
   return { items: data.items, totals: data.totals, totalAmount: data.totals.subtotal };
 }
 
-export const useCartStore = create<CartState>((set) => ({
+export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   totals: emptyTotals,
   error: false,
@@ -40,10 +40,13 @@ export const useCartStore = create<CartState>((set) => ({
   fetchCartItems: async () => {
     try {
       set({ loading: true, error: false });
-      set(setSnapshot(await Api.cart.getCart()));
+      const data = await Api.cart.getCart();
+      set(setSnapshot(data));
+      return data;
     } catch (error) {
       console.error(error);
       set({ error: true });
+      return { items: get().items, totals: get().totals };
     } finally {
       set({ loading: false });
     }
@@ -52,7 +55,9 @@ export const useCartStore = create<CartState>((set) => ({
   addCartItem: async (values) => {
     try {
       set({ loading: true, error: false });
-      set(setSnapshot(await Api.cart.addCartItem(values)));
+      const data = await Api.cart.addCartItem(values);
+      set(setSnapshot(data));
+      return data;
     } catch (error) {
       console.error(error);
       set({ error: true });
@@ -65,7 +70,9 @@ export const useCartStore = create<CartState>((set) => ({
   updateItemQuantity: async (id, quantity) => {
     try {
       set({ loading: true, error: false });
-      set(setSnapshot(await Api.cart.updateItemQuantity(id, quantity)));
+      const data = await Api.cart.updateItemQuantity(id, quantity);
+      set(setSnapshot(data));
+      return data;
     } catch (error) {
       console.error(error);
       set({ error: true });
@@ -78,7 +85,9 @@ export const useCartStore = create<CartState>((set) => ({
   removeCartItem: async (id) => {
     try {
       set({ loading: true, error: false });
-      set(setSnapshot(await Api.cart.removeCartItem(id)));
+      const data = await Api.cart.removeCartItem(id);
+      set(setSnapshot(data));
+      return data;
     } catch (error) {
       console.error(error);
       set({ error: true });
@@ -91,7 +100,9 @@ export const useCartStore = create<CartState>((set) => ({
   clearCart: async () => {
     try {
       set({ loading: true, error: false });
-      set(setSnapshot(await Api.cart.clearCart()));
+      const data = await Api.cart.clearCart();
+      set(setSnapshot(data));
+      return data;
     } catch (error) {
       console.error(error);
       set({ error: true });

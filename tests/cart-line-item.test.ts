@@ -1,11 +1,12 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CartLineItem } from '@/components/shared/cart/cart-line-item';
 import type { CartLineDto } from '@/services/dto/commerce-cart.dto';
 
 const updateItemQuantity = vi.hoisted(() => vi.fn());
+const removeCartItem = vi.hoisted(() => vi.fn());
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 vi.mock('next/image', () => ({
@@ -15,9 +16,9 @@ vi.mock('@/store', () => ({
   useCartStore: (
     selector: (state: {
       updateItemQuantity: typeof updateItemQuantity;
-      removeCartItem: () => Promise<void>;
+      removeCartItem: typeof removeCartItem;
     }) => unknown,
-  ) => selector({ updateItemQuantity, removeCartItem: vi.fn() }),
+  ) => selector({ updateItemQuantity, removeCartItem }),
 }));
 vi.mock('@/components/shared/wishlist/wishlist-heart', () => ({
   WishlistHeart: () => React.createElement('button', { type: 'button' }, 'wishlist'),
@@ -45,6 +46,7 @@ const item: CartLineDto = {
 afterEach(() => {
   cleanup();
   updateItemQuantity.mockClear();
+  removeCartItem.mockClear();
 });
 
 describe('CartLineItem', () => {
@@ -63,5 +65,23 @@ describe('CartLineItem', () => {
     expect((screen.getByRole('button', { name: 'Меньше' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Больше' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByLabelText('Обновляем количество').querySelector('svg.animate-spin')).not.toBeNull();
+  });
+
+  it('swallows rejected quantity updates and clears local loading state', async () => {
+    updateItemQuantity.mockRejectedValueOnce(new Error('conflict'));
+    render(React.createElement(CartLineItem, { item }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Больше' }));
+
+    await waitFor(() => expect(screen.queryByLabelText('Обновляем количество')).toBeNull());
+  });
+
+  it('swallows rejected remove requests so the consumer has no unhandled promise', async () => {
+    removeCartItem.mockRejectedValueOnce(new Error('conflict'));
+    render(React.createElement(CartLineItem, { item }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => expect(removeCartItem).toHaveBeenCalledWith(item.id));
   });
 });

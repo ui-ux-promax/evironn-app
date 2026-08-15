@@ -46,7 +46,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     try {
       const { id } = await params;
       const owner = await resolveItemOwner(req);
-      const parsed = updateQuantitySchema.safeParse(await req.json());
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        throw new CartItemRouteError('INVALID_INPUT', 400, 'Некорректное количество');
+      }
+      const parsed = updateQuantitySchema.safeParse(body);
       if (!parsed.success) throw new CartItemRouteError('INVALID_INPUT', 400, 'Некорректное количество');
 
       const item = await prisma.cartItem.findFirst({

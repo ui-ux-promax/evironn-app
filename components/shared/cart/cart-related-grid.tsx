@@ -18,6 +18,7 @@ export function CartRelatedGrid({ items }: { items: ProductCardData[] }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
         {items.map((p) => {
           const isAdding = addingProductIds.has(p.id);
+          const unavailable = !p.canonicalSkuId || p.soldOut;
           return (
             <article
               key={p.slug}
@@ -47,23 +48,21 @@ export function CartRelatedGrid({ items }: { items: ProductCardData[] }) {
                   type="button"
                   aria-label={`Добавить ${p.name}`}
                   onClick={async () => {
-                    if (isAdding) return;
-                    if (p.canonicalSkuId) {
-                      setAddingProductIds((ids) => new Set(ids).add(p.id));
-                      try {
-                        await addCartItem({ skuId: p.canonicalSkuId });
-                      } catch {
-                        /* store sets error */
-                      } finally {
-                        setAddingProductIds((ids) => {
-                          const next = new Set(ids);
-                          next.delete(p.id);
-                          return next;
-                        });
-                      }
+                    if (isAdding || unavailable || !p.canonicalSkuId) return;
+                    setAddingProductIds((ids) => new Set(ids).add(p.id));
+                    try {
+                      await addCartItem({ skuId: p.canonicalSkuId });
+                    } catch {
+                      /* store sets error */
+                    } finally {
+                      setAddingProductIds((ids) => {
+                        const next = new Set(ids);
+                        next.delete(p.id);
+                        return next;
+                      });
                     }
                   }}
-                  disabled={isAdding}
+                  disabled={isAdding || unavailable}
                   aria-busy={isAdding}
                   className="w-[34px] h-[34px] shrink-0 grid place-items-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary"
                 >

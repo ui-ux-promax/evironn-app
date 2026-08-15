@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CartRelatedGrid } from '@/components/shared/cart/cart-related-grid';
 import type { ProductCardData } from '@/lib/product-summary';
 
@@ -47,6 +47,12 @@ const items: ProductCardData[] = [
 ];
 
 describe('CartRelatedGrid', () => {
+  beforeEach(() => {
+    addCartItem.mockReset();
+  });
+
+  afterEach(cleanup);
+
   it('shows a spinner while its product is being added', () => {
     addCartItem.mockReturnValueOnce(new Promise<void>(() => {}));
     render(React.createElement(CartRelatedGrid, { items }));
@@ -57,5 +63,17 @@ describe('CartRelatedGrid', () => {
     expect((button as HTMLButtonElement).disabled).toBe(true);
     expect(button.getAttribute('aria-busy')).toBe('true');
     expect(button.querySelector('svg.animate-spin')).not.toBeNull();
+  });
+
+  it.each([
+    ['missing canonical SKU', { canonicalSkuId: null, soldOut: false }],
+    ['unavailable product', { canonicalSkuId: 'sku-1', soldOut: true }],
+  ])('disables add for %s and never submits unavailable SKU', (_name, overrides) => {
+    render(React.createElement(CartRelatedGrid, { items: [{ ...items[0], ...overrides }] }));
+
+    const button = screen.getByRole('button', { name: 'Добавить Hoodie' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(addCartItem).not.toHaveBeenCalled();
   });
 });

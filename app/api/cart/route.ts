@@ -80,7 +80,13 @@ export async function POST(req: NextRequest) {
       const rl = await checkCartRateLimit(ip);
       if (!rl.success) return tooManyRequests(rl, 'Слишком часто. Попробуйте позже');
 
-      const parsed = createCartItemSchema.safeParse(await req.json());
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return errorResponse(new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные'));
+      }
+      const parsed = createCartItemSchema.safeParse(body);
       if (!parsed.success) {
         return errorResponse(new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные'));
       }

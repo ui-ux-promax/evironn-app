@@ -26,9 +26,14 @@ test('edits profile, changes password, and signs in again', async ({ page }) => 
 
   await page.getByRole('button', { name: 'Профиль' }).click();
   await page.getByLabel('Имя и фамилия').fill('E2E Updated');
-  await page.getByRole('button', { name: 'Сохранить изменения' }).click();
-  await expect(page.getByLabel('Имя и фамилия')).toHaveValue('E2E Updated');
+  await expectServerActionSuccess(page, () => page.getByRole('button', { name: 'Сохранить изменения' }).click());
   await expect(page.getByLabel('E-mail')).toHaveAttribute('readonly', '');
+
+  await page.reload();
+  await expect(page).toHaveURL(/\/profile/);
+  await page.getByRole('button', { name: 'Профиль' }).click();
+  await expect(page.getByLabel('Имя и фамилия')).toHaveValue('E2E Updated');
+  await expect(page.locator('.prf__avatar')).toHaveText('EU');
 
   await page.getByLabel('Текущий пароль').fill(E2E_PASSWORD);
   await page.getByLabel('Новый пароль').fill('NewPassw0rd!2');

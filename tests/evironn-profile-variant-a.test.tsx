@@ -203,6 +203,36 @@ describe('Profile Variant A', () => {
     expect(mocks.refresh).toHaveBeenCalled();
   });
 
+  it('syncs refreshed DTO props without replacing an optimistic favorite mutation', async () => {
+    let resolveToggle: ((result: { ok: true; active: false }) => void) | undefined;
+    mocks.toggleWishlist.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToggle = resolve;
+        }),
+    );
+    const refreshedDto: ProfilePageDto = {
+      ...dto,
+      user: { ...dto.user, name: 'Мария Петрова', initials: 'МП' },
+      favorites: [],
+      stats: { ...dto.stats, favorites: 0 },
+    };
+    const view = render(<ProfileVariantA dto={dto} />);
+    openSection('Избранное');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать Noma из избранного' }));
+    await waitFor(() => expect(screen.queryByText('Noma')).not.toBeInTheDocument());
+
+    view.rerender(<ProfileVariantA dto={refreshedDto} />);
+
+    expect(screen.getByText('МП')).toBeInTheDocument();
+    expect(screen.queryByText('Noma')).not.toBeInTheDocument();
+    expect(screen.getByTestId('wishlisted-product-2')).toHaveTextContent('true');
+
+    resolveToggle?.({ ok: true, active: false });
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+  });
+
   it('submits profile and password forms while keeping email read-only', async () => {
     render(<ProfileVariantA dto={dto} />);
     openSection('Профиль');

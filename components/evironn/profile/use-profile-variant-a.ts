@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { addAddress, deleteAddress, setDefaultAddress } from '@/app/actions/address';
@@ -33,13 +33,45 @@ function initialsFor(name: string, email: string): string {
   return (words[0] ?? email.split('@')[0] ?? '').slice(0, 2).toUpperCase();
 }
 
+function sameValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function keepLocalUntilRefreshed<T>(local: T, previousDto: T, nextDto: T): T {
+  return !sameValue(local, previousDto) && !sameValue(nextDto, local) ? local : nextDto;
+}
+
 export function useProfileVariantA(dto: ProfilePageDto) {
   const router = useRouter();
   const addCartItem = useCartStore((state) => state.addCartItem);
   const [data, setData] = useState(dto);
+  const previousDto = useRef(dto);
   const [section, setSection] = useState<ProfileSection>('overview');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const prior = previousDto.current;
+    previousDto.current = dto;
+    if (prior === dto) return;
+
+    setData((current) => {
+      const favorites = keepLocalUntilRefreshed(current.favorites, prior.favorites, dto.favorites);
+      const addresses = keepLocalUntilRefreshed(current.addresses, prior.addresses, dto.addresses);
+      const user = keepLocalUntilRefreshed(current.user, prior.user, dto.user);
+      const next = {
+        ...dto,
+        user,
+        favorites,
+        addresses,
+        stats: {
+          ...dto.stats,
+          favorites: keepLocalUntilRefreshed(current.stats.favorites, prior.stats.favorites, dto.stats.favorites),
+        },
+      };
+      return sameValue(current, next) ? current : next;
+    });
+  }, [dto]);
 
   const run = useCallback(async (operation: () => Promise<{ ok: true } | { ok: false; error: string }>) => {
     setPending(true);

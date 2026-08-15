@@ -12,27 +12,35 @@ import {
 } from '@/components/evironn/home/furniture-playback';
 import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import { formatPrice } from '@/lib/format';
+import type { WishlistMutationResult } from '@/services/dto/wishlist.dto';
 
 const finePointerQuery = '(hover: hover) and (pointer: fine)';
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
 
 type CardPhase = 'idle' | 'forward' | 'reverse';
+type ControlledCatalogCardProps = {
+  product: CatalogBCard;
+  wishlisted: boolean;
+  onWishlistToggle: (productId: string) => Promise<WishlistMutationResult>;
+  eager?: boolean;
+};
+type LegacyCatalogCardProps = { product: CatalogBCard; eager?: boolean };
 
 function badgeClass(tone: string): string {
   if (tone === 'discount') return 'sale';
   return tone;
 }
 
-export function CatalogCard({
-  product,
-  eager = false,
-}: {
-  product: CatalogBCard;
-  eager?: boolean;
-}): React.ReactElement {
+export function CatalogCard(props: ControlledCatalogCardProps): React.ReactElement;
+export function CatalogCard(props: LegacyCatalogCardProps): React.ReactElement;
+export function CatalogCard(props: ControlledCatalogCardProps | LegacyCatalogCardProps): React.ReactElement {
+  const { product, eager = false } = props;
+  const wishlisted = 'wishlisted' in props ? props.wishlisted : false;
+  const onWishlistToggle =
+    'onWishlistToggle' in props ? props.onWishlistToggle : async () => ({ ok: true, active: true });
   const [frameReady, setFrameReady] = useState(false);
   const [fallback, setFallback] = useState<MediaFallbackMode>('idle');
-  const [favorite, setFavorite] = useState(false);
+  const [wishlistPending, setWishlistPending] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const phaseRef = useRef<CardPhase>('idle');
@@ -176,11 +184,22 @@ export function CatalogCard({
         <span className="cat-card__peek">Смотреть товар</span>
       </Link>
       <button
-        className={`cat-card__fav${favorite ? ' is-on' : ''}`}
+        className={`cat-card__fav${wishlisted ? ' is-on' : ''}`}
         type="button"
-        aria-pressed={favorite}
-        aria-label={favorite ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`}
-        onClick={() => setFavorite((value) => !value)}
+        aria-pressed={wishlisted}
+        aria-label={wishlisted ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`}
+        disabled={wishlistPending}
+        onClick={async () => {
+          if (wishlistPending) return;
+          setWishlistPending(true);
+          try {
+            await onWishlistToggle(product.id);
+          } catch {
+            // The controller restores the previous server-backed state.
+          } finally {
+            setWishlistPending(false);
+          }
+        }}
       >
         <FiHeart aria-hidden="true" />
       </button>

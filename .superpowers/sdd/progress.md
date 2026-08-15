@@ -173,3 +173,13 @@
 - `npm run typecheck` passed. Touched source/test Prettier check passed. `git diff --check` passed.
 - Fresh Task 3 review approved: Critical 0 / Important 0 / Minor 0. Review range `2e3ec75..d6dab3b`; exact DTO/error contract, server authority, retries, owner scope, and Phase 2 preservation confirmed.
 - Task 3: complete (commits `671f80a..d6dab3b`, review clean; Critical 0 / Important 0 / Minor 0). No full gate, build, E2E, push, PR, or merge.
+
+## Phase 3 commerce and authentication — Task 4
+
+- Task 4 implementation connects canonical guest/account wishlist state to Catalog Variant B. `getWishlistItems` now uses the active furniture projection; `addToWishlist` is idempotent and server-authoritative; `toggleWishlist` preserves toggle/merge foundations while rejecting inactive products; catalog hearts use server-provided IDs and controlled successful mutation results; count reads remain no-create and active-product scoped.
+- TDD RED: the required five-file Vitest command failed with the expected missing canonical projection, mutation action, controlled catalog props/controller, and source-contract assertions.
+- TDD GREEN: `npx vitest run tests/wishlist.test.ts tests/toggle-wishlist.test.ts tests/wishlist-count-route.test.ts tests/evironn-catalog-wishlist.test.tsx tests/evironn-catalog-source-contract.test.ts` passed 5 files / 34 tests.
+- Required touched-file Prettier check passed. `git diff --check` passed.
+- `npm run typecheck` reports the unowned legacy profile consumer mismatch: `app/(shop)/profile/page.tsx` still expects `ProductCardData[]` while canonical wishlist reads return `FurnitureProductCardData[]`. The preserved legacy catalog-card test also expects retired local favorite behavior; neither file was changed because both are outside exact Task 4 ownership.
+- Playwright skipped because disposable E2E keys are absent. No ambient database used. Full gate, build, and all E2E intentionally not run.
+- Report: `.superpowers/sdd/phase-3-task-4-report.md`.

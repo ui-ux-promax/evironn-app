@@ -26,12 +26,23 @@ export async function expectNoEnabledReviewSubmission(page: Page): Promise<void>
 }
 
 export async function expectProtectedOrderBoundary(page: Page): Promise<void> {
-  // Probe order 1 without creating an order fixture. A fresh E2E user cannot own it;
-  // if it exists, owner scoping must still prevent its contents from rendering.
-  const foreignOrderPath = '/orders/1';
+  const probeResponse = await page.request.get('/api/e2e/phase3-probe', {
+    headers: { 'x-e2e-read-only': '1' },
+  });
+  expect(probeResponse.ok(), 'Disposable E2E seed must expose a foreign order through the read-only probe API').toBe(
+    true,
+  );
+
+  const probe = (await probeResponse.json()) as { foreignOrderNumber?: unknown; error?: unknown };
+  expect(
+    Number.isSafeInteger(probe.foreignOrderNumber),
+    `Foreign order probe failed: ${String(probe.error ?? 'invalid response')}`,
+  ).toBe(true);
+
+  const foreignOrderPath = `/orders/${probe.foreignOrderNumber}`;
   const authenticatedResponse = await page.goto(foreignOrderPath);
   expect(authenticatedResponse?.status()).toBe(404);
-  await expect(page.getByText('EV-1', { exact: false })).toHaveCount(0);
+  await expect(page.getByText(`EV-${probe.foreignOrderNumber}`, { exact: false })).toHaveCount(0);
 
   await page.context().clearCookies();
   await page.goto(foreignOrderPath);

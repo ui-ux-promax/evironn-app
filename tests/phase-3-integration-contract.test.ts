@@ -1,9 +1,17 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(__dirname, '..');
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), 'utf8');
+
+type DeliveryManifestEntry = { path: string; status: 'A' | 'M' | 'D' };
+type DeliveryManifest = { fileCount: number; filesSha256: string; files: DeliveryManifestEntry[] };
+
+const phase3DeliveryManifest = JSON.parse(
+  read('docs/superpowers/manifests/phase-3-delivery-manifest.json'),
+) as DeliveryManifest;
 
 // Checked-in Phase 3 source manifest. Keep this independent from repository history so
 // shallow CI can enforce the delivery boundary without needing an ancestor commit.
@@ -32,21 +40,48 @@ const phase3Files = [
   'services/dto/review.dto.ts',
 ];
 
-const phase3DeliveryFiles = [
-  ...phase3Files,
-  'tests/phase-3-integration-contract.test.ts',
-  'tests/review.test.ts',
-  'tests/submit-review.test.ts',
-  'e2e/helpers.ts',
-  'e2e/review.spec.ts',
-];
+const phase3DeliveryFiles = phase3DeliveryManifest.files.map(({ path }) => path);
 
 const forbiddenDeliveryPathPattern =
-  /(^|\/)(?:app\/\(shop\)\/(?:checkout|orders?)|\((?:checkout|payments?|orders?|admins?|perf|performance)\)(?:[-/.\/]|$)|(?:[^/]*-)?(?:checkout|payments?|orders?|admins?|perf|performance)(?:[-/.\/]|$))/i;
+  /(?:^|\/)(?:\((?:checkout|payment|payments|order|orders|admin|admins|perf|performance)\)|(?:checkout|payment|payments|order|orders|admin|admins|perf|performance)(?:[-._/]|$)|[^/]*(?:checkout|payment|payments|order|orders|admin|admins|perf|performance)(?:[-._/]|$))/i;
 
 const legacyReadCompatibilityPaths = new Set(['lib/cart-merge.ts', 'lib/order.ts', 'tests/cart-presentation.test.ts']);
-const isForbiddenDeliveryPath = (file: string) =>
-  !legacyReadCompatibilityPaths.has(file) && forbiddenDeliveryPathPattern.test(file);
+const normalizePath = (file: string) => file.replaceAll('\\', '/');
+const isForbiddenDeliveryPath = (file: string) => {
+  const normalized = normalizePath(file);
+  return !legacyReadCompatibilityPaths.has(normalized) && forbiddenDeliveryPathPattern.test(normalized);
+};
+
+const manifestFingerprint = (files: DeliveryManifestEntry[]) =>
+  createHash('sha256')
+    .update(
+      `${files
+        .map(({ path, status }) => `${status}\t${normalizePath(path)}`)
+        .sort()
+        .join('\n')}\n`,
+    )
+    .digest('hex');
+
+function validateDeliveryManifest(files: DeliveryManifestEntry[]): string[] {
+  const errors: string[] = [];
+  const paths = files.map(({ path }) => normalizePath(path));
+  const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);
+
+  if (files.length !== phase3DeliveryManifest.fileCount) errors.push('file count mismatch');
+  if (manifestFingerprint(files) !== phase3DeliveryManifest.filesSha256) errors.push('file fingerprint mismatch');
+  if (duplicates.length > 0) errors.push(`duplicate path: ${duplicates[0]}`);
+
+  for (const { path, status } of files) {
+    const normalized = normalizePath(path);
+    if (normalized !== path) errors.push(`non-canonical path: ${path}`);
+    if (status === 'D' ? existsSync(resolve(root, normalized)) : !existsSync(resolve(root, normalized))) {
+      errors.push(`status/existence mismatch: ${status} ${normalized}`);
+    }
+    if (status !== 'D' && isForbiddenDeliveryPath(normalized)) errors.push(`forbidden delivery path: ${normalized}`);
+  }
+
+  return errors;
+}
 
 describe('Phase 3 producer/consumer integration boundary', () => {
   it('names concrete Auth, cart, wishlist, profile, totals, and review boundaries', () => {
@@ -111,6 +146,40 @@ describe('Phase 3 producer/consumer integration boundary', () => {
     expect(phase3Files).not.toContain('prisma/schema.prisma');
     expect(phase3DeliveryFiles.filter(isForbiddenDeliveryPath)).toEqual([]);
     expect(read('lib/cart-merge.ts')).toContain('else if (item.productVariantId)');
+  });
+
+  it('uses a complete checked-in manifest for the delivery and rejects forbidden additions', () => {
+    expect(validateDeliveryManifest(phase3DeliveryManifest.files)).toEqual([]);
+
+    const omitted = phase3DeliveryManifest.files.slice(0, -1);
+    expect(validateDeliveryManifest(omitted)).toEqual(
+      expect.arrayContaining(['file count mismatch', 'file fingerprint mismatch']),
+    );
+
+    const withForbiddenPath = [
+      ...phase3DeliveryManifest.files,
+      { status: 'A' as const, path: 'app/(shop)/checkout/page.tsx' },
+    ];
+    expect(validateDeliveryManifest(withForbiddenPath)).toEqual(
+      expect.arrayContaining([
+        'file count mismatch',
+        'file fingerprint mismatch',
+        'forbidden delivery path: app/(shop)/checkout/page.tsx',
+      ]),
+    );
+  });
+
+  it('probes a seeded foreign order through a guarded read-only API', () => {
+    const helper = read('e2e/helpers.ts');
+    expect(helper).toContain("'/api/e2e/phase3-probe'");
+    expect(helper).toContain('foreignOrderNumber');
+    expect(helper).not.toContain("'/orders/1'");
+
+    const probe = read('app/api/e2e/phase3-probe/route.ts');
+    expect(probe).toContain("process.env.E2E_DATABASE_ALLOW_WRITES !== '1'");
+    expect(probe).toContain("const SEEDED_ORDER_EMAIL_SUFFIX = '@test.ritm.invalid'");
+    expect(probe).toContain('findFirst');
+    expect(probe).not.toMatch(/\.(create|update|upsert|delete|deleteMany)\s*\(/);
   });
 
   it('recognizes checkout, payment, order, admin, and performance path variants', () => {

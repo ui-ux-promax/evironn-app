@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Api } from '@/services/api-client';
 import type { CreateCartItemValues } from '@/services/dto/cart.dto';
 import type { CartDto, CartLineDto, CartTotalsDto } from '@/services/dto/commerce-cart.dto';
+import { useCouponStore } from './coupon';
 
 export interface CartState {
   loading: boolean;
@@ -30,6 +31,11 @@ function setSnapshot(data: CartDto): Pick<CartState, 'items' | 'totals' | 'total
   return { items: data.items, totals: data.totals, totalAmount: data.totals.subtotal };
 }
 
+function setMutationSnapshot(data: CartDto): Pick<CartState, 'items' | 'totals' | 'totalAmount'> {
+  useCouponStore.getState().clearCoupon();
+  return setSnapshot(data);
+}
+
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   totals: emptyTotals,
@@ -56,7 +62,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.addCartItem(values);
-      set(setSnapshot(data));
+      set(setMutationSnapshot(data));
       return data;
     } catch (error) {
       console.error(error);
@@ -71,7 +77,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.updateItemQuantity(id, quantity);
-      set(setSnapshot(data));
+      set(setMutationSnapshot(data));
       return data;
     } catch (error) {
       console.error(error);
@@ -86,7 +92,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.removeCartItem(id);
-      set(setSnapshot(data));
+      set(setMutationSnapshot(data));
       return data;
     } catch (error) {
       console.error(error);
@@ -101,7 +107,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.clearCart();
-      set(setSnapshot(data));
+      set(setMutationSnapshot(data));
       return data;
     } catch (error) {
       console.error(error);

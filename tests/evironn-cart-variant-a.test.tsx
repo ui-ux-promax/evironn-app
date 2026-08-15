@@ -256,6 +256,28 @@ describe('Cart Variant A', () => {
     expect(screen.queryByText(/Промокод WELCOME10 принят/)).not.toBeInTheDocument();
   });
 
+  it('clears applied coupon after an external cart mutation', async () => {
+    mocks.validateCoupon.mockResolvedValue({
+      ok: true,
+      code: 'WELCOME10',
+      percent: 10,
+      discount: 8900,
+      totals: { ...cart().totals, couponDiscount: 8900, total: 80100 },
+    });
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Промокод' }), { target: { value: 'WELCOME10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Применить' }));
+    await waitFor(() => expect(screen.getByText(/Промокод WELCOME10 принят/)).toBeInTheDocument());
+
+    mocks.addCartItem.mockResolvedValue(cart([{ ...line, quantity: 2, lineTotal: 178000, oldLineTotal: 198000 }]));
+    await useCartStore.getState().addCartItem({ skuId: line.skuId, quantity: 1 });
+
+    await waitFor(() => expect(useCouponStore.getState().coupon).toBeNull());
+    expect(screen.queryByText(/Промокод WELCOME10 принят/)).not.toBeInTheDocument();
+  });
+
   it('rejects incomplete server coupon snapshots', async () => {
     mocks.validateCoupon.mockResolvedValue({ ok: true, code: 'WELCOME10', percent: 10, discount: 8900 });
     renderCart();

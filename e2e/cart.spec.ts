@@ -39,9 +39,29 @@ test.describe('canonical cart', () => {
       subtotal: expect.any(Number),
       total: expect.any(Number),
     });
+
+    const stockLimitResponse = page.waitForResponse(
+      (response) => response.url().includes('/api/cart/') && response.request().method() === 'PATCH',
+    );
+    await increase.click();
+    const stockLimit = await stockLimitResponse;
+    expect(stockLimit.status()).toBe(200);
+    const stockLimitBody = (await stockLimit.json()) as {
+      items: Array<{ skuId: string; quantity: number; stock: number }>;
+      totals: { itemCount: number; lineCount: number; subtotal: number; total: number };
+    };
+    expect(stockLimitBody.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ skuId: body.items[0].skuId, quantity: 3, stock: 3 })]),
+    );
+    expect(stockLimitBody.totals).toMatchObject({
+      itemCount: 3,
+      lineCount: 1,
+      subtotal: expect.any(Number),
+      total: expect.any(Number),
+    });
     await expect(increase).toBeDisabled();
     await page.reload();
-    await expect(page.getByText(/2 товаров|Количество 2/)).toBeVisible();
+    await expect(page.getByText(/3 товаров|Количество 3/)).toBeVisible();
 
     await page.getByRole('button', { name: 'Удалить Noma Woven Lounge' }).click();
     await expect(page.getByRole('button', { name: /Вернуть/ })).toBeVisible();

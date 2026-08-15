@@ -208,6 +208,7 @@ describe('buildCartDto', () => {
     const line = buildCartDto(cart).items[0];
     expect(line).toMatchObject({
       skuId: 'variant-1',
+      isLegacy: true,
       productId: 'product-legacy',
       productSlug: 'legacy',
       name: 'Legacy',

@@ -82,6 +82,7 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
   const [videoProgress, setVideoProgress] = useState(0);
   const addCartItem = useCartStore((state) => state.addCartItem);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [cartAddError, setCartAddError] = useState<string | null>(null);
 
   const currentCombination = model.combinations.find(
     (combination) => combination.upholstery === selectedUpholstery && combination.wood === selectedWood,
@@ -90,10 +91,11 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
   const handleAddToCart = async () => {
     if (isAddingToCart || currentCombination.sku.stock <= 0) return;
     setIsAddingToCart(true);
+    setCartAddError(null);
     try {
       await addCartItem({ skuId: currentCombination.sku.id, quantity: 1 });
     } catch {
-      // The cart store retains the previous snapshot and exposes the error state.
+      setCartAddError('Не удалось добавить товар в корзину');
     } finally {
       setIsAddingToCart(false);
     }
@@ -559,6 +561,11 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
             >
               Добавить в корзину
             </button>
+            {cartAddError ? (
+              <p className="product-page__cart-error" role="alert">
+                {cartAddError}
+              </p>
+            ) : null}
 
             <div className="product-page__benefits" aria-label="Преимущества">
               {BENEFITS.map(({ icon: Icon, label }) => (

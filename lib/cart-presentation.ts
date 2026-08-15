@@ -106,6 +106,7 @@ function buildLine(item: CartWithItems['items'][number]): CartLineDto {
   return {
     id: item.id,
     skuId: variant.id,
+    isLegacy: true,
     productId: product.id,
     productSlug: product.slug,
     name: product.name,

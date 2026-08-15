@@ -9,6 +9,7 @@ export interface CartConfigurationItemDto {
 export interface CartLineDto {
   id: string;
   skuId: string;
+  isLegacy?: boolean;
   productId: string;
   productSlug: string;
   name: string;

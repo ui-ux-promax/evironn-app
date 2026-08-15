@@ -155,7 +155,7 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
 
     expect(screen.getByText(/Отделка: Орех/)).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Отделка: Орех' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Отделка: Орех' })).toBeInTheDocument();
     expect(screen.getAllByText(/89/).length).toBeGreaterThan(0);
 
     const increase = screen.getByRole('button', { name: 'Добавить одну штуку Noma Woven Lounge' });
@@ -219,14 +219,11 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(screen.getByText(/Промокод EVIRONN10 принят/)).toBeInTheDocument());
     expect(screen.getAllByText(/80/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Доставка/)).not.toBeInTheDocument();
-    expect(
-      screen.getAllByRole('button', { name: 'Оформление заказа будет доступно на следующем этапе.' }),
-    ).toHaveLength(2);
-    expect(
-      screen
-        .getAllByRole('button', { name: 'Оформление заказа будет доступно на следующем этапе.' })
-        .every((button) => (button as HTMLButtonElement).disabled),
-    ).toBe(true);
+    expect(screen.getByRole('button', { name: 'Оформление заказа будет доступно на следующем этапе.' })).toBeDisabled();
+    expect(screen.getByRole('link', { name: 'Оформление заказа будет доступно на следующем этапе.' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('discards stale coupon validation after a cart mutation', async () => {

@@ -1,8 +1,8 @@
 {
   "phase": "03-commerce-auth",
   "deliveryBase": "b31194a",
-  "fileCount": 114,
-  "filesSha256": "324dc429279da0e78155a523a42588db14cc489f404cc091e3ea3bcdd301b7dc",
+  "fileCount": 115,
+  "filesSha256": "1d8873aefb74327e13bb6104e882ae88c11fdb855d87928cb8fa659d2105512d",
   "files": [
     { "status": "M", "path": ".env.example" },
     { "status": "M", "path": ".superpowers/sdd/progress.md" },
@@ -110,6 +110,7 @@
     { "status": "M", "path": "tests/product-summary.test.ts" },
     { "status": "A", "path": "tests/profile-page-dto.test.ts" },
     { "status": "A", "path": "tests/profile-product-adapter.test.ts" },
+    { "status": "M", "path": "tests/purchase-panel-loading.test.ts" },
     { "status": "M", "path": "tests/promo-code-field.test.ts" },
     { "status": "M", "path": "tests/review.test.ts" },
     { "status": "M", "path": "tests/submit-review.test.ts" },

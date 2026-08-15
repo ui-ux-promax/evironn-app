@@ -1,11 +1,17 @@
 /** @vitest-environment jsdom */
 import React from 'react';
 import { readFileSync } from 'node:fs';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProductPage from '@/components/evironn/product/ProductPage';
 import type { ShowcaseProductPageDto } from '@/lib/showcase-product';
+
+const cartMock = vi.hoisted(() => ({ addCartItem: vi.fn(), error: false }));
+
+vi.mock('@/store', () => ({
+  useCartStore: (selector: (state: typeof cartMock) => unknown) => selector(cartMock),
+}));
 
 vi.mock('@/components/evironn/home/interactive-furniture-cards', () => ({
   InteractiveFurnitureCards: () => React.createElement('section'),
@@ -47,6 +53,8 @@ const model: ShowcaseProductPageDto = {
 };
 
 beforeEach(() => {
+  cartMock.addCartItem.mockReset();
+  cartMock.error = false;
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
@@ -76,6 +84,7 @@ describe('showcase ProductPage purchase controls', () => {
     const source = readFileSync('components/evironn/product/ProductPage.tsx', 'utf8');
     expect(source).toContain('useCartStore');
     expect(source).toContain('addCartItem');
+    expect(source).toContain('cartAddError');
     expect(source).toContain('currentCombination.sku.id');
     expect(source).not.toContain('productVariantId');
 
@@ -102,5 +111,14 @@ describe('showcase ProductPage purchase controls', () => {
         .getAllByRole('button', { name: 'Добавить в корзину', hidden: true })
         .every((control) => (control as HTMLButtonElement).disabled),
     ).toBe(true);
+  });
+
+  it('shows a visible alert when the canonical add-to-cart mutation rejects', async () => {
+    cartMock.addCartItem.mockRejectedValueOnce(new Error('Недостаточно на складе'));
+    render(React.createElement(ProductPage, { model }));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Добавить в корзину', hidden: true })[0]);
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Не удалось добавить товар в корзину'));
   });
 });

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 const paths = [
@@ -85,11 +86,15 @@ describe('Evironn Cart Variant A source boundary', () => {
     const variant = source('components/evironn/cart/cart-variant-a.tsx');
     const css = source('styles/evironn/CartVariantA.css');
 
-    expect(variant).toContain('<span');
-    expect(css).toContain('.cart-a__swatches span');
-    expect(css).toContain('.cart-a__mobile-bar button');
-    expect(css).not.toContain('.cart-a__swatches button');
-    expect(css).not.toContain('.cart-a__mobile-bar a');
+    expect(variant).toContain('role="radio"');
+    expect(variant).toContain('disabled');
+    expect(css).toContain('.cart-a__swatches button');
+    expect(css).toContain('.cart-a__mobile-bar a');
+    expect(css).not.toContain('.cart-a__swatches span');
+    expect(css).not.toContain('.cart-a__mobile-bar button');
+    expect(createHash('sha256').update(css).digest('hex')).toBe(
+      '8a83377e890a60e31079bda43eef5ba32cabfc853904731042258308e746c0db',
+    );
   });
 
   it('handles rejected clear, related-add, and undo mutations at the click boundary', () => {

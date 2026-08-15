@@ -101,6 +101,10 @@ export function useCartVariantA(initialWishlistedIds: string[]) {
       },
       undo: async () => {
         if (!removed) return;
+        if (removed.item.isLegacy) {
+          setError('Устаревшую позицию нельзя вернуть без канонического SKU');
+          return;
+        }
         await runMutation(() => cart.addCartItem({ skuId: removed.item.skuId, quantity: removed.item.quantity }));
         setRemoved(null);
       },

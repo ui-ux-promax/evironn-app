@@ -79,11 +79,14 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                           {item.configuration
                             .filter((option) => option.swatchHex)
                             .map((option) => (
-                              <span
+                              <button
+                                type="button"
                                 key={`${option.groupSlug}:${option.valueSlug}`}
-                                role="img"
+                                role="radio"
+                                aria-checked="true"
                                 aria-label={`${option.groupLabel}: ${option.valueLabel}`}
                                 title={`${option.groupLabel}: ${option.valueLabel}`}
+                                disabled
                                 className="is-on"
                                 style={{ background: option.swatchHex ?? undefined }}
                               />
@@ -200,9 +203,15 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
             <b>{totals.total.toLocaleString('ru-RU')} ₽</b>
             {totals.itemCount} товаров
           </span>
-          <button type="button" disabled aria-disabled="true" title={CHECKOUT_DISABLED_LABEL}>
+          <a
+            href="#"
+            aria-disabled="true"
+            tabIndex={-1}
+            title={CHECKOUT_DISABLED_LABEL}
+            onClick={(event) => event.preventDefault()}
+          >
             {CHECKOUT_DISABLED_LABEL}
-          </button>
+          </a>
         </div>
       )}
 

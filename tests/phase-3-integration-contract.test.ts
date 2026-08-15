@@ -9,6 +9,9 @@ const read = (relativePath: string) => readFileSync(resolve(root, relativePath),
 type DeliveryManifestEntry = { path: string; status: 'A' | 'M' | 'D' };
 type DeliveryManifest = { fileCount: number; filesSha256: string; files: DeliveryManifestEntry[] };
 
+const EXPECTED_PHASE3_FILE_COUNT = 115;
+const EXPECTED_PHASE3_FILES_SHA256 = '1d8873aefb74327e13bb6104e882ae88c11fdb855d87928cb8fa659d2105512d';
+
 const phase3DeliveryManifest = JSON.parse(
   read('docs/superpowers/manifests/phase-3-delivery-manifest.json'),
 ) as DeliveryManifest;
@@ -149,6 +152,9 @@ describe('Phase 3 producer/consumer integration boundary', () => {
   });
 
   it('uses a complete checked-in manifest for the delivery and rejects forbidden additions', () => {
+    expect(phase3DeliveryManifest.fileCount).toBe(EXPECTED_PHASE3_FILE_COUNT);
+    expect(phase3DeliveryManifest.filesSha256).toBe(EXPECTED_PHASE3_FILES_SHA256);
+    expect(phase3DeliveryFiles).toContain('tests/purchase-panel-loading.test.ts');
     expect(validateDeliveryManifest(phase3DeliveryManifest.files)).toEqual([]);
 
     const omitted = phase3DeliveryManifest.files.slice(0, -1);

@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 import * as ts from 'typescript';
 
@@ -9,6 +8,13 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '..');
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), 'utf8');
 const forbiddenImportPaths = ['d:/projects/fashion-shop', 'd:/новая папка (2)/evironn-clone'];
+
+function collectFiles(relativeDirectory: string): string[] {
+  return readdirSync(resolve(root, relativeDirectory), { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = join(relativeDirectory, entry.name);
+    return entry.isDirectory() ? collectFiles(relativePath) : [relativePath.replaceAll('\\', '/')];
+  });
+}
 
 type SourceEntry = { file: string; source: string };
 type ImportViolation = { file: string; specifier: string };
@@ -99,18 +105,18 @@ describe('Phase 3 foundation boundary', () => {
 
   it('contains no clone or technical-source absolute imports in production code', () => {
     const productionFiles = [
-      ...['app', 'components', 'lib', 'services'].flatMap((directory) =>
-        execFileSync('rg', ['--files', directory], { cwd: root, encoding: 'utf8' })
-          .trim()
-          .split(/\r?\n/)
-          .filter(Boolean),
-      ),
+      ...['app', 'components', 'lib', 'services'].flatMap(collectFiles),
       'auth.ts',
       'auth.config.ts',
       'middleware.ts',
     ].sort();
 
     expect(findForbiddenProductionImports(productionFiles.map((file) => ({ file, source: read(file) })))).toEqual([]);
+  });
+
+  it('keeps production import scanning independent from external search binaries', () => {
+    const externalScanCall = ['execFileSync', 'rg'].join("('");
+    expect(read('tests/phase-3-foundation-contract.test.ts')).not.toContain(externalScanCall);
   });
 
   it('rejects clone and technical-source paths in side-effect, dynamic, and require imports', () => {

@@ -248,3 +248,10 @@
 - TDD RED was observed for the missing DTO, incomplete address invariants, and malformed password input. GREEN focused Vitest passed 6 files / 38 tests; `npm run typecheck` passed; touched-file Prettier check passed.
 - Report: `.superpowers/sdd/phase-3-task-6-report.md`. Full gate, build, and all E2E were not run by Task 6 scope. Existing untracked plans remain preserved and unmodified.
 - Task 6: complete in the working tree; commit subject is reserved as `feat: harden profile data boundaries`.
+
+## Phase 3 commerce and authentication — Task 7
+
+- Task 7 ports production Profile Variant A with clone shell/classes, exact CSS, Auth.js logout, DTO-backed overview/orders/favorites/profile/addresses, canonical `primarySkuId` cart adds, sold-out disabling, read-only order snapshots, and owner-scoped mutations.
+- TDD RED: focused UI/source tests caught CSS fingerprint drift and uncaught address-action rejection. GREEN: full focused profile command passed 10 files / 60 tests.
+- `npm run typecheck`, focused Prettier, and `git diff --check` passed. Clone CSS fingerprint matches source. Profile E2E was added but skipped because all disposable E2E keys are absent; no ambient database used.
+- Full gate/build intentionally not run. Existing untracked plans preserved. Commit subject reserved: `feat: port production profile variant a`.

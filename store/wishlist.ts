@@ -4,6 +4,7 @@ export interface WishlistState {
   count: number;
   setCount: (count: number) => void;
   fetchCount: () => Promise<void>;
+  refreshAfterMutation: () => Promise<void>;
   increment: () => void;
   decrement: () => void;
 }
@@ -22,6 +23,10 @@ export const useWishlistStore = create<WishlistState>((set) => ({
     } catch {
       /* бейдж не критичен — оставляем текущее значение, чтобы избежать мигания на ноль */
     }
+  },
+
+  refreshAfterMutation: async () => {
+    await useWishlistStore.getState().fetchCount();
   },
 
   increment: () => set((state) => ({ count: state.count + 1 })),

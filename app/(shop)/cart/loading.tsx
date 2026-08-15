@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui';
 // Скелетон корзины — повторяет раскладку page.tsx (список позиций + сводка заказа).
 export default function CartLoading() {
   return (
-    <div className="mx-auto max-w-[1240px] px-4 sm:px-6 pt-8 pb-16" aria-hidden>
+    <div className="cart-loading mx-auto max-w-[1240px] px-4 sm:px-6 pt-8 pb-16" aria-hidden>
       <Skeleton className="h-9 w-44 rounded-xl" />
       <div className="grid lg:grid-cols-[1fr_380px] gap-6 lg:gap-8 mt-6">
         <div className="space-y-4">

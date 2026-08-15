@@ -12,6 +12,12 @@ export const productCardInclude = {
       },
     },
   },
+  skus: {
+    where: { active: true, stock: { gt: 0 } },
+    orderBy: { price: 'asc' as const },
+    select: { id: true, stock: true },
+    take: 1,
+  },
 } satisfies Prisma.ProductInclude;
 
 export type ProductForCard = Prisma.ProductGetPayload<{ include: typeof productCardInclude }>;
@@ -45,6 +51,7 @@ export interface ProductCardData {
   soldOut: boolean;
   colorways: CardColorway[];
   sizes: CardSize[];
+  canonicalSkuId?: string | null;
 }
 
 export function buildProductCardData(
@@ -113,5 +120,6 @@ export function buildProductCardData(
     soldOut: stock.soldOut,
     colorways,
     sizes,
+    canonicalSkuId: product.skus?.find((sku) => sku.stock > 0)?.id ?? null,
   };
 }

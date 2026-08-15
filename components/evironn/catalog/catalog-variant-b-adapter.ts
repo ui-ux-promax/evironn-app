@@ -9,7 +9,7 @@ export type CatalogBMedia = {
 };
 
 export type CatalogBCard = FurnitureProductCardData & {
-  href: typeof SHOWCASE_DEFAULT_PRODUCT_PATH;
+  href: string;
   media: CatalogBMedia;
   note: string;
   colors: Array<{ label: string; swatchHex: string | null }>;
@@ -107,6 +107,16 @@ function noteForFurnitureCard(data: FurnitureProductCardData): string {
   return [data.categoryName, ...swatchLabels].join(', ');
 }
 
+export function buildCatalogBCard(data: FurnitureProductCardData): CatalogBCard {
+  return {
+    ...data,
+    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
+    media: mediaForFurnitureCard(data),
+    note: noteForFurnitureCard(data),
+    colors: data.optionSwatches.map(({ label, swatchHex }) => ({ label, swatchHex })),
+  };
+}
+
 function facetKind(
   slug: string,
   values: CatalogResult['facets']['options'][number]['values'],
@@ -116,13 +126,7 @@ function facetKind(
 }
 
 export function buildCatalogBModel(result: CatalogResult): CatalogBModel {
-  const cards = result.products.map((product): CatalogBCard => ({
-    ...product,
-    href: SHOWCASE_DEFAULT_PRODUCT_PATH,
-    media: mediaForFurnitureCard(product),
-    note: noteForFurnitureCard(product),
-    colors: product.optionSwatches.map(({ label, swatchHex }) => ({ label, swatchHex })),
-  }));
+  const cards = result.products.map(buildCatalogBCard);
 
   const categoryGroup: CatalogBFacetGroup = {
     key: 'category',

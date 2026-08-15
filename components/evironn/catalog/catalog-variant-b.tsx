@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiSliders, FiX } from 'react-icons/fi';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { toggleWishlist } from '@/app/actions/wishlist';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import type { CatalogBFacetGroup, CatalogBModel } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import { catalogBQueryFromSearchParams } from '@/components/evironn/catalog/catalog-url-state';
@@ -15,6 +16,8 @@ import {
   ResultCount,
 } from '@/components/evironn/catalog/catalog-primitives';
 import { formatPrice } from '@/lib/format';
+import { useWishlistStore } from '@/store/wishlist';
+import type { WishlistMutationResult } from '@/services/dto/wishlist.dto';
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Популярные', fullLabel: 'Популярные' },
@@ -203,7 +206,13 @@ function FacetControl({
   );
 }
 
-export function CatalogVariantB({ model }: { model: CatalogBModel }): React.ReactElement {
+export function CatalogVariantB({
+  model,
+  initialWishlistedIds,
+}: {
+  model: CatalogBModel;
+  initialWishlistedIds: string[];
+}): React.ReactElement {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -212,6 +221,8 @@ export function CatalogVariantB({ model }: { model: CatalogBModel }): React.Reac
     [searchParams],
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [wishlistedIds, setWishlistedIds] = useState(() => new Set(initialWishlistedIds));
+  const refreshWishlistCount = useWishlistStore((state) => state.refreshAfterMutation);
   const [draft, setDraft] = useState(new URLSearchParams(query));
   const gridRef = useRef<HTMLDivElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -228,6 +239,44 @@ export function CatalogVariantB({ model }: { model: CatalogBModel }): React.Reac
   const sortIndicator = useSegmentIndicator(SORT_OPTIONS.findIndex((option) => option.value === activeSort));
   const chips = chipsFor(query, model);
   const draftCount = exactFacetDraftCount(model, query, draft);
+  useEffect(() => setWishlistedIds(new Set(initialWishlistedIds)), [initialWishlistedIds]);
+  const onWishlistToggle = async (productId: string): Promise<WishlistMutationResult> => {
+    const wasWishlisted = wishlistedIds.has(productId);
+    setWishlistedIds((current) => {
+      const next = new Set(current);
+      if (wasWishlisted) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+    try {
+      const result = await toggleWishlist({ productId });
+      if (!result.ok) {
+        setWishlistedIds((current) => {
+          const next = new Set(current);
+          if (wasWishlisted) next.add(productId);
+          else next.delete(productId);
+          return next;
+        });
+        return result;
+      }
+      setWishlistedIds((current) => {
+        const next = new Set(current);
+        if (result.active) next.add(productId);
+        else next.delete(productId);
+        return next;
+      });
+      void refreshWishlistCount();
+      return result;
+    } catch (error) {
+      setWishlistedIds((current) => {
+        const next = new Set(current);
+        if (wasWishlisted) next.add(productId);
+        else next.delete(productId);
+        return next;
+      });
+      throw error;
+    }
+  };
   const navigate = (next: URLSearchParams, clearCurrentPage = true) => {
     if (clearCurrentPage) resetPage(next);
     router.push(`${pathname}${next.toString() ? `?${next}` : ''}`);
@@ -395,7 +444,13 @@ export function CatalogVariantB({ model }: { model: CatalogBModel }): React.Reac
           <>
             <div className="cat-b__grid" ref={gridRef}>
               {model.cards.map((card, index) => (
-                <CatalogCard key={card.id} product={card} eager={index < 4} />
+                <CatalogCard
+                  key={card.id}
+                  product={card}
+                  wishlisted={wishlistedIds.has(card.id)}
+                  onWishlistToggle={onWishlistToggle}
+                  eager={index < 4}
+                />
               ))}
             </div>
             <div className="cat-b__pager">

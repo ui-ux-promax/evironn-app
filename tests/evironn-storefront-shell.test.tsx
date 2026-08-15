@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/link', () => ({
   default: ({ children, ...props }: React.ComponentProps<'a'>) => <a {...props}>{children}</a>,
@@ -23,8 +23,13 @@ import { NotFoundView } from '@/components/evironn/not-found-view';
 import { Api } from '@/services/api-client';
 import { useCartStore } from '@/store';
 
+beforeEach(() => {
+  vi.spyOn(Api.cart, 'getCart').mockImplementation(() => new Promise(() => {}));
+});
+
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   useCartStore.setState({ items: [], loading: true, totalAmount: 0, error: false });
 });
 
@@ -109,34 +114,51 @@ describe('Evironn storefront shell', () => {
       items: [
         {
           id: 'item-1',
+          skuId: 'sku-1',
+          articleNumber: 'EV-CHAIR-OAK',
           productId: 'product-1',
           quantity: 1,
           name: 'Chair',
           productSlug: 'chair',
-          colorwayName: 'Oak',
-          size: '',
+          configuration: [],
           imageUrl: null,
+          imageAlt: 'Chair',
           unitPrice: 100,
           lineTotal: 100,
+          oldUnitPrice: null,
+          oldLineTotal: null,
           stock: 5,
           available: true,
         },
         {
           id: 'item-2',
+          skuId: 'sku-2',
+          articleNumber: 'EV-TABLE-WAL',
           productId: 'product-2',
           quantity: 1,
           name: 'Table',
           productSlug: 'table',
-          colorwayName: 'Walnut',
-          size: '',
+          configuration: [],
           imageUrl: null,
+          imageAlt: 'Table',
           unitPrice: 200,
           lineTotal: 200,
+          oldUnitPrice: null,
+          oldLineTotal: null,
           stock: 5,
           available: true,
         },
       ],
       totalAmount: 300,
+      totals: {
+        subtotal: 300,
+        compareAtSubtotal: 300,
+        saleDiscount: 0,
+        couponDiscount: 0,
+        total: 300,
+        itemCount: 2,
+        lineCount: 2,
+      },
     });
 
     await waitFor(() => expect(screen.getByRole('link', { name: 'Корзина (2)' })).toHaveAttribute('href', '/cart'));

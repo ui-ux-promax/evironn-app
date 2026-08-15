@@ -100,3 +100,208 @@
 - Room switching (living/kitchen/bedroom/terrace) is in scope (Task 3 interactive hero); the earlier "working, no fix required" reading was WRONG — user reported the non-active pills were literally unclickable, root-caused to the SSR/hydration `onLoad` race and fixed in `113019a`.
 - Fresh checks at HEAD `113019a`: gate pass (137 files / 701 tests; Prettier/ESLint/tsc clean); build exit 0; home E2E 5/5, zero UntrustedHost/console errors. Protected Task 3 plan hash `f1be0e06…c503a7e2` unchanged; both plan files untracked/unmodified; identity `ui-ux-promax <gojjoy22@gmail.com>`, no AI/bot/co-author trailers.
 - Environment cleanup (not repo scope): the local `impeccable` Claude Code plugin was uninstalled at the user's request (removed from settings.json `enabledPlugins`/`extraKnownMarketplaces`, `installed_plugins.json`, `known_marketplaces.json`, and its cache/marketplace/data dirs; project `.impeccable/` cache deleted). Full effect after a Claude Code restart.
+
+## Phase 3 foundation — Task 1
+
+- Task 1 complete in the focused working tree: `e2e/database-guard.ts` now requires `E2E_DATABASE_ALLOW_WRITES=1`, validates explicit PostgreSQL E2E URLs, ignores ambient application URLs, falls back only from the explicit pooled E2E URL, and forces blank `RESEND_API_KEY`.
+- Playwright now injects only the guarded disposable database environment. Global setup uses one Playwright request context, GET-only warmup routes, a read-only `/catalog` interval every 15 seconds, and teardown cleanup/disposal. No direct Neon SQL or write warmup remains.
+- Source contracts cover canonical SKU/cart/order relations, Auth.js role and safe callback boundaries, guest cart/wishlist sign-in merges, production import isolation, the GET-only warmup contract, and all three blank E2E environment keys.
+- Foundation audit conclusion: No new architecture decision; ADR-001/007/010/012/013/014 and the canonical SKU schema govern implementation. Local audit: `.superpowers/sdd/phase-3-foundation-audit.md` (ignored). Task report: `.superpowers/sdd/phase-3-task-1-report.md` (ignored).
+- Focused validation: the seven-file Vitest command passed 46/46 tests; the required Prettier check passed with all matched files using Prettier code style. Playwright was not run because the disposable E2E environment keys are absent.
+
+## Phase 3 foundation — Task 1 review remediation
+
+- Important 1 fixed: `E2E_DATABASE_URL_UNPOOLED` now falls back only when the key is absent. An explicitly supplied empty value, as well as a non-PostgreSQL value, is rejected. Regression coverage is in `tests/e2e-database-guard.test.ts`.
+- Important 2 fixed: the production import boundary now parses TypeScript imports deterministically and rejects forbidden clone/source paths in static, side-effect, dynamic, `require`, import-equals, and export-from module references. Focused fixtures verify side-effect, dynamic, and `require` forms while ignoring non-import strings.
+- Minor wording fixed: `.env.example` now states that the pooled URL and write opt-in are required while the direct/unpooled URL is optional.
+- Review-remediation RED: the new empty-unpooled regression failed because the old guard treated present empty as absent. GREEN: the focused pair passed 17/17 tests.
+- Task 1: complete (commits ef9b2db..85da104, review clean; Critical 0 / Important 0 / Minor 0).
+
+## Phase 3 commerce and authentication — Task 2
+
+- Task 2 implementation complete in the focused working tree. Auth Variant B uses the accepted clone presentation with production Auth.js credentials/Google sign-in, registration, inline verification, safe callbacks, server retry feedback, and the single demonstration-service consent.
+- Auth route group now renders the accepted storefront header/footer and initial cart count without `VerificationGateHost`; the shop route retains the host.
+- Exact clone assets verified: graphite room `77AD8149…80D7`, ivory chair `75106ABA…66F1`, terracotta chair `19F47174…385D`.
+- RED: required new-auth Vitest command failed while components, styles, and assets were absent. GREEN: focused Vitest command passed 14 files / 69 tests; `npm run typecheck` passed; required focused Prettier check passed.
+- Playwright skipped because disposable E2E database keys or explicit write opt-in are absent. No ambient database used. Full gate, build, and all E2E were intentionally not run.
+- Report: `.superpowers/sdd/phase-3-task-2-report.md`.
+
+### Task 2 review remediation
+
+- Important findings fixed: local Google sign-in boundary is intercepted in E2E with sanitized `/` callback proof and no Google navigation; auth tabs use roving `tabIndex`, ArrowLeft/Right/Home/End, `aria-controls`, and `role="tabpanel"`; verification/resend action exceptions show visible alerts; resend blocks concurrent clicks; forbidden `useAuth`/mock scanning covers the controller and auth pages.
+- Review-remediation RED showed the new assertions failing on the old implementation. GREEN focused component/source check: 2 files / 15 tests passed.
+- Final focused check: requested six-file Vitest command passed 6 files / 40 tests; `npm run typecheck` passed; Prettier check passed for all five touched source/test files.
+- Playwright skipped because all disposable E2E URL/write-opt-in keys were absent. No ambient application database used.
+
+### Task 2 review Important follow-up — 2026-08-14
+
+- `e2e/auth.spec.ts` now intercepts `**/api/auth/signin/google**`, covering Auth.js `callbackUrl` query strings. Callback assertion reads query with POST fallback.
+- E2E contract now verifies local origin/path, sanitized `/` callback, no external Google request, no `/phish`, and no Google page URL; fulfilled callback remains local `/login?callbackUrl=%2F`.
+- `npx vitest run tests/evironn-auth-source-contract.test.ts` — 1 file / 3 tests passed.
+- `npx prettier --check e2e/auth.spec.ts` — pass.
+- Playwright skipped: missing `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `E2E_DATABASE_ALLOW_WRITES`; no ambient database used.
+- Task 2: complete (commits 2e5167c..96dbd52, review clean; Critical 0 / Important 0 / Minor 0).
+
+## Phase 3 commerce and authentication — Task 3
+
+- Task 3 complete in the focused working tree. Canonical SKU cart DTOs, projection, serializable POST retry boundary, owner-scoped PATCH/DELETE, root clear, complete Zustand snapshots, totals/counts, logout reset, and both accepted ProductPage add controls are implemented.
+- RED: the required four-file Vitest command failed on the absent projection, canonical POST, clear route, store snapshot, and active PDP behavior.
+- GREEN: the required focused regression command passed 11 files / 53 tests; `npm run typecheck` passed; the required focused Prettier check passed.
+- Playwright skipped because `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, and `E2E_DATABASE_ALLOW_WRITES` are absent. Full gate/build/all-E2E were not run.
+- Report: `.superpowers/sdd/phase-3-task-3-report.md`.
+
+### Task 3 review remediation — 2026-08-14
+
+- Exact approved commerce CartDto restored: canonical required fields only, ordered option labels/swatches, `oldLineTotal`, exact six error codes, nested `CartApiError`, and no client `productVariantId`/legacy fields.
+- Legacy ProductVariant support remains server projection compatibility only. Related-cart client writes now require canonical SKU identity.
+- Route mapping now distinguishes `OUT_OF_STOCK` from `QUANTITY_EXCEEDS_STOCK`, includes current stock, uses exact nested envelopes/statuses, and preserves P2034 retry handling.
+- Added focused P2002 race cases: retry rereads quantity/stock and preserves valid increment; reread quantity above stock returns `QUANTITY_EXCEEDS_STOCK`; retry exhaustion returns `CART_CONFLICT`, never generic 500.
+- RED: focused projection/route/store run failed 8 expected contract assertions. GREEN: focused 14-file command passed 67/67. Typecheck passed. Touched-file Prettier check passed. Full gate/build/E2E not run.
+
+### Phase 3 checkpoint — 2026-08-14
+
+- Stop point: Task 3 implementation and first review-remediation wave are committed through `8ebbf54` (`feat: add canonical sku cart contracts`, `fix: remediate canonical sku cart review findings`).
+- Task 3 re-review is blocked with Critical 0 / Important 4 / Minor 0. Required next remediation: map malformed JSON to nested `INVALID_INPUT` HTTP 400; make every cart store action return `Promise<CartDto>` after replacing the server snapshot; select only in-stock related-cart SKUs and disable missing/unavailable buttons; catch quantity/remove failures in cart-line consumers.
+- Focused evidence remains green: 14 Vitest files / 67 tests, typecheck, and Prettier. No E2E, full gate, build, push, PR, merge, or Task 4 work started. Disposable E2E keys remain absent.
+- Resume from Task 3 remediation. Do not mark Task 3 complete or start Task 4 until affected focused checks pass and fresh Task 3 review is clean.
+
+### Phase 3 Task 3 review remediation — 2026-08-15
+
+- Four requested findings addressed only: malformed POST/PATCH JSON now returns nested `INVALID_INPUT` HTTP 400; all cart-store actions return `Promise<CartDto>` and replace/return successful snapshots while mutations retain prior state and rethrow; related-cart canonical SKU projection/CTA rejects stock-zero or unavailable products; cart-line quantity/remove rejections are caught with loading cleanup preserved.
+- RED: new regression set failed 6 expected contract assertions and emitted one unhandled rejection from the old line consumer. Test isolation correction rerun retained expected production failures.
+- GREEN: focused regression command passed 5 files / 28 tests; affected cart/presentation/store, related cart, product summary, cart line, storefront shell, and PDP command passed 15 files / 77 tests.
+- `npm run typecheck` passed. Touched source/test Prettier check passed. `git diff --check` passed.
+- Fresh Task 3 review approved: Critical 0 / Important 0 / Minor 0. Review range `2e3ec75..d6dab3b`; exact DTO/error contract, server authority, retries, owner scope, and Phase 2 preservation confirmed.
+- Task 3: complete (commits `671f80a..d6dab3b`, review clean; Critical 0 / Important 0 / Minor 0). No full gate, build, E2E, push, PR, or merge.
+
+## Phase 3 commerce and authentication — Task 4
+
+- Task 4 implementation connects canonical guest/account wishlist state to Catalog Variant B. `getWishlistItems` now uses the active furniture projection; `addToWishlist` is idempotent and server-authoritative; `toggleWishlist` preserves toggle/merge foundations while rejecting inactive products; catalog hearts use server-provided IDs and controlled successful mutation results; count reads remain no-create and active-product scoped.
+- TDD RED: the required five-file Vitest command failed with the expected missing canonical projection, mutation action, controlled catalog props/controller, and source-contract assertions.
+- TDD GREEN: `npx vitest run tests/wishlist.test.ts tests/toggle-wishlist.test.ts tests/wishlist-count-route.test.ts tests/evironn-catalog-wishlist.test.tsx tests/evironn-catalog-source-contract.test.ts` passed 5 files / 34 tests.
+- Required touched-file Prettier check passed. `git diff --check` passed.
+- `npm run typecheck` reports the unowned legacy profile consumer mismatch: `app/(shop)/profile/page.tsx` still expects `ProductCardData[]` while canonical wishlist reads return `FurnitureProductCardData[]`. The preserved legacy catalog-card test also expects retired local favorite behavior; neither file was changed because both are outside exact Task 4 ownership.
+- Playwright skipped because disposable E2E keys are absent. No ambient database used. Full gate, build, and all E2E intentionally not run.
+- Report: `.superpowers/sdd/phase-3-task-4-report.md`.
+
+### Phase 3 Task 4 review remediation — 2026-08-15
+
+- Exact findings fixed: profile canonical wishlist now crosses explicit `toProfileProductCardData` DTO boundary; CatalogCard legacy overload/no-op fallback removed; controlled card tests updated; rollback test awaits rejection and verifies prior `true` restored.
+- RED: baseline focused catalog/profile run failed 2 stale card assertions; `npm run typecheck` failed canonical wishlist to legacy profile prop assignment.
+- GREEN: focused Vitest passed 7 files / 48 tests; typecheck passed; Prettier passed; `git diff --check` passed.
+- Broader `tests/evironn-catalog-variant-b.test.tsx` is blocked before tests by the local `next-auth` `next\\server` module-resolution error. No full gate/build/E2E run.
+
+### Phase 3 Task 4 legacy suite mock remediation — 2026-08-15
+
+- Added a hoisted `@/app/actions/wishlist` mock to `tests/evironn-catalog-variant-b.test.tsx`; production Catalog Variant B controlled wishlist behavior and assertions remain unchanged.
+- Legacy suite initially exposed a test-fixture loop after collection unblocked: omitted `initialWishlistedIds` recreated the default array on every render. The test now passes one stable empty array; production code unchanged.
+- GREEN: `npx vitest run tests/evironn-catalog-variant-b.test.tsx` passed 1 file / 11 tests.
+- Prettier check for touched test passed. `git diff --check` passed. Typecheck skipped because change is test-only.
+- No full gate, build, E2E, or broader focused suite rerun per stop instruction. Report: `.superpowers/sdd/phase-3-task-4-report.md`.
+
+### Phase 3 Task 4 Important review remediation — 2026-08-15
+
+- Made `CatalogVariantB.initialWishlistedIds` required as `string[]`; removed the default empty-array allocation.
+- Root cause: omitted prop recreated `[]` on every render, while the synchronization effect created a fresh `Set` and scheduled an unbounded rerender.
+- Verified production route and all test renders pass explicit arrays; accepted Catalog Variant B markup and controlled wishlist behavior preserved.
+- RED: source-contract test failed on optional/default prop contract.
+- GREEN: focused Catalog Variant B/wishlist/source suites passed 3 files / 17 tests; `npm run typecheck` passed.
+- Full gate, build, E2E, and unrelated suites not run per Task 4 scope. Report: `.superpowers/sdd/phase-3-task-4-report.md`.
+- Fresh Task 4 review approved: Critical 0 / Important 0 / Minor 0. Fresh evidence: 17/17 focused tests, legacy Catalog Variant B 11/11, typecheck, Prettier, and `git diff --check` pass.
+- Task 4: complete (commits `c816cef..72b60a5`, review clean; Critical 0 / Important 0 / Minor 0). No full gate, build, E2E, push, PR, or merge.
+
+## Phase 3 commerce and authentication — Task 5
+
+- Task 5 ports the accepted clone Cart Variant A and Cart Primitives JSX/classes/CSS without redesign. The production adapter uses canonical furniture SKU cart DTOs, production cart state, Auth.js-backed server actions, and the existing wishlist foundation.
+- Server authority is preserved for prices, totals, coupon validation, stock, quantity limits, and cart/wishlist mutations. Checkout controls are visibly disabled with honest next-stage copy. Save-to-wishlist deletes only after a successful save; undo re-adds the original canonical `skuId` and quantity while leaving the wishlist entry intact. Related products use canonical `primarySkuId` values and disable unavailable products.
+- The now-unreferenced legacy related grid and focused test were removed. Its old server entry remains a no-op compatibility boundary because it has no consumers after Cart Variant A became the sole related renderer.
+- TDD RED showed the expected missing Cart Variant A/source files and legacy coupon action failure. GREEN passed the required four-file command at 33/33 and the broader focused regression command at 72/72.
+- `npm run typecheck`, the required touched-file Prettier check, and `git diff --check` passed. Playwright was skipped because disposable E2E keys are absent; no ambient database was used. Full gate, build, and all E2E were not run per Task 5 scope.
+- Report: `.superpowers/sdd/phase-3-task-5-report.md`.
+
+### Phase 3 Task 5 final Important review remediation — 2026-08-15
+
+- Related cart links now derive canonical primary SKU option selections and emit encoded product slug plus supported `?option=` query; unsupported `?sku=` query removed. Added focused route regression.
+- Display-only configuration swatches retain noninteractive `span` semantics with clone-compatible geometry/state CSS. Disabled mobile checkout button now receives clone CTA geometry and responsive padding without enabling checkout.
+- RED: route/CSS contract assertions failed before fixes. GREEN: focused cart/catalog/product command passed 12 files / 82 tests; typecheck, Prettier, and `git diff --check` passed.
+- Full gate, build, and all E2E not run per remediation scope. Report: `.superpowers/sdd/phase-3-task-5-report.md`.
+
+### Phase 3 Task 5 final approval — 2026-08-15
+
+- Closed review findings across six remediation commits: controlled wishlist/count refresh and rollback; canonical related route boundary; complete coupon snapshots with external cart-mutation invalidation; honest E2E stock/coupon assertions; clone-compatible swatch/mobile CTA styling; and rejection handlers for clear/related-add/undo mutations.
+- Related product query is constrained to the supported PDP slug; unsupported related products have no navigable URL and cannot route to the wrong product.
+- Fresh focused evidence across remediation passed, including 43/43 and 23/23 targeted checks, typecheck, Prettier, and `git diff --check`. Playwright remains blocked by absent disposable database write keys; no ambient DB used.
+- Final Sol review approved the full Task 5 delivery diff `d65edec..4a04579`: Critical 0 / Important 0. No full gate, build, push, PR, merge, or Task 6 work started.
+- Task 5: complete (commits `ae04de0..4a04579`, review clean). Resume from Task 6 implementation.
+
+## Phase 3 Task 6 — profile, password, and address boundaries
+
+- Task 6 adds bounded `ProfilePageDto` serialization and authenticated profile reads, immutable order-item snapshots, canonical furniture-card adaptation, password current-secret/hash enforcement, and owner-scoped address actions with exactly-one-default invariants and bounded transaction retries.
+- GREEN: focused profile/password/address/update-profile command passed 6 files / 38 tests; typecheck, touched-file Prettier, and `git diff --check` passed. Playwright/full gate/build not run per task scope.
+- Fresh Sol review approved `f218448..93bea3b`: Critical 0 / Important 0 / Minor 0. No schema, auth-model, UI, order-mutation, or Phase 4 scope entered.
+- Task 6: complete (commit `93bea3b`, review clean). Resume from Task 7 implementation.
+
+## Phase 3 commerce and authentication — Task 6
+
+- Task 6 implementation is complete in the focused working tree. `ProfilePageDto` and `getProfilePageDto` use bounded, owner-scoped Prisma selections, ISO dates, initials, counts, active canonical furniture favorites, deterministic default-first addresses, and immutable order-item snapshot lines formatted through `formatOrderItemConfiguration`.
+- Profile updates never forward email. Password updates require current-password verification, validate replacement input, and write only the replacement hash. Address mutations enforce owner scope, exactly one default address, first-address defaulting, oldest-address promotion after default deletion, serializable transactions, and three bounded P2034 retries with fresh owned-address rereads.
+- TDD RED was observed for the missing DTO, incomplete address invariants, and malformed password input. GREEN focused Vitest passed 6 files / 38 tests; `npm run typecheck` passed; touched-file Prettier check passed.
+- Report: `.superpowers/sdd/phase-3-task-6-report.md`. Full gate, build, and all E2E were not run by Task 6 scope. Existing untracked plans remain preserved and unmodified.
+- Task 6: complete in the working tree; commit subject is reserved as `feat: harden profile data boundaries`.
+
+## Phase 3 commerce and authentication — Task 7
+
+- Task 7 ports production Profile Variant A with clone shell/classes, exact CSS, Auth.js logout, DTO-backed overview/orders/favorites/profile/addresses, canonical `primarySkuId` cart adds, sold-out disabling, read-only order snapshots, and owner-scoped mutations.
+- TDD RED: focused UI/source tests caught CSS fingerprint drift and uncaught address-action rejection. GREEN: full focused profile command passed 10 files / 60 tests.
+- `npm run typecheck`, focused Prettier, and `git diff --check` passed. Clone CSS fingerprint matches source. Profile E2E was added but skipped because all disposable E2E keys are absent; no ambient database used.
+- Full gate/build intentionally not run. Existing untracked plans preserved. Commit subject reserved: `feat: port production profile variant a`.
+
+### Task 7 review remediation — 2026-08-15
+
+- Reconciled profile wishlist state against `toggleWishlist` result `active`, preserving controlled favorites and exact counts on stale/multi-tab responses while refreshing after success.
+- Recomputed initials from saved profile name and DTO email after successful profile update.
+- Strengthened only `e2e/profile.spec.ts`: password success before logout/re-login; successful non-default set-default state before delete; successful favorites cart mutation with response items/count and header count before removal.
+- RED: new stale-wishlist and initials assertions failed on `da49ee2`. GREEN: focused Task 7 command passed 10 files / 61 tests; typecheck, Prettier, and diff-check passed.
+- Profile E2E invocation stopped at disposable-DB guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent. No ambient database used. Full gate/build/all E2E not run.
+- CSS unchanged; clone fingerprint remains `e55a53ded3f4fd65dfc341470a0f686e8b3b9a4402d26a21ba9ae298a713ea10`. Commit subject reserved: `fix: remediate profile variant review findings`.
+
+### Phase 3 Task 7 final review remediation — 2026-08-15
+
+- Replaced raw DTO equality retention with normalized server-refresh reconciliation in `useProfileVariantA`. Incoming profile dates normalize to ISO, server address order/defaults and non-favorite stats apply directly, and only active per-product optimistic favorite state overlays the refreshed favorite slice.
+- Per-request optimistic favorite tokens clear in `finally`; later refreshes accept authoritative server state. Added regressions for normalized profile/birthdate, server-sorted addresses/defaults, updated stats, in-flight preservation, and stale-state release.
+- Wishlist-removal E2E now parses Next Flight `{ok:boolean}` action results, requires success, reloads `/profile`, and asserts durable server-backed empty favorites. Disposable DB guard remains unchanged.
+- RED: 2 expected failures before implementation. GREEN: focused Task 7 command passed 10 files / 64 tests. Typecheck, touched-file Prettier, and `git diff --check` passed.
+- Profile E2E stopped at disposable guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent. No ambient DB. Full gate/build/all E2E not run. Commit subject: `fix: harden profile DTO reconciliation`.
+
+### Phase 3 Task 7 final approval — 2026-08-15
+
+- Closed final review findings: wishlist rollback is target-only and preserves concurrent DTO refreshes; profile E2E scopes the removal control uniquely and verifies successful server action plus durable post-reload absence.
+- Root-cause CSS line-ending drift was diagnosed and corrected against the read-only clone; exact `ProfilePage.css` SHA is restored. Full focused profile command passes 10 files / 65 tests; typecheck, Prettier, and `git diff --check` pass.
+- Final Sol review approved full Task 7 delivery diff `0bce983..912e49d`: Critical 0 / Important 0. Profile E2E remains guarded by absent disposable database keys; no ambient DB used.
+- Task 7: complete (commits `da49ee2..912e49d`, review clean). Resume from Task 8 implementation.
+
+## Phase 3 Task 8 — purchase-gated review readiness
+
+- Task 8 consolidates the server-owned purchase predicate across eligibility, canReview, submit, and pruning. Canonical SKU and legacy ProductVariant fallback are supported; online payment/cancellation and delivered-COD gates are enforced; pending/processing COD cannot qualify; duplicate submit races remain safe.
+- Added Phase 3 integration contract with a complete 115-file delivery manifest, independent pinned count/SHA checks, forbidden-path coverage, canonical cart/wishlist/profile boundaries, unchanged schema contract, and no Phase 4 UI/checkout/payment/order/admin/performance scope. Review readiness uses a guarded deterministic seeded-order ownership probe and creates no fixtures.
+- GREEN: focused review/integration command passed 9 files / 74 tests; typecheck, Prettier, and `git diff --check` passed. E2E remains blocked by absent disposable database keys; no ambient DB used.
+- Final Sol review approved `b521a00..6b65f48`: Critical 0 / Important 0. Task 8 complete (commits `9862c59..6b65f48`, review clean). Resume from Task 9 completion gate.
+
+## Phase 3 commerce and authentication — Task 8
+
+- Centralized the owner/product qualifying-purchase predicate in `lib/review.ts`. Canonical SKU and legacy ProductVariant order lines remain read-compatible; online orders require successful payment and non-cancelled status; COD requires `DELIVERED`.
+- `getReviewEligibility`, `canReview`, `submitReview`, and `pruneReviewsAfterCancel` remain server-owned. `reviewSchema` is strict, Auth.js supplies `userId`, and duplicate review creation retains the P2002 race-safe response.
+- Replaced the old review E2E order/payment fixture with a guarded readiness check for a newly verified user without a qualifying purchase. Added the Phase 3 source integration contract; no review UI, order/payment fixture, API route, or schema change.
+- TDD RED: `npx vitest run tests/review.test.ts tests/submit-review.test.ts tests/phase-3-integration-contract.test.ts` failed on the missing delivered-COD/online predicate and shared integration boundary.
+- GREEN: focused core command passed 3 files / 32 tests. Required focused regression passed 9 files / 71 tests. Touched-file Prettier passed.
+- Review E2E stopped at the disposable database guard because `E2E_DATABASE_ALLOW_WRITES=1` and disposable URLs are absent; no ambient database used. Full gate, build, typecheck, and all E2E not run.
+- Report: `.superpowers/sdd/phase-3-task-8-report.md`. Commit subject: `test: enforce purchase-gated reviews`.
+
+## Phase 3 Task 9 — completion gate and delivery close (2026-08-15)
+
+- Base `origin/dev`: `b31194ab07de4ed396d9bfcc5c9d16734d113f95d`. Current code head before durable docs close: `4ff8070`.
+- Final remediation aligned stale regression contracts, pinned the 115-file delivery manifest and exact Cart A CSS, prevented legacy IDs entering canonical undo writes, surfaced PDP and 360-modal add failures, and kept disabled cart controls route-safe (`c596187`, `91dc837`, `1bef496`, `f2f8d7b`, `078e592`, `4ff8070`).
+- Completion evidence: `npm run format` passed; final `npm run gate` passed — 170 test files / 930 tests, 0 ESLint errors and 59 warnings; `npm run build` passed with expected existing warnings.
+- Required Phase 3 E2E command was invoked but the disposable database guard stopped it before Playwright because `E2E_DATABASE_ALLOW_WRITES=1` and disposable E2E URLs are absent. No ambient database was used; email sending remains suppressed with blank `RESEND_API_KEY`.
+- Schema/migrations unchanged; no new architecture decision; secret scan found no credential value. Google OAuth external smoke is `pending Preview acceptance` because push/Preview authorization is not granted.
+- Delivery report: `.superpowers/sdd/phase-3-delivery-report.md` (ignored local artifact). Phase 3 now awaits desktop/mobile visual acceptance. Stop here: no push, PR, merge, branch deletion, or Phase 4.

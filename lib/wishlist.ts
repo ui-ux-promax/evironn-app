@@ -1,6 +1,10 @@
 import type { Session } from 'next-auth';
 import { prisma } from '@/lib/prisma-client';
-import { productCardInclude, buildProductCardData, type ProductCardData } from '@/lib/product-summary';
+import {
+  buildFurnitureProductCardData,
+  furnitureProductCardInclude,
+  type FurnitureProductCardData,
+} from '@/lib/furniture-product-summary';
 import { NEW_PRODUCT_WINDOW_DAYS, LOW_STOCK_THRESHOLD } from '@/constants/config';
 
 const WISHLIST_TAKE = 100;
@@ -43,16 +47,19 @@ export async function getWishlistCount(session: Session | null, token: string | 
   return prisma.wishlistItem.count({ where: { wishlistId: owner.id, product: { active: true } } });
 }
 
-export async function getWishlistItems(session: Session | null, token: string | undefined): Promise<ProductCardData[]> {
+export async function getWishlistItems(
+  session: Session | null,
+  token: string | undefined,
+): Promise<FurnitureProductCardData[]> {
   const owner = await resolveOwnerWishlist(session, token, { create: false });
   if (!owner) return [];
   const rows = await prisma.wishlistItem.findMany({
     where: { wishlistId: owner.id, product: { active: true } },
     orderBy: { createdAt: 'desc' },
     take: WISHLIST_TAKE,
-    include: { product: { include: productCardInclude } },
+    include: { product: { include: furnitureProductCardInclude } },
   });
   const now = new Date();
   const cfg = { newWindowDays: NEW_PRODUCT_WINDOW_DAYS, lowStock: LOW_STOCK_THRESHOLD };
-  return rows.map((r) => buildProductCardData(r.product, now, cfg));
+  return rows.map((r) => buildFurnitureProductCardData(r.product, now, cfg));
 }

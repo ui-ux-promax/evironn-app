@@ -3,12 +3,12 @@
 ## Current state
 
 - Bootstrap: complete in the repository root commit `init`.
-- Active phase: Phase 2 — full storefront migration.
+- Active phase: Phase 3 — commerce and authentication.
 - Integration branch: `dev`.
-- Current branch: `phase/02-storefront` from updated `dev`.
-- Phase state: Phase 1 accepted and merged; Phase 2 migration strategy corrected and approved.
-- Current delivery: Phase 2C — exact showcase PDP; final implementation and review remediation complete; local visual acceptance pending.
-- Previous delivery: Phase 2B — selected Evironn catalog UI, automated-check complete.
+- Current branch: `phase/03-commerce-auth` from updated `origin/dev`.
+- Phase state: Phase 1 and Phase 2 accepted and merged; Phase 3 implementation and automated completion review complete; visual acceptance pending.
+- Current delivery: Phase 3 — Auth Variant B, Cart Variant A, Profile Variant A, canonical commerce boundaries, and review readiness; awaiting desktop/mobile visual acceptance.
+- Previous delivery: Phase 2C — exact showcase PDP, visually accepted.
 
 ## Bootstrap contents
 
@@ -176,3 +176,20 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - Completion verification: `npm run format` passed; `npm run gate` passed with 151 test files / 789 tests and zero errors; `npm run build` completed successfully with existing warnings only.
 - PDP E2E passed 9/9 after aligning two stale assertions with the accepted canonical-option links and the loading-to-ready handoff; Prettier and `git diff --check` passed.
 - Phase 2C is closed on `phase/02-storefront` at the current delivery state. Preview loading remains recorded performance debt. No merge, pull request, or Phase 3 work starts here.
+
+## Phase 3 commerce and authentication — delivery close (2026-08-15)
+
+- Phase 3 implementation is complete on `phase/03-commerce-auth` from `origin/dev` base `b31194ab07de4ed396d9bfcc5c9d16734d113f95d`; current implementation head is `4ff8070`.
+- Task approvals: Task 1 `ef9b2db..85da104`; Task 2 `2e5167c..f0dc6fa`; Task 3 `671f80a..d6dab3b`; Task 4 `c816cef..014109d`; Task 5 `ae04de0..4a04579`; Task 6 `93bea3b`; Task 7 `da49ee2..912e49d`; Task 8 `9862c59..6b65f48`. Final remediation: `c596187`, `91dc837`, `1bef496`, `f2f8d7b`, `078e592`, `4ff8070`.
+- Final validation: `npm run format` passed; final `npm run gate` passed with 170 test files / 930 tests and 0 ESLint errors (59 warnings); `npm run build` passed with existing Sentry, webpack-cache, Tailwind, and Edge Runtime warnings.
+- Critical Phase 3 E2E command was invoked and stopped at the disposable-database guard: `E2E_DATABASE_ALLOW_WRITES=1` and disposable E2E URLs are absent. No ambient application database was used. `RESEND_API_KEY` remains blank under the guard; no verification email was sent.
+- `prisma/schema.prisma` and `prisma/migrations` are unchanged. No new architecture decision was found; ADR-001/007/010/012/013/014 and the canonical SKU schema remain governing decisions. Secret scan found only the intentionally empty `.env.example` `RESEND_API_KEY` entry.
+- Real Google OAuth Preview smoke is `pending Preview acceptance`; no push or Preview was authorized. Initial Preview loading remains performance debt. Checkout, payment, order mutation, admin, and Phase 4 work remain excluded.
+- Phase 3 is awaiting desktop/mobile visual acceptance for Auth Variant B, Cart Variant A, and Profile Variant A. No push, pull request, merge, branch deletion, or Phase 4 start performed.
+
+## Phase 3 visual acceptance fixes — 2026-08-15
+
+- `82c8bf8` reserves the full viewport for the cart route loading skeleton so the shared footer stays below the initial viewport; focused cart source-contract tests pass.
+- `fe16df8` adds a scoped 16px top margin above the profile password submit button; focused profile source-contract and component tests pass 17/17.
+- No schema, migration, environment, server-action, or dependency changes were made.
+- The phase branch is authorized for push and pull-request creation. Merge and final Phase 3 visual acceptance remain separate gates.

@@ -123,6 +123,7 @@ describe('canonical furniture product card projection', () => {
     });
 
     expect(card.primarySkuId).toBe('sku-cheap');
+    expect(card.primaryOption).toBe('finish:oak');
     expect(card.minPrice).toBe(124000);
     expect(card.minOldPrice).toBe(139000);
     expect(card.imageUrl).toBe('/assets/products/chair-oak.webp');

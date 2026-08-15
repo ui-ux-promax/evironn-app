@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
 
+import { resolveE2eDatabaseEnvironment } from './e2e/database-guard';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -32,6 +34,7 @@ export default defineConfig({
     // E2E-фикс код верификации: generateCode вернёт его вместо случайного (только не-prod),
     // чтобы хелпер registerAndVerify прошёл gate-модалку. Прод этой ветки не касается.
     env: {
+      ...resolveE2eDatabaseEnvironment(process.env),
       E2E_TEST_CODE: '424242',
       AUTH_TRUST_HOST: 'true',
       AUTH_SECRET: process.env.AUTH_SECRET ?? 'e2e-local-auth-secret',

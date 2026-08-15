@@ -1,32 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma-client';
-import { cartInclude, resolveOwnerCart, recalcCartTotalByToken } from '@/lib/cart';
+import { resolveOwnerCart } from '@/lib/cart';
+import { buildCartDto, cartPresentationInclude } from '@/lib/cart-presentation';
 import { cartCookieName, cartCookieOptions } from '@/lib/cart-cookie';
+import {
+  EMPTY_CART_DTO,
+  type CartApiError,
+  type CartApiErrorCode,
+  type CartDto,
+} from '@/services/dto/commerce-cart.dto';
 import { createCartItemSchema } from '@/services/dto/cart.dto';
 import { runWithRequestContext } from '@/lib/request-context';
 import { logger } from '@/lib/logger';
 import { extractClientIp, checkCartRateLimit } from '@/lib/rate-limit';
 import { tooManyRequests } from '@/lib/rate-limit-response';
 
+const MAX_CART_RETRIES = 3;
+
+class CartRouteError extends Error {
+  constructor(
+    readonly code: CartApiErrorCode,
+    readonly status: number,
+    message: string,
+    readonly stock?: number,
+  ) {
+    super(message);
+  }
+}
+
+function errorResponse(error: CartRouteError): NextResponse<CartApiError> {
+  return NextResponse.json(
+    {
+      error: { code: error.code, message: error.message, ...(error.stock === undefined ? {} : { stock: error.stock }) },
+    },
+    { status: error.status },
+  );
+}
+
+function genericErrorResponse(message: string): NextResponse<CartApiError> {
+  return NextResponse.json({ error: { code: 'CART_CONFLICT', message } }, { status: 500 });
+}
+
+function isRetryableTransactionError(error: unknown): boolean {
+  return Boolean(
+    error && typeof error === 'object' && 'code' in error && ['P2002', 'P2034'].includes(String(error.code)),
+  );
+}
+
+async function readCartDto(cartId: string): Promise<CartDto> {
+  const cart = await prisma.cart.findFirst({ where: { id: cartId }, include: cartPresentationInclude });
+  return cart ? buildCartDto(cart) : EMPTY_CART_DTO;
+}
+
 export async function GET(req: NextRequest) {
   return runWithRequestContext(req, async () => {
     try {
       const session = await auth();
-      const userId = session?.user?.id ?? null;
       const token = req.cookies.get(cartCookieName)?.value;
-      // Залогинен → корзина по userId (не по cookie); гость → по token.
-      const owner = await resolveOwnerCart(userId, token, { create: false });
-      if (!owner) return NextResponse.json({ id: null, token: token ?? null, totalAmount: 0, items: [] });
-      const cart = await prisma.cart.findFirst({ where: { id: owner.id }, include: cartInclude });
-      const resp = NextResponse.json(cart ?? { id: owner.id, token: owner.token, totalAmount: 0, items: [] });
-      // Синхронизируем cookie с корзиной владельца (напр. вход на новом устройстве).
-      if (owner.token !== token) resp.cookies.set(cartCookieName, owner.token, cartCookieOptions);
-      return resp;
+      const owner = await resolveOwnerCart(session?.user?.id ?? null, token, { create: false });
+      if (!owner) return NextResponse.json(EMPTY_CART_DTO);
+      const dto = await readCartDto(owner.id);
+      const response = NextResponse.json(dto);
+      if (owner.token !== token) response.cookies.set(cartCookieName, owner.token, cartCookieOptions);
+      return response;
     } catch (error) {
       logger.error('cart_get_failed', error);
-      return NextResponse.json({ message: 'Не удалось получить корзину' }, { status: 500 });
+      return genericErrorResponse('Не удалось получить корзину');
     }
   });
 }
@@ -37,52 +79,89 @@ export async function POST(req: NextRequest) {
       const ip = extractClientIp(req);
       const rl = await checkCartRateLimit(ip);
       if (!rl.success) return tooManyRequests(rl, 'Слишком часто. Попробуйте позже');
-      const session = await auth();
-      const userId = session?.user?.id ?? null;
-      const cookieToken = req.cookies.get(cartCookieName)?.value ?? randomUUID();
 
-      const parsed = createCartItemSchema.safeParse(await req.json());
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return errorResponse(new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные'));
+      }
+      const parsed = createCartItemSchema.safeParse(body);
       if (!parsed.success) {
-        return NextResponse.json({ message: 'Некорректные данные', issues: parsed.error.flatten() }, { status: 400 });
-      }
-      const { productVariantId, quantity = 1 } = parsed.data;
-
-      // Корзина владельца (залогинен → по userId; гость → по token) и вариант — параллельно.
-      const [cart, variant] = await Promise.all([
-        resolveOwnerCart(userId, cookieToken, { create: true }),
-        prisma.productVariant.findUnique({
-          where: { id: productVariantId },
-          include: { colorway: { include: { product: { select: { active: true } } } } },
-        }),
-      ]);
-      if (!cart) return NextResponse.json({ message: 'Не удалось открыть корзину' }, { status: 500 });
-      if (!variant) return NextResponse.json({ message: 'Товар не найден' }, { status: 404 });
-      if (!variant.active || !variant.colorway.product.active) {
-        return NextResponse.json({ message: 'Товар недоступен' }, { status: 409 });
+        return errorResponse(new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные'));
       }
 
-      const existing = await prisma.cartItem.findUnique({
-        where: { cartId_productVariantId: { cartId: cart.id, productVariantId } },
-      });
-      const nextQty = (existing?.quantity ?? 0) + quantity;
-      if (variant.stock < nextQty) {
-        return NextResponse.json({ message: 'Недостаточно на складе' }, { status: 409 });
+      const session = await auth();
+      const cookieToken = req.cookies.get(cartCookieName)?.value ?? randomUUID();
+      const owner = await resolveOwnerCart(session?.user?.id ?? null, cookieToken, { create: true });
+      if (!owner) return errorResponse(new CartRouteError('CART_ITEM_NOT_FOUND', 401, 'Корзина не найдена'));
+      const { skuId, quantity = 1 } = parsed.data;
+      let updatedCart = null;
+
+      for (let attempt = 0; attempt < MAX_CART_RETRIES; attempt += 1) {
+        try {
+          updatedCart = await prisma.$transaction(
+            async (tx) => {
+              const sku = await tx.sku.findUnique({
+                where: { id: skuId },
+                include: { product: { select: { active: true } } },
+              });
+              if (!sku) throw new CartRouteError('SKU_NOT_FOUND', 404, 'Товар не найден');
+              if (!sku.active || !sku.product.active) throw new CartRouteError('SKU_NOT_FOUND', 404, 'Товар не найден');
+              if (sku.stock <= 0) throw new CartRouteError('OUT_OF_STOCK', 409, 'Недостаточно на складе', sku.stock);
+
+              const existing = await tx.cartItem.findUnique({
+                where: { cartId_skuId: { cartId: owner.id, skuId } },
+              });
+              const nextQuantity = (existing?.quantity ?? 0) + quantity;
+              if (nextQuantity > 99) throw new CartRouteError('INVALID_INPUT', 400, 'Некорректные данные');
+              if (nextQuantity > sku.stock)
+                throw new CartRouteError('QUANTITY_EXCEEDS_STOCK', 409, 'Недостаточно на складе', sku.stock);
+
+              await tx.cartItem.upsert({
+                where: { cartId_skuId: { cartId: owner.id, skuId } },
+                create: { cartId: owner.id, skuId, quantity: nextQuantity },
+                update: { quantity: nextQuantity },
+              });
+              return tx.cart.findFirst({ where: { id: owner.id }, include: cartPresentationInclude });
+            },
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+          );
+          break;
+        } catch (error) {
+          if (error instanceof CartRouteError) throw error;
+          if (!isRetryableTransactionError(error) || attempt === MAX_CART_RETRIES - 1) {
+            if (isRetryableTransactionError(error))
+              throw new CartRouteError('CART_CONFLICT', 409, 'Корзина изменилась. Повторите попытку');
+            throw error;
+          }
+        }
       }
 
-      if (existing) {
-        await prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: nextQty } });
-      } else {
-        await prisma.cartItem.create({ data: { cartId: cart.id, productVariantId, quantity } });
-      }
-
-      const updated = await recalcCartTotalByToken(cart.token);
-      const resp = NextResponse.json(updated);
-      // Cookie → token корзины владельца (у залогиненного может отличаться от cookieToken).
-      resp.cookies.set(cartCookieName, cart.token, cartCookieOptions);
-      return resp;
+      const response = NextResponse.json(updatedCart ? buildCartDto(updatedCart) : EMPTY_CART_DTO);
+      response.cookies.set(cartCookieName, owner.token, cartCookieOptions);
+      return response;
     } catch (error) {
+      if (error instanceof CartRouteError) return errorResponse(error);
       logger.error('cart_post_failed', error);
-      return NextResponse.json({ message: 'Не удалось добавить в корзину' }, { status: 500 });
+      return genericErrorResponse('Не удалось добавить в корзину');
+    }
+  });
+}
+
+export async function DELETE(req: NextRequest) {
+  return runWithRequestContext(req, async () => {
+    try {
+      const session = await auth();
+      const token = req.cookies.get(cartCookieName)?.value;
+      const owner = await resolveOwnerCart(session?.user?.id ?? null, token, { create: false });
+      if (!owner) return errorResponse(new CartRouteError('CART_ITEM_NOT_FOUND', 401, 'Корзина не найдена'));
+      await prisma.cartItem.deleteMany({ where: { cartId: owner.id } });
+      return NextResponse.json(await readCartDto(owner.id));
+    } catch (error) {
+      if (error instanceof CartRouteError) return errorResponse(error);
+      logger.error('cart_clear_failed', error);
+      return genericErrorResponse('Не удалось очистить корзину');
     }
   });
 }

@@ -31,12 +31,24 @@ function assertImport(source: string, imported: string, modulePath: string): voi
 describe('Evironn catalog source boundary', () => {
   it('keeps catalog route on canonical server data and Variant B files', () => {
     assertImport(routeSource, 'findProducts', '@/lib/find-products');
+    assertImport(routeSource, 'getWishlistProductIds', '@/lib/wishlist');
+    assertImport(routeSource, 'wishlistCookieName', '@/lib/wishlist-cookie');
+    assertImport(routeSource, 'auth', '@/auth');
+    assertImport(routeSource, 'cookies', 'next/headers');
     assertImport(routeSource, 'buildCatalogBModel', '@/components/evironn/catalog/catalog-variant-b-adapter');
     assertImport(routeSource, 'CatalogVariantB', '@/components/evironn/catalog/catalog-variant-b');
     assertImport(shellSource, 'CatalogCard', '@/components/evironn/catalog/catalog-card');
     assertImport(shellSource, 'CheckRow', '@/components/evironn/catalog/catalog-primitives');
     assertImport(shellSource, 'CatalogBModel', '@/components/evironn/catalog/catalog-variant-b-adapter');
     assertImport(cardSource, 'CatalogBCard', '@/components/evironn/catalog/catalog-variant-b-adapter');
+    expect(shellSource).toContain('initialWishlistedIds');
+    expect(shellSource).toMatch(/initialWishlistedIds:\s*string\[\]/);
+    expect(shellSource).not.toMatch(/initialWishlistedIds\?:\s*string\[\]/);
+    expect(shellSource).not.toContain('initialWishlistedIds = []');
+    expect(shellSource).toContain('toggleWishlist');
+    expect(cardSource).toContain('wishlisted');
+    expect(cardSource).toContain('onWishlistToggle');
+    expect(adapterSource).toContain('buildCatalogBCard');
   });
 
   it('binds each required symbol to its canonical module in one import statement', () => {

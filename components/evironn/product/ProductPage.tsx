@@ -16,6 +16,7 @@ import {
 import { coalesceVideoSeek, videoTimeFromDrag } from './productVideo360';
 import { createFurnitureCaptionVariants } from '@/components/evironn/home/furniture-caption-motion';
 import { InteractiveFurnitureCards } from '@/components/evironn/home/interactive-furniture-cards';
+import { useCartStore } from '@/store';
 
 const ACCORDION_ITEMS: Array<{ id: AccordionKey; label: string; content: string }> = [
   {
@@ -79,10 +80,26 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
+  const addCartItem = useCartStore((state) => state.addCartItem);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [cartAddError, setCartAddError] = useState<string | null>(null);
 
   const currentCombination = model.combinations.find(
     (combination) => combination.upholstery === selectedUpholstery && combination.wood === selectedWood,
   )!;
+
+  const handleAddToCart = async () => {
+    if (isAddingToCart || currentCombination.sku.stock <= 0) return;
+    setIsAddingToCart(true);
+    setCartAddError(null);
+    try {
+      await addCartItem({ skuId: currentCombination.sku.id, quantity: 1 });
+    } catch {
+      setCartAddError('Не удалось добавить товар в корзину');
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const selectCombination = (upholstery: ShowcaseUpholsteryId, wood: ShowcaseWoodId) => {
     const next = model.combinations.find(
@@ -362,9 +379,9 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                   <motion.button
                     className="product-page__360-add-button"
                     type="button"
-                    disabled
-                    aria-disabled="true"
-                    aria-describedby="product-page-phase-3-notice"
+                    onClick={() => void handleAddToCart()}
+                    disabled={isAddingToCart || currentCombination.sku.stock <= 0}
+                    aria-busy={isAddingToCart}
                     initial={reducedMotion ? false : 'hidden'}
                     animate="visible"
                     variants={modalCaptionVariant(5)}
@@ -372,6 +389,11 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                     <span>Добавить в корзину</span>
                     <FiArrowUpRight aria-hidden="true" />
                   </motion.button>
+                  {cartAddError ? (
+                    <p className="product-page__cart-error" role="alert">
+                      {cartAddError}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="product-page__360-viewer">
                   <button
@@ -538,12 +560,17 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
             <button
               className="product-page__add-button"
               type="button"
-              disabled
-              aria-disabled="true"
-              aria-describedby="product-page-phase-3-notice"
+              onClick={() => void handleAddToCart()}
+              disabled={isAddingToCart || currentCombination.sku.stock <= 0}
+              aria-busy={isAddingToCart}
             >
               Добавить в корзину
             </button>
+            {!is360Active && cartAddError ? (
+              <p className="product-page__cart-error" role="alert">
+                {cartAddError}
+              </p>
+            ) : null}
 
             <div className="product-page__benefits" aria-label="Преимущества">
               {BENEFITS.map(({ icon: Icon, label }) => (
@@ -589,9 +616,6 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
         </motion.aside>
       </main>
       <InteractiveFurnitureCards heading="Также смотрят" />
-      <p id="product-page-phase-3-notice" className="product-page__visually-hidden">
-        Добавление в корзину будет доступно после завершения пилота
-      </p>
     </>
   );
 }

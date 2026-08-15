@@ -16,7 +16,7 @@ export function PromoCodeField() {
     setError(null);
     setPending(true);
     try {
-      const result = await validateCoupon(input);
+      const result = await validateCoupon(input.trim());
       if (!result.ok) {
         clearCoupon();
         setError(result.error);

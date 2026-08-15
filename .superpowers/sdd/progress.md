@@ -209,3 +209,12 @@
 - Full gate, build, E2E, and unrelated suites not run per Task 4 scope. Report: `.superpowers/sdd/phase-3-task-4-report.md`.
 - Fresh Task 4 review approved: Critical 0 / Important 0 / Minor 0. Fresh evidence: 17/17 focused tests, legacy Catalog Variant B 11/11, typecheck, Prettier, and `git diff --check` pass.
 - Task 4: complete (commits `c816cef..72b60a5`, review clean; Critical 0 / Important 0 / Minor 0). No full gate, build, E2E, push, PR, or merge.
+
+## Phase 3 commerce and authentication — Task 5
+
+- Task 5 ports the accepted clone Cart Variant A and Cart Primitives JSX/classes/CSS without redesign. The production adapter uses canonical furniture SKU cart DTOs, production cart state, Auth.js-backed server actions, and the existing wishlist foundation.
+- Server authority is preserved for prices, totals, coupon validation, stock, quantity limits, and cart/wishlist mutations. Checkout controls are visibly disabled with honest next-stage copy. Save-to-wishlist deletes only after a successful save; undo re-adds the original canonical `skuId` and quantity while leaving the wishlist entry intact. Related products use canonical `primarySkuId` values and disable unavailable products.
+- The now-unreferenced legacy related grid and focused test were removed. Its old server entry remains a no-op compatibility boundary because it has no consumers after Cart Variant A became the sole related renderer.
+- TDD RED showed the expected missing Cart Variant A/source files and legacy coupon action failure. GREEN passed the required four-file command at 33/33 and the broader focused regression command at 72/72.
+- `npm run typecheck`, the required touched-file Prettier check, and `git diff --check` passed. Playwright was skipped because disposable E2E keys are absent; no ambient database was used. Full gate, build, and all E2E were not run per Task 5 scope.
+- Report: `.superpowers/sdd/phase-3-task-5-report.md`.

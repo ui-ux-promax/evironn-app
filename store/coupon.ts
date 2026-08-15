@@ -1,8 +1,11 @@
 import { create } from 'zustand';
+import type { CartTotalsDto } from '@/services/dto/commerce-cart.dto';
 
 export interface AppliedCoupon {
   code: string;
   percent: number;
+  discount?: number;
+  totals?: CartTotalsDto;
 }
 
 interface CouponState {

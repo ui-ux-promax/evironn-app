@@ -106,4 +106,15 @@ describe('Evironn Cart Variant A source boundary', () => {
     );
     expect(variant).toMatch(/<UndoBar[\s\S]*onUndo=\{\(\) => void actions\.undo\(\)\.catch\(\(\) => undefined\)\}/);
   });
+
+  it('keeps the cart loading skeleton above the shared footer', () => {
+    const loading = source('app/(shop)/cart/loading.tsx');
+    const layout = source('app/layout.tsx');
+    const css = source('styles/evironn/CartLoading.css');
+
+    expect(loading).toContain('className="cart-loading mx-auto max-w-[1240px]');
+    expect(loading).toContain('aria-hidden');
+    expect(layout).toContain("import '../styles/evironn/CartLoading.css';");
+    expect(css).toMatch(/\.cart-loading\s*\{[\s\S]*min-height:\s*100svh;[\s\S]*min-height:\s*100dvh;[\s\S]*\}/);
+  });
 });

@@ -36,6 +36,44 @@ export const SORT_OPTIONS = [
 export type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 export const DEFAULT_SORT: SortValue = 'new';
 
+export const CHECKOUT_POLICY = {
+  timezone: 'Europe/Moscow',
+  courier: { moscow: 1900, 'moscow-region': 1900, freeFrom: 150000, leadDays: 2 },
+  services: { carryingPerFloor: 350, assembly: 3900, removal: 2400 },
+  horizonDays: 4,
+  windows: [
+    { id: '10-14', label: '10:00 - 14:00' },
+    { id: '14-18', label: '14:00 - 18:00' },
+    { id: '18-22', label: '18:00 - 22:00' },
+  ],
+  pickupPoints: [
+    {
+      id: 'pt-dizavod',
+      kind: 'showroom',
+      name: 'Evironn Showroom',
+      address: 'Bolshaya Novodmitrovskaya, 36',
+      hours: '11:00 - 21:00',
+      leadDays: 1,
+    },
+    {
+      id: 'pt-danilov',
+      kind: 'pickup-point',
+      name: 'Danilovsky',
+      address: 'Dubininskaya, 71',
+      hours: '10:00 - 22:00',
+      leadDays: 2,
+    },
+    {
+      id: 'pt-vdnh',
+      kind: 'pickup-point',
+      name: 'VDNH',
+      address: 'Prospekt Mira, 119',
+      hours: '09:00 - 21:00',
+      leadDays: 2,
+    },
+  ],
+} as const;
+
 export const GENDER_OPTIONS = [
   { value: 'MEN', label: 'Мужские' },
   { value: 'WOMEN', label: 'Женские' },

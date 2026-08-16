@@ -12,7 +12,8 @@
 - Task 1 complete: commits `53b729f..a721d4a`; focused Vitest 20/20, touched-file Prettier, and diff checks pass. Fresh re-review approved Critical 0 / Important 0 / Minor 0.
 - Task 2 complete: commits `7a01515..cd3741e`; focused Vitest 6 files / 34 tests, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh final review approved Critical 0 / Important 0 / Minor 0. No database connection or migration application occurred.
 - Task 2A complete: commits `ca26715..e15dbd6`; the explicit guarded read-only migration checkpoint reported `UNAPPLIED` with `ok: true`, then added only nullable `Order.paymentReturnUrl` and the separate one-line additive migration. Focused Vitest 61/61, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. No migration deploy or application-data write occurred.
-- Tasks 3-9 pending. No push, Preview, PR, merge, branch deletion, or next phase.
+- Task 3 complete: commit `52ba731`; authenticated owner-scoped checkout read model, server-owned quote, coupon reader/clock injection, bounded DaData projection, and payment-initialization DTO vocabulary implemented. Focused Vitest 41/41, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. External-service smoke remains deferred because presence-only preflight found all requested keys absent.
+- Tasks 4-9 pending. No push, Preview, PR, merge, branch deletion, or next phase.
 
 # Phase 2 catalog pilot progress
 

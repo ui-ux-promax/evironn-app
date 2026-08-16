@@ -65,6 +65,22 @@ describe('Phase 4 migration status checkpoint', () => {
     expect(result.status).toBe('APPLIED');
   });
 
+  it.each([undefined, false, '', 'not-a-date', new Date(Number.NaN)])(
+    'blocks invalid finished_at value: %s',
+    (finishedAt) => {
+      const result = classifyDeliveryMigration([appliedRow({ finished_at: finishedAt as never })]);
+      expect(result.status).toBe('BLOCKED');
+      expect(result.report.errorCategory).toBe('MIGRATION_FAILED');
+    },
+  );
+
+  it('accepts valid Date and serialized instant finished_at values', () => {
+    expect(classifyDeliveryMigration([appliedRow({ finished_at: new Date('2026-08-16T00:00:00Z') })]).status).toBe(
+      'APPLIED',
+    );
+    expect(classifyDeliveryMigration([appliedRow({ finished_at: '2026-08-16T00:00:00.000Z' })]).status).toBe('APPLIED');
+  });
+
   it('keeps printable reports free of query and secret-bearing error data', () => {
     const result = classifyDeliveryMigration([appliedRow({ checksum: 'postgresql://user:password@host/db' })]);
     const serialized = JSON.stringify(result.report);

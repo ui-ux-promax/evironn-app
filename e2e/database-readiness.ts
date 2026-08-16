@@ -61,6 +61,12 @@ function blockedReport(
   };
 }
 
+function isValidFinishedAt(value: unknown): boolean {
+  if (value instanceof Date) return Number.isFinite(value.getTime());
+  if (typeof value !== 'string' || value.trim() === '') return false;
+  return Number.isFinite(Date.parse(value));
+}
+
 export function classifyDeliveryMigration(
   rows: readonly DeliveryMigrationRow[],
   targetFingerprint: string | null = null,
@@ -90,7 +96,7 @@ export function classifyDeliveryMigration(
   const applied =
     rows.length === 1 &&
     row.migration_name === EXPECTED_DELIVERY_MIGRATION_NAME &&
-    row.finished_at !== null &&
+    isValidFinishedAt(row.finished_at) &&
     row.rolled_back_at === null &&
     checksumMatches;
 

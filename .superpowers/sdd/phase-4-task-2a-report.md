@@ -9,7 +9,12 @@ Complete. The sanitized explicit E2E database checkpoint proved `UNAPPLIED` with
 - RED migration-status test: failed because `e2e/database-readiness.ts` did not exist.
 - RED schema contract: two expected failures for the absent nullable field and absent separate migration.
 - `npx vitest run tests/phase-4-migration-status.test.ts tests/e2e-database-guard.test.ts tests/phase-4-schema-contract.test.ts tests/yookassa-provider-contract.test.ts` - 44 tests passed.
-- `npx tsx e2e/database-readiness.ts --mode=migration-status` - exit code 0; sanitized result proved `deliveryMigrationUnapplied: true`, `deliveryMigrationApplied: false`, zero migration rows, `ok: true`, and `NONE`.
+- `npx tsx e2e/database-readiness.ts --mode=migration-status` - exit code 0 with this exact sanitized report:
+
+```text
+{"targetFingerprint":"4e408e2198d9448ac9bc15b5aa150b05dbeb61c75ce05d11e0e8a8b18cf088eb","checks":{"deliveryMigrationQuerySucceeded":true,"deliveryMigrationUnapplied":true,"deliveryMigrationApplied":false,"deliveryMigrationChecksumMatches":false},"migrationNames":[],"migrationCount":0,"noPendingMigrations":false,"ok":true,"exitCode":0,"errorCategory":"NONE"}
+```
+
 - `npx prisma validate` - passed with explicit guarded E2E URLs mapped to the Prisma validation variables; validation made no database query.
 - `npm run prisma:generate` - passed.
 - `npm run typecheck` - passed.

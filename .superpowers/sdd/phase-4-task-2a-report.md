@@ -8,7 +8,7 @@ Complete. The sanitized explicit E2E database checkpoint proved `UNAPPLIED` with
 
 - RED migration-status test: failed because `e2e/database-readiness.ts` did not exist.
 - RED schema contract: two expected failures for the absent nullable field and absent separate migration.
-- `npx vitest run tests/phase-4-migration-status.test.ts tests/e2e-database-guard.test.ts tests/phase-4-schema-contract.test.ts tests/yookassa-provider-contract.test.ts` - 56 tests passed.
+- `npx vitest run tests/phase-4-migration-status.test.ts tests/e2e-database-guard.test.ts tests/phase-4-schema-contract.test.ts tests/yookassa-provider-contract.test.ts` - 61 tests passed.
 - `npx tsx e2e/database-readiness.ts --mode=migration-status` - exit code 0 with this exact sanitized report:
 
 ```text

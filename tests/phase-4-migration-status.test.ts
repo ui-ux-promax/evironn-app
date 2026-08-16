@@ -89,6 +89,20 @@ describe('Phase 4 migration status checkpoint', () => {
     },
   );
 
+  it.each(['2026-02-30T00:00:00Z', '2026-04-31T00:00:00Z', '2026-01-01T24:00:00Z'])(
+    'blocks normalized impossible timestamps: %s',
+    (finishedAt) => {
+      expect(classifyDeliveryMigration([appliedRow({ finished_at: finishedAt })]).status).toBe('BLOCKED');
+    },
+  );
+
+  it.each(['2024-02-29T23:59:59+03:00', '2026-08-16T00:00:00.123456789Z'])(
+    'accepts strict valid timestamp: %s',
+    (finishedAt) => {
+      expect(classifyDeliveryMigration([appliedRow({ finished_at: finishedAt })]).status).toBe('APPLIED');
+    },
+  );
+
   it('keeps printable reports free of query and secret-bearing error data', () => {
     const result = classifyDeliveryMigration([appliedRow({ checksum: 'postgresql://user:password@host/db' })]);
     const serialized = JSON.stringify(result.report);

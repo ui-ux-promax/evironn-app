@@ -58,4 +58,46 @@ describe('POST /api/dadata/suggest', () => {
       }),
     );
   });
+
+  it('returns only the bounded serializable suggestion fields', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          suggestions: [
+            {
+              value: 'Москва, Тверская улица, 10',
+              unrestricted_value: 'raw upstream value',
+              data: {
+                city: 'Москва',
+                region_with_type: 'г Москва',
+                street_with_type: 'Тверская ул',
+                house: '10',
+                postal_code: '125009',
+                secret: 'must-not-cross',
+              },
+            },
+          ],
+          rawMeta: 'must-not-cross',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const res = await POST(req({ query: 'Москва' }));
+
+    await expect(res.json()).resolves.toEqual({
+      suggestions: [
+        { value: 'Москва, Тверская улица, 10', city: 'Москва', region: 'г Москва', street: 'Тверская ул', house: '10' },
+      ],
+    });
+  });
+
+  it('returns an honest empty list when DADATA_TOKEN is absent', async () => {
+    vi.stubEnv('DADATA_TOKEN', '');
+
+    const res = await POST(req({ query: 'Москва' }));
+
+    await expect(res.json()).resolves.toEqual({ suggestions: [] });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

@@ -4,15 +4,15 @@
 
 - Delivery base: `868310f`; branch: `phase/04-checkout-orders`; plan: `docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md`.
 - Current amended plan hash: `5E46F11CD7105C4C29C39DABF719FA0EA2CE086001F2E1D330C7BDB937741C0A`; ADR-017 and payment-safety amendment commits: `5b08806`, `7c88133`.
-- Original plan review approved Critical 0 / Important 0. Amended-plan re-review is in progress after remediation of 1 Critical / 3 Important findings.
+- Original and amended plan reviews approved Critical 0 / Important 0; amended plan final review also reported Minor 0.
 - Phase 3 merge: PR #3, merge `868310f`; final Phase 3 commit `f3d8a93`.
 - Protected plan hashes: `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
 - ADR-015 approved shared non-production Neon E2E fingerprint confirmed; user confirmed no separate Production database exists. ADR-016 delivery/service policy approved 2026-08-16.
 - Task 1 committed as `53b729f` (`chore: initialize phase 4 delivery`). Final plan review: APPROVED, Critical 0 / Important 0 / Minor 2, plan hash `4D5AE7BF7F9400A212BF10CD3902ACA61CE7227CF777FA2F46556E5899CAB8B2`.
 - Task 1 complete: commits `53b729f..a721d4a`; focused Vitest 20/20, touched-file Prettier, and diff checks pass. Fresh re-review approved Critical 0 / Important 0 / Minor 0.
 - Task 2 complete: commits `7a01515..cd3741e`; focused Vitest 6 files / 34 tests, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh final review approved Critical 0 / Important 0 / Minor 0. No database connection or migration application occurred.
-- Task 2A and Tasks 3-9 pending. Task 2A must not start until amended-plan review reaches Critical 0 / Important 0.
-- No database reads/writes, push, Preview, PR, merge, branch deletion, or next phase.
+- Task 2A complete: commits `ca26715..e15dbd6`; the explicit guarded read-only migration checkpoint reported `UNAPPLIED` with `ok: true`, then added only nullable `Order.paymentReturnUrl` and the separate one-line additive migration. Focused Vitest 61/61, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. No migration deploy or application-data write occurred.
+- Tasks 3-9 pending. No push, Preview, PR, merge, branch deletion, or next phase.
 
 # Phase 2 catalog pilot progress
 

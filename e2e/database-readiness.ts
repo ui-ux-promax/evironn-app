@@ -64,7 +64,8 @@ function blockedReport(
 function isValidFinishedAt(value: unknown): boolean {
   if (value instanceof Date) return Number.isFinite(value.getTime());
   if (typeof value !== 'string' || value.trim() === '') return false;
-  return Number.isFinite(Date.parse(value));
+  const serializedInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/i;
+  return serializedInstant.test(value) && Number.isFinite(Date.parse(value));
 }
 
 export function classifyDeliveryMigration(
@@ -146,15 +147,16 @@ export async function runDeliveryMigrationStatus(
   env: Record<string, string | undefined>,
   dependencies: MigrationStatusDependencies = {},
 ): Promise<DeliveryMigrationStatusResult> {
-  const targetFingerprint = isDatabaseFingerprint(env.E2E_DATABASE_TARGET_FINGERPRINT)
-    ? env.E2E_DATABASE_TARGET_FINGERPRINT
-    : null;
   let databaseEnvironment: E2eDatabaseEnvironment;
   try {
     databaseEnvironment = (dependencies.resolveEnvironment ?? resolveE2eDatabaseEnvironment)(env);
   } catch (error) {
-    return blockedReport(classifyGuardFailure(error), targetFingerprint);
+    return blockedReport(classifyGuardFailure(error));
   }
+
+  const targetFingerprint = isDatabaseFingerprint(env.E2E_DATABASE_TARGET_FINGERPRINT)
+    ? env.E2E_DATABASE_TARGET_FINGERPRINT
+    : null;
 
   try {
     const rows = await (dependencies.query ?? queryDeliveryMigration)(

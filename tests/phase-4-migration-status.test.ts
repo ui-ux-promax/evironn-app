@@ -81,6 +81,14 @@ describe('Phase 4 migration status checkpoint', () => {
     expect(classifyDeliveryMigration([appliedRow({ finished_at: '2026-08-16T00:00:00.000Z' })]).status).toBe('APPLIED');
   });
 
+  it.each(['0', '1', '2026-08-16', 'August 16, 2026'])(
+    'blocks Date.parse-permissive non-timestamps: %s',
+    (finishedAt) => {
+      const result = classifyDeliveryMigration([appliedRow({ finished_at: finishedAt })]);
+      expect(result.status).toBe('BLOCKED');
+    },
+  );
+
   it('keeps printable reports free of query and secret-bearing error data', () => {
     const result = classifyDeliveryMigration([appliedRow({ checksum: 'postgresql://user:password@host/db' })]);
     const serialized = JSON.stringify(result.report);
@@ -148,6 +156,32 @@ describe('Phase 4 migration status checkpoint', () => {
     expect(result.status).toBe('BLOCKED');
     expect(result.report.errorCategory).toBe('CONNECTIVITY');
     expect(JSON.stringify(result.report)).not.toContain('secret');
+  });
+
+  it('does not expose caller fingerprint when guard rejects configuration', async () => {
+    const result = await runDeliveryMigrationStatus(
+      { E2E_DATABASE_TARGET_FINGERPRINT: 'c'.repeat(64) },
+      {
+        resolveEnvironment: () => {
+          throw new Error('E2E_DATABASE_URL is missing');
+        },
+        query: async () => [],
+      },
+    );
+    expect(result.report.targetFingerprint).toBeNull();
+  });
+
+  it('does not expose caller fingerprint when guard rejects identity', async () => {
+    const result = await runDeliveryMigrationStatus(
+      { E2E_DATABASE_TARGET_FINGERPRINT: 'd'.repeat(64) },
+      {
+        resolveEnvironment: () => {
+          throw new Error('target differs from approved non-production E2E database');
+        },
+        query: async () => [],
+      },
+    );
+    expect(result.report.targetFingerprint).toBeNull();
   });
 
   it('catches top-level rejection and writes one sanitized JSON report', async () => {

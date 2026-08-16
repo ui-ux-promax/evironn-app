@@ -20,6 +20,8 @@ describe('checkout DTOs', () => {
     [{ ...courier, deliveryZone: 'other' }],
     [{ ...courier, address: undefined }],
     [{ ...courier, deliverySlotId: '' }],
+    [{ ...courier, deliverySlotId: 'forged-slot' }],
+    [{ ...courier, pickupPointId: 'pt-dizavod' }],
     [{ ...courier, address: { ...courier.address, floor: 61 } }],
     [
       {

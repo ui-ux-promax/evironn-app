@@ -17,13 +17,18 @@ export function fromDeliveryDateSentinel(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 export function buildDeliverySlots(now: Date, method: CheckoutQuoteInput['deliveryMethod']): DeliverySlot[] {
-  const lead = method === 'courier' ? CHECKOUT_POLICY.courier.leadDays : method === 'showroom' ? 1 : 2;
+  const lead =
+    method === 'courier'
+      ? CHECKOUT_POLICY.courier.leadDays
+      : CHECKOUT_POLICY.pickupPoints.find((point) => point.kind === method)?.leadDays;
+  if (lead === undefined) throw new Error('Unsupported delivery method');
+  const windowCount = CHECKOUT_POLICY.windows.length;
   const today = toDeliveryDateSentinel(moscowDateOnly(now));
-  return Array.from({ length: CHECKOUT_POLICY.horizonDays * CHECKOUT_POLICY.windows.length }, (_, index) => {
+  return Array.from({ length: CHECKOUT_POLICY.horizonDays * windowCount }, (_, index) => {
     const day = new Date(today);
-    day.setUTCDate(day.getUTCDate() + lead + Math.floor(index / 3));
+    day.setUTCDate(day.getUTCDate() + lead + Math.floor(index / windowCount));
     const date = fromDeliveryDateSentinel(day);
-    const window = CHECKOUT_POLICY.windows[index % 3];
+    const window = CHECKOUT_POLICY.windows[index % windowCount];
     return { id: `${date}:${window.id}`, date, windowId: window.id, windowLabel: window.label };
   });
 }
@@ -56,16 +61,22 @@ export function resolveDeliverySelection(
   input: CheckoutQuoteInput | { shippingMethod: 'pickup'; pickupPointId: string | null },
   now: Date,
 ) {
-  if ('shippingMethod' in input)
-    return input.pickupPointId
-      ? { deliveryMethod: 'pickup-point' as const, pickupPointId: input.pickupPointId }
-      : { deliveryMethod: 'legacy-pickup' as const };
+  if ('shippingMethod' in input) {
+    if (!input.pickupPointId) return { deliveryMethod: 'legacy-pickup' as const };
+    const legacyPoint = CHECKOUT_POLICY.pickupPoints.find((candidate) => candidate.id === input.pickupPointId);
+    return legacyPoint
+      ? { deliveryMethod: legacyPoint.kind, pickupPointId: legacyPoint.id }
+      : { deliveryMethod: 'unknown-pickup' as const, pickupPointId: input.pickupPointId };
+  }
   const slot = buildDeliverySlots(now, input.deliveryMethod).find((candidate) => candidate.id === input.deliverySlotId);
+  if (!slot) throw new Error('Invalid delivery slot');
   const point = CHECKOUT_POLICY.pickupPoints.find((candidate) => candidate.id === input.pickupPointId);
+  if (input.deliveryMethod !== 'courier' && (!point || point.kind !== input.deliveryMethod))
+    throw new Error('Invalid pickup point');
   return {
     shippingMethod: input.deliveryMethod === 'courier' ? 'courier' : 'pickup',
-    deliveryDate: slot?.date,
-    deliveryWindow: slot?.windowId,
+    deliveryDate: slot.date,
+    deliveryWindow: slot.windowId,
     pickupPointId: point?.id,
     pickupPointName: point?.name,
     pickupPointAddress: point?.address,

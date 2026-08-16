@@ -24,12 +24,40 @@ describe('ADR-016 checkout policy', () => {
     expect(CHECKOUT_POLICY.courier).toMatchObject({ moscow: 1900, 'moscow-region': 1900, freeFrom: 150000 });
     expect(CHECKOUT_POLICY.services).toMatchObject({ carryingPerFloor: 350, assembly: 3900, removal: 2400 });
     expect(CHECKOUT_POLICY.horizonDays).toBe(4);
-    expect(CHECKOUT_POLICY.windows.map((window) => window.id)).toEqual(['10-14', '14-18', '18-22']);
-    expect(CHECKOUT_POLICY.pickupPoints).toHaveLength(3);
-    expect(CHECKOUT_POLICY.pickupPoints[0]).toMatchObject({ id: 'pt-dizavod', kind: 'showroom', leadDays: 1 });
-    expect(
-      CHECKOUT_POLICY.pickupPoints.slice(1).every((point) => point.kind === 'pickup-point' && point.leadDays === 2),
-    ).toBe(true);
+    expect(CHECKOUT_POLICY.windows).toEqual([
+      { id: '10-14', label: '10:00 – 14:00' },
+      { id: '14-18', label: '14:00 – 18:00' },
+      { id: '18-22', label: '18:00 – 22:00' },
+    ]);
+    expect(CHECKOUT_POLICY.pickupPoints).toEqual([
+      {
+        id: 'pt-dizavod',
+        kind: 'showroom',
+        name: 'Шоурум Evironn',
+        address: 'Большая Новодмитровская, 36',
+        hours: '11:00 – 21:00',
+        metro: 'Дмитровская',
+        leadDays: 1,
+      },
+      {
+        id: 'pt-danilov',
+        kind: 'pickup-point',
+        name: 'Пункт «Даниловский»',
+        address: 'Дубининская, 71',
+        hours: '10:00 – 22:00',
+        metro: 'Тульская',
+        leadDays: 2,
+      },
+      {
+        id: 'pt-vdnh',
+        kind: 'pickup-point',
+        name: 'Пункт «ВДНХ»',
+        address: 'Проспект Мира, 119',
+        hours: '09:00 – 21:00',
+        metro: 'ВДНХ',
+        leadDays: 2,
+      },
+    ]);
   });
 
   it('uses Moscow civil dates and UTC-midnight sentinels', () => {
@@ -71,5 +99,26 @@ describe('ADR-016 checkout policy', () => {
     expect(resolveDeliverySelection({ shippingMethod: 'pickup', pickupPointId: null }, new Date())).toEqual({
       deliveryMethod: 'legacy-pickup',
     });
+    expect(resolveDeliverySelection({ shippingMethod: 'pickup', pickupPointId: 'pt-dizavod' }, new Date())).toEqual({
+      deliveryMethod: 'showroom',
+      pickupPointId: 'pt-dizavod',
+    });
+    expect(resolveDeliverySelection({ shippingMethod: 'pickup', pickupPointId: 'pt-danilov' }, new Date())).toEqual({
+      deliveryMethod: 'pickup-point',
+      pickupPointId: 'pt-danilov',
+    });
+    expect(resolveDeliverySelection({ shippingMethod: 'pickup', pickupPointId: 'unknown' }, new Date())).toEqual({
+      deliveryMethod: 'unknown-pickup',
+      pickupPointId: 'unknown',
+    });
+  });
+
+  it('rejects forged or policy-stale delivery slot ids explicitly', () => {
+    expect(() =>
+      resolveDeliverySelection({ ...courier, deliverySlotId: '2026-08-22:10-14' }, new Date('2026-08-16T20:59:59Z')),
+    ).toThrow('Invalid delivery slot');
+    expect(() =>
+      resolveDeliverySelection({ ...courier, deliverySlotId: 'forged-slot' }, new Date('2026-08-16T21:00:00Z')),
+    ).toThrow('Invalid delivery slot');
   });
 });

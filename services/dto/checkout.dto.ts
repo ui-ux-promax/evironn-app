@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CHECKOUT_POLICY } from '@/constants/config';
 
 export const deliveryMethodSchema = z.enum(['courier', 'showroom', 'pickup-point']);
 export const deliveryZoneSchema = z.enum(['moscow', 'moscow-region']);
@@ -20,7 +21,7 @@ const base = z
   .object({
     deliveryMethod: deliveryMethodSchema,
     deliveryZone: deliveryZoneSchema.optional(),
-    deliverySlotId: z.string().min(1),
+    deliverySlotId: z.string().regex(/^\d{4}-\d{2}-\d{2}:[a-z0-9-]+$/),
     pickupPointId: z.string().min(1).optional(),
     address: checkoutAddressSchema.optional(),
     services: z.object({ carrying: z.boolean(), assembly: z.boolean(), removal: z.boolean() }).strict(),
@@ -30,6 +31,8 @@ const base = z
 
 const validateDelivery = (value: z.infer<typeof base>, ctx: z.RefinementCtx) => {
   if (value.deliveryMethod === 'courier') {
+    if (value.pickupPointId)
+      ctx.addIssue({ code: 'custom', path: ['pickupPointId'], message: 'Pickup point not allowed for courier' });
     if (!value.deliveryZone) ctx.addIssue({ code: 'custom', path: ['deliveryZone'], message: 'Courier zone required' });
     if (!value.address) ctx.addIssue({ code: 'custom', path: ['address'], message: 'Courier address required' });
     if (value.services.assembly || value.services.removal || value.services.carrying) {
@@ -45,11 +48,12 @@ const validateDelivery = (value: z.infer<typeof base>, ctx: z.RefinementCtx) => 
       ctx.addIssue({ code: 'custom', path: ['services'], message: 'Services unavailable' });
     if (!value.pickupPointId)
       ctx.addIssue({ code: 'custom', path: ['pickupPointId'], message: 'Pickup point required' });
-    if (value.pickupPointId && !['pt-dizavod', 'pt-danilov', 'pt-vdnh'].includes(value.pickupPointId))
+    const point = CHECKOUT_POLICY.pickupPoints.find((candidate) => candidate.id === value.pickupPointId);
+    if (value.pickupPointId && !point)
       ctx.addIssue({ code: 'custom', path: ['pickupPointId'], message: 'Unknown pickup point' });
-    if (value.deliveryMethod === 'showroom' && value.pickupPointId !== 'pt-dizavod')
+    if (value.deliveryMethod === 'showroom' && point?.kind !== 'showroom')
       ctx.addIssue({ code: 'custom', path: ['pickupPointId'], message: 'Showroom identity mismatch' });
-    if (value.deliveryMethod === 'pickup-point' && value.pickupPointId === 'pt-dizavod')
+    if (value.deliveryMethod === 'pickup-point' && point?.kind !== 'pickup-point')
       ctx.addIssue({ code: 'custom', path: ['pickupPointId'], message: 'Pickup point identity mismatch' });
   }
 };

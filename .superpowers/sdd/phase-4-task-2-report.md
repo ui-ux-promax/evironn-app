@@ -14,21 +14,31 @@ rg -n "prisma\.(order|payment|coupon)|tx\.(order|payment|coupon)|OrderGetPayload
 
 Production readers:
 
-- Order page: `app/(shop)/orders/[number]/page.tsx` reads the order, items, payment, `shippingMethod`, and `shippingAmount`.
-- Profile: `lib/profile-page.ts` and profile components read current order totals and shipping fields.
-- Admin: order list/detail/dashboard/customer pages and `lib/admin/analytics.ts` read order/payment aggregates and details.
-- Eligibility and reconciliation: `lib/review.ts` reads qualifying orders; `lib/payment-sync.ts` reads the local payment and order.
-- Coupon checkout: `lib/coupon.ts` reads one coupon by normalized code.
+- `app/(shop)/orders/[number]/page.tsx:59,71,154,269` reads the owned order, items, payment, `shippingMethod`, and `shippingAmount` for the customer order page.
+- `lib/profile-page.ts:23-28,141-147` selects profile order totals, status, items, and current shipping fields.
+- `components/shared/profile/profile-view.tsx:43-46,794` consumes the profile order shipping fields.
+- `app/(admin)/admin/orders/[id]/page.tsx:20,103,128` reads order, payment, and current shipping fields for the admin detail page.
+- `app/(admin)/admin/orders/page.tsx:47-68` reads order/payment list data.
+- `app/(admin)/admin/page.tsx:40` reads dashboard order/payment aggregates.
+- `app/(admin)/admin/customers/[id]/page.tsx:35-41` reads customer order history.
+- `lib/admin/analytics.ts:402-424` reads order/payment aggregates.
+- `lib/review.ts:30` reads qualifying delivered orders for purchase-gated reviews.
+- `lib/payment-sync.ts:186` reads the local payment and order for reconciliation.
+- `lib/coupon.ts:20-32` reads one coupon by normalized code.
+- `app/(admin)/admin/marketing/page.tsx:28-39` reads coupon definitions for administration.
+- `app/(admin)/admin/marketing/[id]/edit/page.tsx:12` reads one coupon definition for editing.
 
 Production writers:
 
-- `app/actions/order.ts` creates/deletes orders and order items, creates the local Payment row, and performs guarded cancellation updates.
-- `lib/payment-sync.ts` updates payment/order final states and restores cancellation side effects.
-- `app/actions/admin/orders.ts` updates order/payment status.
-- `app/actions/admin/coupons.ts` performs coupon administration CRUD only.
-- `prisma/seed-orders.ts` is a fixture writer for orders and payments.
+- `app/actions/order.ts:133-227,272-291` creates/deletes orders and order items, creates the local Payment row, and performs guarded cancellation updates.
+- `lib/payment-sync.ts:74-82,124-160` updates payment/order final states and restores cancellation side effects.
+- `app/actions/admin/orders.ts:26-80` updates order/payment status.
+- `prisma/seed-orders.ts:85-130` writes legacy order/payment fixture data.
+- `app/actions/admin/coupons.ts:37-120` performs coupon definition CRUD only. Coupon usage remains stateless; this writer does not reserve, consume, or compensate coupon usage.
 
-No existing column stores immutable delivery zone/date/window, pickup identity, floor/lift/intercom, service lines, or service total. Existing readers remain compatible because all new snapshot fields are nullable and `serviceAmount` defaults to zero. Existing writers may omit every new field. Rollback is application-first while retaining the additive migration; destructive contraction is not authorized.
+Fixture caveat: `prisma/seed-orders.ts:85-130` writes legacy `shippingMethod`, `shippingAmount`, totals, and payment fixture values. It omits the new nullable snapshots and relies on the `serviceAmount` default of zero. This is compatibility fixture data, not a new production contract.
+
+No existing field stores immutable delivery date, delivery window, delivery zone, pickup identity, floor, lift, intercom, service lines, or service total. Existing readers remain compatible because all new snapshot fields are nullable and `serviceAmount` defaults to zero. Existing writers may omit every new field. Rollback is application-first while retaining the additive migration; destructive contraction is not authorized.
 
 `Order.shippingMethod` remains `courier` or `pickup`. New showroom and pickup-point orders persist `pickup` plus their server-owned snapshot. A legacy `pickup` with no `pickupPointId` resolves to `legacy-pickup`, never showroom.
 
@@ -44,11 +54,11 @@ Durable evidence present:
 Evidence not established:
 
 - Installed `@webzaytsev/yookassa-ts-sdk` documents same-key retry and contains an application example storing a key for 86,400 seconds, but it does not prove YooKassa's provider-side bounded idempotency retention window `T`.
-- The installed payment API surface loads by provider id; no audited payment lookup by order metadata was found.
+- The installed payment list filter has no metadata field, and the payment API surface loads by provider id; no audited payment lookup by order metadata was found.
 - Current webhook and order-page resync require an existing local `Payment.id`; they cannot recover a provider object after a successful provider create followed by a failed local Payment write.
 - Current create errors do not prove the required total `NOT_CREATED`, `CREATED`, and `INDETERMINATE` outcome taxonomy.
 
-Decision: `PAYMENT_AUTO_RETRY_UNSAFE`. No automatic late retry, stock release, provider-dependent cleanup, or provider-dependent assumption is authorized by Task 2. Provider work must stop until an approved ADR-010 decision supplies a bounded `T` and unambiguous recovery/proof contract.
+Decision: committed stop marker `PAYMENT_AUTO_RETRY_SAFETY = 'PAYMENT_AUTO_RETRY_UNSAFE'`. Contract tests assert the marker, the SDK same-key statement, its application-side Redis `EX 86400` example, absence of metadata from `GetPaymentListFilter`, and absence of provider retention/expiry/TTL proof. No automatic late retry, stock release, provider-dependent cleanup, or provider-dependent assumption is authorized by Task 2. Provider work must stop until an approved ADR-010 decision supplies a bounded `T` and unambiguous recovery/proof contract.
 
 ## Coupon audit
 

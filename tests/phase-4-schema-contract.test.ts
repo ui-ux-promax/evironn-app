@@ -26,5 +26,20 @@ describe('Phase 4 delivery snapshot expansion', () => {
     expect(migration).toContain('ALTER TABLE "Order" ADD COLUMN');
     expect(migration).toContain('"serviceAmount" INTEGER NOT NULL DEFAULT 0');
     expect(migration).not.toMatch(/DROP|RENAME|ALTER COLUMN|TRUNCATE|DELETE FROM|migrate reset/i);
+    for (const column of [
+      'deliveryZone',
+      'deliveryDate',
+      'deliveryWindow',
+      'pickupPointId',
+      'pickupPointName',
+      'pickupPointAddress',
+      'floor',
+      'liftType',
+      'intercom',
+      'serviceDetails',
+    ]) {
+      expect(migration).toMatch(new RegExp(`ADD COLUMN "${column}" (?:TEXT|TIMESTAMP\\(3\\)|INTEGER|JSONB);`));
+    }
+    expect(migration.match(/ALTER TABLE "Order" ADD COLUMN/g)).toHaveLength(11);
   });
 });

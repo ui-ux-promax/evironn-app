@@ -32,6 +32,63 @@ export interface OrderSnapshot {
   itemsTotal: number;
 }
 
+export function serializeServiceDetails(
+  lines: ReadonlyArray<{ id: string; label: string; amount: number }>,
+): Array<{ id: string; label: string; amount: number }> {
+  return lines.map(({ id, label, amount }) => ({ id, label, amount }));
+}
+
+export function resolveDeliverySnapshot(input: {
+  method: 'courier' | 'showroom' | 'pickup-point';
+  zone: 'moscow' | 'moscow-region' | null;
+  slot: { date: string; windowLabel: string };
+  pickupPoint: { id: string; name: string; address: string } | null;
+}) {
+  return {
+    shippingMethod: input.method === 'courier' ? 'courier' : 'pickup',
+    deliveryZone: input.zone,
+    deliveryDate: new Date(`${input.slot.date}T00:00:00.000Z`),
+    deliveryWindow: input.slot.windowLabel,
+    pickupPointId: input.pickupPoint?.id ?? null,
+    pickupPointName: input.pickupPoint?.name ?? null,
+    pickupPointAddress: input.pickupPoint?.address ?? null,
+  };
+}
+
+export interface SerializableTransactionClient<TTransaction = unknown> {
+  $transaction<T>(
+    operation: (transaction: TTransaction) => Promise<T>,
+    options: { isolationLevel: 'Serializable' },
+  ): Promise<T>;
+}
+
+export class OrderTransactionConflictError extends Error {
+  readonly code = 'ORDER_TRANSACTION_CONFLICT';
+
+  constructor() {
+    super('Заказ не оформлен из-за одновременного изменения корзины. Повторите попытку.');
+  }
+}
+
+function isSerializableConflict(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'P2034');
+}
+
+export async function runSerializableOrderTransaction<TTransaction, TResult>(
+  client: SerializableTransactionClient<TTransaction>,
+  operation: (transaction: TTransaction) => Promise<TResult>,
+): Promise<TResult> {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await client.$transaction(operation, { isolationLevel: 'Serializable' });
+    } catch (error) {
+      if (!isSerializableConflict(error)) throw error;
+      if (attempt === 3) throw new OrderTransactionConflictError();
+    }
+  }
+  throw new OrderTransactionConflictError();
+}
+
 export function formatOrderItemConfiguration(item: {
   configuration?: unknown;
   colorwayName?: string | null;

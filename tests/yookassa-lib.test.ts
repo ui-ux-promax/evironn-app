@@ -9,7 +9,13 @@ vi.mock('@webzaytsev/yookassa-ts-sdk', () => ({
   LocaleEnum: { ru_RU: 'ru_RU' },
 }));
 
-import { createPayment, cancelPayment, getPaymentStatus } from '@/lib/yookassa';
+import {
+  createPayment,
+  createPaymentAttempt,
+  cancelPayment,
+  getPaymentDetails,
+  getPaymentStatus,
+} from '@/lib/yookassa';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -79,6 +85,62 @@ describe('createPayment', () => {
   });
 });
 
+describe('createPaymentAttempt', () => {
+  const input = {
+    amountRub: 15999,
+    capture: true as const,
+    description: 'Заказ #1025',
+    idempotencyKey: 'payment-order-uuid-1025',
+    locale: 'ru_RU' as const,
+    metadata: { orderNumber: '1025' },
+    returnUrl: 'https://shop.test/orders/1025',
+  };
+
+  it('returns sanitized provider details after dispatch', async () => {
+    createMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      amount: { value: '15999.00', currency: 'RUB' },
+      metadata: { orderNumber: '1025' },
+      confirmation: { confirmation_url: 'https://yoo/redirect' },
+    });
+    await expect(createPaymentAttempt(input)).resolves.toEqual({
+      outcome: 'CREATED',
+      payment: {
+        id: 'pay-1',
+        status: 'pending',
+        amountRub: 15999,
+        orderNumber: '1025',
+        confirmationUrl: 'https://yoo/redirect',
+      },
+    });
+  });
+
+  it('classifies every SDK failure after invocation as indeterminate', async () => {
+    createMock.mockRejectedValue(Object.assign(new Error('HTTP 400 invalid_request'), { status: 400 }));
+    await expect(createPaymentAttempt(input)).resolves.toEqual({
+      outcome: 'INDETERMINATE',
+      dispatched: true,
+      reason: 'provider-error',
+    });
+  });
+
+  it('classifies malformed returned data as indeterminate', async () => {
+    createMock.mockResolvedValue({ id: 'pay-1', status: 'pending' });
+    await expect(createPaymentAttempt(input)).resolves.toEqual({
+      outcome: 'INDETERMINATE',
+      dispatched: true,
+      reason: 'malformed-response',
+    });
+  });
+
+  it('proves no dispatch when local adapter configuration fails before SDK invocation', async () => {
+    delete process.env.YOOKASSA_SHOP_ID;
+    await expect(createPaymentAttempt(input)).resolves.toEqual({ outcome: 'NOT_CREATED', dispatched: false });
+    expect(createMock).not.toHaveBeenCalled();
+  });
+});
+
 describe('cancelPayment', () => {
   it('зовёт sdk.payments.cancel с id', async () => {
     cancelMock.mockResolvedValue({ id: 'pay_1', status: 'canceled' });
@@ -93,5 +155,29 @@ describe('getPaymentStatus', () => {
     const status = await getPaymentStatus('pay_1');
     expect(loadMock).toHaveBeenCalledWith('pay_1');
     expect(status).toBe('succeeded');
+  });
+});
+
+describe('getPaymentDetails', () => {
+  it('returns only bounded correlation fields', async () => {
+    loadMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      amount: { value: '15999.00', currency: 'RUB' },
+      metadata: { orderNumber: '1025', ignored: 'secret-shaped-provider-data' },
+      confirmation: { confirmation_url: 'https://yoo/redirect' },
+    });
+    await expect(getPaymentDetails('pay-1')).resolves.toEqual({
+      id: 'pay-1',
+      status: 'pending',
+      amountRub: 15999,
+      orderNumber: '1025',
+      confirmationUrl: 'https://yoo/redirect',
+    });
+  });
+
+  it('returns null for malformed provider data', async () => {
+    loadMock.mockResolvedValue({ id: 'pay-1', status: 'pending' });
+    await expect(getPaymentDetails('pay-1')).resolves.toBeNull();
   });
 });

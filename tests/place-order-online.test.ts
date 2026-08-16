@@ -1,140 +1,142 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildBlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
+import { buildDeliverySlots } from '@/lib/checkout-domain';
 
-vi.mock('@/auth', () => ({ auth: vi.fn() }));
-vi.mock('next/headers', () => ({ cookies: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  auth: vi.fn(),
+  cookies: vi.fn(),
+  resolveOwnerCart: vi.fn(),
+  buildCheckoutOrderData: vi.fn(),
+  ensureOnlinePayment: vi.fn(),
+  assertPaymentMode: vi.fn(),
+  validateYooKassaConfiguration: vi.fn(),
+  transaction: vi.fn(),
+}));
+vi.mock('@/auth', () => ({ auth: mocks.auth }));
+vi.mock('next/headers', () => ({ cookies: mocks.cookies }));
+vi.mock('@/lib/cart', () => ({ resolveOwnerCart: mocks.resolveOwnerCart }));
+vi.mock('@/lib/checkout-page', () => ({ buildCheckoutOrderData: mocks.buildCheckoutOrderData }));
+vi.mock('@/lib/payment-initialization', () => ({ ensureOnlinePayment: mocks.ensureOnlinePayment }));
+vi.mock('@/lib/payment-environment', () => ({ assertPortfolioPaymentMode: mocks.assertPaymentMode }));
+vi.mock('@/lib/yookassa', () => ({
+  validateYooKassaConfiguration: mocks.validateYooKassaConfiguration,
+  cancelPayment: vi.fn(),
+  siteUrl: () => 'https://preview.test',
+  toOrigin: (value: string) => value,
+}));
+vi.mock('@/lib/sales-count', () => ({ adjustSalesCount: vi.fn() }));
+vi.mock('@/app/actions/address', () => ({ saveAddressFromOrder: vi.fn() }));
 vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
-vi.mock('@/lib/cart', () => ({
-  recalcCartTotalByToken: vi.fn(async () => null),
-  resolveOwnerCart: vi.fn(async () => ({ id: 'c1', token: 't' })),
-}));
-vi.mock('@/lib/yookassa', () => ({ createPayment: vi.fn() }));
-vi.mock('@/lib/prisma-client', () => ({
-  prisma: {
-    cart: { findFirst: vi.fn() },
-    productVariant: { updateMany: vi.fn(), update: vi.fn() },
-    order: { create: vi.fn(), delete: vi.fn() },
-    orderItem: { create: vi.fn() },
-    payment: { create: vi.fn() },
-    cartItem: { deleteMany: vi.fn() },
-  },
-}));
+vi.mock('@/lib/prisma-client', () => ({ prisma: { $transaction: mocks.transaction } }));
 
 import { placeOrder } from '@/app/actions/order';
-import { auth } from '@/auth';
-import { cookies } from 'next/headers';
-import { prisma } from '@/lib/prisma-client';
-import { createPayment } from '@/lib/yookassa';
 
-const authMock = auth as unknown as ReturnType<typeof vi.fn>;
-const cookiesMock = cookies as unknown as ReturnType<typeof vi.fn>;
-const cartFindFirst = prisma.cart.findFirst as unknown as ReturnType<typeof vi.fn>;
-const variantUpdateMany = prisma.productVariant.updateMany as unknown as ReturnType<typeof vi.fn>;
-const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
-const orderCreate = prisma.order.create as unknown as ReturnType<typeof vi.fn>;
-const orderDelete = prisma.order.delete as unknown as ReturnType<typeof vi.fn>;
-const orderItemCreate = prisma.orderItem.create as unknown as ReturnType<typeof vi.fn>;
-const paymentCreate = prisma.payment.create as unknown as ReturnType<typeof vi.fn>;
-const cartItemDeleteMany = prisma.cartItem.deleteMany as unknown as ReturnType<typeof vi.fn>;
-const createPaymentMock = createPayment as unknown as ReturnType<typeof vi.fn>;
-
-const onlineForm = {
-  contactName: 'Neo',
+const now = new Date('2026-08-16T09:00:00.000Z');
+const slot = buildDeliverySlots(now, 'pickup-point')[0];
+const form = {
+  contactName: 'Иван Петров',
   contactPhone: '+79990000000',
-  contactEmail: 'neo@e.test',
-  shippingMethod: 'pickup',
-  city: 'Москва',
-  addressLine: 'Тверская 1',
+  contactEmail: 'ivan@example.test',
+  deliveryMethod: 'pickup-point',
+  deliverySlotId: slot.id,
+  pickupPointId: 'pt-danilov',
+  services: { carrying: false, assembly: false, removal: false },
   paymentMethod: 'online',
 };
-
-function variant(id: string, stock = 9) {
-  return {
-    id,
-    sku: `SKU-${id}`,
-    price: 5000,
-    size: 'M',
-    stock,
-    active: true,
-    colorway: {
-      name: 'Black',
-      product: { name: `P-${id}`, slug: id, active: true },
-      images: [{ url: `/i/${id}.jpg` }],
+const data = {
+  cartId: 'cart-1',
+  cartItemIds: ['line-1'],
+  salesItems: [{ productId: 'product-1', quantity: 1 }],
+  snapshot: {
+    itemsTotal: 100000,
+    items: [{ skuId: 'sku-1', productName: 'Noma', imageUrl: null, unitPrice: 100000, quantity: 1, lineTotal: 100000 }],
+  },
+  quote: {
+    coupon: null,
+    delivery: {
+      method: 'pickup-point',
+      zone: null,
+      slot,
+      pickupPoint: { id: 'pt-danilov', name: 'Пункт', address: 'Адрес' },
     },
-  };
-}
-function cartWith(...ids: string[]) {
-  return {
-    id: 'c1',
-    token: 't',
-    items: ids.map((id, n) => ({
-      id: `ci${n}`,
-      cartId: 'c1',
-      productVariantId: id,
-      quantity: 1,
-      createdAt: new Date(0),
-      productVariant: variant(id),
-    })),
-  };
-}
+    serviceLines: [],
+    totals: { itemsSubtotal: 100000, couponDiscount: 0, deliveryAmount: 0, serviceAmount: 0, total: 100000 },
+  },
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
-  authMock.mockResolvedValue({ user: { id: 'u1' } });
-  cookiesMock.mockResolvedValue({ get: () => ({ value: 't' }) });
-  variantUpdateMany.mockResolvedValue({ count: 1 });
-  variantUpdate.mockResolvedValue({});
-  cartItemDeleteMany.mockResolvedValue({ count: 1 });
-  orderItemCreate.mockResolvedValue({});
-  orderDelete.mockResolvedValue({});
-  paymentCreate.mockResolvedValue({});
+  vi.useFakeTimers();
+  vi.setSystemTime(now);
+  mocks.auth.mockResolvedValue({ user: { id: 'user-1' } });
+  mocks.cookies.mockResolvedValue({ get: () => ({ value: 'token' }) });
+  mocks.resolveOwnerCart.mockResolvedValue({ id: 'cart-1', token: 'token' });
+  mocks.buildCheckoutOrderData.mockResolvedValue(data);
+  mocks.transaction.mockImplementation(async (operation: (tx: object) => unknown) =>
+    operation({
+      sku: { updateMany: vi.fn(async () => ({ count: 1 })) },
+      order: {
+        create: vi.fn(async () => ({ id: 'order-1', orderNumber: 1042, createdAt: now, totalAmount: 100000 })),
+        update: vi.fn(async () => ({})),
+      },
+      cartItem: { deleteMany: vi.fn(async () => ({ count: 1 })) },
+    }),
+  );
 });
 
-describe('placeOrder online', () => {
-  it('успех — создаёт Payment и возвращает paymentUrl', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1'));
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 1025 });
-    createPaymentMock.mockResolvedValue({ id: 'pay_1', confirmationUrl: 'https://yoo/redirect' });
-    const r = await placeOrder(onlineForm);
-    expect(r).toEqual({ ok: true, orderNumber: 1025, paymentUrl: 'https://yoo/redirect' });
-    expect(createPaymentMock).toHaveBeenCalledWith({ orderId: 'o1', orderNumber: 1025, amountRub: 5000 });
-    expect(variantUpdateMany).toHaveBeenCalledWith({
-      where: { id: 'v1', stock: { gte: 1 } },
-      data: { stock: { decrement: 1 } },
+describe('placeOrder online initialization', () => {
+  it('validates sandbox before transaction and persists exact return URL before provider dispatch', async () => {
+    mocks.ensureOnlinePayment.mockResolvedValue({ outcome: 'CREATED', confirmationUrl: 'https://yoo/confirm' });
+    expect(await placeOrder(form)).toEqual({
+      ok: true,
+      code: 'PAYMENT_REDIRECT_READY',
+      orderNumber: 1042,
+      paymentUrl: 'https://yoo/confirm',
     });
-    expect(paymentCreate).toHaveBeenCalledWith({
-      data: { id: 'pay_1', orderId: 'o1', amount: 5000, confirmationUrl: 'https://yoo/redirect', status: 'pending' },
+    expect(mocks.assertPaymentMode).toHaveBeenCalledOnce();
+    expect(mocks.assertPaymentMode.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.transaction.mock.invocationCallOrder[0],
+    );
+    expect(mocks.ensureOnlinePayment).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'order-1', now }));
+  });
+
+  it('preserves durable order for indeterminate initialization', async () => {
+    mocks.ensureOnlinePayment.mockResolvedValue({ outcome: 'INDETERMINATE' });
+    expect(await placeOrder(form)).toEqual({
+      ok: false,
+      code: 'PAYMENT_INITIALIZATION_PENDING',
+      orderNumber: 1042,
+      error: 'Заказ сохранён. Статус платежа проверяется.',
     });
-    expect(cartItemDeleteMany).toHaveBeenCalledOnce();
   });
 
-  it('сбой создания платежа — откат заказа и возврат стока', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1'));
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 1026 });
-    createPaymentMock.mockRejectedValue(new Error('yoo down'));
-    const r = await placeOrder(onlineForm);
-    expect(r.ok).toBe(false);
-    expect(orderDelete).toHaveBeenCalledWith({ where: { id: 'o1' } });
-    expect(variantUpdate).toHaveBeenCalledWith({ where: { id: 'v1' }, data: { stock: { increment: 1 } } });
-    expect(cartItemDeleteMany).not.toHaveBeenCalled();
+  it('returns canceled result only for verified no-dispatch', async () => {
+    mocks.ensureOnlinePayment.mockResolvedValue({ outcome: 'NOT_CREATED' });
+    expect(await placeOrder(form)).toEqual({
+      ok: false,
+      code: 'PAYMENT_NOT_CREATED',
+      orderNumber: 1042,
+      error: 'Не удалось создать платёж. Попробуйте оформить заказ снова.',
+    });
   });
 
-  it('COD не трогает платёж', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1'));
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 1027 });
-    const r = await placeOrder({ ...onlineForm, paymentMethod: 'cod' });
-    expect(r).toEqual({ ok: true, orderNumber: 1027 });
-    expect(createPaymentMock).not.toHaveBeenCalled();
-    expect(paymentCreate).not.toHaveBeenCalled();
+  it('returns exact blocked DTO without URL or retry action', async () => {
+    mocks.ensureOnlinePayment.mockResolvedValue({ outcome: 'BLOCKED_AFTER_RETRY_WINDOW' });
+    expect(await placeOrder(form)).toEqual({
+      ok: false,
+      code: 'PAYMENT_INITIALIZATION_BLOCKED',
+      paymentInitialization: buildBlockedPaymentInitializationDto(1042),
+    });
   });
 
-  it('does not create an order when the conditional stock decrement fails', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1'));
-    variantUpdateMany.mockResolvedValueOnce({ count: 0 });
-
-    const r = await placeOrder(onlineForm);
-
-    expect(r.ok).toBe(false);
-    expect(orderCreate).not.toHaveBeenCalled();
-    expect(variantUpdate).not.toHaveBeenCalled();
+  it('COD never validates or invokes provider code', async () => {
+    mocks.ensureOnlinePayment.mockResolvedValue({ outcome: 'CREATED', confirmationUrl: 'unused' });
+    expect(await placeOrder({ ...form, paymentMethod: 'cod' })).toEqual({
+      ok: true,
+      code: 'ORDER_READY',
+      orderNumber: 1042,
+    });
+    expect(mocks.assertPaymentMode).not.toHaveBeenCalled();
+    expect(mocks.ensureOnlinePayment).not.toHaveBeenCalled();
   });
 });

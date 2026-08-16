@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { CHECKOUT_POLICY } from '@/constants/config';
 import { buildDeliverySlots, calculateCheckoutTotals, calculateServiceLines } from '@/lib/checkout-domain';
+import { buildOrderSnapshot, type OrderSnapshot } from '@/lib/order';
 import { buildCartDto, cartPresentationInclude } from '@/lib/cart-presentation';
 import { checkCoupon } from '@/lib/coupon';
 import { prisma } from '@/lib/prisma-client';
@@ -34,7 +35,7 @@ export interface CheckoutDataClient {
   };
   cart: {
     findFirst(args: {
-      where: { userId: string };
+      where: { userId: string; id?: string };
       include: typeof cartPresentationInclude;
     }): Promise<CheckoutCart | null>;
   };
@@ -143,12 +144,14 @@ function quoteError(
 
 export async function buildCheckoutQuote({
   userId,
+  cartId,
   cookieToken: _cookieToken,
   raw,
   now,
   client = defaultClient,
 }: {
   userId: string;
+  cartId?: string;
   cookieToken?: string;
   raw: unknown;
   now: Date;
@@ -157,7 +160,10 @@ export async function buildCheckoutQuote({
   const parsed = checkoutQuoteInputSchema.safeParse(raw);
   if (!parsed.success) return quoteError('INVALID_INPUT', 'Некорректные данные оформления');
 
-  const cart = await client.cart.findFirst({ where: { userId }, include: cartPresentationInclude });
+  const cart = await client.cart.findFirst({
+    where: { userId, ...(cartId ? { id: cartId } : {}) },
+    include: cartPresentationInclude,
+  });
   if (!cart || cart.items.length === 0) return quoteError('EMPTY_CART', 'Корзина пуста');
 
   for (const item of cart.items) {
@@ -223,3 +229,50 @@ export async function buildCheckoutQuote({
 }
 
 export type { DeliveryMethod };
+
+export interface CheckoutOrderData {
+  cartId: string;
+  cartItemIds: string[];
+  salesItems: Array<{ productId: string; quantity: number }>;
+  snapshot: OrderSnapshot;
+  quote: Extract<CheckoutQuoteResult, { ok: true }>['quote'];
+}
+
+export class CheckoutOrderDataError extends Error {
+  constructor(
+    readonly code: Exclude<CheckoutQuoteResult, { ok: true }>['code'],
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export async function buildCheckoutOrderData({
+  userId,
+  cartId,
+  raw,
+  now,
+  client = defaultClient,
+}: {
+  userId: string;
+  cartId: string;
+  raw: unknown;
+  now: Date;
+  client?: CheckoutDataClient;
+}): Promise<CheckoutOrderData> {
+  const result = await buildCheckoutQuote({ userId, cartId, raw, now, client });
+  if (!result.ok) throw new CheckoutOrderDataError(result.code, result.message);
+
+  const cart = await client.cart.findFirst({ where: { id: cartId, userId }, include: cartPresentationInclude });
+  if (!cart || cart.items.length === 0) throw new CheckoutOrderDataError('EMPTY_CART', 'Корзина пуста');
+  if (hasNonCanonicalLine(cart))
+    throw new CheckoutOrderDataError('SKU_UNAVAILABLE', 'Корзина содержит устаревший товар');
+
+  return {
+    cartId: cart.id,
+    cartItemIds: cart.items.map((item) => item.id),
+    salesItems: cart.items.map((item) => ({ productId: item.sku!.product.id, quantity: item.quantity })),
+    snapshot: buildOrderSnapshot(cart),
+    quote: result.quote,
+  };
+}

@@ -8,15 +8,13 @@ import { cartCookieName } from '@/lib/cart-cookie';
 import { buildCheckoutDefaults } from '@/lib/checkout-defaults';
 import { CheckoutForm } from '@/components/shared/checkout/checkout-form';
 import { Breadcrumbs } from '@/components/shared/product/breadcrumbs';
-import type { CartDetails } from '@/services/dto/cart.dto';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Оформление заказа — Ritm' };
 
-export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ buyNow?: string }> }) {
+export default async function CheckoutPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
-  const { buyNow } = await searchParams;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -32,47 +30,12 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   });
   if (!user) redirect('/login');
 
-  let details: CartDetails;
-  if (buyNow) {
-    const variant = await prisma.productVariant.findUnique({
-      where: { id: buyNow },
-      include: {
-        colorway: {
-          include: {
-            product: { select: { id: true, name: true, slug: true, active: true } },
-            images: { orderBy: { sortOrder: 'asc' }, take: 1 },
-          },
-        },
-      },
-    });
-    if (!variant || !variant.active || variant.stock <= 0 || !variant.colorway.product.active) redirect('/catalog');
-    details = {
-      items: [
-        {
-          id: `buy-now-${variant.id}`,
-          productId: variant.colorway.product.id,
-          quantity: 1,
-          name: variant.colorway.product.name,
-          productSlug: variant.colorway.product.slug,
-          colorwayName: variant.colorway.name,
-          size: variant.size,
-          imageUrl: variant.colorway.images[0]?.url ?? null,
-          unitPrice: variant.price,
-          lineTotal: variant.price,
-          stock: variant.stock,
-          available: true,
-        },
-      ],
-      totalAmount: variant.price,
-    };
-  } else {
-    const store = await cookies();
-    const token = store.get(cartCookieName)?.value;
-    const owner = await resolveOwnerCart(session.user.id, token, { create: false });
-    const cart = owner ? await prisma.cart.findFirst({ where: { id: owner.id }, include: cartInclude }) : null;
-    if (!cart || cart.items.length === 0) redirect('/cart');
-    details = getCartDetails(cart);
-  }
+  const store = await cookies();
+  const token = store.get(cartCookieName)?.value;
+  const owner = await resolveOwnerCart(session.user.id, token, { create: false });
+  const cart = owner ? await prisma.cart.findFirst({ where: { id: owner.id }, include: cartInclude }) : null;
+  if (!cart || cart.items.length === 0) redirect('/cart');
+  const details = getCartDetails(cart);
 
   return (
     <main className="mx-auto max-w-[1200px] px-4 pb-16 sm:px-6">
@@ -97,7 +60,6 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
 
       <CheckoutForm
         details={details}
-        buyNowVariantId={buyNow}
         defaults={buildCheckoutDefaults({
           name: user.name,
           phone: user.phone,

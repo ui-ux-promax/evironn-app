@@ -61,7 +61,7 @@ export function CheckoutForm({
     setError(null);
     const res = await placeOrder({ ...v, buyNowVariantId });
     if (!res.ok) {
-      setError(res.error);
+      setError('paymentInitialization' in res ? res.paymentInitialization.heading : res.error);
       return;
     }
     if (res.paymentUrl) {

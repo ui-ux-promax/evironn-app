@@ -4,262 +4,205 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma-client';
-import { cartInclude } from '@/lib/cart-details';
 import { cartCookieName } from '@/lib/cart-cookie';
-import { recalcCartTotalByToken, resolveOwnerCart } from '@/lib/cart';
-import { checkoutSchema } from '@/services/dto/order.dto';
-import { buildOrderSnapshot, calcShipping, type OrderSnapshot } from '@/lib/order';
-import { checkCoupon, calcCouponDiscount } from '@/lib/coupon';
+import { resolveOwnerCart } from '@/lib/cart';
+import { buildCheckoutOrderData } from '@/lib/checkout-page';
+import {
+  OrderTransactionConflictError,
+  resolveDeliverySnapshot,
+  runSerializableOrderTransaction,
+  serializeServiceDetails,
+} from '@/lib/order';
 import { logger } from '@/lib/logger';
-import { createPayment, cancelPayment } from '@/lib/yookassa';
+import { cancelPayment, siteUrl, toOrigin, validateYooKassaConfiguration } from '@/lib/yookassa';
 import { pruneReviewsAfterCancel } from '@/lib/review';
 import { adjustSalesCount } from '@/lib/sales-count';
+import { ensureOnlinePayment } from '@/lib/payment-initialization';
+import { assertPortfolioPaymentMode } from '@/lib/payment-environment';
+import { buildBlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
+import { placeOrderSchema, type PlaceOrderInput, type PlaceOrderResult } from '@/services/dto/order.dto';
 
-export type PlaceOrderResult = { ok: true; orderNumber: number; paymentUrl?: string } | { ok: false; error: string };
+type OrderTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-type ReservedStock = { kind: 'sku' | 'variant'; id: string; qty: number };
+function placementError(error: unknown): PlaceOrderResult {
+  if (error instanceof OrderTransactionConflictError) return { ok: false, code: error.code, error: error.message };
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error instanceof Error) {
+    return { ok: false, code: error.code, error: error.message };
+  }
+  logger.error('place_order_failed', error);
+  return { ok: false, code: 'ORDER_FAILED', error: 'Не удалось оформить заказ. Попробуйте позже.' };
+}
 
-async function restoreStock(items: ReservedStock[]): Promise<void> {
-  for (const it of items) {
-    try {
-      if (it.kind === 'sku') {
-        await prisma.sku.update({ where: { id: it.id }, data: { stock: { increment: it.qty } } });
-      } else {
-        await prisma.productVariant.update({ where: { id: it.id }, data: { stock: { increment: it.qty } } });
-      }
-    } catch (e) {
-      logger.error('place_order_stock_restore_failed', e, { catalogKind: it.kind, catalogId: it.id });
-    }
+async function recordOrderSideEffects(
+  form: PlaceOrderInput,
+  orderNumber: number,
+  salesItems: Array<{ productId: string; quantity: number }>,
+): Promise<void> {
+  await adjustSalesCount(salesItems, 1);
+  if (!form.address) return;
+  try {
+    const { saveAddressFromOrder } = await import('@/app/actions/address');
+    await saveAddressFromOrder({
+      city: form.address.city,
+      street: form.address.addressLine,
+      comment: form.address.addressComment ?? null,
+    });
+  } catch (error) {
+    logger.error('order_address_save_failed', error, { orderNumber });
   }
 }
 
 export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   const session = await auth();
-  if (!session?.user?.id) return { ok: false, error: 'Не авторизован' };
-  const userId = session.user.id;
+  if (!session?.user?.id) return { ok: false, code: 'UNAUTHENTICATED', error: 'Не авторизован' };
 
-  const parsed = checkoutSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: 'Проверьте поля формы' };
+  const parsed = placeOrderSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, code: 'INVALID_INPUT', error: 'Проверьте поля формы' };
   const form = parsed.data;
+  const now = new Date();
 
-  let snapshot: OrderSnapshot;
-  let cartId: string | null = null;
-  let cartToken: string | null = null;
-  let salesItems: { productId: string; quantity: number }[];
-
-  if (form.buyNowVariantId) {
-    const variant = await prisma.productVariant.findUnique({
-      where: { id: form.buyNowVariantId },
-      include: {
-        colorway: {
-          include: {
-            product: { select: { id: true, name: true, slug: true, active: true } },
-            images: { orderBy: { sortOrder: 'asc' }, take: 1 },
-          },
-        },
-      },
-    });
-    if (!variant || !variant.active || variant.stock <= 0 || !variant.colorway.product.active) {
-      return {
-        ok: false,
-        error:
-          '\u0422\u043e\u0432\u0430\u0440 \u0431\u043e\u043b\u044c\u0448\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d',
-      };
-    }
-    snapshot = {
-      items: [
-        {
-          productVariantId: variant.id,
-          sku: variant.sku,
-          productName: variant.colorway.product.name,
-          colorwayName: variant.colorway.name,
-          size: variant.size,
-          imageUrl: variant.colorway.images[0]?.url ?? null,
-          unitPrice: variant.price,
-          quantity: 1,
-          lineTotal: variant.price,
-        },
-      ],
-      itemsTotal: variant.price,
-    };
-    salesItems = [{ productId: variant.colorway.product.id, quantity: 1 }];
-  } else {
-    const store = await cookies();
-    const token = store.get(cartCookieName)?.value;
-    // Корзина залогиненного резолвится по userId (не по cookie) — заказ всегда из своей корзины.
-    const owner = await resolveOwnerCart(userId, token, { create: false });
-    if (!owner) return { ok: false, error: 'Корзина пуста' };
-    const cart = await prisma.cart.findFirst({ where: { id: owner.id }, include: cartInclude });
-    if (!cart || cart.items.length === 0) return { ok: false, error: 'Корзина пуста' };
-
-    const inactive = cart.items.find((i) =>
-      i.sku
-        ? !i.sku.active || !i.sku.product.active
-        : !i.productVariant || !i.productVariant.active || !i.productVariant.colorway.product.active,
-    );
-    if (inactive) {
-      return {
-        ok: false,
-        error: `Товар «${inactive.sku?.product.name ?? inactive.productVariant?.colorway.product.name ?? 'Товар'}» больше недоступен, удалите его из корзины`,
-      };
-    }
-
-    snapshot = buildOrderSnapshot(cart);
-    cartId = cart.id;
-    cartToken = cart.token;
-    salesItems = cart.items.flatMap((i) =>
-      i.sku
-        ? [{ productId: i.sku.product.id, quantity: i.quantity }]
-        : i.productVariant
-          ? [{ productId: i.productVariant.colorway.product.id, quantity: i.quantity }]
-          : [],
-    );
-    if (salesItems.length !== cart.items.length) {
-      return { ok: false, error: 'Корзина требует обновления' };
-    }
-  }
-
-  // Купон — повторная валидация на сервере (источник истины; клиентскому couponCode не доверяем).
-  // До декремента стока → при отказе откатывать нечего.
-  let discountAmount = 0;
-  let couponCode: string | null = null;
-  if (form.couponCode && form.couponCode.trim()) {
-    const check = await checkCoupon(form.couponCode);
-    if (!check.ok) return { ok: false, error: check.error };
-    discountAmount = calcCouponDiscount(snapshot.itemsTotal, check.percent);
-    couponCode = check.code;
-  }
-
-  const shippingAmount = calcShipping(snapshot.itemsTotal, form.shippingMethod);
-  const totalAmount = snapshot.itemsTotal - discountAmount + shippingAmount;
-
-  const decremented: ReservedStock[] = [];
-  for (const it of snapshot.items) {
-    const reference = it.skuId
-      ? ({ kind: 'sku', id: it.skuId } as const)
-      : it.productVariantId
-        ? ({ kind: 'variant', id: it.productVariantId } as const)
-        : null;
-    if (!reference) {
-      return { ok: false, error: 'Состав корзины требует обновления' };
-    }
-    // A conditional update reserves stock without a read-then-write race.
-    const updated =
-      reference.kind === 'sku'
-        ? await prisma.sku.updateMany({
-            where: { id: reference.id, stock: { gte: it.quantity } },
-            data: { stock: { decrement: it.quantity } },
-          })
-        : await prisma.productVariant.updateMany({
-            where: { id: reference.id, stock: { gte: it.quantity } },
-            data: { stock: { decrement: it.quantity } },
-          });
-    if (updated.count === 0) {
-      await restoreStock(decremented);
-      return { ok: false, error: `Товар «${it.productName}» закончился, обновите корзину` };
-    }
-    decremented.push({ ...reference, qty: it.quantity });
-  }
-
-  let orderId: string;
-  let orderNumber: number;
-  try {
-    const order = await prisma.order.create({
-      data: {
-        userId,
-        status: 'PENDING',
-        contactName: form.contactName,
-        contactPhone: form.contactPhone,
-        contactEmail: form.contactEmail,
-        shippingMethod: form.shippingMethod,
-        city: form.city ?? '',
-        addressLine: form.addressLine,
-        addressComment: form.addressComment || null,
-        itemsTotal: snapshot.itemsTotal,
-        discountAmount,
-        shippingAmount,
-        totalAmount,
-        couponCode,
-        paymentMethod: form.paymentMethod,
-      },
-      select: { id: true, orderNumber: true },
-    });
-    orderId = order.id;
-    orderNumber = order.orderNumber;
-  } catch (e) {
-    await restoreStock(decremented);
-    logger.error('place_order_create_failed', e);
-    return { ok: false, error: 'Не удалось оформить заказ. Попробуйте позже' };
-  }
-
-  // Позиции — ПО ОДНОЙ (одиночные INSERT). И вложенный `items: { create }`, и
-  // `createMany` Prisma исполняет в НЕЯВНОЙ транзакции, которую Neon HTTP не поддерживает
-  // (проверено против адаптера; TROUBLESHOOTING P5/P7). Сбой → откат: удалить заказ
-  // (каскад onDelete уберёт уже созданные позиции — одиночный DELETE, без транзакции) + вернуть сток.
-  try {
-    for (const it of snapshot.items) {
-      await prisma.orderItem.create({ data: { ...it, orderId } });
-    }
-  } catch (e) {
-    try {
-      await prisma.order.delete({ where: { id: orderId } });
-    } catch (delErr) {
-      logger.error('place_order_order_rollback_failed', delErr, { orderId });
-    }
-    await restoreStock(decremented);
-    logger.error('place_order_items_failed', e, { orderId });
-    return { ok: false, error: 'Не удалось оформить заказ. Попробуйте позже' };
-  }
-
-  let paymentUrl: string | undefined;
   if (form.paymentMethod === 'online') {
     try {
-      // return_url ДОЛЖЕН вести на тот же деплой, где оформлен заказ: там сессия, кука и
-      // нужная ветка Neon (БД заводит ветку на каждое окружение, P7). Поэтому приоритет —
-      // host текущего запроса; NEXT_PUBLIC_SITE_URL — только фолбэк для localhost.
-      const pay = await createPayment({ orderId, orderNumber, amountRub: totalAmount });
-      await prisma.payment.create({
-        data: { id: pay.id, orderId, amount: totalAmount, confirmationUrl: pay.confirmationUrl, status: 'pending' },
-      });
-      paymentUrl = pay.confirmationUrl;
-    } catch (e) {
-      try {
-        await prisma.order.delete({ where: { id: orderId } });
-      } catch (delErr) {
-        logger.error('place_order_payment_rollback_failed', delErr, { orderId });
-      }
-      await restoreStock(decremented);
-      logger.error('place_order_payment_failed', e, { orderId });
-      return { ok: false, error: 'Не удалось создать платёж. Попробуйте позже' };
+      assertPortfolioPaymentMode(process.env);
+      validateYooKassaConfiguration();
+    } catch (error) {
+      logger.error('place_order_payment_configuration_failed', error);
+      return { ok: false, code: 'PAYMENT_NOT_CONFIGURED', error: 'Онлайн-оплата временно недоступна.' };
     }
   }
 
-  // Популярность: +продажи по товарам заказа (как списанный сток). После всех точек отката —
-  // если дошли сюда, заказ создан и сток списан, инкремент симметричен. Best-effort внутри.
-  await adjustSalesCount(salesItems, 1);
+  const store = await cookies();
+  const owner = await resolveOwnerCart(session.user.id, store.get(cartCookieName)?.value, { create: false });
+  if (!owner) return { ok: false, code: 'EMPTY_CART', error: 'Корзина пуста' };
 
-  if (cartId && cartToken) {
-    try {
-      await prisma.cartItem.deleteMany({ where: { cartId } });
-      await recalcCartTotalByToken(cartToken);
-    } catch (e) {
-      logger.error('order_cart_cleanup_failed', e, { orderNumber });
-    }
-  }
-
-  // Save address to user's address book (dedup by city+street)
+  let committed: {
+    id: string;
+    orderNumber: number;
+    totalAmount: number;
+    salesItems: Array<{ productId: string; quantity: number }>;
+    paymentReturnUrl: string | null;
+  };
   try {
-    const { saveAddressFromOrder } = await import('@/app/actions/address');
-    await saveAddressFromOrder({
-      city: form.city ?? '',
-      street: form.addressLine,
-      comment: form.addressComment ?? null,
+    committed = await runSerializableOrderTransaction(prisma, async (transaction: OrderTransaction) => {
+      const orderData = await buildCheckoutOrderData({
+        userId: session.user.id,
+        cartId: owner.id,
+        raw: form,
+        now,
+        client: transaction,
+      });
+
+      for (const item of orderData.snapshot.items) {
+        if (!item.skuId) throw Object.assign(new Error('Корзина содержит устаревший товар'), { code: 'SKU_UNAVAILABLE' });
+        const reserved = await transaction.sku.updateMany({
+          where: { id: item.skuId, active: true, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
+        });
+        if (reserved.count === 0) {
+          throw Object.assign(new Error(`Товар «${item.productName}» закончился, обновите корзину`), {
+            code: 'QUANTITY_EXCEEDS_STOCK',
+          });
+        }
+      }
+
+      const delivery = resolveDeliverySnapshot(orderData.quote.delivery);
+      const address = form.address;
+      const point = orderData.quote.delivery.pickupPoint;
+      const order = await transaction.order.create({
+        data: {
+          userId: session.user.id,
+          status: 'PENDING',
+          contactName: form.contactName,
+          contactPhone: form.contactPhone,
+          contactEmail: form.contactEmail,
+          city: address?.city ?? 'Москва',
+          addressLine: address?.addressLine ?? point?.address ?? '',
+          addressComment: address?.addressComment ?? null,
+          itemsTotal: orderData.quote.totals.itemsSubtotal,
+          discountAmount: orderData.quote.totals.couponDiscount,
+          shippingAmount: orderData.quote.totals.deliveryAmount,
+          serviceAmount: orderData.quote.totals.serviceAmount,
+          totalAmount: orderData.quote.totals.total,
+          couponCode: orderData.quote.coupon?.code ?? null,
+          paymentMethod: form.paymentMethod,
+          paymentReturnUrl: null,
+          ...delivery,
+          floor: address?.floor ?? null,
+          liftType: address?.liftType ?? null,
+          intercom: address?.intercom ?? null,
+          serviceDetails: serializeServiceDetails(orderData.quote.serviceLines),
+          items: {
+            create: orderData.snapshot.items.map((item) => ({
+              ...item,
+              productVariantId: undefined,
+            })),
+          },
+        },
+        select: { id: true, orderNumber: true, createdAt: true, totalAmount: true },
+      });
+
+      let paymentReturnUrl: string | null = null;
+      if (form.paymentMethod === 'online') {
+        paymentReturnUrl = `${toOrigin(siteUrl())}/orders/${order.orderNumber}`;
+        await transaction.order.update({ where: { id: order.id }, data: { paymentReturnUrl } });
+      }
+
+      const deleted = await transaction.cartItem.deleteMany({
+        where: { cartId: orderData.cartId, id: { in: orderData.cartItemIds } },
+      });
+      if (deleted.count !== orderData.cartItemIds.length) {
+        throw Object.assign(new Error('Корзина изменилась во время оформления. Повторите попытку.'), { code: 'CART_CONFLICT' });
+      }
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        salesItems: orderData.salesItems,
+        paymentReturnUrl,
+      };
     });
-  } catch {
-    // non-critical
+  } catch (error) {
+    return placementError(error);
   }
 
-  return { ok: true, orderNumber, paymentUrl };
+  if (form.paymentMethod === 'online') {
+    const initialization = await ensureOnlinePayment({ orderId: committed.id, now, client: prisma });
+    if (initialization.outcome === 'CREATED' && initialization.confirmationUrl) {
+      await recordOrderSideEffects(form, committed.orderNumber, committed.salesItems);
+      return {
+        ok: true,
+        code: 'PAYMENT_REDIRECT_READY',
+        orderNumber: committed.orderNumber,
+        paymentUrl: initialization.confirmationUrl,
+      };
+    }
+    if (initialization.outcome === 'NOT_CREATED') {
+      return {
+        ok: false,
+        code: 'PAYMENT_NOT_CREATED',
+        orderNumber: committed.orderNumber,
+        error: 'Не удалось создать платёж. Попробуйте оформить заказ снова.',
+      };
+    }
+    await recordOrderSideEffects(form, committed.orderNumber, committed.salesItems);
+    if (initialization.outcome === 'BLOCKED_AFTER_RETRY_WINDOW') {
+      return {
+        ok: false,
+        code: 'PAYMENT_INITIALIZATION_BLOCKED',
+        paymentInitialization: buildBlockedPaymentInitializationDto(committed.orderNumber),
+      };
+    }
+    return {
+      ok: false,
+      code: 'PAYMENT_INITIALIZATION_PENDING',
+      orderNumber: committed.orderNumber,
+      error: 'Заказ сохранён. Статус платежа проверяется.',
+    };
+  }
+
+  await recordOrderSideEffects(form, committed.orderNumber, committed.salesItems);
+  return { ok: true, code: 'ORDER_READY', orderNumber: committed.orderNumber };
 }
 
 export type CancelOrderResult = { ok: true } | { ok: false; error: string };
@@ -285,20 +228,17 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
     return { ok: false, error: 'Этот заказ нельзя отменить' };
   }
 
-  // The status transition and stock restoration must commit together. Otherwise a
-  // transient database failure can leave a CANCELLED order with stock still reserved.
-  const cancelled = await prisma.$transaction(async (tx) => {
-    const result = await tx.order.updateMany({
+  const cancelled = await prisma.$transaction(async (transaction) => {
+    const result = await transaction.order.updateMany({
       where: { id: orderId, userId, status: 'PENDING' },
       data: { status: 'CANCELLED' },
     });
     if (result.count === 0) return false;
-
     for (const item of order.items) {
       if (item.skuId) {
-        await tx.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+        await transaction.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
       } else if (item.productVariantId) {
-        await tx.productVariant.update({
+        await transaction.productVariant.update({
           where: { id: item.productVariantId },
           data: { stock: { increment: item.quantity } },
         });
@@ -308,38 +248,36 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
   });
   if (!cancelled) return { ok: false, error: 'Этот заказ нельзя отменить' };
 
-  if (order.payment && order.payment.status === 'pending') {
+  if (order.payment?.status === 'pending') {
     try {
       await cancelPayment(order.payment.id);
-    } catch (e) {
-      logger.error('cancel_payment_failed', e, { orderId, paymentId: order.payment.id });
+    } catch (error) {
+      logger.error('cancel_payment_failed', error, { orderId, paymentId: order.payment.id });
     }
   }
 
-  // Популярность: −продажи по товарам отменённого заказа (симметрично возврату стока).
   await adjustSalesCount(
-    order.items.flatMap((i) =>
-      i.canonicalSku
-        ? [{ productId: i.canonicalSku.productId, quantity: i.quantity }]
-        : i.productVariant
-          ? [{ productId: i.productVariant.colorway.productId, quantity: i.quantity }]
+    order.items.flatMap((item) =>
+      item.canonicalSku
+        ? [{ productId: item.canonicalSku.productId, quantity: item.quantity }]
+        : item.productVariant
+          ? [{ productId: item.productVariant.colorway.productId, quantity: item.quantity }]
           : [],
     ),
     -1,
   );
-
-  // Отмена аннулирует «покупку»: снять осиротевшие отзывы по товарам этого заказа
-  // (если по товару не осталось другого квалифицирующего заказа). PDP — force-dynamic,
-  // перечитает список при следующем рендере, так что отдельная ревалидация не нужна.
   const productIds = [
     ...new Set(
-      order.items.flatMap((i) =>
-        i.canonicalSku ? [i.canonicalSku.productId] : i.productVariant ? [i.productVariant.colorway.productId] : [],
+      order.items.flatMap((item) =>
+        item.canonicalSku
+          ? [item.canonicalSku.productId]
+          : item.productVariant
+            ? [item.productVariant.colorway.productId]
+            : [],
       ),
     ),
   ];
   await pruneReviewsAfterCancel(userId, productIds);
-
   revalidatePath('/profile');
   revalidatePath(`/orders/${order.orderNumber}`);
   return { ok: true };

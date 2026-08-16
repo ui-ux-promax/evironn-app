@@ -1,233 +1,189 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildDeliverySlots } from '@/lib/checkout-domain';
 
-vi.mock('@/auth', () => ({ auth: vi.fn() }));
-vi.mock('next/headers', () => ({ cookies: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  auth: vi.fn(),
+  cookies: vi.fn(),
+  resolveOwnerCart: vi.fn(),
+  buildCheckoutOrderData: vi.fn(),
+  ensureOnlinePayment: vi.fn(),
+  assertPaymentMode: vi.fn(),
+  validateYooKassaConfiguration: vi.fn(),
+  adjustSalesCount: vi.fn(),
+  saveAddress: vi.fn(),
+  transaction: vi.fn(),
+}));
+
+vi.mock('@/auth', () => ({ auth: mocks.auth }));
+vi.mock('next/headers', () => ({ cookies: mocks.cookies }));
+vi.mock('@/lib/cart', () => ({ resolveOwnerCart: mocks.resolveOwnerCart }));
+vi.mock('@/lib/checkout-page', () => ({ buildCheckoutOrderData: mocks.buildCheckoutOrderData }));
+vi.mock('@/lib/payment-initialization', () => ({ ensureOnlinePayment: mocks.ensureOnlinePayment }));
+vi.mock('@/lib/payment-environment', () => ({ assertPortfolioPaymentMode: mocks.assertPaymentMode }));
+vi.mock('@/lib/yookassa', () => ({
+  validateYooKassaConfiguration: mocks.validateYooKassaConfiguration,
+  cancelPayment: vi.fn(),
+  siteUrl: () => 'https://preview.test',
+  toOrigin: (value: string) => value,
+}));
+vi.mock('@/lib/sales-count', () => ({ adjustSalesCount: mocks.adjustSalesCount }));
+vi.mock('@/app/actions/address', () => ({ saveAddressFromOrder: mocks.saveAddress }));
 vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
-vi.mock('@/lib/cart', () => ({
-  recalcCartTotalByToken: vi.fn(async () => null),
-  // Залогинен → корзина по userId; в тесте владелец фиксирован, контент даёт cart.findFirst({id}).
-  resolveOwnerCart: vi.fn(async () => ({ id: 'c1', token: 't' })),
-}));
-vi.mock('@/lib/prisma-client', () => ({
-  prisma: {
-    cart: { findFirst: vi.fn() },
-    productVariant: { findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
-    sku: { updateMany: vi.fn(), update: vi.fn() },
-    order: { create: vi.fn(), delete: vi.fn() },
-    orderItem: { create: vi.fn() },
-    cartItem: { deleteMany: vi.fn() },
-  },
-}));
+vi.mock('@/lib/prisma-client', () => ({ prisma: { $transaction: mocks.transaction } }));
 
 import { placeOrder } from '@/app/actions/order';
-import { auth } from '@/auth';
-import { cookies } from 'next/headers';
-import { prisma } from '@/lib/prisma-client';
 
-const authMock = auth as unknown as ReturnType<typeof vi.fn>;
-const cookiesMock = cookies as unknown as ReturnType<typeof vi.fn>;
-const cartFindFirst = prisma.cart.findFirst as unknown as ReturnType<typeof vi.fn>;
-const productVariantFindUniqueMock = prisma.productVariant.findUnique as unknown as ReturnType<typeof vi.fn>;
-const variantUpdateMany = prisma.productVariant.updateMany as unknown as ReturnType<typeof vi.fn>;
-const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
-const skuUpdateMany = prisma.sku.updateMany as unknown as ReturnType<typeof vi.fn>;
-const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
-const orderCreate = prisma.order.create as unknown as ReturnType<typeof vi.fn>;
-const orderItemCreate = prisma.orderItem.create as unknown as ReturnType<typeof vi.fn>;
-const orderDelete = prisma.order.delete as unknown as ReturnType<typeof vi.fn>;
-const cartItemDeleteMany = prisma.cartItem.deleteMany as unknown as ReturnType<typeof vi.fn>;
-
+const now = new Date('2026-08-16T09:00:00.000Z');
+const slot = buildDeliverySlots(now, 'courier')[0];
 const validForm = {
-  contactName: 'Neo',
+  contactName: 'Иван Петров',
   contactPhone: '+79990000000',
-  contactEmail: 'neo@e.test',
-  shippingMethod: 'pickup',
-  city: 'Москва',
-  addressLine: 'Тверская 1',
+  contactEmail: 'ivan@example.test',
+  deliveryMethod: 'courier',
+  deliveryZone: 'moscow',
+  deliverySlotId: slot.id,
+  address: { city: 'Москва', addressLine: 'Тверская, 1', floor: 5, liftType: 'none', intercom: '12' },
+  services: { carrying: true, assembly: true, removal: false },
+  couponCode: 'EV10',
   paymentMethod: 'cod',
 };
 
-function variant(id: string, stock = 9) {
-  return {
-    id,
-    sku: `SKU-${id}`,
-    price: 5000,
-    size: 'M',
-    stock,
-    active: true,
-    colorway: {
-      name: 'Black',
-      product: { id: `p-${id}`, name: `P-${id}`, slug: id, active: true },
-      images: [{ url: `/i/${id}.jpg` }],
+const orderData = {
+  cartId: 'cart-1',
+  cartItemIds: ['line-1'],
+  salesItems: [{ productId: 'product-1', quantity: 2 }],
+  snapshot: {
+    items: [
+      {
+        skuId: 'sku-1',
+        skuArticleNumber: 'EV-NOMA-OAK',
+        skuCombinationKey: 'finish=oak',
+        productName: 'Noma',
+        productSlug: 'noma',
+        configuration: [{ groupSlug: 'finish', groupName: 'Отделка', valueSlug: 'oak', valueName: 'Дуб' }],
+        imageUrl: '/noma.webp',
+        unitPrice: 100000,
+        oldUnitPrice: 120000,
+        quantity: 2,
+        lineTotal: 200000,
+      },
+    ],
+    itemsTotal: 200000,
+  },
+  quote: {
+    coupon: { code: 'EV10', percent: 10 },
+    delivery: { method: 'courier', zone: 'moscow', slot, pickupPoint: null },
+    serviceLines: [
+      { id: 'carrying', label: 'Подъём без лифта', amount: 1400 },
+      { id: 'assembly', label: 'Сборка', amount: 3900 },
+    ],
+    totals: {
+      itemsSubtotal: 200000,
+      couponDiscount: 20000,
+      deliveryAmount: 0,
+      serviceAmount: 5300,
+      total: 185300,
     },
-  };
-}
-function cartWith(...ids: string[]) {
+  },
+};
+
+function transactionClient() {
   return {
-    id: 'c1',
-    token: 't',
-    items: ids.map((id, n) => ({
-      id: `ci${n}`,
-      cartId: 'c1',
-      productVariantId: id,
-      quantity: 1,
-      createdAt: new Date(0),
-      productVariant: variant(id),
-    })),
+    sku: { updateMany: vi.fn(async () => ({ count: 1 })) },
+    order: {
+      create: vi.fn(async () => ({
+        id: 'order-1',
+        orderNumber: 1042,
+        createdAt: now,
+        totalAmount: 185300,
+      })),
+    },
+    cartItem: { deleteMany: vi.fn(async () => ({ count: 1 })) },
   };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  authMock.mockResolvedValue({ user: { id: 'u1' } });
-  cookiesMock.mockResolvedValue({ get: () => ({ value: 't' }) });
-  variantUpdate.mockResolvedValue({});
-  skuUpdate.mockResolvedValue({});
-  skuUpdateMany.mockResolvedValue({ count: 1 });
-  productVariantFindUniqueMock.mockResolvedValue(null);
-  variantUpdateMany.mockResolvedValue({ count: 1 });
-  cartItemDeleteMany.mockResolvedValue({ count: 1 });
-  orderItemCreate.mockResolvedValue({});
-  orderDelete.mockResolvedValue({});
+  vi.useFakeTimers();
+  vi.setSystemTime(now);
+  mocks.auth.mockResolvedValue({ user: { id: 'user-1' } });
+  mocks.cookies.mockResolvedValue({ get: () => ({ value: 'cart-token' }) });
+  mocks.resolveOwnerCart.mockResolvedValue({ id: 'cart-1', token: 'cart-token' });
+  mocks.buildCheckoutOrderData.mockResolvedValue(orderData);
+  mocks.transaction.mockImplementation(async (operation: (transaction: ReturnType<typeof transactionClient>) => unknown) =>
+    operation(transactionClient()),
+  );
 });
 
-describe('placeOrder', () => {
-  it('успех — декремент стока через update, создание заказа, очистка корзины', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1'));
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 1025 });
-    const r = await placeOrder(validForm);
-    expect(r).toEqual({ ok: true, orderNumber: 1025 });
-    expect(variantUpdateMany).toHaveBeenCalledWith({
-      where: { id: 'v1', stock: { gte: 1 } },
-      data: { stock: { decrement: 1 } },
+describe('placeOrder transactional canonical placement', () => {
+  it('writes stock, immutable snapshots, order totals, and placed cart deletion through one transaction client', async () => {
+    const tx = transactionClient();
+    mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown, options: unknown) => {
+      expect(options).toEqual({ isolationLevel: 'Serializable' });
+      return operation(tx);
     });
-    expect(orderCreate).toHaveBeenCalledOnce();
-    expect(orderItemCreate).toHaveBeenCalledTimes(1);
-    expect(cartItemDeleteMany).toHaveBeenCalledOnce();
-  });
 
-  it('нехватка на 2-й позиции — компенсация 1-й, заказ НЕ создан', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1', 'v2'));
-    variantUpdateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
-    const r = await placeOrder(validForm);
-    expect(r.ok).toBe(false);
-    expect(variantUpdate).toHaveBeenCalledWith({ where: { id: 'v1' }, data: { stock: { increment: 1 } } });
-    expect(orderCreate).not.toHaveBeenCalled();
-  });
-
-  it('сбой order.create — компенсация всех декрементов', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1', 'v2'));
-    orderCreate.mockRejectedValue(new Error('db down'));
-    const r = await placeOrder(validForm);
-    expect(r.ok).toBe(false);
-    expect(variantUpdate).toHaveBeenCalledTimes(2);
-    expect(orderItemCreate).not.toHaveBeenCalled();
-  });
-
-  it('сбой создания позиций — откат заказа и возврат стока', async () => {
-    cartFindFirst.mockResolvedValue(cartWith('v1', 'v2'));
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 1026 });
-    orderItemCreate.mockRejectedValue(new Error('items down'));
-    const r = await placeOrder(validForm);
-    expect(r.ok).toBe(false);
-    expect(orderDelete).toHaveBeenCalledWith({ where: { id: 'o1' } });
-    expect(variantUpdate).toHaveBeenCalledTimes(2);
-  });
-
-  it('пустая корзина — ошибка, без записи', async () => {
-    cartFindFirst.mockResolvedValue({ id: 'c1', token: 't', items: [] });
-    const r = await placeOrder(validForm);
-    expect(r).toEqual({ ok: false, error: 'Корзина пуста' });
-    expect(variantUpdateMany).not.toHaveBeenCalled();
-  });
-
-  it('неактивный товар — отказ до проверки стока', async () => {
-    const cart = cartWith('v1');
-    cart.items[0].productVariant.active = false;
-    cartFindFirst.mockResolvedValue(cart);
-    const r = await placeOrder(validForm);
-    expect(r.ok).toBe(false);
-    expect(variantUpdateMany).not.toHaveBeenCalled();
-    expect(orderCreate).not.toHaveBeenCalled();
-  });
-
-  it('paymentMethod != cod — отказ', async () => {
-    const r = await placeOrder({ ...validForm, paymentMethod: 'card' });
-    expect(r.ok).toBe(false);
-  });
-
-  it('buy now creates a one-item order without reading or clearing the existing cart', async () => {
-    const buyNowVariantId = 'ckbuyvariant000000000000001';
-    productVariantFindUniqueMock.mockResolvedValueOnce(variant(buyNowVariantId));
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 2027 });
-
-    const r = await placeOrder({ ...validForm, buyNowVariantId });
-
-    expect(r).toEqual({ ok: true, orderNumber: 2027 });
-    expect(cartFindFirst).not.toHaveBeenCalled();
-    expect(cartItemDeleteMany).not.toHaveBeenCalled();
-    expect(orderItemCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        orderId: 'o1',
-        productVariantId: buyNowVariantId,
-        quantity: 1,
-        lineTotal: 5000,
-      }),
+    await expect(placeOrder(validForm)).resolves.toEqual({ ok: true, code: 'ORDER_READY', orderNumber: 1042 });
+    expect(mocks.buildCheckoutOrderData).toHaveBeenCalledWith({
+      userId: 'user-1',
+      cartId: 'cart-1',
+      raw: validForm,
+      now,
+      client: tx,
     });
-    expect(variantUpdateMany).toHaveBeenCalledWith({
-      where: { id: buyNowVariantId, stock: { gte: 1 } },
-      data: { stock: { decrement: 1 } },
-    });
-  });
-
-  it('creates an order from a canonical furniture SKU cart item', async () => {
-    cartFindFirst.mockResolvedValue({
-      id: 'c1',
-      token: 't',
-      items: [
-        {
-          id: 'ci1',
-          cartId: 'c1',
-          skuId: 'sku-1',
-          productVariantId: null,
-          quantity: 2,
-          createdAt: new Date(0),
-          productVariant: null,
-          sku: {
-            id: 'sku-1',
-            articleNumber: 'EV-NWL-OAK',
-            combinationKey: 'finish=oak',
-            price: 124000,
-            oldPrice: 139000,
-            stock: 3,
-            active: true,
-            product: { id: 'product-1', name: 'Noma', slug: 'noma', active: true },
-            media: [{ url: '/assets/noma.webp' }],
-            selections: [
-              {
-                optionGroup: { name: 'Отделка', slug: 'finish' },
-                optionValue: { name: 'Дуб', slug: 'oak' },
-              },
-            ],
-          },
-        },
-      ],
-    });
-    orderCreate.mockResolvedValue({ id: 'o1', orderNumber: 3025 });
-
-    expect(await placeOrder(validForm)).toEqual({ ok: true, orderNumber: 3025 });
-    expect(skuUpdateMany).toHaveBeenCalledWith({
-      where: { id: 'sku-1', stock: { gte: 2 } },
+    expect(tx.sku.updateMany).toHaveBeenCalledWith({
+      where: { id: 'sku-1', active: true, stock: { gte: 2 } },
       data: { stock: { decrement: 2 } },
     });
-    expect(orderItemCreate).toHaveBeenCalledWith({
+    expect(tx.order.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        orderId: 'o1',
-        skuId: 'sku-1',
-        skuArticleNumber: 'EV-NWL-OAK',
-        quantity: 2,
-        lineTotal: 248000,
+        userId: 'user-1',
+        itemsTotal: 200000,
+        discountAmount: 20000,
+        shippingAmount: 0,
+        serviceAmount: 5300,
+        totalAmount: 185300,
+        couponCode: 'EV10',
+        deliveryZone: 'moscow',
+        deliveryWindow: slot.windowLabel,
+        paymentReturnUrl: null,
+        serviceDetails: [
+          { id: 'carrying', label: 'Подъём без лифта', amount: 1400 },
+          { id: 'assembly', label: 'Сборка', amount: 3900 },
+        ],
+        items: { create: [expect.objectContaining({ skuId: 'sku-1', productVariantId: undefined })] },
       }),
+      select: { id: true, orderNumber: true, createdAt: true, totalAmount: true },
     });
+    expect(tx.cartItem.deleteMany).toHaveBeenCalledWith({ where: { cartId: 'cart-1', id: { in: ['line-1'] } } });
+  });
+
+  it('aborts before order creation when any canonical SKU decrement fails', async () => {
+    const tx = transactionClient();
+    tx.sku.updateMany.mockResolvedValue({ count: 0 });
+    mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown) => operation(tx));
+    const result = await placeOrder(validForm);
+    expect(result).toMatchObject({ ok: false });
+    expect(tx.order.create).not.toHaveBeenCalled();
+    expect(tx.cartItem.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects buy-now and client-owned money fields through the one strict schema', async () => {
+    await expect(placeOrder({ ...validForm, buyNowVariantId: 'legacy', totalAmount: 1 })).resolves.toMatchObject({
+      ok: false,
+      code: 'INVALID_INPUT',
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it('returns empty cart on repeat submission after atomic deletion', async () => {
+    mocks.buildCheckoutOrderData.mockRejectedValue(Object.assign(new Error('Корзина пуста'), { code: 'EMPTY_CART' }));
+    await expect(placeOrder(validForm)).resolves.toEqual({ ok: false, code: 'EMPTY_CART', error: 'Корзина пуста' });
+  });
+
+  it('returns honest retry conflict after three P2034 attempts', async () => {
+    mocks.transaction.mockRejectedValue(Object.assign(new Error('conflict'), { code: 'P2034' }));
+    await expect(placeOrder(validForm)).resolves.toMatchObject({ ok: false, code: 'ORDER_TRANSACTION_CONFLICT' });
+    expect(mocks.transaction).toHaveBeenCalledTimes(3);
   });
 });

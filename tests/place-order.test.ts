@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDeliverySlots } from '@/lib/checkout-domain';
 
@@ -118,11 +117,6 @@ beforeEach(() => {
 });
 
 describe('placeOrder transactional canonical placement', () => {
-  it('keeps the inherited form cart-only and does not forward buy-now ids', () => {
-    const source = readFileSync('components/shared/checkout/checkout-form.tsx', 'utf8');
-    expect(source).not.toContain('placeOrder({ ...v, buyNowVariantId });');
-  });
-
   it('writes stock, immutable snapshots, order totals, and placed cart deletion through one transaction client', async () => {
     const tx = transactionClient();
     mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown, options: unknown) => {

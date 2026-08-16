@@ -36,12 +36,20 @@ interface InitializationOrder {
   items: Array<{ skuId: string | null; quantity: number }>;
 }
 
-interface CancellationTransaction {
+interface PaymentInitializationTransaction {
   order: {
     updateMany(args: {
-      where: { id: string; status: 'PENDING' };
-      data: { status: 'CANCELLED' };
+      where: { id: string; status: 'PENDING'; payment?: { is: null } };
+      data: { status: 'PENDING' | 'CANCELLED' };
     }): Promise<{ count: number }>;
+  };
+  payment: {
+    findUnique(args: { where: { orderId: string }; select: { id: true } }): Promise<{ id: string } | null>;
+    upsert(args: {
+      where: { orderId: string };
+      create: { id: string; orderId: string; amount: number; status: string; confirmationUrl: string | null };
+      update: { amount: number; status: string; confirmationUrl: string | null };
+    }): Promise<unknown>;
   };
   sku: {
     update(args: { where: { id: string }; data: { stock: { increment: number } } }): Promise<unknown>;
@@ -55,14 +63,10 @@ export interface PaymentInitializationClient {
       include: { payment: true; items: { select: { skuId: true; quantity: true } } };
     }): Promise<InitializationOrder | null>;
   };
-  payment: {
-    upsert(args: {
-      where: { orderId: string };
-      create: { id: string; orderId: string; amount: number; status: string; confirmationUrl: string | null };
-      update: { amount: number; status: string; confirmationUrl: string | null };
-    }): Promise<unknown>;
-  };
-  $transaction<T>(operation: (transaction: CancellationTransaction) => Promise<T>): Promise<T>;
+  $transaction<T>(
+    operation: (transaction: PaymentInitializationTransaction) => Promise<T>,
+    options?: { isolationLevel: 'Serializable' },
+  ): Promise<T>;
 }
 
 export type PaymentInitializationResult =
@@ -97,6 +101,12 @@ function verifyPayment(order: InitializationOrder, payment: PaymentProviderDetai
   if (order.payment && order.payment.id !== payment.id) throw new Error('Provider payment correlation conflict');
 }
 
+class PaymentCorrelationConflictError extends Error {
+  constructor() {
+    super('Provider payment correlation conflict');
+  }
+}
+
 async function persistPayment(
   client: PaymentInitializationClient,
   order: InitializationOrder,
@@ -104,42 +114,67 @@ async function persistPayment(
 ): Promise<boolean> {
   verifyPayment(order, payment);
   try {
-    await client.payment.upsert({
-      where: { orderId: order.id },
-      create: {
-        id: payment.id,
-        orderId: order.id,
-        amount: order.totalAmount,
-        status: payment.status,
-        confirmationUrl: payment.confirmationUrl,
+    return await client.$transaction(
+      async (transaction) => {
+        const pending = await transaction.order.updateMany({
+          where: { id: order.id, status: 'PENDING' },
+          data: { status: 'PENDING' },
+        });
+        if (pending.count === 0) return false;
+
+        const current = await transaction.payment.findUnique({ where: { orderId: order.id }, select: { id: true } });
+        if (current && current.id !== payment.id) throw new PaymentCorrelationConflictError();
+        await transaction.payment.upsert({
+          where: { orderId: order.id },
+          create: {
+            id: payment.id,
+            orderId: order.id,
+            amount: order.totalAmount,
+            status: payment.status,
+            confirmationUrl: payment.confirmationUrl,
+          },
+          update: {
+            amount: order.totalAmount,
+            status: payment.status,
+            confirmationUrl: payment.confirmationUrl,
+          },
+        });
+        return true;
       },
-      update: {
-        amount: order.totalAmount,
-        status: payment.status,
-        confirmationUrl: payment.confirmationUrl,
-      },
-    });
-    return true;
-  } catch {
+      { isolationLevel: 'Serializable' },
+    );
+  } catch (error) {
+    if (error instanceof PaymentCorrelationConflictError) throw error;
     return false;
   }
 }
 
-async function cancelUncreatedPayment(client: PaymentInitializationClient, order: InitializationOrder): Promise<void> {
-  await client.$transaction(async (transaction) => {
-    const cancelled = await transaction.order.updateMany({
-      where: { id: order.id, status: 'PENDING' },
-      data: { status: 'CANCELLED' },
-    });
-    if (cancelled.count === 0) return;
-    for (const item of order.items) {
-      if (!item.skuId) throw new Error('Canonical order item required for stock restoration');
-      await transaction.sku.update({
-        where: { id: item.skuId },
-        data: { stock: { increment: item.quantity } },
-      });
-    }
-  });
+async function cancelUncreatedPayment(
+  client: PaymentInitializationClient,
+  order: InitializationOrder,
+): Promise<boolean> {
+  try {
+    return await client.$transaction(
+      async (transaction) => {
+        const cancelled = await transaction.order.updateMany({
+          where: { id: order.id, status: 'PENDING', payment: { is: null } },
+          data: { status: 'CANCELLED' },
+        });
+        if (cancelled.count === 0) return false;
+        for (const item of order.items) {
+          if (!item.skuId) throw new Error('Canonical order item required for stock restoration');
+          await transaction.sku.update({
+            where: { id: item.skuId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+        return true;
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function ensureOnlinePayment({
@@ -182,8 +217,8 @@ export async function ensureOnlinePayment({
     return { outcome: 'INDETERMINATE' };
   }
   if (attempt.outcome === 'NOT_CREATED' && attempt.dispatched === false) {
-    await cancelUncreatedPayment(client, order);
-    return { outcome: 'NOT_CREATED' };
+    const cancelled = await cancelUncreatedPayment(client, order);
+    return cancelled ? { outcome: 'NOT_CREATED' } : { outcome: 'INDETERMINATE' };
   }
   if (attempt.outcome !== 'CREATED') return { outcome: 'INDETERMINATE' };
 

@@ -54,3 +54,19 @@ Remediation RED/GREEN evidence:
 - `npm run typecheck`: passed.
 - Final Task 4 focused command, including the action-builder integration regression: 10 files, 66 tests passed.
 - Final touched-file Prettier check and `git diff --check`: passed.
+
+## Review Remediation Wave 2
+
+- Made verified `CREATED` correlation persistence and proven `NOT_CREATED` cancellation mutually exclusive with serializable transactions. Payment persistence guards the order remains `PENDING`; cancellation guards both `PENDING` and no related payment. Lost races and transaction failures return `INDETERMINATE` without restoring stock.
+- Replaced placement/quote cart reads with a canonical SKU-only Prisma select. It reads scalar `productVariantId` only to reject legacy lines and never loads the `ProductVariant` relation.
+- Corrected the transaction retry regression so the operation and transaction-scoped re-read execute on all three P2034 attempts.
+- Pinned the exact persisted `paymentReturnUrl` update and proved it occurs before `ensureOnlinePayment`.
+- Replaced the brittle buy-now source assertion with a runtime checkout submission-helper test proving only form values reach `placeOrder`.
+
+Wave 2 RED/GREEN evidence:
+
+- RED reproduced the payment race (`NOT_CREATED` canceled after a live payment correlation), both legacy relation query shapes, and the missing runtime checkout submission boundary.
+- Focused wave 2 command: 5 files, 26 tests passed.
+- `npm run typecheck`: passed.
+- Final Task 4 focused command, including wave 2 regressions: 11 files, 68 tests passed.
+- Final touched-file Prettier check, `git diff --check`, and changed-file secret scan: passed.

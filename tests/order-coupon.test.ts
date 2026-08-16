@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildCheckoutOrderData, type CheckoutDataClient } from '@/lib/checkout-page';
+import { buildCheckoutOrderData, type CheckoutQuoteDataClient } from '@/lib/checkout-page';
 import { buildDeliverySlots } from '@/lib/checkout-domain';
 
 const now = new Date('2026-08-16T09:00:00.000Z');
@@ -50,7 +50,7 @@ function client(coupon: { code: string; percent: number; active: boolean; expire
   return {
     cart: { findFirst: vi.fn(async () => cart) },
     coupon: { findUnique: vi.fn(async () => coupon) },
-  } as unknown as CheckoutDataClient;
+  } as unknown as CheckoutQuoteDataClient;
 }
 
 describe('transactional order coupon snapshot', () => {
@@ -64,6 +64,13 @@ describe('transactional order coupon snapshot', () => {
       client: transaction,
     });
     expect(result.quote.totals.total).toBe(100000);
+    const findFirst = transaction.cart.findFirst as unknown as ReturnType<typeof vi.fn>;
+    expect(findFirst).toHaveBeenCalledTimes(2);
+    for (const [query] of findFirst.mock.calls) {
+      expect(query).not.toHaveProperty('include');
+      expect(query.select.items.select.productVariantId).toBe(true);
+      expect(query.select.items.select).not.toHaveProperty('productVariant');
+    }
   });
 
   it('re-reads eligible coupon through transaction client and snapshots server discount', async () => {

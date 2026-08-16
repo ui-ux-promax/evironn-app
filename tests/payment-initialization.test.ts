@@ -27,22 +27,26 @@ function harness(providerResult: Awaited<ReturnType<PaymentProviderAdapter['crea
   const state = { order: order(), payment: null as null | Record<string, unknown>, stock: 8 };
   const tx = {
     order: {
-      updateMany: vi.fn(async () => {
+      updateMany: vi.fn(async ({ where, data }: { where: { payment?: { is: null } }; data: { status: string } }) => {
         if (state.order.status !== 'PENDING') return { count: 0 };
-        state.order.status = 'CANCELLED';
+        if (where.payment?.is === null && state.payment !== null) return { count: 0 };
+        state.order.status = data.status;
         return { count: 1 };
       }),
+    },
+    payment: {
+      findUnique: vi.fn(async () => (state.payment ? { id: String(state.payment.id) } : null)),
+      upsert: vi.fn(
+        async ({ create, update }: { create: Record<string, unknown>; update: Record<string, unknown> }) => {
+          state.payment = state.payment ? { ...state.payment, ...update } : create;
+          return state.payment;
+        },
+      ),
     },
     sku: { update: vi.fn(async () => ((state.stock += 2), {})) },
   };
   const client = {
     order: { findUnique: vi.fn(async () => ({ ...state.order, payment: state.payment })) },
-    payment: {
-      upsert: vi.fn(async ({ create }: { create: Record<string, unknown> }) => {
-        state.payment = create;
-        return create;
-      }),
-    },
     $transaction: vi.fn(async (callback: (transaction: typeof tx) => unknown) => callback(tx)),
   } as unknown as PaymentInitializationClient;
   const provider = {
@@ -53,6 +57,67 @@ function harness(providerResult: Awaited<ReturnType<PaymentProviderAdapter['crea
 }
 
 describe('ensureOnlinePayment', () => {
+  it('keeps CREATED persistence and proven NOT_CREATED cancellation mutually exclusive', async () => {
+    const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'unused' });
+    let resolveCreated!: (value: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) => void;
+    let resolveNotCreated!: (value: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) => void;
+    const createdProvider = {
+      ...h.provider,
+      createPayment: vi.fn(
+        () =>
+          new Promise<Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>>(
+            (resolve) => (resolveCreated = resolve),
+          ),
+      ),
+    };
+    const notCreatedProvider = {
+      ...h.provider,
+      createPayment: vi.fn(
+        () =>
+          new Promise<Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>>(
+            (resolve) => (resolveNotCreated = resolve),
+          ),
+      ),
+    };
+
+    const created = ensureOnlinePayment({
+      orderId: 'order-1',
+      now: new Date('2026-08-16T01:00:00.000Z'),
+      client: h.client,
+      provider: createdProvider,
+    });
+    const notCreated = ensureOnlinePayment({
+      orderId: 'order-1',
+      now: new Date('2026-08-16T01:00:00.000Z'),
+      client: h.client,
+      provider: notCreatedProvider,
+    });
+    await vi.waitFor(() => {
+      expect(createdProvider.createPayment).toHaveBeenCalledOnce();
+      expect(notCreatedProvider.createPayment).toHaveBeenCalledOnce();
+    });
+
+    resolveCreated({
+      outcome: 'CREATED',
+      payment: {
+        id: 'pay-1',
+        status: 'pending',
+        amountRub: 159900,
+        orderNumber: '1042',
+        confirmationUrl: 'https://yookassa.test/confirm',
+      },
+    });
+    await expect(created).resolves.toEqual({
+      outcome: 'CREATED',
+      confirmationUrl: 'https://yookassa.test/confirm',
+    });
+    resolveNotCreated({ outcome: 'NOT_CREATED', dispatched: false });
+    await expect(notCreated).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.state.order.status).toBe('PENDING');
+    expect(h.state.stock).toBe(8);
+    expect(h.state.payment).toMatchObject({ id: 'pay-1' });
+  });
+
   it('persists a verified provider correlation from durable request data', async () => {
     const h = harness({
       outcome: 'CREATED',
@@ -82,7 +147,7 @@ describe('ensureOnlinePayment', () => {
       metadata: { orderNumber: '1042' },
       returnUrl: 'https://preview.test/orders/1042',
     });
-    expect(h.client.payment.upsert).toHaveBeenCalledWith({
+    expect(h.tx.payment.upsert).toHaveBeenCalledWith({
       where: { orderId: 'order-1' },
       create: {
         id: 'pay-1',
@@ -106,6 +171,11 @@ describe('ensureOnlinePayment', () => {
       }),
     ).toEqual({ outcome: 'NOT_CREATED' });
     expect(h.tx.order.updateMany).toHaveBeenCalledOnce();
+    expect(h.tx.order.updateMany).toHaveBeenCalledWith({
+      where: { id: 'order-1', status: 'PENDING', payment: { is: null } },
+      data: { status: 'CANCELLED' },
+    });
+    expect(h.client.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
     expect(h.tx.sku.update).toHaveBeenCalledOnce();
     expect(h.state.stock).toBe(10);
 
@@ -116,6 +186,21 @@ describe('ensureOnlinePayment', () => {
       provider: h.provider,
     });
     expect(h.state.stock).toBe(10);
+  });
+
+  it('fails closed as indeterminate when guarded cancellation cannot commit', async () => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    (h.client.$transaction as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('transaction failed'));
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.state.order.status).toBe('PENDING');
+    expect(h.state.stock).toBe(8);
   });
 
   it.each([
@@ -194,7 +279,7 @@ describe('ensureOnlinePayment', () => {
         provider: h.provider,
       }),
     ).rejects.toThrow('Provider payment correlation conflict');
-    expect(h.client.payment.upsert).not.toHaveBeenCalled();
+    expect(h.tx.payment.upsert).not.toHaveBeenCalled();
     expect(h.client.$transaction).not.toHaveBeenCalled();
   });
 
@@ -209,7 +294,7 @@ describe('ensureOnlinePayment', () => {
         confirmationUrl: 'https://yookassa.test/confirm',
       },
     });
-    (h.client.payment.upsert as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('write failed'));
+    h.tx.payment.upsert.mockRejectedValue(new Error('write failed'));
     expect(
       await ensureOnlinePayment({
         orderId: 'order-1',
@@ -218,6 +303,6 @@ describe('ensureOnlinePayment', () => {
         provider: h.provider,
       }),
     ).toEqual({ outcome: 'INDETERMINATE' });
-    expect(h.client.$transaction).not.toHaveBeenCalled();
+    expect(h.client.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
   });
 });

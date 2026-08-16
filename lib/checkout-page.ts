@@ -29,7 +29,57 @@ const checkoutUserSelect = {
 type CheckoutUser = Prisma.UserGetPayload<{ select: typeof checkoutUserSelect }>;
 type CheckoutCart = Prisma.CartGetPayload<{ include: typeof cartPresentationInclude }>;
 
-export interface CheckoutDataClient {
+export const canonicalCheckoutCartSelect = {
+  id: true,
+  userId: true,
+  token: true,
+  totalAmount: true,
+  createdAt: true,
+  updatedAt: true,
+  items: {
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true,
+      cartId: true,
+      skuId: true,
+      productVariantId: true,
+      quantity: true,
+      createdAt: true,
+      sku: {
+        select: {
+          id: true,
+          articleNumber: true,
+          combinationKey: true,
+          price: true,
+          oldPrice: true,
+          stock: true,
+          active: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              active: true,
+              media: { where: { kind: 'IMAGE' as const }, orderBy: { sortOrder: 'asc' as const }, take: 1 },
+            },
+          },
+          media: { where: { kind: 'IMAGE' as const }, orderBy: { sortOrder: 'asc' as const }, take: 1 },
+          selections: {
+            select: {
+              optionGroup: { select: { name: true, slug: true, sortOrder: true } },
+              optionValue: { select: { name: true, slug: true, swatchHex: true } },
+            },
+            orderBy: { optionGroup: { sortOrder: 'asc' as const } },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.CartSelect;
+
+type CanonicalCheckoutCart = Prisma.CartGetPayload<{ select: typeof canonicalCheckoutCartSelect }>;
+
+export interface CheckoutPageDataClient {
   user: {
     findUnique(args: { where: { id: string }; select: typeof checkoutUserSelect }): Promise<CheckoutUser | null>;
   };
@@ -38,6 +88,15 @@ export interface CheckoutDataClient {
       where: { userId: string; id?: string };
       include: typeof cartPresentationInclude;
     }): Promise<CheckoutCart | null>;
+  };
+}
+
+export interface CheckoutQuoteDataClient {
+  cart: {
+    findFirst(args: {
+      where: { userId: string; id?: string };
+      select: typeof canonicalCheckoutCartSelect;
+    }): Promise<CanonicalCheckoutCart | null>;
   };
   coupon: {
     findUnique(args: { where: { code: string } }): Promise<{
@@ -49,7 +108,10 @@ export interface CheckoutDataClient {
   };
 }
 
-const defaultClient = prisma as unknown as CheckoutDataClient;
+export type CheckoutDataClient = CheckoutPageDataClient & CheckoutQuoteDataClient;
+
+const defaultPageClient = prisma as unknown as CheckoutPageDataClient;
+const defaultQuoteClient = prisma as unknown as CheckoutQuoteDataClient;
 
 const deliveryOptions: CheckoutPageDto['deliveryOptions'] = [
   { id: 'courier', label: 'Курьерская доставка' },
@@ -82,22 +144,31 @@ function pageOptions(now: Date) {
   };
 }
 
-function hasNonCanonicalLine(cart: CheckoutCart): boolean {
+function hasNonCanonicalLine(cart: {
+  items: Array<{ sku: { active: boolean; product: { active: boolean } } | null; productVariantId: string | null }>;
+}): boolean {
   return cart.items.some(
-    (item) => !item.sku || item.productVariant !== null || !item.sku.active || !item.sku.product.active,
+    (item) => !item.sku || item.productVariantId !== null || !item.sku.active || !item.sku.product.active,
   );
+}
+
+function asPresentationCart(cart: CanonicalCheckoutCart): CheckoutCart {
+  return {
+    ...cart,
+    items: cart.items.map((item) => ({ ...item, productVariant: null })),
+  } as unknown as CheckoutCart;
 }
 
 export async function getCheckoutPageDto({
   userId,
   cookieToken: _cookieToken,
   now,
-  client = defaultClient,
+  client = defaultPageClient,
 }: {
   userId: string;
   cookieToken?: string;
   now: Date;
-  client?: CheckoutDataClient;
+  client?: CheckoutPageDataClient;
 }): Promise<CheckoutPageDto> {
   const [user, cart] = await Promise.all([
     client.user.findUnique({ where: { id: userId }, select: checkoutUserSelect }),
@@ -148,26 +219,32 @@ export async function buildCheckoutQuote({
   cookieToken: _cookieToken,
   raw,
   now,
-  client = defaultClient,
+  client = defaultQuoteClient,
 }: {
   userId: string;
   cartId?: string;
   cookieToken?: string;
   raw: unknown;
   now: Date;
-  client?: CheckoutDataClient;
+  client?: CheckoutQuoteDataClient;
 }): Promise<CheckoutQuoteResult> {
   const parsed = checkoutQuoteInputSchema.safeParse(raw);
   if (!parsed.success) return quoteError('INVALID_INPUT', 'Некорректные данные оформления');
 
   const cart = await client.cart.findFirst({
     where: { userId, ...(cartId ? { id: cartId } : {}) },
-    include: cartPresentationInclude,
+    select: canonicalCheckoutCartSelect,
   });
   if (!cart || cart.items.length === 0) return quoteError('EMPTY_CART', 'Корзина пуста');
 
   for (const item of cart.items) {
-    if (!item.sku || item.productVariant || !item.sku.active || !item.sku.product.active || item.sku.stock < 1) {
+    if (
+      !item.sku ||
+      item.productVariantId !== null ||
+      !item.sku.active ||
+      !item.sku.product.active ||
+      item.sku.stock < 1
+    ) {
       return quoteError('SKU_UNAVAILABLE', 'Товар больше недоступен');
     }
     if (item.quantity > item.sku.stock) {
@@ -189,7 +266,7 @@ export async function buildCheckoutQuote({
   const coupon = input.couponCode ? await checkCoupon(input.couponCode, client, () => now) : null;
   if (coupon && !coupon.ok) return quoteError('INVALID_COUPON', coupon.error);
 
-  const cartDto = buildCartDto(cart, coupon?.ok ? coupon.percent : 0);
+  const cartDto = buildCartDto(asPresentationCart(cart), coupon?.ok ? coupon.percent : 0);
   const calculated = calculateCheckoutTotals({
     itemsTotal: cartDto.totals.subtotal,
     couponDiscount: cartDto.totals.couponDiscount,
@@ -252,13 +329,13 @@ export async function buildCheckoutOrderData({
   cartId,
   raw,
   now,
-  client = defaultClient,
+  client = defaultQuoteClient,
 }: {
   userId: string;
   cartId: string;
   raw: PlaceOrderInput;
   now: Date;
-  client?: CheckoutDataClient;
+  client?: CheckoutQuoteDataClient;
 }): Promise<CheckoutOrderData> {
   const quoteInput: CheckoutQuoteInput = {
     deliveryMethod: raw.deliveryMethod,
@@ -272,7 +349,10 @@ export async function buildCheckoutOrderData({
   const result = await buildCheckoutQuote({ userId, cartId, raw: quoteInput, now, client });
   if (!result.ok) throw new CheckoutOrderDataError(result.code, result.message);
 
-  const cart = await client.cart.findFirst({ where: { id: cartId, userId }, include: cartPresentationInclude });
+  const cart = await client.cart.findFirst({
+    where: { id: cartId, userId },
+    select: canonicalCheckoutCartSelect,
+  });
   if (!cart || cart.items.length === 0) throw new CheckoutOrderDataError('EMPTY_CART', 'Корзина пуста');
   if (hasNonCanonicalLine(cart))
     throw new CheckoutOrderDataError('SKU_UNAVAILABLE', 'Корзина содержит устаревший товар');
@@ -281,7 +361,7 @@ export async function buildCheckoutOrderData({
     cartId: cart.id,
     cartItemIds: cart.items.map((item) => item.id),
     salesItems: cart.items.map((item) => ({ productId: item.sku!.product.id, quantity: item.quantity })),
-    snapshot: buildOrderSnapshot(cart),
+    snapshot: buildOrderSnapshot(asPresentationCart(cart)),
     quote: result.quote,
   };
 }

@@ -9,12 +9,12 @@ import { formatPrice } from '@/lib/format';
 import { calcShipping } from '@/lib/order';
 import { FREE_SHIPPING_THRESHOLD } from '@/constants/config';
 import { checkoutSchema, type CheckoutValues } from '@/services/dto/order.dto';
-import { placeOrder } from '@/app/actions/order';
 import { AddressSuggest } from './address-suggest';
 import { PromoCodeField } from '@/components/shared/promo-code-field';
 import { useCouponStore } from '@/store/coupon';
 import type { CheckoutDefaults } from '@/lib/checkout-defaults';
 import type { CartDetails } from '@/services/dto/cart.dto';
+import { submitCheckoutValues } from './checkout-submit';
 
 const SHIP_INFO = {
   courier: { label: 'Курьер', desc: '2–4 дня, от 390 ₽' },
@@ -58,7 +58,7 @@ export function CheckoutForm({
 
   const onSubmit = async (v: CheckoutValues) => {
     setError(null);
-    const res = await placeOrder(v);
+    const res = await submitCheckoutValues(v);
     if (!res.ok) {
       setError('paymentInitialization' in res ? res.paymentInitialization.heading : res.error);
       return;

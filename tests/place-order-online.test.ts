@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   assertPaymentMode: vi.fn(),
   validateYooKassaConfiguration: vi.fn(),
   transaction: vi.fn(),
+  orderUpdate: vi.fn(),
 }));
 vi.mock('@/auth', () => ({ auth: mocks.auth }));
 vi.mock('next/headers', () => ({ cookies: mocks.cookies }));
@@ -83,12 +84,13 @@ beforeEach(() => {
   mocks.cookies.mockResolvedValue({ get: () => ({ value: 'token' }) });
   mocks.resolveOwnerCart.mockResolvedValue({ id: 'cart-1', token: 'token' });
   mocks.buildCheckoutOrderData.mockResolvedValue(data);
+  mocks.orderUpdate.mockResolvedValue({});
   mocks.transaction.mockImplementation(async (operation: (tx: object) => unknown) =>
     operation({
       sku: { updateMany: vi.fn(async () => ({ count: 1 })) },
       order: {
         create: vi.fn(async () => ({ id: 'order-1', orderNumber: 1042, createdAt: now, totalAmount: 100000 })),
-        update: vi.fn(async () => ({})),
+        update: mocks.orderUpdate,
       },
       cartItem: { deleteMany: vi.fn(async () => ({ count: 1 })) },
     }),
@@ -112,6 +114,13 @@ describe('placeOrder online initialization', () => {
     expect(mocks.assertPaymentMode).toHaveBeenCalledOnce();
     expect(mocks.assertPaymentMode.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.transaction.mock.invocationCallOrder[0],
+    );
+    expect(mocks.orderUpdate).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: { paymentReturnUrl: 'https://preview.test/orders/1042' },
+    });
+    expect(mocks.orderUpdate.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.ensureOnlinePayment.mock.invocationCallOrder[0],
     );
     expect(mocks.ensureOnlinePayment).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'order-1', now }));
   });

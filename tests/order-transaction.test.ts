@@ -4,16 +4,21 @@ import { runSerializableOrderTransaction } from '@/lib/order';
 describe('runSerializableOrderTransaction', () => {
   it('uses Serializable isolation and retries P2034 at most three attempts', async () => {
     const conflict = Object.assign(new Error('write conflict'), { code: 'P2034' });
-    const client = { $transaction: vi.fn().mockRejectedValueOnce(conflict).mockRejectedValueOnce(conflict) };
-    client.$transaction.mockImplementationOnce(async (callback: (tx: object) => unknown, options: object) => {
+    let attempt = 0;
+    const client = { $transaction: vi.fn() };
+    client.$transaction.mockImplementation(async (callback: (tx: object) => unknown, options: object) => {
       expect(options).toEqual({ isolationLevel: 'Serializable' });
-      return callback({ attempt: 3 });
+      attempt += 1;
+      const result = await callback({ attempt });
+      if (attempt < 3) throw conflict;
+      return result;
     });
     const operation = vi.fn(async (tx) => tx);
 
     await expect(runSerializableOrderTransaction(client, operation)).resolves.toEqual({ attempt: 3 });
     expect(client.$transaction).toHaveBeenCalledTimes(3);
-    expect(operation).toHaveBeenCalledOnce();
+    expect(operation).toHaveBeenCalledTimes(3);
+    expect(operation.mock.calls.map(([tx]) => tx)).toEqual([{ attempt: 1 }, { attempt: 2 }, { attempt: 3 }]);
   });
 
   it('returns an honest conflict after the third P2034', async () => {

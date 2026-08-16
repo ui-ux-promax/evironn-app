@@ -9,7 +9,8 @@
 - Protected plan hashes: `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
 - ADR-015 approved shared non-production Neon E2E fingerprint confirmed; user confirmed no separate Production database exists. ADR-016 delivery/service policy approved 2026-08-16.
 - Task 1 committed as `53b729f` (`chore: initialize phase 4 delivery`). Final plan review: APPROVED, Critical 0 / Important 0 / Minor 2, plan hash `4D5AE7BF7F9400A212BF10CD3902ACA61CE7227CF777FA2F46556E5899CAB8B2`.
-- Task 1 review remediation corrected stale plan-review evidence and ADR-015 ordering/punctuation. Tasks 2-9 pending; Task 2 has not started.
+- Task 1 complete: commits `53b729f..a721d4a`; focused Vitest 20/20, touched-file Prettier, and diff checks pass. Fresh re-review approved Critical 0 / Important 0 / Minor 0.
+- Tasks 2-9 pending; Task 2 has not started.
 - No database reads/writes, push, Preview, PR, merge, branch deletion, or next phase.
 
 # Phase 2 catalog pilot progress

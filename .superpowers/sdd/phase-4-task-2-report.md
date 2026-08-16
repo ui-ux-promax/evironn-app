@@ -33,15 +33,21 @@ Production writers:
 - `app/actions/order.ts:133-227,272-291` creates/deletes orders and order items, creates the local Payment row, and performs guarded cancellation updates.
 - `lib/payment-sync.ts:74-82,124-160` updates payment/order final states and restores cancellation side effects.
 - `app/actions/admin/orders.ts:26-80` updates order/payment status.
-- `prisma/seed-orders.ts:85-130` writes legacy order/payment fixture data.
 - `app/actions/admin/coupons.ts:37-120` performs coupon definition CRUD only. Coupon usage remains stateless; this writer does not reserve, consume, or compensate coupon usage.
+
+Non-production fixture and probe paths:
+
+- `app/api/e2e/phase3-probe/route.ts:17` is an environment-gated, read-only E2E order probe.
+- `lib/demo-data/reset.ts:42-44` deletes visitor Payment, OrderItem, and Order rows as demo reset fixture cleanup.
 - `lib/demo-data/reset.ts:69` upserts canonical coupon definitions during the guarded demo reset.
+- `prisma/seed-orders.ts:58` deletes only order fixtures identified by the test email domain before reseeding.
+- `prisma/seed-orders.ts:85-130` writes legacy order/payment fixture data.
 - `prisma/seed.ts:187` upserts seed coupon definitions during explicit database seeding.
 - `prisma/gen-seed-sql.ts:100` generates fixture SQL that inserts or updates coupon definitions.
 
 Fixture caveat: `prisma/seed-orders.ts:85-130` writes legacy `shippingMethod`, `shippingAmount`, totals, and payment fixture values. It omits the new nullable snapshots and relies on the `serviceAmount` default of zero. This is compatibility fixture data, not a new production contract.
 
-Demo/seed classification: `app/api/cron/reset-demo/route.ts:21` invokes `resetDemoData` under the Vercel cron route and lock; `vercel.json:3` schedules that route daily. The runtime reset and explicit seed upserts are demo/seed definition writers. `prisma/gen-seed-sql.ts:100` is a fixture SQL generator, not a runtime writer. None is a checkout redemption writer. Coupon usage remains stateless because no usage relation, redemption counter, limit, reservation, or compensation writer exists.
+Demo/seed classification: `app/api/cron/reset-demo/route.ts:21` invokes `resetDemoData` under the Vercel cron route and lock; `vercel.json:3` schedules that route daily. The reset cleanup, order seeding, coupon upserts, generated fixture SQL, and E2E probe are non-production fixture/probe paths, not Phase 4 runtime order/payment writers. `prisma/gen-seed-sql.ts:100` generates SQL but does not execute it. None is a checkout redemption writer. Coupon usage remains stateless because no usage relation, redemption counter, limit, reservation, or compensation writer exists.
 
 No existing field stores immutable delivery date, delivery window, delivery zone, pickup identity, floor, lift, intercom, service lines, or service total. Existing readers remain compatible because all new snapshot fields are nullable and `serviceAmount` defaults to zero. Existing writers may omit every new field. Rollback is application-first while retaining the additive migration; destructive contraction is not authorized.
 

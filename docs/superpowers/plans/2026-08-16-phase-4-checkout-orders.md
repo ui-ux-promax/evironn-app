@@ -23,7 +23,7 @@
 - Client labels and identifiers remain inputs only. The server resolves ADR-016 pickup identities, labels, addresses, civil dates, windows, rates, and totals from one policy module; tests cite ADR-016 and its exact source lines.
 - Every delivery day is a `Europe/Moscow` civil date. Slot IDs carry `YYYY-MM-DD` plus a server window id; `deliveryDate` stores that date as the UTC-midnight sentinel `YYYY-MM-DDT00:00:00.000Z`; DTOs emit the date-only string and never parse it as a browser-local instant. Slot generation and validation derive "today" in `Europe/Moscow` and must agree across UTC/Moscow midnight boundaries.
 - Online checkout maps to production `paymentMethod: 'online'` and YooKassa redirect. Cash on delivery maps to `paymentMethod: 'cod'`. Do not collect or validate raw card fields in Evironn; YooKassa owns payment details.
-- Online-provider correlation follows ADR-017. `Order.id` supplies deterministic idempotency key `payment-<orderId>`, unique `Order.orderNumber` is YooKassa metadata, `Order.paymentReturnUrl` preserves the only environment-dependent create input, and `Payment.id` stores the provider id. Official YooKassa evidence establishes `T = 24 hours`; Evironn uses conservative replay window `W = 23 hours` from durable `Order.createdAt`. Only a conclusively proven `NOT_CREATED` outcome permits one local cancellation/restoration transaction. `CREATED`, generic `invalid_request`, idempotency-key errors, HTTP 429, timeout, network/5xx failure, malformed/unknown response, failed local `Payment` write, or any other `INDETERMINATE` state preserves the order and reserved stock until verified reconciliation. No provider create call is allowed at or after `createdAt + W`.
+- Online-provider correlation follows ADR-017. `Order.id` supplies deterministic idempotency key `payment-<orderId>`, unique `Order.orderNumber` is YooKassa metadata, `Order.paymentReturnUrl` preserves the only environment-dependent create input, and `Payment.id` stores the provider id. Official YooKassa evidence establishes `T = 24 hours`; Evironn uses conservative replay window `W = 23 hours` from durable `Order.createdAt`. Only adapter-proven no-dispatch `NOT_CREATED` permits one local cancellation/restoration transaction. Once create dispatch occurs, every provider rejection or error response is `INDETERMINATE` unless a verified provider object establishes `CREATED`; the order and reserved stock remain intact until verified reconciliation. No provider create call is allowed at or after `createdAt + W`.
 - The order page must never synthesize courier contacts, support tickets, documents, payment success, recommendations, or review eligibility. Unsupported clone mock actions are omitted; supported actions use production URLs/actions.
 - Phase 4 excludes admin, Cloudinary, demo-admin, Sentry/operations hardening, performance work, refunds, two-stage capture, and new payment-event/outbox architecture.
 - ADR-013 remains binding: the accepted showcase PDP stays fixed to Noma and non-showcase product routes keep redirecting there. Phase 4 must not broaden product routing or navigate namespace fixture PDPs; E2E injects namespace-owned canonical cart lines through a guarded authenticated fixture boundary.
@@ -38,7 +38,7 @@ Task 2 must use the `migration` skill in addition to TDD.
 - **Rollback path:** roll application code back first; old code ignores additive columns and still sees `courier`/`pickup`. Keep the additive migration applied. Dropping columns is a separate destructive contraction and is not authorized in Phase 4.
 - **Mixed-version safety:** no new required value is needed by old readers. New readers accept pre-Phase-4 rows where every new column is null/defaulted.
 - **Idempotence:** the non-exposing migration wrapper must invoke the real `prisma migrate deploy` subprocess twice against the explicit non-production E2E database; the second invocation must report no pending migration. The wrapper captures raw stdout/stderr in-process with piped stdio, emits only exit status, allowlisted error category, migration names/counts, booleans, and fingerprints, and discards raw output without forwarding it to reports or agent messages. Never use `TRUNCATE`, `prisma migrate reset`, global delete/reset, or Production.
-- **Payment correlation proof:** Task 2 found that the installed SDK alone did not prove provider retention or missing-row recovery. ADR-017 supplies official `T = 24 hours`, conservative `W = 23 hours`, exact replay requirements, narrow outcome classification, and verified webhook recovery. Task 2A must add nullable `paymentReturnUrl` before provider work. It must determine whether the existing Phase 4 migration is applied through the sanitized explicit E2E database guard; raw database or Prisma output is forbidden. If unapplied, amend the existing additive migration. If applied, create a second additive migration. Task 4 may not begin before this checkpoint is implemented and reviewed.
+- **Payment correlation proof:** Task 2 found that the installed SDK alone did not prove provider retention or missing-row recovery. ADR-017 supplies official `T = 24 hours`, conservative `W = 23 hours`, exact replay requirements, strict dispatch-based outcome classification, and verified webhook recovery. Task 2A must add nullable `paymentReturnUrl` before provider work through a separate additive migration. Its sanitized explicit E2E database query reads the existing delivery migration status and checksum only as preservation/readiness proof; the tracked delivery migration remains byte-identical whether the database reports it applied or unapplied. Raw database or Prisma output is forbidden. Task 4 may not begin before this checkpoint is implemented and reviewed.
 
 ## Payment Initialization Safety Contract
 
@@ -46,10 +46,10 @@ Task 2 must use the `migration` skill in addition to TDD.
 - Provider retention is `T = 24 hours`. The application replay deadline is the earlier conservative bound `Order.createdAt + W`, where `W = 23 hours`. Every provider create entry point checks this bound before dispatch. At or after the bound, no create request is issued.
 - Every permitted replay uses idempotency key `payment-<orderId>` and provider data rebuilt only from durable order fields plus transactionally persisted `paymentReturnUrl`. A changed or absent replay-critical value fails closed without dispatch.
 - `CREATED` requires a returned or loaded provider object whose provider id, RUB amount, and exact unique `orderNumber` metadata match the durable online order. The one local `Payment` correlation is inserted or repaired idempotently.
-- `NOT_CREATED` requires conclusive no-dispatch proof or a narrow non-retryable provider rejection that cannot represent an earlier idempotent success. Generic `invalid_request`, any idempotency-key error, HTTP 429, timeout, network/5xx failure, malformed or unknown response, absent proof, and local `Payment` write failure are `INDETERMINATE`.
+- `NOT_CREATED` requires adapter-proven no-dispatch evidence. Once any create request is dispatched, every provider rejection or error response is `INDETERMINATE` unless a verified provider object establishes `CREATED`; this includes `invalid_request`, idempotency-key errors, HTTP 400/429, timeout, network/5xx failure, malformed or unknown response, absent proof, and local `Payment` write failure.
 - `payments.list` may be used only as a non-authoritative secondary lookup. Zero matches never proves `NOT_CREATED`; multiple or conflicting matches fail closed. No stock or order decision may depend on list absence.
 - Missing-Payment webhook recovery loads provider details by provider id, then correlates exactly one online `PENDING` order by unique `orderNumber` metadata and RUB amount. Missing/forged metadata, amount mismatch, wrong method/state, or any correlation conflict preserves the order and stock for investigation.
-- Only verified `NOT_CREATED` may use the guarded cancellation/restoration transaction. `CREATED`, `INDETERMINATE`, post-window state, and local persistence failure preserve the durable order and its stock reservation. No fake success, automatic order deletion, automatic stock release, outbox, payment-event architecture, refund flow, or two-stage capture is added.
+- Only adapter-proven no-dispatch `NOT_CREATED` may use the guarded cancellation/restoration transaction. `CREATED`, `INDETERMINATE`, post-window state, and local persistence failure preserve the durable order and its stock reservation. No fake success, automatic order deletion, automatic stock release, outbox, payment-event architecture, refund flow, or two-stage capture is added.
 
 ## Agent and Review Protocol
 
@@ -390,12 +390,11 @@ Reviewer checks reader/writer/payment/coupon map, additive-only SQL, existing-or
 - Create: `e2e/database-readiness.ts`
 - Create: `tests/phase-4-migration-status.test.ts`
 - Modify: `prisma/schema.prisma`
-- Modify conditionally: `prisma/migrations/20260816_phase4_delivery_snapshots/migration.sql` only when the sanitized status is conclusively `UNAPPLIED`
-- Create conditionally: `prisma/migrations/20260816_phase4_payment_replay/migration.sql` only when the sanitized status is conclusively `APPLIED`
+- Create: `prisma/migrations/20260816_phase4_payment_replay/migration.sql`
 - Modify: `tests/phase-4-schema-contract.test.ts`
 - Create report: `.superpowers/sdd/phase-4-task-2a-report.md`
 
-This task is a hard checkpoint before Task 3 or any provider implementation. It performs one read-only migration-status query against the explicit approved E2E database, then chooses exactly one additive migration path. It does not run `prisma migrate deploy`, write application data, call YooKassa, or replace the historical Task 2 `PAYMENT_AUTO_RETRY_UNSAFE` evidence.
+This task is a hard checkpoint before Task 3 or any provider implementation. It performs one read-only migration-status and checksum query against the explicit approved E2E database, proves the tracked delivery migration is preserved, then creates one separate additive payment-replay migration regardless of `APPLIED` or `UNAPPLIED` status. It does not run `prisma migrate deploy`, write application data, call YooKassa, modify the existing delivery migration, or replace the historical Task 2 `PAYMENT_AUTO_RETRY_UNSAFE` evidence.
 
 - [ ] **Step 1: Write RED sanitization and migration-state tests before any schema edit**
 
@@ -424,8 +423,8 @@ export interface DatabaseCommandReport {
 
 - `e2e/database-readiness.ts` obtains connection data only from `resolveE2eDatabaseEnvironment(process.env)` and never imports ambient application Prisma state;
 - a successful query with no row for `20260816_phase4_delivery_snapshots` reports exactly one of `checks.deliveryMigrationUnapplied = true` and `checks.deliveryMigrationApplied = false`;
-- exactly one row with non-null `finished_at` and null `rolled_back_at` reports `deliveryMigrationApplied = true` and includes only the allowlisted migration name;
-- duplicate rows, an unfinished row, a rolled-back row, query failure, invalid configuration, or identity mismatch returns `ok: false`, a non-zero exit code, and an allowlisted category; it never guesses `APPLIED` or `UNAPPLIED`;
+- exactly one row with non-null `finished_at`, null `rolled_back_at`, and `checksum` exactly equal to expected SHA-256 `E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A` reports `deliveryMigrationApplied = true`, `deliveryMigrationChecksumMatches = true`, and includes only the allowlisted migration name;
+- checksum comparison normalizes only hexadecimal case; malformed, missing, or different checksum, duplicate rows, an unfinished row, a rolled-back row, query failure, invalid configuration, or identity mismatch returns `ok: false`, a non-zero exit code, and an allowlisted category; it never guesses `APPLIED` or `UNAPPLIED`;
 - serialized output contains no URL, hostname, database name, username, query text, password, raw stdout/stderr, thrown message, or stack from the injected fixtures;
 - the top-level CLI catches every rejection and emits one JSON report only, so Node cannot print an uncaught error.
 
@@ -441,17 +440,17 @@ Expected: fail because the report and read-only readiness modules do not exist.
 
 - [ ] **Step 3: Implement the sanitized read-only migration-status command**
 
-`e2e/database-readiness.ts` exports an injectable status function and a `--mode=migration-status` CLI. The real adapter uses the explicit guarded unpooled E2E URL in an isolated Prisma/Neon client, executes only a parameterized `SELECT` against `_prisma_migrations` for the exact migration name, and disconnects in `finally`. No application model is read or written. The command must classify rows as follows:
+`e2e/database-readiness.ts` exports an injectable status function and a `--mode=migration-status` CLI. The real adapter uses the explicit guarded unpooled E2E URL in an isolated Prisma/Neon client, executes only a parameterized `SELECT` of `migration_name`, `checksum`, `finished_at`, and `rolled_back_at` from `_prisma_migrations` for the exact migration name, and disconnects in `finally`. No application model is read or written. The command must classify rows as follows:
 
 ```typescript
 export type DeliveryMigrationStatus = 'APPLIED' | 'UNAPPLIED' | 'BLOCKED';
 
-// zero rows                                         -> UNAPPLIED
-// one finished row with no rolled_back_at value     -> APPLIED
-// every other row shape or any error                -> BLOCKED
+// zero rows                                                          -> UNAPPLIED
+// one finished, not-rolled-back row with exact expected checksum     -> APPLIED
+// checksum mismatch or every other row shape or error                -> BLOCKED
 ```
 
-The printable report uses only fixed check names, the tracked 64-hex target fingerprint, the allowlisted migration name, counts, booleans, exit code, and the error-category union above. `noPendingMigrations` remains `false` in migration-status mode because this checkpoint inspects one historical migration only; Task 8 later extends the same module for full migration/completion readiness. Raw query results and caught errors remain in memory and are discarded.
+The printable report uses only fixed check names, including `deliveryMigrationChecksumMatches`, the tracked 64-hex target fingerprint, the allowlisted migration name, counts, booleans, exit code, and the error-category union above. It never prints the database checksum. `noPendingMigrations` remains `false` in migration-status mode because this checkpoint inspects one historical migration only; Task 8 later extends the same module for full migration/completion readiness. Raw query results and caught errors remain in memory and are discarded.
 
 - [ ] **Step 4: Run the real read-only checkpoint and stop on anything except sanitized `APPLIED` or `UNAPPLIED`**
 
@@ -462,9 +461,9 @@ npx vitest run tests/phase-4-migration-status.test.ts tests/e2e-database-guard.t
 npx tsx e2e/database-readiness.ts --mode=migration-status
 ```
 
-Record only the sanitized report and the pre-edit migration hash `E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A` in the Task 2A report. If the command is missing explicit variables, returns `ok: false`, emits anything outside `DatabaseCommandReport`, exposes raw identity/error data, or does not prove exactly one of `APPLIED`/`UNAPPLIED`, set `BLOCKED_MIGRATION_STATUS` and stop before editing `prisma/schema.prisma` or either migration file.
+Record only the sanitized report and the tracked delivery migration file hash `E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A` in the Task 2A report. If the command is missing explicit variables, returns `ok: false`, emits anything outside `DatabaseCommandReport`, exposes raw identity/error data, reports an applied row without exact checksum proof, or does not prove exactly one of `APPLIED`/`UNAPPLIED`, set `BLOCKED_MIGRATION_STATUS` and stop before editing `prisma/schema.prisma` or creating the new migration. Never edit the existing delivery migration.
 
-- [ ] **Step 5: Add nullable `Order.paymentReturnUrl` through exactly one forward path**
+- [ ] **Step 5: Add nullable `Order.paymentReturnUrl` through a separate forward migration**
 
 After a conclusive sanitized status, add this mixed-version-safe field to `Order`:
 
@@ -472,12 +471,9 @@ After a conclusive sanitized status, add this mixed-version-safe field to `Order
 paymentReturnUrl String?
 ```
 
-Then follow only the proven branch:
+For both sanitized `APPLIED` and `UNAPPLIED` results, leave `prisma/migrations/20260816_phase4_delivery_snapshots/migration.sql` byte-identical at SHA-256 `E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A`. Create `prisma/migrations/20260816_phase4_payment_replay/migration.sql` containing only `ALTER TABLE "Order" ADD COLUMN "paymentReturnUrl" TEXT;`. Database status never selects a mutation path; this removes the status-to-edit race and preserves one immutable migration history.
 
-- `UNAPPLIED`: append `ALTER TABLE "Order" ADD COLUMN "paymentReturnUrl" TEXT;` to `prisma/migrations/20260816_phase4_delivery_snapshots/migration.sql`; do not create a second migration.
-- `APPLIED`: leave `prisma/migrations/20260816_phase4_delivery_snapshots/migration.sql` byte-identical at SHA-256 `E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A` and create `prisma/migrations/20260816_phase4_payment_replay/migration.sql` containing only `ALTER TABLE "Order" ADD COLUMN "paymentReturnUrl" TEXT;`.
-
-Update `tests/phase-4-schema-contract.test.ts` for the selected path. It must assert one nullable Prisma field, exactly one additive SQL definition across the Phase 4 migration set, no duplicate column, and no `DROP`, `RENAME`, `ALTER COLUMN`, `TRUNCATE`, `DELETE FROM`, reset, or backfill statement. In the `APPLIED` branch it must also assert the original migration hash remains unchanged. No other schema/model field changes in Task 2A.
+Update `tests/phase-4-schema-contract.test.ts` to assert one nullable Prisma field, exactly one additive SQL definition in the separate payment-replay migration, no duplicate column, the original delivery migration hash remains unchanged, and no `DROP`, `RENAME`, `ALTER COLUMN`, `TRUNCATE`, `DELETE FROM`, reset, or backfill statement. No other schema/model field changes in Task 2A.
 
 - [ ] **Step 6: Run focused GREEN and compatibility checks**
 
@@ -492,7 +488,7 @@ npx prettier --check e2e/database-command-report.ts e2e/database-readiness.ts te
 git diff --check
 ```
 
-Expected: all focused tests pass; Prisma validation/generation and typecheck pass; the historical `PAYMENT_AUTO_RETRY_UNSAFE` SDK audit still passes; only one selected additive migration path contains `paymentReturnUrl`. Do not connect to the database again and do not deploy the migration in this task.
+Expected: all focused tests pass; Prisma validation/generation and typecheck pass; the historical `PAYMENT_AUTO_RETRY_UNSAFE` SDK audit still passes; the delivery migration stays byte-identical and only the separate additive payment-replay migration contains `paymentReturnUrl`. Do not connect to the database again and do not deploy the migration in this task.
 
 - [ ] **Step 7: Commit and review**
 
@@ -502,7 +498,7 @@ Commit subject:
 feat: persist payment replay input
 ```
 
-Reviewer checks the exact sanitized status evidence, use of the existing explicit database guard, no ambient fallback or raw output, correct `APPLIED`/`UNAPPLIED` branch, applied-migration immutability, one nullable additive column, mixed-version rollback, preserved historical Task 2 audit, no database writes/deploy, and no provider implementation. Task 3 must not begin until Critical and Important counts are zero.
+Reviewer checks exact sanitized status/checksum evidence, use of the existing explicit database guard, no ambient fallback or raw output, delivery-migration immutability for both `APPLIED` and `UNAPPLIED`, one separate nullable additive column migration, mixed-version rollback, preserved historical Task 2 audit, no database writes/deploy, and no provider implementation. Task 3 must not begin until Critical and Important counts are zero.
 
 ---
 
@@ -724,13 +720,13 @@ Online tests must additionally prove:
 - the order transaction persists the exact nullable `paymentReturnUrl` used for provider creation before any YooKassa call; every replay rebuilds the same capture mode, RUB amount, description, locale, return URL, metadata, and idempotency key from durable order data;
 - a local `Payment` row stores provider id, pending status, amount, and confirmation URL;
 - `createPayment` uses idempotency key `payment-<orderId>`, exact persisted return URL, and metadata `orderNumber`; `getPaymentDetails` returns provider id/status/amount/metadata/confirmation URL for verified recovery;
-- provider-create outcomes are total and explicit: `NOT_CREATED` only for conclusive no-dispatch proof or a narrow non-retryable rejection that cannot mask an earlier idempotent success; `CREATED` only for a returned/loaded provider object whose id, RUB amount, and exact unique `orderNumber` metadata match; generic `invalid_request`, idempotency-key errors, HTTP 429, timeout, network/5xx, malformed/unknown response, absent proof, and local `Payment` write failure are `INDETERMINATE`;
-- verified `NOT_CREATED` invokes exactly one local cancellation/restoration transaction guarded by `PENDING` order state, while `CREATED` and `INDETERMINATE` preserve the durable order/stock and never delete or restore them during initialization;
+- provider-create outcomes are total and explicit: `NOT_CREATED` only when the adapter proves no request was dispatched; `CREATED` only for a returned/loaded provider object whose id, RUB amount, and exact unique `orderNumber` metadata match; after any dispatch, every provider rejection or error response, including `invalid_request`, idempotency-key errors, HTTP 400/429, timeout, network/5xx, malformed/unknown response, absent proof, and local `Payment` write failure is `INDETERMINATE` unless a verified object proves `CREATED`;
+- adapter-proven no-dispatch `NOT_CREATED` invokes exactly one local cancellation/restoration transaction guarded by `PENDING` order state, while `CREATED` and `INDETERMINATE` preserve the durable order/stock and never delete or restore them during initialization;
 - retry/order-page continuation invokes `ensureOnlinePayment` with the same request only before `createdAt + W`, where official provider retention is `T = 24 hours` and `W = 23 hours`; it verifies provider id/amount/metadata against the durable order and creates/upserts the one local `Payment` correlation;
 - at or after `createdAt + W`, no provider create call is issued under any automatic path. The order exposes `PAYMENT_INITIALIZATION_BLOCKED` for lookup/reconciliation/manual investigation; no auto-release, fake success, automatic cancellation, or stock restoration occurs;
 - the blocked placement result contains the exact Task 3 heading/message, durable order number, `continuePaymentUrl: null`, `canRetryCreate: false`, and `allowedActions: ['OPEN_ORDER']`; serialization tests reject any provider URL, retry-create action, or success flag on this branch;
 - provider success plus three injected local payment-write failures leaves exactly one pending order, its stock reserved once, and the same provider id recoverable on a later retry;
-- narrow definitive provider rejection, generic rejection, network timeout, local `Payment` write failure, blocked replay at/after `createdAt + W`, and webhook/resync recovery each have focused tests proving exactly-once stock effects;
+- adapter-proven no-dispatch, provider rejection after dispatch, network timeout, malformed response, local `Payment` write failure, blocked replay at/after `createdAt + W`, and webhook/resync recovery each have deterministic focused integration tests proving exactly-once stock effects; tests inject provider/adapter doubles at the module boundary and add no test-only production endpoint or fake production behavior;
 - a conflicting provider id/order/amount fails closed and stops under ADR-010 rather than reassigning correlation;
 - COD never creates or cancels provider payment.
 
@@ -754,7 +750,7 @@ Remove the current checkout page's `buyNow` query forwarding in the same task so
 
 Keep legacy `OrderItem.productVariantId` read compatibility, but new snapshots set canonical `skuId`, article, combination key, product slug, configuration JSON, image, current unit/old price, quantity, and line total. Preserve the proven stateless coupon behavior: eligibility is read inside the transaction and the accepted code/discount are snapshotted; there is no `CouponUsage` model or writer to mutate. If the audit discovers usage state, stop under ADR-010 and add transactional consumption plus rollback before continuing.
 
-`lib/payment-initialization.ts` owns `ensureOnlinePayment({ orderId, now, client })` and returns `NOT_CREATED`, `CREATED`, `INDETERMINATE`, or `BLOCKED_AFTER_RETRY_WINDOW`. It derives idempotency key `payment-<orderId>` and the full provider payload only from durable order data, requires the persisted `paymentReturnUrl`, and dispatches create only while `now < order.createdAt + W`. It verifies provider id, exact RUB amount, and exact unique `orderNumber` metadata before idempotently persisting the provider-id `Payment`. A separate `cancelUncreatedPayment` transaction conditionally cancels/restores only a verified `NOT_CREATED` order. `lib/yookassa.ts` adds bounded `getPaymentDetails` and narrow provider-error classification; `payments.list` absence is never authoritative, and no provider secret or raw payload crosses the module boundary.
+`lib/payment-initialization.ts` owns `ensureOnlinePayment({ orderId, now, client })` and returns `NOT_CREATED`, `CREATED`, `INDETERMINATE`, or `BLOCKED_AFTER_RETRY_WINDOW`. It derives idempotency key `payment-<orderId>` and the full provider payload only from durable order data, requires the persisted `paymentReturnUrl`, and dispatches create only while `now < order.createdAt + W`. It verifies provider id, exact RUB amount, and exact unique `orderNumber` metadata before idempotently persisting the provider-id `Payment`. A separate `cancelUncreatedPayment` transaction conditionally cancels/restores only an adapter-proven no-dispatch `NOT_CREATED` order. `lib/yookassa.ts` adds bounded `getPaymentDetails` and dispatch-aware outcome classification; `payments.list` absence is never authoritative, and no provider secret or raw payload crosses the module boundary.
 
 - [ ] **Step 4: Implement serializable transactional placement**
 
@@ -765,7 +761,7 @@ Keep legacy `OrderItem.productVariantId` read compatibility, but new snapshots s
 3. For online payment, validate sandbox configuration before the database transaction so a known local configuration error cannot strand an order.
 4. Run a bounded three-attempt serializable transaction.
 5. Inside each attempt, rebuild the cart quote from current database state, conditionally decrement every canonical SKU, create `Order` plus all `OrderItem` snapshots, and delete only that owner cart's placed items through `tx`.
-6. COD returns durable success after commit. Online calls `ensureOnlinePayment`; ready correlation returns the confirmation URL, verified `NOT_CREATED` performs exactly-once local cancellation/restoration, while `CREATED`/`INDETERMINATE` returns `PAYMENT_INITIALIZATION_PENDING` with the durable order number and keeps stock/order correlation intact. At or after `createdAt + W`, return `PAYMENT_INITIALIZATION_BLOCKED` and do not create, cancel, or release automatically.
+6. COD returns durable success after commit. Online calls `ensureOnlinePayment`; ready correlation returns the confirmation URL, adapter-proven no-dispatch `NOT_CREATED` performs exactly-once local cancellation/restoration, while `CREATED`/`INDETERMINATE` returns `PAYMENT_INITIALIZATION_PENDING` with the durable order number and keeps stock/order correlation intact. At or after `createdAt + W`, return `PAYMENT_INITIALIZATION_BLOCKED` and do not create, cancel, or release automatically.
 7. Adjust sales count and save the actual `city/addressLine/addressComment` fields as existing non-critical post-commit behavior; log failures without rewriting money/stock/payment state.
 8. Return a discriminated result: COD ready, online redirect ready, verified-not-created canceled, online initialization pending, or the exact `PAYMENT_INITIALIZATION_BLOCKED` DTO with durable `orderNumber`, blocked heading/message, `continuePaymentUrl: null`, `canRetryCreate: false`, and checkout-side `allowedActions: ['OPEN_ORDER']`. Never return internal ids, tokens, provider secrets, or untrusted totals. The UI routes pending/blocked initialization to the real order page; blocked state never offers a duplicate checkout submission, provider redirect, or create retry at/after `createdAt + W`.
 
@@ -828,7 +824,7 @@ Extend tests to prove:
 - payment-list absence never proves `NOT_CREATED`; empty, multiple, or conflicting secondary lookup results preserve order/stock and cannot authorize cancellation;
 - an online order page with no local `Payment` may call `ensureOnlinePayment` with the exact durable request only while `now < createdAt + W`; at/after the bound it performs lookup/reconciliation only and returns the blocked state when proof remains absent;
 - online cancellation first ensures durable provider correlation, calls YooKassa cancellation, reloads the provider status, and does not mutate local order/payment/stock until `canceled` is verified;
-- a verified `NOT_CREATED` initialization outcome uses the guarded local cancellation/restoration transaction exactly once; generic `invalid_request`, idempotency-key errors, HTTP 429, timeout, network/5xx, malformed/unknown response, local persistence failure, or `BLOCKED_AFTER_RETRY_WINDOW` never releases stock;
+- only adapter-proven no-dispatch `NOT_CREATED` uses the guarded local cancellation/restoration transaction exactly once; every provider rejection or error after dispatch, local persistence failure, or `BLOCKED_AFTER_RETRY_WINDOW` never releases stock;
 - provider cancel failure/timeout or non-final status returns `CANCELLATION_PENDING_SYNC`, leaves local order/payment/stock unchanged, and remains recoverable by retry/webhook/order-page resync;
 - verified provider cancellation followed by an injected local transaction failure also returns `CANCELLATION_PENDING_SYNC`; a later webhook/resync applies local payment/order/stock cancellation exactly once;
 - successful online cancellation marks local payment canceled through reconciliation and restores stock once;
@@ -883,7 +879,7 @@ Commit subject:
 fix: harden payment and cancellation transitions
 ```
 
-Reviewer checks missing-payment recovery by verified metadata/RUB amount, no authority from payment-list absence, strict `createdAt + W` create cutoff under official `T = 24 hours`, narrow `NOT_CREATED` classification, provider-confirmed customer cancellation, provider-canceled/local-failure recovery, transactional inventory gate, repeated-event idempotency, final-state conflicts, review pruning, and preservation of webhook source verification.
+Reviewer checks missing-payment recovery by verified metadata/RUB amount, no authority from payment-list absence, strict `createdAt + W` create cutoff under official `T = 24 hours`, adapter-proven no-dispatch-only `NOT_CREATED`, provider-confirmed customer cancellation, provider-canceled/local-failure recovery, transactional inventory gate, repeated-event idempotency, final-state conflicts, review pruning, and preservation of webhook source verification.
 
 ---
 
@@ -1036,7 +1032,7 @@ Reviewer checks exact CSS, clone class/interaction preservation, all three polic
 - status maps `PENDING/PROCESSING/SHIPPED/DELIVERED/CANCELLED` to clone-compatible placed/collecting/on-way/delivered/cancelled UI stages;
 - payment summary distinguishes pending online, succeeded online, canceled online, and COD; the summary heading never says paid for pending/COD;
 - `payment.initialization` is a serializable discriminated union. Its blocked branch is `{ status: 'PAYMENT_INITIALIZATION_BLOCKED', orderNumber, heading: 'Платёж требует проверки', message: 'Заказ №<number> сохранён. Повторное создание платежа отключено; статус проверяется.', continuePaymentUrl: null, canRetryCreate: false, allowedActions }`;
-- blocked `allowedActions` initially contains only `RESYNC_PAYMENT`; it may include `CANCEL_ORDER` only after the latest server-side provider lookup proves a correlatable payment can be canceled or proves `NOT_CREATED` so guarded local cancellation is safe. It never contains `CONTINUE_PAYMENT` or `RETRY_CREATE`;
+- blocked `allowedActions` initially contains only `RESYNC_PAYMENT`; it may include `CANCEL_ORDER` only after the latest server-side provider lookup proves a correlatable payment can be canceled or durable initialization evidence records adapter-proven no dispatch so guarded local cancellation is safe. Provider lookup absence never proves `NOT_CREATED`. It never contains `CONTINUE_PAYMENT` or `RETRY_CREATE`;
 - `canCancel` is true only for owned `PENDING` orders whose COD state or latest provider proof permits the existing safe cancellation path; `continuePaymentUrl` is exposed only for a provider-correlated ready payment created or recovered before `createdAt + W`, never for pending-indeterminate or blocked state;
 - blocked order-page reads and safe resync are lookup/reconciliation-only: they do not automatically create or cancel a provider payment, do not issue a create call at/after `createdAt + W`, and preserve the order/stock until provider proof allows a safe transition;
 - review targets use `getReviewEligibility`/shared purchase predicate per unique product: online requires succeeded payment, COD requires `DELIVERED`, canceled/pending COD is not eligible, already-reviewed is read-only;
@@ -1155,6 +1151,7 @@ Reviewer checks owner scope, immutable snapshots, neutral legacy pickup, Europe/
 - current stateless Coupon schema is asserted; if a usage relation/writer appears, the safety contract fails until cleanup targets exact owned usage rows;
 - no `TRUNCATE`, `migrate reset`, `db push`, raw unbounded `deleteMany({})`, `deleteMany()` without `where`, or mutation of Production/ambient URL variables;
 - no test relies on legacy fashion product slugs or ProductVariant ids.
+- no E2E test adds a test-only production endpoint, injects provider failures through browser-accessible production code, or fabricates YooKassa behavior; deterministic provider rejection/error/local-write cases remain focused integration tests with injected module-boundary doubles.
 
 - [ ] **Step 2: Run RED**
 
@@ -1207,13 +1204,13 @@ Create a `phase4-e2e-<run-id>` checkout fixture per write scenario. Register/ver
 
 `e2e/review.spec.ts` places a unique COD order, uses the targeted helper to mark only that owned order `DELIVERED`, submits a product review, reloads to prove persistence/already-reviewed state, cancels no delivered order, and cleans only its namespace.
 
-`e2e/yookassa.spec.ts` always keeps the COD regression. The online sandbox scenario runs only when `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, and exact `YOOKASSA_MODE=sandbox` are present and Task 2A is complete under ADR-017. It covers redirect plus exact-request idempotent continuation/recovery while `now < createdAt + W`, narrow definitive `NOT_CREATED`, generic rejection/timeout/local-write `INDETERMINATE`, and blocked behavior at/after `createdAt + W` while official provider retention remains `T = 24 hours`. The blocked UI scenario uses `createPhase4BlockedPaymentFixture`, whose setup proves no provider request was issued, and asserts `Платёж требует проверки`, the durable order number, exact blocked message, no YooKassa/continue URL, no repeat-create control, lookup-only `Проверить статус платежа`, and no cancel control until provider proof allows it. Teardown requests provider cancellation for attempted sandbox payments and waits for verified local reconciliation; the direct blocked fixture uses only its `NOT_CREATED_BY_CONSTRUCTION` proof for targeted cleanup. If an attempted provider state remains indeterminate or the application window closes without verified correlation, targeted cleanup returns blocked and leaves the durable correlation/stock intact for manual/provider recovery. It must never substitute fake success, fake cancellation, local payment, or order deletion.
+`e2e/yookassa.spec.ts` always keeps the COD regression. The real online sandbox scenario runs only when `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, and exact `YOOKASSA_MODE=sandbox` are present and Task 2A is complete under ADR-017. It covers only a real redirect, exact-request idempotent continuation/recovery while `now < createdAt + W`, and provider-confirmed cancellation/reconciliation. Adapter-proven no-dispatch, provider rejection/error, timeout, malformed response, and local `Payment` write failure are covered only by deterministic focused integration tests with injected module-boundary doubles; E2E adds no test-only production endpoint or fake provider behavior. The blocked UI scenario uses `createPhase4BlockedPaymentFixture`, whose setup proves no provider request was issued, and asserts `Платёж требует проверки`, the durable order number, exact blocked message, no YooKassa/continue URL, no repeat-create control, lookup-only `Проверить статус платежа`, and no cancel control until provider proof allows it. Teardown requests provider cancellation for attempted sandbox payments and waits for verified local reconciliation; the direct blocked fixture uses only its `NOT_CREATED_BY_CONSTRUCTION` proof for targeted cleanup. If an attempted provider state remains indeterminate or the application window closes without verified correlation, targeted cleanup returns blocked and leaves the durable correlation/stock intact for manual/provider recovery. It must never substitute fake success, fake cancellation, local payment, or order deletion.
 
 Wrap each write scenario in `try/finally` cleanup and disconnect in suite teardown.
 
 - [ ] **Step 5: Verify migration forward/idempotent path on explicit non-production DB**
 
-Only after the tracked approved-dev fingerprint and every required forbidden fingerprint exist, run the non-secret readiness and migration wrappers. Task 2A already created `e2e/database-command-report.ts` and `e2e/database-readiness.ts`; Task 8 modifies them to add deploy/completion checks while preserving the same only-printable schema:
+Only after the tracked approved-dev fingerprint and every required forbidden fingerprint exist, run the non-secret readiness and migration wrappers. Task 2A already created `e2e/database-command-report.ts` and `e2e/database-readiness.ts`; Task 8 modifies them to add deploy/completion checks while preserving the same only-printable schema. Migration readiness retains Task 2A's read-only `_prisma_migrations` checksum proof and immutable delivery-migration hash; deploy applies the separate payment-replay migration and never edits the tracked delivery migration:
 
 ```typescript
 export interface DatabaseCommandReport {
@@ -1288,7 +1285,7 @@ Pin the exact Phase 4 delivery file list and SHA/count metadata in `docs/superpo
 - canonical SKU-only cart writes and explicit rejection of buy-now identifiers;
 - one server quote authority used by preview and placement;
 - transactional order/cart snapshot/stock and transactional payment cancellation restoration;
-- total YooKassa initialization outcomes `NOT_CREATED`, `CREATED`, and `INDETERMINATE`; only provider-proven `NOT_CREATED` performs guarded local cancellation/restoration, while `CREATED`/`INDETERMINATE` preserve durable order/stock and recover missing-payment correlation through webhook/order-page reconciliation;
+- total YooKassa initialization outcomes `NOT_CREATED`, `CREATED`, and `INDETERMINATE`; only adapter-proven no-dispatch `NOT_CREATED` performs guarded local cancellation/restoration, while `CREATED`/`INDETERMINATE` preserve durable order/stock and recover missing-payment correlation through webhook/order-page reconciliation;
 - official provider retention `T = 24 hours`, conservative create window `W = 23 hours`, exact same-request continuation only while `now < createdAt + W`, preserved historical Task 2 `PAYMENT_AUTO_RETRY_UNSAFE` SDK audit, and `PAYMENT_INITIALIZATION_BLOCKED` with no create/cancel/release/fake success at or after the application bound;
 - exact blocked placement/order DTO fields, Russian heading/message, durable order number, null continue URL, disabled repeat create, lookup-only resync, and provider-proof-gated cancellation across Checkout A, Order A, source tests, and E2E;
 - three policy-approved delivery methods, two courier zones, slots, lift/floor, carrying, assembly, removal, and `Europe/Moscow` date-only sentinels;
@@ -1410,7 +1407,7 @@ Stop. Do not push, create a Vercel Preview, open a pull request, merge, delete t
 - [x] Phase 4 checkout is cart-only; both buy-now keys are rejected and removed rather than pretending the cart quote builder covers them.
 - [x] Client code performs no price, coupon, delivery, service, total, stock, payment, or review-eligibility decision.
 - [x] The existing coupon is proven stateless; no usage mutation is invented, and E2E uses a namespace-owned coupon.
-- [x] Online provider work is real YooKassa sandbox only; `NOT_CREATED`/`CREATED`/`INDETERMINATE` are total, official retention is `T = 24 hours`, exact-request continuation stops at conservative `W = 23 hours`, and indeterminate/post-window states block automatic create/cancel/release while verified metadata and RUB amount can recover a missing local `Payment`.
+- [x] Online provider work is real YooKassa sandbox only; `NOT_CREATED` requires adapter-proven no dispatch, every provider rejection/error after dispatch is `INDETERMINATE` unless a verified object proves `CREATED`, official retention is `T = 24 hours`, exact-request continuation stops at conservative `W = 23 hours`, and indeterminate/post-window states block automatic create/cancel/release while verified metadata and RUB amount can recover a missing local `Payment`.
 - [x] `PAYMENT_INITIALIZATION_BLOCKED` is serialized consistently through checkout/order DTOs, Checkout A, Order A, actions, source tests, and E2E with exact copy/order number, no redirect/continue/retry create, lookup-only resync, and provider-proof-gated cancellation.
 - [x] Provider-confirmed cancellation plus local failure is recoverable by retry/webhook/order-page reconciliation with exactly-once inventory effects.
 - [x] New order writes are canonical SKU-only and cart-only; legacy ProductVariant remains read-compatible only.

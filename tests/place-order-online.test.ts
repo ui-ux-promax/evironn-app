@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildBlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
 import { buildDeliverySlots } from '@/lib/checkout-domain';
 
@@ -30,8 +30,18 @@ vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: 
 vi.mock('@/lib/prisma-client', () => ({ prisma: { $transaction: mocks.transaction } }));
 
 import { placeOrder } from '@/app/actions/order';
+import type { PlaceOrderResult } from '@/services/dto/order.dto';
+
+const invalidBlockedResult: PlaceOrderResult = {
+  ok: false,
+  code: 'PAYMENT_INITIALIZATION_BLOCKED',
+  // @ts-expect-error blocked placement must carry the exact DTO and no generic error branch
+  error: 'generic',
+};
+void invalidBlockedResult;
 
 const now = new Date('2026-08-16T09:00:00.000Z');
+const originalYooKassaMode = process.env.YOOKASSA_MODE;
 const slot = buildDeliverySlots(now, 'pickup-point')[0];
 const form = {
   contactName: 'Иван Петров',
@@ -68,6 +78,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
   vi.setSystemTime(now);
+  process.env.YOOKASSA_MODE = 'sandbox';
   mocks.auth.mockResolvedValue({ user: { id: 'user-1' } });
   mocks.cookies.mockResolvedValue({ get: () => ({ value: 'token' }) });
   mocks.resolveOwnerCart.mockResolvedValue({ id: 'cart-1', token: 'token' });
@@ -82,6 +93,11 @@ beforeEach(() => {
       cartItem: { deleteMany: vi.fn(async () => ({ count: 1 })) },
     }),
   );
+});
+
+afterEach(() => {
+  if (originalYooKassaMode === undefined) delete process.env.YOOKASSA_MODE;
+  else process.env.YOOKASSA_MODE = originalYooKassaMode;
 });
 
 describe('placeOrder online initialization', () => {
@@ -137,6 +153,18 @@ describe('placeOrder online initialization', () => {
       orderNumber: 1042,
     });
     expect(mocks.assertPaymentMode).not.toHaveBeenCalled();
+    expect(mocks.ensureOnlinePayment).not.toHaveBeenCalled();
+  });
+
+  it('rejects live YooKassa mode before any transaction or provider initialization', async () => {
+    process.env.YOOKASSA_MODE = 'live';
+    expect(await placeOrder(form)).toEqual({
+      ok: false,
+      code: 'PAYMENT_NOT_CONFIGURED',
+      error: 'Онлайн-оплата временно недоступна.',
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.validateYooKassaConfiguration).not.toHaveBeenCalled();
     expect(mocks.ensureOnlinePayment).not.toHaveBeenCalled();
   });
 });

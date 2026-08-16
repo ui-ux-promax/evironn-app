@@ -161,6 +161,20 @@ describe('ensureOnlinePayment', () => {
     expect(h.client.$transaction).not.toHaveBeenCalled();
   });
 
+  it('treats provider lookup rejection as indeterminate', async () => {
+    const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'lookup' });
+    h.state.payment = { id: 'pay-1', amount: 159900, status: 'pending', confirmationUrl: null };
+    h.provider.getPaymentDetails.mockRejectedValue(new Error('lookup timeout'));
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+  });
+
   it('fails closed when provider metadata or amount conflicts', async () => {
     const h = harness({
       outcome: 'CREATED',

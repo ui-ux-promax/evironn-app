@@ -20,13 +20,37 @@ import { adjustSalesCount } from '@/lib/sales-count';
 import { ensureOnlinePayment } from '@/lib/payment-initialization';
 import { assertPortfolioPaymentMode } from '@/lib/payment-environment';
 import { buildBlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
-import { placeOrderSchema, type PlaceOrderInput, type PlaceOrderResult } from '@/services/dto/order.dto';
+import {
+  placeOrderSchema,
+  type PlaceOrderFailureCode,
+  type PlaceOrderInput,
+  type PlaceOrderResult,
+} from '@/services/dto/order.dto';
 
 type OrderTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
+const DOMAIN_PLACEMENT_ERROR_CODES = new Set<PlaceOrderFailureCode>([
+  'INVALID_INPUT',
+  'EMPTY_CART',
+  'SKU_UNAVAILABLE',
+  'QUANTITY_EXCEEDS_STOCK',
+  'INVALID_COUPON',
+  'STALE_DELIVERY_SLOT',
+  'CART_CONFLICT',
+]);
+
+function isDomainPlacementError(error: unknown): error is Error & { code: PlaceOrderFailureCode } {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    DOMAIN_PLACEMENT_ERROR_CODES.has(error.code as PlaceOrderFailureCode)
+  );
+}
+
 function placementError(error: unknown): PlaceOrderResult {
   if (error instanceof OrderTransactionConflictError) return { ok: false, code: error.code, error: error.message };
-  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error instanceof Error) {
+  if (isDomainPlacementError(error)) {
     return { ok: false, code: error.code, error: error.message };
   }
   logger.error('place_order_failed', error);
@@ -63,6 +87,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
 
   if (form.paymentMethod === 'online') {
     try {
+      if (process.env.YOOKASSA_MODE !== 'sandbox') throw new Error('Phase 4 requires YooKassa sandbox mode');
       assertPortfolioPaymentMode(process.env);
       validateYooKassaConfiguration();
     } catch (error) {

@@ -36,3 +36,21 @@ After the minimal fixes:
 - No external Preview smoke was performed because the required environment variables were absent in the supplied preflight.
 - No Task 5 reconciliation/cancellation expansion, Task 6 UI port, provider E2E, admin, refund, outbox, or operations work was added.
 - The two protected untracked Phase 2 plan files were preserved and are not part of this task.
+
+## Review Remediation
+
+- Projected full `PlaceOrderInput` to the strict quote input before invoking the quote builder; added an integration regression using the real schema composition.
+- Removed inherited checkout buy-now forwarding while retaining only its compatibility prop type.
+- Enforced `YOOKASSA_MODE=sandbox` before any online transaction or provider configuration call.
+- Classified provider lookup rejection as `INDETERMINATE`.
+- Made placement failure codes non-overlapping with the exact blocked DTO branch.
+- Allowlisted domain placement errors; coded infrastructure failures are logged and returned as sanitized `ORDER_FAILED`.
+
+Remediation RED/GREEN evidence:
+
+- Initial review regressions: 5 runtime failures and 1 unused `@ts-expect-error` type failure.
+- Dedicated action-to-real-builder regression reproduced `INVALID_INPUT` with the faulty full-form pass-through, then passed after quote-field projection was restored.
+- Focused remediation command: 4 files, 27 tests passed.
+- `npm run typecheck`: passed.
+- Final Task 4 focused command, including the action-builder integration regression: 10 files, 66 tests passed.
+- Final touched-file Prettier check and `git diff --check`: passed.

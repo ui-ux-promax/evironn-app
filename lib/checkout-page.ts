@@ -5,7 +5,7 @@ import { buildOrderSnapshot, type OrderSnapshot } from '@/lib/order';
 import { buildCartDto, cartPresentationInclude } from '@/lib/cart-presentation';
 import { checkCoupon } from '@/lib/coupon';
 import { prisma } from '@/lib/prisma-client';
-import { checkoutQuoteInputSchema } from '@/services/dto/checkout.dto';
+import { checkoutQuoteInputSchema, type CheckoutQuoteInput, type PlaceOrderInput } from '@/services/dto/checkout.dto';
 import { EMPTY_CART_DTO } from '@/services/dto/commerce-cart.dto';
 import type {
   CheckoutPageDto,
@@ -256,11 +256,20 @@ export async function buildCheckoutOrderData({
 }: {
   userId: string;
   cartId: string;
-  raw: unknown;
+  raw: PlaceOrderInput;
   now: Date;
   client?: CheckoutDataClient;
 }): Promise<CheckoutOrderData> {
-  const result = await buildCheckoutQuote({ userId, cartId, raw, now, client });
+  const quoteInput: CheckoutQuoteInput = {
+    deliveryMethod: raw.deliveryMethod,
+    deliveryZone: raw.deliveryZone,
+    deliverySlotId: raw.deliverySlotId,
+    pickupPointId: raw.pickupPointId,
+    address: raw.address,
+    services: raw.services,
+    couponCode: raw.couponCode,
+  };
+  const result = await buildCheckoutQuote({ userId, cartId, raw: quoteInput, now, client });
   if (!result.ok) throw new CheckoutOrderDataError(result.code, result.message);
 
   const cart = await client.cart.findFirst({ where: { id: cartId, userId }, include: cartPresentationInclude });

@@ -1,4 +1,4 @@
-import type { BlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
+import type { BlockedPaymentInitializationDto, CheckoutQuoteErrorCode } from '@/services/dto/checkout-page.dto';
 import { z } from 'zod';
 
 export { placeOrderSchema } from '@/services/dto/checkout.dto';
@@ -18,6 +18,9 @@ export const checkoutSchema = z.object({
 });
 export type CheckoutValues = z.infer<typeof checkoutSchema>;
 
+export type PlaceOrderFailureCode =
+  CheckoutQuoteErrorCode | 'PAYMENT_NOT_CONFIGURED' | 'CART_CONFLICT' | 'ORDER_TRANSACTION_CONFLICT' | 'ORDER_FAILED';
+
 export type PlaceOrderResult =
   | { ok: true; code: 'ORDER_READY'; orderNumber: number; paymentUrl?: never }
   | { ok: true; code: 'PAYMENT_REDIRECT_READY'; orderNumber: number; paymentUrl: string }
@@ -28,4 +31,4 @@ export type PlaceOrderResult =
       code: 'PAYMENT_INITIALIZATION_BLOCKED';
       paymentInitialization: BlockedPaymentInitializationDto;
     }
-  | { ok: false; code: string; error: string };
+  | { ok: false; code: PlaceOrderFailureCode; error: string };

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDeliverySlots } from '@/lib/checkout-domain';
 
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   validateYooKassaConfiguration: vi.fn(),
   adjustSalesCount: vi.fn(),
   saveAddress: vi.fn(),
+  loggerError: vi.fn(),
   transaction: vi.fn(),
 }));
 
@@ -28,7 +30,7 @@ vi.mock('@/lib/yookassa', () => ({
 }));
 vi.mock('@/lib/sales-count', () => ({ adjustSalesCount: mocks.adjustSalesCount }));
 vi.mock('@/app/actions/address', () => ({ saveAddressFromOrder: mocks.saveAddress }));
-vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
+vi.mock('@/lib/logger', () => ({ logger: { error: mocks.loggerError, warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock('@/lib/prisma-client', () => ({ prisma: { $transaction: mocks.transaction } }));
 
 import { placeOrder } from '@/app/actions/order';
@@ -116,6 +118,11 @@ beforeEach(() => {
 });
 
 describe('placeOrder transactional canonical placement', () => {
+  it('keeps the inherited form cart-only and does not forward buy-now ids', () => {
+    const source = readFileSync('components/shared/checkout/checkout-form.tsx', 'utf8');
+    expect(source).not.toContain('placeOrder({ ...v, buyNowVariantId });');
+  });
+
   it('writes stock, immutable snapshots, order totals, and placed cart deletion through one transaction client', async () => {
     const tx = transactionClient();
     mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown, options: unknown) => {
@@ -185,5 +192,15 @@ describe('placeOrder transactional canonical placement', () => {
     mocks.transaction.mockRejectedValue(Object.assign(new Error('conflict'), { code: 'P2034' }));
     await expect(placeOrder(validForm)).resolves.toMatchObject({ ok: false, code: 'ORDER_TRANSACTION_CONFLICT' });
     expect(mocks.transaction).toHaveBeenCalledTimes(3);
+  });
+
+  it('sanitizes coded infrastructure failures instead of exposing raw details', async () => {
+    mocks.buildCheckoutOrderData.mockRejectedValue(Object.assign(new Error('database secret'), { code: 'P2002' }));
+    await expect(placeOrder(validForm)).resolves.toEqual({
+      ok: false,
+      code: 'ORDER_FAILED',
+      error: 'Не удалось оформить заказ. Попробуйте позже.',
+    });
+    expect(mocks.loggerError).toHaveBeenCalledWith('place_order_failed', expect.any(Error));
   });
 });

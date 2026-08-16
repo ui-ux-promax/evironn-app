@@ -24,7 +24,6 @@ const SHIP_INFO = {
 export function CheckoutForm({
   details,
   defaults,
-  buyNowVariantId,
 }: {
   details: CartDetails;
   defaults: CheckoutDefaults;
@@ -59,7 +58,7 @@ export function CheckoutForm({
 
   const onSubmit = async (v: CheckoutValues) => {
     setError(null);
-    const res = await placeOrder({ ...v, buyNowVariantId });
+    const res = await placeOrder(v);
     if (!res.ok) {
       setError('paymentInitialization' in res ? res.paymentInitialization.heading : res.error);
       return;

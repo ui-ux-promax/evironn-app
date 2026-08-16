@@ -160,7 +160,12 @@ export async function ensureOnlinePayment({
   if (!order || order.paymentMethod !== 'online' || order.status !== 'PENDING') return { outcome: 'INDETERMINATE' };
 
   if (order.payment) {
-    const details = await provider.getPaymentDetails(order.payment.id);
+    let details: PaymentProviderDetails | null;
+    try {
+      details = await provider.getPaymentDetails(order.payment.id);
+    } catch {
+      return { outcome: 'INDETERMINATE' };
+    }
     if (!details) return { outcome: 'INDETERMINATE' };
     const persisted = await persistPayment(client, order, details);
     return persisted ? { outcome: 'CREATED', confirmationUrl: details.confirmationUrl } : { outcome: 'INDETERMINATE' };

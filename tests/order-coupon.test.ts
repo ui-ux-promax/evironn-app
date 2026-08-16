@@ -5,11 +5,15 @@ import { buildDeliverySlots } from '@/lib/checkout-domain';
 const now = new Date('2026-08-16T09:00:00.000Z');
 const slot = buildDeliverySlots(now, 'pickup-point')[0];
 const raw = {
+  contactName: 'Ivan Petrov',
+  contactPhone: '+79990000000',
+  contactEmail: 'ivan@example.test',
   deliveryMethod: 'pickup-point',
   deliverySlotId: slot.id,
   pickupPointId: 'pt-danilov',
   services: { carrying: false, assembly: false, removal: false },
-};
+  paymentMethod: 'cod',
+} as const;
 const cart = {
   id: 'cart-1',
   userId: 'user-1',
@@ -50,6 +54,18 @@ function client(coupon: { code: string; percent: number; active: boolean; expire
 }
 
 describe('transactional order coupon snapshot', () => {
+  it('accepts the full placement input while projecting quote fields', async () => {
+    const transaction = client(null);
+    const result = await buildCheckoutOrderData({
+      userId: 'user-1',
+      cartId: 'cart-1',
+      raw,
+      now,
+      client: transaction,
+    });
+    expect(result.quote.totals.total).toBe(100000);
+  });
+
   it('re-reads eligible coupon through transaction client and snapshots server discount', async () => {
     const transaction = client({ code: 'EV10', percent: 10, active: true, expiresAt: null });
     const result = await buildCheckoutOrderData({

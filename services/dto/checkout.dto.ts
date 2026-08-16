@@ -41,6 +41,8 @@ const validateDelivery = (value: z.infer<typeof base>, ctx: z.RefinementCtx) => 
     }
     if (value.services.carrying && value.address?.liftType === 'none' && value.address.floor === undefined)
       ctx.addIssue({ code: 'custom', path: ['address', 'floor'], message: 'Floor required without lift' });
+    if (value.services.carrying && !value.address?.liftType)
+      ctx.addIssue({ code: 'custom', path: ['address', 'liftType'], message: 'Lift type required for carrying' });
   } else {
     if (value.deliveryZone || value.address)
       ctx.addIssue({ code: 'custom', path: ['address'], message: 'Address not allowed' });

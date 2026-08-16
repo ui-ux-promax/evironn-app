@@ -35,8 +35,12 @@ Production writers:
 - `app/actions/admin/orders.ts:26-80` updates order/payment status.
 - `prisma/seed-orders.ts:85-130` writes legacy order/payment fixture data.
 - `app/actions/admin/coupons.ts:37-120` performs coupon definition CRUD only. Coupon usage remains stateless; this writer does not reserve, consume, or compensate coupon usage.
+- `lib/demo-data/reset.ts:69` upserts canonical coupon definitions during the guarded demo reset.
+- `prisma/seed.ts:187` upserts seed coupon definitions during explicit database seeding.
 
 Fixture caveat: `prisma/seed-orders.ts:85-130` writes legacy `shippingMethod`, `shippingAmount`, totals, and payment fixture values. It omits the new nullable snapshots and relies on the `serviceAmount` default of zero. This is compatibility fixture data, not a new production contract.
+
+Demo/seed classification: `app/api/cron/reset-demo/route.ts:21` invokes `resetDemoData` under the Vercel cron route and lock; `vercel.json:3` schedules that route daily. The two coupon upserts above are demo/seed definition writers, not checkout redemption writers. Coupon usage remains stateless because no usage relation, redemption counter, limit, reservation, or compensation writer exists.
 
 No existing field stores immutable delivery date, delivery window, delivery zone, pickup identity, floor, lift, intercom, service lines, or service total. Existing readers remain compatible because all new snapshot fields are nullable and `serviceAmount` defaults to zero. Existing writers may omit every new field. Rollback is application-first while retaining the additive migration; destructive contraction is not authorized.
 
@@ -62,7 +66,7 @@ Decision: committed stop marker `PAYMENT_AUTO_RETRY_SAFETY = 'PAYMENT_AUTO_RETRY
 
 ## Coupon audit
 
-`Coupon` has only identity, code, percent, active, expiry, and created-at fields. `lib/coupon.ts` performs a stateless read. Admin CRUD changes coupon definitions but there is no usage relation, redemption counter, limit, reservation, or checkout compensation writer. No coupon usage migration is required.
+`Coupon` has only identity, code, percent, active, expiry, and created-at fields. `lib/coupon.ts:20-32` performs a stateless checkout read. `app/actions/admin/coupons.ts:37-120` changes definitions through admin CRUD. `prisma/seed.ts:187` upserts definitions during explicit seeding. `lib/demo-data/reset.ts:69` restores canonical definitions when `app/api/cron/reset-demo/route.ts:21` runs, including the daily schedule declared at `vercel.json:3`. None of these paths records coupon usage. There is no usage relation, redemption counter, limit, reservation, or checkout compensation writer. No coupon usage migration is required.
 
 ## TDD evidence
 
@@ -80,7 +84,7 @@ GREEN:
 npx vitest run tests/phase-4-schema-contract.test.ts tests/checkout-domain.test.ts tests/checkout-dto.test.ts tests/yookassa-provider-contract.test.ts tests/order-snapshot.test.ts tests/order-shipping.test.ts
 ```
 
-Result: 6 files passed, 31 tests passed.
+Result: 6 files passed, 34 tests passed.
 
 ## Migration safety
 
@@ -93,7 +97,7 @@ Rollback path: roll application code back while leaving additive columns in plac
 - `npx prisma validate`: passed using non-secret local placeholder URL variables; no database connection.
 - `npm run prisma:generate`: passed.
 - `npm run typecheck`: passed.
-- Focused Vitest: 6 files passed, 31 tests passed.
+- Focused Vitest: 6 files passed, 34 tests passed.
 - Protected plans remain untracked and byte-identical:
   - `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9`
   - `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`

@@ -85,6 +85,9 @@ describe('ADR-016 checkout policy', () => {
       serviceAmount: 7700,
       totalAmount: 149600,
     });
+    expect(() =>
+      calculateServiceLines({ ...courier, address: { city: 'Moscow', addressLine: 'Tverskaya 1', floor: 5 } }),
+    ).toThrow('Lift type required for carrying');
   });
 
   it('resolves exact pickup snapshots and legacy compatibility', () => {

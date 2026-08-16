@@ -34,6 +34,7 @@ export function buildDeliverySlots(now: Date, method: CheckoutQuoteInput['delive
 }
 export function calculateServiceLines(input: Pick<CheckoutQuoteInput, 'deliveryMethod' | 'address' | 'services'>) {
   if (input.deliveryMethod !== 'courier') return [] as Array<{ id: string; amount: number }>;
+  if (input.services.carrying && !input.address?.liftType) throw new Error('Lift type required for carrying');
   const lines: Array<{ id: string; amount: number }> = [];
   if (input.services.carrying && input.address?.liftType === 'none')
     lines.push({

@@ -12,6 +12,9 @@ const courier = {
 describe('checkout DTOs', () => {
   it('accepts strict cart-only courier input', () => {
     expect(checkoutQuoteInputSchema.parse(courier)).toEqual(courier);
+    expect(
+      checkoutQuoteInputSchema.safeParse({ ...courier, address: { ...courier.address, liftType: undefined } }).success,
+    ).toBe(false);
   });
 
   it.each([

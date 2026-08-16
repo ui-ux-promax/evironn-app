@@ -3,12 +3,14 @@
 ## Current state
 
 - Bootstrap: complete in the repository root commit `init`.
-- Active phase: Phase 3 — commerce and authentication.
+- Active phase: Phase 4 — checkout, payments, and orders.
 - Integration branch: `dev`.
-- Current branch: `phase/03-commerce-auth` from updated `origin/dev`.
-- Phase state: Phase 1 and Phase 2 accepted and merged; Phase 3 implementation and automated completion review complete; visual acceptance pending.
-- Current delivery: Phase 3 — Auth Variant B, Cart Variant A, Profile Variant A, canonical commerce boundaries, and review readiness; awaiting desktop/mobile visual acceptance.
-- Previous delivery: Phase 2C — exact showcase PDP, visually accepted.
+- Current branch: `phase/04-checkout-orders` from `origin/dev` merge `868310f`.
+- Phase state: Phase 1, Phase 2, and Phase 3 accepted and merged; Phase 4 authorized; Task 1 environment foundation is implemented locally and awaiting focused review.
+- Current delivery: Phase 4 environment guard and durable policy records; checkout, payment, order, and review implementation has not started.
+- Previous delivery: Phase 3 — commerce and authentication, visually accepted and merged.
+
+Phase 3 pull request #3 merged with merge commit `868310f`; final Phase 3 branch commit is `f3d8a93`. Auth Variant B, Cart Variant A, and Profile Variant A desktop/mobile visual acceptance is complete. Phase 3 completion evidence remains `format`, `gate` (170 files / 930 tests), and `build` passed. Phase 3 E2E was invoked but stopped before Playwright because explicit E2E database variables were absent; no ambient database was used. Google OAuth and other external smoke not proved by that local gate remain unproved. Phase 4 Task 1 focused database-guard evidence is 20/20 tests, touched-file Prettier, and `git diff --check`; no database connection or write occurred.
 
 ## Bootstrap contents
 

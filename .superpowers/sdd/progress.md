@@ -1,3 +1,16 @@
+# Phase 4 checkout, payments, and orders
+
+## Coordinator state
+
+- Delivery base: `868310f`; branch: `phase/04-checkout-orders`; plan: `docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md`.
+- Plan hash: `4D5AE7BF7F9400A212BF10CD3902ACA61CE7227CF777FA2F46556E5899CAB8B2`.
+- Plan review approved: Critical 0 / Important 0; Minor 2 recorded for later task handling.
+- Phase 3 merge: PR #3, merge `868310f`; final Phase 3 commit `f3d8a93`.
+- Protected plan hashes: `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
+- ADR-015 approved shared non-production Neon E2E fingerprint confirmed; user confirmed no separate Production database exists. ADR-016 delivery/service policy approved 2026-08-16.
+- Task 1 guard logic and tracked target policy are ready for focused review and commit. Tasks 2-9 pending.
+- No database reads/writes, push, Preview, PR, merge, branch deletion, or next phase.
+
 # Phase 2 catalog pilot progress
 
 ## Phase 2C exact showcase PDP

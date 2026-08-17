@@ -32,6 +32,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const router = useRouter();
   const cart = useCartStore((state) => state);
   const quoteRevisionRef = useRef(0);
+  const mutationPendingRef = useRef(false);
   const initializedRef = useRef(false);
   const [deliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>('courier');
   const [deliveryZone, setDeliveryZone] = useState<'moscow' | 'moscow-region'>('moscow');
@@ -49,7 +50,9 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     intercom: '',
   });
   const [services, setServices] = useState<Services>({ carrying: false, assembly: false, removal: false });
-  const [couponCode, setCouponCode] = useState('');
+  const [couponDraft, setCouponDraft] = useState('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
+  const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
   const [contactName, setContactName] = useState(initialData.contactDefaults.contactName);
   const [contactPhone, setContactPhone] = useState(initialData.contactDefaults.contactPhone);
   const [contactEmail, setContactEmail] = useState(initialData.contactDefaults.contactEmail);
@@ -57,6 +60,8 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const [quote, setQuote] = useState<CheckoutQuoteDto | null>(null);
   const [quotePending, setQuotePending] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [mutationPending, setMutationPending] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [submitPending, setSubmitPending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitLocked, setSubmitLocked] = useState(false);
@@ -82,12 +87,19 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       pickupPointId: deliveryMethod === 'courier' ? undefined : pickupPointId || undefined,
       address: deliveryMethod === 'courier' ? address : undefined,
       services: deliveryMethod === 'courier' ? services : { carrying: false, assembly: false, removal: false },
-      couponCode: couponCode.trim() || undefined,
+      couponCode: appliedCouponCode || undefined,
     }),
-    [address, couponCode, deliveryMethod, deliverySlotId, deliveryZone, pickupPointId, services],
+    [address, appliedCouponCode, deliveryMethod, deliverySlotId, deliveryZone, pickupPointId, services],
   );
 
   useEffect(() => {
+    if (mutationPending) {
+      ++quoteRevisionRef.current;
+      setQuote(null);
+      setQuotePending(false);
+      setQuoteError(null);
+      return;
+    }
     if (cart.items.length === 0 || !deliverySlotId) {
       ++quoteRevisionRef.current;
       setQuote(null);
@@ -115,6 +127,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
           return;
         }
         setQuote(result.quote);
+        setMutationError(null);
       })
       .catch((error) => {
         if (revision === quoteRevisionRef.current) {
@@ -125,7 +138,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       .finally(() => {
         if (revision === quoteRevisionRef.current) setQuotePending(false);
       });
-  }, [cart.items, quoteInput, deliveryMethod, deliverySlotId, pickupPointId]);
+  }, [cart.items, quoteInput, deliveryMethod, deliverySlotId, pickupPointId, mutationPending, quoteRequestVersion]);
 
   const setDeliveryMethod = useCallback(
     (method: DeliveryMethod) => {
@@ -159,13 +172,42 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   );
 
   const mutateCart = useCallback(async (operation: () => Promise<unknown>) => {
+    if (mutationPendingRef.current) return;
+    mutationPendingRef.current = true;
+    ++quoteRevisionRef.current;
+    setQuote(null);
+    setQuotePending(false);
+    setQuoteError(null);
+    setMutationError(null);
     setSubmitError(null);
-    setCouponCode('');
-    await operation();
+    setCouponDraft('');
+    setAppliedCouponCode('');
+    setMutationPending(true);
+    try {
+      await operation();
+    } catch (error) {
+      setMutationError(messageOf(error));
+    } finally {
+      mutationPendingRef.current = false;
+      setMutationPending(false);
+    }
+  }, []);
+
+  const applyCoupon = useCallback(() => {
+    const code = couponDraft.trim();
+    setCouponDraft(code);
+    setAppliedCouponCode(code);
+    setQuoteRequestVersion((version) => version + 1);
+  }, [couponDraft]);
+
+  const clearCoupon = useCallback(() => {
+    setCouponDraft('');
+    setAppliedCouponCode('');
+    setQuoteRequestVersion((version) => version + 1);
   }, []);
 
   const submit = useCallback(async () => {
-    if (submitPending || submitLocked || !quote) return;
+    if (mutationPending || submitPending || submitLocked || !quote) return;
     setSubmitPending(true);
     setSubmitError(null);
     try {
@@ -197,13 +239,26 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     } finally {
       setSubmitPending(false);
     }
-  }, [contactEmail, contactName, contactPhone, paymentMethod, quote, quoteInput, router, submitLocked, submitPending]);
+  }, [
+    contactEmail,
+    contactName,
+    contactPhone,
+    mutationPending,
+    paymentMethod,
+    quote,
+    quoteInput,
+    router,
+    submitLocked,
+    submitPending,
+  ]);
 
   return {
     cart,
     quote,
     quotePending,
     quoteError,
+    mutationPending,
+    mutationError,
     submitPending,
     submitError,
     submitLocked,
@@ -216,7 +271,8 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       selectedAddressId,
       address,
       services,
-      couponCode,
+      couponDraft,
+      appliedCouponCode,
       contactName,
       contactPhone,
       contactEmail,
@@ -236,7 +292,9 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       pickAddress,
       setAddress,
       setServices,
-      setCouponCode,
+      setCouponDraft,
+      applyCoupon,
+      clearCoupon,
       setContactName,
       setContactPhone,
       setContactEmail,

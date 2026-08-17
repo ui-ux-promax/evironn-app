@@ -23,7 +23,7 @@ import '../../../styles/evironn/CheckoutVariantA.css';
 
 export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto }) {
   const controller = useCheckoutVariantA(initialData);
-  const { cart, form, quote, quotePending, quoteError, submitError, blocked, actions } = controller;
+  const { cart, form, quote, quoteError, mutationError, submitError, blocked, actions } = controller;
 
   if (blocked) {
     return (
@@ -51,15 +51,14 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
       <OrderLines controller={controller} />
       <PromoField
         promo={{
-          input: form.couponCode,
+          input: form.couponDraft,
           code: quote?.coupon?.code ?? '',
           status: quote?.coupon ? 'applied' : 'idle',
           percent: quote?.coupon?.percent ?? 0,
         }}
-        pending={quotePending}
-        onType={actions.setCouponCode}
-        onApply={() => actions.setCouponCode(form.couponCode.trim())}
-        onClear={() => actions.setCouponCode('')}
+        onType={actions.setCouponDraft}
+        onApply={actions.applyCoupon}
+        onClear={actions.clearCoupon}
       />
       <SummaryRows quote={quote} />
     </>
@@ -74,9 +73,9 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
           Состав заказа, доставка и услуги пересчитываются сервером после каждого изменения.
         </p>
       </header>
-      {(quoteError || submitError) && (
+      {(quoteError || mutationError || submitError) && (
         <p className="chk-alert chk-alert--light" role="alert">
-          {quoteError ?? submitError}
+          {quoteError ?? mutationError ?? submitError}
         </p>
       )}
       <div className="chk-a__grid">

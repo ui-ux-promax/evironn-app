@@ -264,6 +264,72 @@ describe('Checkout Variant A', () => {
     expect(document.querySelector('.chk-bar__sheet')).toHaveTextContent('Доставка');
   });
 
+  it('invalidates the quote and locks submit and mutation controls while removal is pending', async () => {
+    let resolveRemove!: (value: typeof cart) => void;
+    mocks.removeCartItem.mockReturnValue(new Promise((resolve) => (resolveRemove = resolve)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить Noma' })[0]);
+    await waitFor(() => expect(mocks.removeCartItem).toHaveBeenCalledWith('line-1'));
+
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+    for (const button of screen.getAllByRole('button', { name: 'Удалить Noma' })) expect(button).toBeDisabled();
+    for (const button of screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' }))
+      expect(button).toBeDisabled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+
+    await act(async () => resolveRemove(cart));
+  });
+
+  it('surfaces a rejected quantity mutation and keeps stale quote submission disabled', async () => {
+    let resolveRefresh!: (value: { ok: true; quote: CheckoutQuoteDto }) => void;
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.quote
+      .mockResolvedValueOnce({ ok: true, quote })
+      .mockReturnValueOnce(new Promise((resolve) => (resolveRefresh = resolve)));
+    mocks.updateItemQuantity.mockRejectedValue(new Error('Cart mutation failed'));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' })[0]);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cart mutation failed');
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+
+    await act(async () => resolveRefresh({ ok: true, quote }));
+    await waitFor(() => {
+      for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeEnabled();
+    });
+  });
+
+  it('keeps coupon draft local until Apply and re-quotes again on Clear', async () => {
+    mocks.quote.mockImplementation(async (input: { couponCode?: string }) => ({
+      ok: true,
+      quote: {
+        ...quote,
+        coupon: input.couponCode ? { code: input.couponCode, percent: 5 } : null,
+      },
+    }));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+    const promoInput = screen.getAllByRole('textbox', { name: 'Промокод' })[0];
+
+    fireEvent.change(promoInput, { target: { value: '  SAVE5  ' } });
+    await act(async () => undefined);
+    expect(promoInput).toBeEnabled();
+    expect(mocks.quote).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Применить' })[0]);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    expect(mocks.quote).toHaveBeenLastCalledWith(expect.objectContaining({ couponCode: 'SAVE5' }));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Убрать промокод' })[0]);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(3));
+    expect(mocks.quote).toHaveBeenLastCalledWith(expect.not.objectContaining({ couponCode: expect.anything() }));
+  });
+
   it.each([
     [{ ok: true, code: 'ORDER_READY', orderNumber: 11 }, '/orders/11?placed=1'],
     [{ ok: false, code: 'PAYMENT_INITIALIZATION_PENDING', orderNumber: 12, error: 'Pending' }, '/orders/12?placed=1'],

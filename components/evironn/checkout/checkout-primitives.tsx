@@ -307,7 +307,7 @@ export function PaymentPicker({ controller }: { controller: Controller }) {
 }
 
 export function OrderLines({ controller }: { controller: Controller }) {
-  const { cart, quote, actions } = controller;
+  const { cart, quote, mutationPending, actions } = controller;
   const lines = quote?.cart.items ?? cart.items;
   return (
     <ul className="chk-lines chk-lines--light">
@@ -321,13 +321,18 @@ export function OrderLines({ controller }: { controller: Controller }) {
               qty={line.quantity}
               name={line.name}
               max={line.stock}
-              disabled={!line.available}
+              disabled={mutationPending || !line.available}
               onStep={(delta) => void actions.step(line.id, line.quantity + delta).catch(() => undefined)}
             />
           </div>
           <div className="chk-lines__money">
             {formatPrice(line.lineTotal)}
-            <button type="button" onClick={() => void actions.remove(line.id)} aria-label={`Удалить ${line.name}`}>
+            <button
+              type="button"
+              disabled={mutationPending}
+              onClick={() => void actions.remove(line.id)}
+              aria-label={`Удалить ${line.name}`}
+            >
               <FiX aria-hidden="true" />
             </button>
           </div>
@@ -376,12 +381,12 @@ export function SummaryRows({ quote }: { quote: CheckoutQuoteDto | null }) {
 }
 
 export function SubmitButton({ controller }: { controller: Controller }) {
-  const { quote, quotePending, submitPending, submitLocked, actions } = controller;
+  const { quote, quotePending, mutationPending, submitPending, submitLocked, actions } = controller;
   return (
     <button
       className="chk-submit chk-submit--light"
       type="button"
-      disabled={!quote || quotePending || submitPending || submitLocked}
+      disabled={!quote || quotePending || mutationPending || submitPending || submitLocked}
       aria-busy={submitPending}
       onClick={() => void actions.submit()}
     >

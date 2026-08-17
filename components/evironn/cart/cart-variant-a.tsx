@@ -12,12 +12,13 @@ export interface CartVariantAProps {
   initialWishlistedIds: string[];
 }
 
-const CHECKOUT_DISABLED_LABEL = 'Оформление заказа будет доступно на следующем этапе.';
+const CHECKOUT_DISABLED_LABEL = 'Оформление заказа доступно после загрузки товаров без ошибок.';
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
   const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
     useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
+  const canCheckout = !loading && items.length > 0 && items.every((item) => item.available);
 
   return (
     <main className="cart-a" id="main-content">
@@ -147,15 +148,21 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                 onClear={actions.clearCoupon}
               />
               <SummaryRows totals={totals} percent={promo.percent} />
-              <button
-                className="cart-a__checkout"
-                type="button"
-                disabled
-                aria-disabled="true"
-                title={CHECKOUT_DISABLED_LABEL}
-              >
-                {CHECKOUT_DISABLED_LABEL}
-              </button>
+              {canCheckout ? (
+                <a className="cart-a__checkout" href="/checkout">
+                  Оформить заказ
+                </a>
+              ) : (
+                <button
+                  className="cart-a__checkout"
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  title={CHECKOUT_DISABLED_LABEL}
+                >
+                  {CHECKOUT_DISABLED_LABEL}
+                </button>
+              )}
             </div>
           </aside>
         </div>
@@ -203,15 +210,19 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
             <b>{totals.total.toLocaleString('ru-RU')} ₽</b>
             {totals.itemCount} товаров
           </span>
-          <a
-            role="button"
-            aria-disabled="true"
-            tabIndex={-1}
-            title={CHECKOUT_DISABLED_LABEL}
-            onClick={(event) => event.preventDefault()}
-          >
-            {CHECKOUT_DISABLED_LABEL}
-          </a>
+          {canCheckout ? (
+            <a href="/checkout">Оформить заказ</a>
+          ) : (
+            <a
+              role="button"
+              aria-disabled="true"
+              tabIndex={-1}
+              title={CHECKOUT_DISABLED_LABEL}
+              onClick={(event) => event.preventDefault()}
+            >
+              {CHECKOUT_DISABLED_LABEL}
+            </a>
+          )}
         </div>
       )}
 

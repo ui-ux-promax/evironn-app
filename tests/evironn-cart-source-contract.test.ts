@@ -36,7 +36,7 @@ describe('Evironn Cart Variant A source boundary', () => {
       /DeliveryPicker|PaymentRow|FREE_\w*SHIPPING|SHIP_COST|DELIVERY_OPTIONS|PAYMENT_METHODS/,
     );
     expect(production).not.toContain('productVariantId');
-    expect(production).not.toMatch(/href\s*=\s*["']\/checkout|href=\{[^}]*checkout/);
+    expect(production).toContain('href="/checkout"');
     expect(production).not.toMatch(/Math\.(round|floor|ceil)\([^)]*percent|shipping|deliveryCost/);
   });
 
@@ -59,8 +59,9 @@ describe('Evironn Cart Variant A source boundary', () => {
     const presentation = `${variant}\n${source(paths[0])}`;
     for (const field of ['compareAtSubtotal', 'saleDiscount', 'couponDiscount', 'total'])
       expect(presentation).toContain(field);
-    expect(variant).toContain('aria-disabled');
-    expect(variant).toContain('Оформление заказа будет доступно на следующем этапе.');
+    expect(variant).toContain('canCheckout');
+    expect(variant).toContain('href="/checkout"');
+    expect(variant).toContain('Оформление заказа доступно после загрузки товаров без ошибок.');
     expect(variant).not.toContain('role="radiogroup"');
     expect(variant).toContain('aria-label={`Добавить ${product.name} в корзину`}');
     const page = readFileSync('app/(shop)/cart/page.tsx', 'utf8');
@@ -82,7 +83,7 @@ describe('Evironn Cart Variant A source boundary', () => {
     );
   });
 
-  it('keeps display-only swatches and disabled checkout controls clone-styled', () => {
+  it('keeps display-only swatches and checkout controls clone-styled', () => {
     const variant = source('components/evironn/cart/cart-variant-a.tsx');
     const css = source('styles/evironn/CartVariantA.css');
 
@@ -93,7 +94,7 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(css).not.toContain('.cart-a__swatches span');
     expect(css).not.toContain('.cart-a__mobile-bar button');
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      '8a83377e890a60e31079bda43eef5ba32cabfc853904731042258308e746c0db',
+      'ade5504018cbb0b09819f3c5e0cfaa531384f5080bfd940c416feb551dfec192',
     );
   });
 

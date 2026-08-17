@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { cartPresentationInclude } from '@/lib/cart-presentation';
-import { buildCheckoutQuote, getCheckoutPageDto } from '@/lib/checkout-page';
+import { buildCheckoutQuote, canonicalCheckoutCartSelect, getCheckoutPageDto } from '@/lib/checkout-page';
 
 const now = new Date('2026-08-16T12:00:00.000Z');
 
@@ -214,7 +214,7 @@ describe('buildCheckoutQuote', () => {
     });
     expect(db.cart.findFirst).toHaveBeenCalledWith({
       where: { userId: 'user-1' },
-      include: cartPresentationInclude,
+      select: canonicalCheckoutCartSelect,
     });
     expect(db.coupon.findUnique).toHaveBeenCalledWith({ where: { code: 'PHASE4' } });
   });

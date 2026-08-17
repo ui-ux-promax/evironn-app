@@ -5,14 +5,11 @@ import path from 'node:path';
 const root = process.cwd();
 
 describe('legacy checkout form boundary', () => {
-  it('cannot submit a fabricated partial placement payload', () => {
-    const source = fs.readFileSync(path.join(root, 'components/shared/checkout/checkout-form.tsx'), 'utf8');
-
-    expect(source).not.toContain("from './checkout-submit'");
-    expect(source).not.toContain('placeOrder');
-    expect(source).not.toContain('submitCheckoutValues');
-    expect(source).not.toContain('onSubmit=');
-    expect(source).toMatch(/<button\s+[\s\S]*?type="button"[\s\S]*?disabled/);
+  it('removes the fabricated partial placement form', () => {
+    expect(fs.existsSync(path.join(root, 'components/shared/checkout/checkout-form.tsx'))).toBe(false);
+    const source = fs.readFileSync(path.join(root, 'components/evironn/checkout/use-checkout-variant-a.ts'), 'utf8');
+    expect(source).toContain('placeOrder(payload)');
+    expect(source).toContain('PlaceOrderInput');
   });
 
   it('removes the legacy server-action wrapper', () => {

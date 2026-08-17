@@ -219,11 +219,9 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(screen.getByText(/Промокод EVIRONN10 принят/)).toBeInTheDocument());
     expect(screen.getAllByText(/80/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Доставка/)).not.toBeInTheDocument();
-    const checkoutControls = screen.getAllByRole('button', {
-      name: 'Оформление заказа будет доступно на следующем этапе.',
-    });
-    expect(checkoutControls[0]).toBeDisabled();
-    expect(checkoutControls[1]).toHaveAttribute('aria-disabled', 'true');
+    const checkoutControls = screen.getAllByRole('link', { name: 'Оформить заказ' });
+    expect(checkoutControls).toHaveLength(2);
+    for (const control of checkoutControls) expect(control).toHaveAttribute('href', '/checkout');
   });
 
   it('discards stale coupon validation after a cart mutation', async () => {
@@ -340,7 +338,7 @@ describe('Cart Variant A', () => {
     expect(await screen.findByText('В корзине пока пусто')).toBeInTheDocument();
   });
 
-  it('shows server mutation errors and mobile summary remains disabled', async () => {
+  it('shows server mutation errors and mobile summary remains available', async () => {
     renderCart();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
     mocks.removeCartItem.mockRejectedValue(new Error('Недостаточно на складе'));

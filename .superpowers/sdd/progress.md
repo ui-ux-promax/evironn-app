@@ -3,7 +3,7 @@
 ## Coordinator state
 
 - Delivery base: `868310f`; branch: `phase/04-checkout-orders`; plan: `docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md`.
-- Current amended plan hash: `5E46F11CD7105C4C29C39DABF719FA0EA2CE086001F2E1D330C7BDB937741C0A`; ADR-017 and payment-safety amendment commits: `5b08806`, `7c88133`.
+- Current ADR-018-amended plan hash: `9792556792BE7DE1E11F9C6EF74C850FF02A62C1060B0604F8E181D7D6CB118A`; ADR-017/payment-safety amendment commits: `5b08806`, `7c88133`; ADR-018 design commit: `8e289e7`.
 - Original and amended plan reviews approved Critical 0 / Important 0; amended plan final review also reported Minor 0.
 - Phase 3 merge: PR #3, merge `868310f`; final Phase 3 commit `f3d8a93`.
 - Protected plan hashes: `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
@@ -14,7 +14,7 @@
 - Task 2A complete: commits `ca26715..e15dbd6`; the explicit guarded read-only migration checkpoint reported `UNAPPLIED` with `ok: true`, then added only nullable `Order.paymentReturnUrl` and the separate one-line additive migration. Focused Vitest 61/61, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. No migration deploy or application-data write occurred.
 - Task 3 complete: commit `52ba731`; authenticated owner-scoped checkout read model, server-owned quote, coupon reader/clock injection, bounded DaData projection, and payment-initialization DTO vocabulary implemented. Focused Vitest 41/41, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. External-service smoke remains deferred because presence-only preflight found all requested keys absent.
 - Task 4 implementation and two remediation waves are committed through `c831598`. Focused evidence reached 11 files / 68 tests plus typecheck, Prettier, diff, and secret checks. The latest fresh xhigh review remains blocking at Critical 1 / Important 4 because cross-process payment-create attempts need a durable pre-dispatch claim and four adjacent contract fixes.
-- ADR-018 durable YooKassa create claim was approved by the user on 2026-08-17. Design: `docs/superpowers/specs/2026-08-17-phase-4-durable-payment-claim-design.md`. Task 4 implementation remains paused until the design checkpoint is committed and the executable plan is amended/reviewed.
+- ADR-018 durable YooKassa create claim was approved by the user on 2026-08-17. Design: `docs/superpowers/specs/2026-08-17-phase-4-durable-payment-claim-design.md`. The executable plan now adds a separate additive Task 3A schema checkpoint and a bounded Task 4 remediation sequence; Task 4 production work remains paused until fresh plan review approval.
 - Tasks 4-9 remain incomplete. No push, Preview, PR, merge, branch deletion, or next phase.
 
 # Phase 2 catalog pilot progress

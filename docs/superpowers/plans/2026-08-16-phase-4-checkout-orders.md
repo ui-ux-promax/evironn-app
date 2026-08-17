@@ -200,7 +200,7 @@ Update `docs/roadmap/STATUS.md` so its current-state block says:
 - Google OAuth/other external smoke not proved by that local gate remains stated honestly rather than rewritten as passed;
 - Phase 4 is authorized and no Phase 4 implementation evidence exists yet.
 
-Replace the stale top title/current section in `.superpowers/sdd/progress.md` with a Phase 4 coordinator section while preserving historical Phase 2/3 records below it. Record delivery base `868310f`, branch, plan path, protected hashes, nine pending tasks, the completed ADR-016 decision, and that ADR-015/database writes remain blocked until Step 6 obtains non-secret fingerprint confirmation.
+Replace the stale top title/current section in `.superpowers/sdd/progress.md` with a Phase 4 coordinator section while preserving historical Phase 2/3 records below it. Record delivery base `868310f`, branch, plan path, protected hashes, ten pending tasks, the completed ADR-016 decision, and that ADR-015/database writes remain blocked until Step 6 obtains non-secret fingerprint confirmation.
 
 - [ ] **Step 6: Implement identity-bound environment documentation and guard**
 
@@ -519,6 +519,7 @@ Reviewer checks exact sanitized status/checksum evidence, use of the existing ex
 
 **Files:**
 
+- Create: `services/dto/payment-initialization.dto.ts`
 - Create: `services/dto/checkout-page.dto.ts`
 - Create: `lib/checkout-page.ts`
 - Create: `app/actions/checkout.ts`
@@ -631,24 +632,44 @@ export interface CheckoutQuoteDto {
 
 `CheckoutPageDto` includes contact defaults, saved addresses, initial cart, delivery options, pickup points, slots, and no database objects. The saved-address adapter mirrors the actual Phase 3 `Address` model (`label`, `city`, `street`, `comment`, `isDefault`); selecting one maps `street` directly to checkout `addressLine` and `comment` to `addressComment`. It never parses a street into house/flat and never claims saved floor/lift/intercom values exist; those order-specific fields remain explicit checkout inputs and are included in the immutable order snapshot.
 
-The module also exports the shared serializable payment-initialization vocabulary used by Task 4 placement results and Task 7 order DTOs:
+`services/dto/payment-initialization.dto.ts` exports the shared serializable payment-initialization status/base vocabulary used by Task 4 placement results and context-specific Task 6/Task 7 DTOs. Keep shared status/copy/base fields separate from action permissions:
 
 ```typescript
 export type PaymentInitializationStatus =
   'PAYMENT_INITIALIZATION_READY' | 'PAYMENT_INITIALIZATION_PENDING' | 'PAYMENT_INITIALIZATION_BLOCKED';
 
-export interface BlockedPaymentInitializationDto {
+export interface BlockedPaymentInitializationBaseDto {
   status: 'PAYMENT_INITIALIZATION_BLOCKED';
   orderNumber: number;
   heading: 'Платёж требует проверки';
   message: string;
   continuePaymentUrl: null;
   canRetryCreate: false;
+}
+```
+
+`services/dto/checkout-page.dto.ts` imports that base and owns the narrow Checkout A `OPEN_ORDER` branch:
+
+```typescript
+import type { BlockedPaymentInitializationBaseDto } from './payment-initialization.dto';
+
+export interface CheckoutBlockedPaymentInitializationDto extends BlockedPaymentInitializationBaseDto {
   allowedActions: readonly ['OPEN_ORDER'];
 }
 ```
 
-For the blocked DTO, `message` is exactly `Заказ №<orderNumber> сохранён. Повторное создание платежа отключено; статус проверяется.` Task 3 tests pin the union literals, exact heading/message formatter, `continuePaymentUrl: null`, `canRetryCreate: false`, and `OPEN_ORDER` as the only checkout-side action. No Task 3 code invokes a payment provider.
+Task 7 imports `BlockedPaymentInitializationBaseDto` from `services/dto/payment-initialization.dto.ts` into `services/dto/order-page.dto.ts` and defines the separate Order A branch:
+
+```typescript
+export type OrderBlockedPaymentAllowedActions =
+  readonly ['RESYNC_PAYMENT'] | readonly ['RESYNC_PAYMENT', 'CANCEL_ORDER'];
+
+export interface OrderBlockedPaymentInitializationDto extends BlockedPaymentInitializationBaseDto {
+  allowedActions: OrderBlockedPaymentAllowedActions;
+}
+```
+
+For every blocked DTO, `message` is exactly `Заказ №<orderNumber> сохранён. Повторное создание платежа отключено; статус проверяется.` Task 3 tests pin the shared status literals, base fields, exact heading/message formatter, `continuePaymentUrl: null`, `canRetryCreate: false`, and `OPEN_ORDER` as the only Checkout A action. Task 7 tests pin its separate `OrderBlockedPaymentInitializationDto`: `RESYNC_PAYMENT` is always present, `CANCEL_ORDER` appears only after latest provider proof permits safe cancellation, and neither context exposes `CONTINUE_PAYMENT` or `RETRY_CREATE`. No Task 3 code invokes a payment provider.
 
 - [ ] **Step 5: Implement one server-owned quote path**
 
@@ -675,7 +696,7 @@ Run:
 ```powershell
 npx vitest run tests/checkout-page.test.ts tests/checkout-quote.test.ts tests/dadata-suggest-route.test.ts tests/coupon.test.ts tests/coupon-status.test.ts tests/cart-presentation.test.ts
 npm run typecheck
-npx prettier --check services/dto/checkout-page.dto.ts lib/checkout-page.ts app/actions/checkout.ts lib/coupon.ts app/api/dadata/suggest/route.ts tests/checkout-page.test.ts tests/checkout-quote.test.ts tests/dadata-suggest-route.test.ts
+npx prettier --check services/dto/payment-initialization.dto.ts services/dto/checkout-page.dto.ts lib/checkout-page.ts app/actions/checkout.ts lib/coupon.ts app/api/dadata/suggest/route.ts tests/checkout-page.test.ts tests/checkout-quote.test.ts tests/dadata-suggest-route.test.ts
 git diff --check
 ```
 
@@ -852,6 +873,7 @@ type PaymentInitializationResult =
 - a `DISPATCHED`-origin replay with existing `paymentEverDispatchedAt` that receives adapter-proven no dispatch performs an exact guarded `CLAIMED -> DISPATCHED` write, clears the claim timestamp, returns `INDETERMINATE`, preserves `PENDING` and stock, retains the original timestamp byte-for-time, and does not leave the row in `CLAIMED`; a zero-count or throwing guarded write returns `INDETERMINATE` and may leave the exact claim fail-closed;
 - first-attempt adapter-proven no dispatch reaches `NOT_CREATED` only in one serializable transaction guarded by `PENDING`, absent `Payment`, exact `CLAIMED` timestamp, and null `paymentEverDispatchedAt`; the same transaction restores each canonical SKU exactly once;
 - verified provider correlation creates or repairs the provider-id `Payment` and changes exact claimed state to `CORRELATED` in one serializable transaction; a conflicting provider id, amount, order number, order state, or claim token returns `INDETERMINATE` and preserves stock;
+- an interleaved race starts verified correlation and first-attempt proven-no-dispatch cancellation from the same exact owned `CLAIMED` timestamp. Each transaction re-reads and conditionally changes that same claim: correlation requires `PENDING`, absent/conflict-free `Payment`, exact claim, and writes `Payment` plus `CORRELATED`; no-dispatch requires `PENDING`, absent `Payment`, exact claim, and null `paymentEverDispatchedAt`, then writes `NOT_CREATED`, `CANCELLED`, and stock restoration. Force both commit orders. Exactly one transaction commits; the loser observes a zero-count/conflicting guard, returns `INDETERMINATE`, and performs no order, payment, or stock write. If correlation wins, order stays `PENDING` and stock stays reserved. If no-dispatch wins, order is canceled and stock is restored exactly once;
 - `order.findUnique`, claim update, durable request construction, provider detail lookup, provider create, dispatched-state persistence, correlation persistence, and no-dispatch cancellation may each throw independently; every case resolves to `INDETERMINATE`, logs a structured category, and never rejects;
 - at or after `createdAt + W`, a `READY` or `DISPATCHED` order returns `BLOCKED_AFTER_RETRY_WINDOW` without claiming or dispatching; a pre-existing ambiguous `CLAIMED` order remains `INDETERMINATE`.
 - an advancing injected clock may pass the initial eligibility/claim check and reach `createdAt + W` immediately before dispatch; a `READY`-origin test makes zero provider calls, guardedly releases the exact claim to `READY` with a null claimed-at timestamp, and returns `BLOCKED_AFTER_RETRY_WINDOW`;
@@ -865,7 +887,9 @@ Add focused regressions proving:
 
 - `auth()`, `cookies()`, and `resolveOwnerCart()` may each reject before commit; every rejection returns a sanitized `{ ok: false, code: 'ORDER_FAILED' }` result whose client message contains no Prisma code, raw error message, stack, URL, or database identity, while a normal missing session still returns `UNAUTHENTICATED`;
 - post-commit `ensureOnlinePayment` remains total, but `placeOrder` still guards against an unexpected rejection and returns `PAYMENT_INITIALIZATION_PENDING` for the durable order rather than throwing or exposing internals;
+- `ensureOnlinePayment` returning `BLOCKED_AFTER_RETRY_WINDOW` maps through `placeOrder` to the exact `CheckoutBlockedPaymentInitializationDto`: `status: 'PAYMENT_INITIALIZATION_BLOCKED'`, durable order number, exact heading/message, `continuePaymentUrl: null`, `canRetryCreate: false`, and `allowedActions: ['OPEN_ORDER']`; it never falls through to pending, ready, or generic failure;
 - non-critical sales-count/address side-effect failures after commit are logged and cannot reject or replace the already determined COD/online placement result;
+- an injected serialization retry during order placement reruns the complete transaction callback from its first operation. Each attempt re-executes the authoritative quote construction, owner-cart/cart-line read, current canonical SKU active/price/stock validation, coupon validation with the transaction client and injected clock, delivery/service/total calculation, snapshot construction, conditional stock deductions, order/item creation, and cart deletion. The test changes one quoted input between attempts and proves the committed order uses only the second attempt's recalculated values; no quote, cart, coupon, or SKU read is cached outside the retried callback;
 - new online order creation writes `paymentInitializationState: 'READY'` in the same transaction as snapshots, stock reservation, `paymentReturnUrl`, and cart deletion; COD writes null/omits the claim state and never enters payment initialization;
 - canonical cart reads inspect scalar `productVariantId` only to reject legacy lines, never include/join the `ProductVariant` relation, and still select both SKU media and canonical product media;
 - `buildOrderSnapshot` uses `sku.media[0]?.url ?? sku.product.media[0]?.url ?? null`, with a regression for empty SKU media plus available product media;
@@ -915,13 +939,15 @@ Only a winning claim plus the fresh successful window check authorizes `provider
 - proven no dispatch after prior dispatch: guardedly change the exact owned `CLAIMED` row to `DISPATCHED`, clear `paymentInitializationClaimedAt`, require and preserve the original `paymentEverDispatchedAt` exactly, return `INDETERMINATE`, and preserve stock/order. A zero-count or throwing guarded write returns `INDETERMINATE` and may leave `CLAIMED` fail-closed; equivalent evidence without the final `DISPATCHED` state is not a successful path;
 - claim loser, crash-left `CLAIMED`, null historical state, transition conflict, transaction failure, correlation conflict, or unexpected adapter exception: structured log plus `INDETERMINATE`.
 
+The verified-correlation and first-attempt no-dispatch branches must remain mutually exclusive serializable transactions over the same exact claim. Neither may perform an unguarded pre-write. Each transaction re-reads `PENDING`, local `Payment`, `paymentInitializationState: 'CLAIMED'`, exact `paymentInitializationClaimedAt`, and `paymentEverDispatchedAt` before its terminal conditional write. A losing interleaving returns `INDETERMINATE`; it never compensates the winner or mutates stock/order/payment.
+
 Wrap the complete `ensureOnlinePayment` body in total error handling without weakening the four-outcome union. Keep provider payload verification, `T = 24 hours`, `W = 23 hours`, durable request fields, list non-authority, and no raw provider payload across module boundaries. Do not add process-local locking, advisory locks, stale-claim timeout, automatic takeover, outbox, or payment-event tables.
 
 - [ ] **Step 6: Close the adjacent placement, media, and inherited-form findings**
 
-Modify `placeOrder` so authentication execution, cart cookie acquisition, owner-cart resolution, and every pre-commit database read run inside the existing sanitized placement boundary. A resolved missing session still returns `UNAUTHENTICATED`. Known domain failures retain their allowlisted codes; unknown failures log internally and return the fixed `ORDER_FAILED` copy. After a committed online order, an unexpected payment-initialization rejection must be logged and treated as durable `INDETERMINATE`, returning `PAYMENT_INITIALIZATION_PENDING` with the committed order number. Catch/log non-critical sales-count and address-save failures so they cannot throw through a committed placement result.
+Modify `placeOrder` so authentication execution, cart cookie acquisition, owner-cart resolution, and every pre-commit database read run inside the existing sanitized placement boundary. A resolved missing session still returns `UNAUTHENTICATED`. Known domain failures retain their allowlisted codes; unknown failures log internally and return the fixed `ORDER_FAILED` copy. After a committed online order, map `ensureOnlinePayment` outcomes exhaustively: `CREATED` returns ready correlation/confirmation data; `NOT_CREATED` reports the already completed guarded local cancellation; `INDETERMINATE` returns `PAYMENT_INITIALIZATION_PENDING`; `BLOCKED_AFTER_RETRY_WINDOW` returns `CheckoutBlockedPaymentInitializationDto` with exact blocked copy, durable order number, null continue URL, repeat-create disabled, and `OPEN_ORDER` only. An unexpected rejection is logged and treated as durable `INDETERMINATE`, returning `PAYMENT_INITIALIZATION_PENDING` with the committed order number. Catch/log non-critical sales-count and address-save failures so they cannot throw through a committed placement result.
 
-In the existing serializable order-creation transaction, write `paymentInitializationState: form.paymentMethod === 'online' ? 'READY' : null` with the order. Persist `paymentReturnUrl` before initialization as already proven. Keep COD provider-free. Preserve canonical SKU-only cart projection and scalar legacy-line rejection.
+Keep the complete authoritative placement operation inside the existing serializable retry callback. Every retry starts again with quote construction and owner-cart/cart-line reads, then reruns current canonical SKU active/price/stock validation, transaction-compatible coupon validation, delivery/service/totals, snapshots, conditional stock deductions, order/item creation, and cart deletion. Do not calculate or cache a quote, coupon result, cart projection, or SKU facts outside the callback. In that transaction, write `paymentInitializationState: form.paymentMethod === 'online' ? 'READY' : null` with the order. Persist `paymentReturnUrl` before initialization as already proven. Keep COD provider-free. Preserve canonical SKU-only cart projection and scalar legacy-line rejection.
 
 Change canonical snapshot media selection only at the narrow snapshot boundary:
 
@@ -959,8 +985,10 @@ Update `.superpowers/sdd/phase-4-task-4-report.md` by appending ADR-018 remediat
 - one durable cross-process claim winner and no process-local correctness dependency;
 - a fresh injected clock recheck immediately before durable-request/provider dispatch; a closed window makes zero provider/durable-request calls and returns `BLOCKED_AFTER_RETRY_WINDOW` only after an exact-claim release restores `READY` origin to `READY` or a `DISPATCHED` origin with matching durable evidence to `DISPATCHED`;
 - exact claim-owner and origin/evidence guards, `READY` only for new online orders, fail-closed release/write failures, write-once dispatch evidence, replay preservation of the original `paymentEverDispatchedAt`, exact `DISPATCHED` completion after prior-dispatch proven no dispatch, no successful path stranded in `CLAIMED`, fail-closed crash behavior, and no stale takeover;
-- mutually exclusive correlation and no-dispatch cancellation with exactly-once stock effects;
+- an interleaved correlation-versus-proven-no-dispatch race over the same exact claim in both commit orders: only one guarded serializable transaction commits, the loser returns `INDETERMINATE`, correlation preserves order/stock, and no-dispatch cancels/restores exactly once;
 - total four-outcome API under every database/provider exception;
+- exhaustive `placeOrder` mapping of `BLOCKED_AFTER_RETRY_WINDOW` to the exact checkout-only blocked DTO and no pending/ready fallthrough;
+- placement serialization retry reruns quote, cart, coupon, SKU, delivery/service/total, snapshot, stock, order/item, and cart-deletion work from the start of each transaction attempt with no cached first-attempt authority;
 - sanitized pre-commit failures and no raw infrastructure leakage;
 - `READY` only for new online orders, null for COD/historical compatibility;
 - exact product-media snapshot fallback and no `ProductVariant` join/write;
@@ -1213,7 +1241,7 @@ Reviewer checks exact CSS, clone class/interaction preservation, all three polic
 - a Phase 4 delivery day renders from the stored `YYYY-MM-DD` sentinel without browser/server timezone shift, including UTC/Moscow midnight boundary fixtures;
 - status maps `PENDING/PROCESSING/SHIPPED/DELIVERED/CANCELLED` to clone-compatible placed/collecting/on-way/delivered/cancelled UI stages;
 - payment summary distinguishes pending online, succeeded online, canceled online, and COD; the summary heading never says paid for pending/COD;
-- `payment.initialization` is a serializable discriminated union. Its blocked branch is `{ status: 'PAYMENT_INITIALIZATION_BLOCKED', orderNumber, heading: 'Платёж требует проверки', message: 'Заказ №<number> сохранён. Повторное создание платежа отключено; статус проверяется.', continuePaymentUrl: null, canRetryCreate: false, allowedActions }`;
+- `payment.initialization` is a serializable discriminated union using `OrderBlockedPaymentInitializationDto` from the shared base vocabulary. Its blocked branch is `{ status: 'PAYMENT_INITIALIZATION_BLOCKED', orderNumber, heading: 'Платёж требует проверки', message: 'Заказ №<number> сохранён. Повторное создание платежа отключено; статус проверяется.', continuePaymentUrl: null, canRetryCreate: false, allowedActions }`; Checkout A uses its separate `CheckoutBlockedPaymentInitializationDto` with `allowedActions: ['OPEN_ORDER']` only.
 - blocked `allowedActions` initially contains only `RESYNC_PAYMENT`; it may include `CANCEL_ORDER` only after the latest server-side provider lookup proves a correlatable payment can be canceled. ADR-018 `NOT_CREATED` already cancels/restores inside the claim-owner transaction, so no pending blocked DTO offers a second local cancellation from that state. Provider lookup absence never proves `NOT_CREATED`. It never contains `CONTINUE_PAYMENT` or `RETRY_CREATE`;
 - `canCancel` is true only for owned `PENDING` COD orders or online orders whose latest verified provider proof permits the safe cancellation path; `continuePaymentUrl` is exposed only for a provider-correlated ready payment created or recovered before `createdAt + W`, never for pending-indeterminate or blocked state;
 - blocked order-page reads and safe resync are lookup/reconciliation-only: they do not automatically create or cancel a provider payment, do not issue a create call at/after `createdAt + W`, and preserve the order/stock until provider proof allows a safe transition;
@@ -1243,7 +1271,7 @@ Copy without semantic rewriting:
 
 - [ ] **Step 4: Implement bounded owner-scoped order DTO**
 
-`lib/order-page.ts` owns the exact Prisma selection and exports `getOrderPageDto({ userId, orderNumber })`. `services/dto/order-page.dto.ts` exports serializable status/payment-initialization/delivery/items/money/review-target types and reuses the Task 3 status literals. Instants cross as ISO; promised delivery days cross only as `YYYY-MM-DD` plus a preformatted `Europe/Moscow` label derived by the shared date-only helper. No client/server-local `Date` parsing and no Prisma object crosses the boundary.
+`lib/order-page.ts` owns the exact Prisma selection and exports `getOrderPageDto({ userId, orderNumber })`. `services/dto/order-page.dto.ts` exports serializable status/payment-initialization/delivery/items/money/review-target types, imports the Task 3 shared status/base vocabulary from `services/dto/payment-initialization.dto.ts`, and owns `OrderBlockedPaymentInitializationDto` plus its order-only action tuple union. Instants cross as ISO; promised delivery days cross only as `YYYY-MM-DD` plus a preformatted `Europe/Moscow` label derived by the shared date-only helper. No client/server-local `Date` parsing and no Prisma object crosses the boundary.
 
 For an online order at or after `createdAt + W` without safe correlation, `getOrderPageDto` performs only provider lookup/reconciliation permitted by the audited contract and returns `PAYMENT_INITIALIZATION_BLOCKED`. It must not invoke provider create or cancel automatically. `resyncOrderPayment(orderNumber)` is owner-scoped and lookup/reconciliation-only at/after `createdAt + W`; it refreshes the DTO. The existing `cancelOrder` action remains proof-gated and is not exposed until the refreshed DTO includes `CANCEL_ORDER`.
 
@@ -1466,8 +1494,8 @@ Pin the exact Phase 4 delivery file list and SHA/count metadata in `docs/superpo
 - additive delivery, payment-replay, and durable-claim migration fields with no destructive SQL; exact ADR-018 enum/state columns; previous migration hashes unchanged;
 - canonical SKU-only cart writes and explicit rejection of buy-now identifiers;
 - one server quote authority used by preview and placement;
-- transactional order/cart snapshot/stock and transactional payment cancellation restoration;
-- total YooKassa initialization outcomes `NOT_CREATED`, `CREATED`, and `INDETERMINATE`; one durable ADR-018 claim winner may dispatch; a pre-dispatch closed-window release restores the exact `READY` or `DISPATCHED` origin without changing durable dispatch evidence; only an exact first-attempt adapter-proven no-dispatch result with null durable dispatch evidence performs guarded local cancellation/restoration; prior-dispatch proven no dispatch finishes in exact `DISPATCHED` with the original timestamp unchanged and no successful path stranded in `CLAIMED`; claim loss, ambiguous `CLAIMED`, guarded-write failure, prior dispatch, `CREATED`, and `INDETERMINATE` preserve durable order/stock and recover missing-payment correlation through webhook/order-page reconciliation;
+- transactional order/cart snapshot/stock and transactional payment cancellation restoration; an injected serialization retry reruns the complete quote/cart/coupon/SKU/delivery/service/snapshot/stock/order/cart-delete operation and commits only recalculated retry values, with no first-attempt authority cached outside the callback;
+- total YooKassa initialization outcomes `NOT_CREATED`, `CREATED`, `INDETERMINATE`, and `BLOCKED_AFTER_RETRY_WINDOW`; `placeOrder` exhaustively maps `BLOCKED_AFTER_RETRY_WINDOW` to `PAYMENT_INITIALIZATION_BLOCKED` and the exact `CheckoutBlockedPaymentInitializationDto` with durable order number, exact blocked copy, `continuePaymentUrl: null`, `canRetryCreate: false`, and `allowedActions: ['OPEN_ORDER']`, while Order A independently uses lookup-only `RESYNC_PAYMENT` plus optional provider-proof-gated `CANCEL_ORDER`. One durable ADR-018 claim winner may dispatch; a pre-dispatch closed-window release restores the exact `READY` or `DISPATCHED` origin without changing durable dispatch evidence; only an exact first-attempt adapter-proven no-dispatch result with null durable dispatch evidence performs guarded local cancellation/restoration; correlation and first-attempt no-dispatch cancellation are exact-claim mutually exclusive transactions under forced interleavings, so only one commits and the loser preserves winner state; prior-dispatch proven no dispatch finishes in exact `DISPATCHED` with the original timestamp unchanged and no successful path stranded in `CLAIMED`; claim loss, ambiguous `CLAIMED`, guarded-write failure, prior dispatch, `CREATED`, and `INDETERMINATE` preserve durable order/stock and recover missing-payment correlation through webhook/order-page reconciliation;
 - official provider retention `T = 24 hours`, conservative create window `W = 23 hours`, exact same-request continuation only while `now < createdAt + W` and state is claimable `READY | DISPATCHED`, no timeout takeover from `CLAIMED`, preserved historical Task 2 `PAYMENT_AUTO_RETRY_UNSAFE` SDK audit, and `PAYMENT_INITIALIZATION_BLOCKED` with no new claim/create/cancel/fake success at or after the application bound; the only permitted post-bound write is the exact-origin release of a claim already won before the bound whose mandatory pre-dispatch clock recheck then closes;
 - exact blocked placement/order DTO fields, Russian heading/message, durable order number, null continue URL, disabled repeat create, lookup-only resync, and provider-proof-gated cancellation across Checkout A, Order A, source tests, and E2E;
 - three policy-approved delivery methods, two courier zones, slots, lift/floor, carrying, assembly, removal, and `Europe/Moscow` date-only sentinels;
@@ -1600,6 +1628,7 @@ Stop. Do not push, create a Vercel Preview, open a pull request, merge, delete t
 - [x] Customer cancellation uses a fresh owner-scoped pending-online order/payment read, requires `CORRELATED` plus stored-total/payment-amount equality, and uses only that fresh provider id; absent/conflicting correlation makes zero provider cancellation calls. Provider-confirmed cancellation plus local failure is recoverable by retry/webhook/order-page reconciliation with exactly-once inventory effects.
 - [x] New order writes are canonical SKU-only and cart-only; legacy ProductVariant remains read-compatible only.
 - [x] Order placement and payment-cancellation inventory transitions are transactionally gated and idempotent.
+- [x] Placement serialization retries rerun the complete authoritative quote/cart/coupon/SKU/delivery/service/snapshot/stock/order/cart-delete callback; correlation and proven-no-dispatch cancellation race through mutually exclusive exact-claim transactions; `BLOCKED_AFTER_RETRY_WINDOW` maps exhaustively through `placeOrder` to the checkout-only blocked DTO.
 - [x] Order UI does not fabricate courier, support, document, reorder, recommendation, payment, or review state.
 - [x] ADR-013 remains intact: Phase 4 E2E never navigates a namespace PDP, never broadens showcase routing, and seeds a namespace canonical SKU only into the exact verified owner's cart through a guarded helper.
 - [x] Fingerprint acquisition accepts environment variable names and emits no raw identity; target policy is injectable; E2E uses approved identity-bound URLs/write opt-in, namespace-owned Product/SKU/coupon/user/order fixtures, concurrent/idempotent targeted cleanup, provider-terminal refusal, no Production, no ambient fallback, and no reset/truncate/global delete.

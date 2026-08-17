@@ -434,13 +434,17 @@ export function BlockedCard({ blocked }: { blocked: NonNullable<Controller['bloc
       aria-label="Платеж требует проверки"
       data-continue-payment-url={blocked.continuePaymentUrl ?? undefined}
     >
-      <FiAlertCircle aria-hidden="true" />
+      <span className="chk-done__mark" aria-hidden="true">
+        <FiAlertCircle />
+      </span>
       <h1>{blocked.heading}</h1>
-      <p>{blocked.message}</p>
+      <p className="chk-done__lede">{blocked.message}</p>
       {blocked.allowedActions.includes('OPEN_ORDER') && (
-        <a className="chk-done__primary" href={`/orders/${blocked.orderNumber}?placed=1`}>
-          Открыть заказ №{blocked.orderNumber}
-        </a>
+        <span className="chk-done__actions">
+          <a className="chk-done__primary" href={`/orders/${blocked.orderNumber}?placed=1`}>
+            Открыть заказ №{blocked.orderNumber}
+          </a>
+        </span>
       )}
     </section>
   );

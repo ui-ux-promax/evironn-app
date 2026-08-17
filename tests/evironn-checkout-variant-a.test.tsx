@@ -64,6 +64,19 @@ const cart = {
   },
 };
 
+const emptyCart = {
+  items: [],
+  totals: {
+    subtotal: 0,
+    compareAtSubtotal: 0,
+    saleDiscount: 0,
+    couponDiscount: 0,
+    total: 0,
+    itemCount: 0,
+    lineCount: 0,
+  },
+};
+
 const initialData: CheckoutPageDto = {
   status: 'READY',
   contactDefaults: { contactName: 'Anna', contactEmail: 'anna@example.com', contactPhone: '+79991234567' },
@@ -211,6 +224,11 @@ describe('Checkout Variant A', () => {
     await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
     fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
     expect(await screen.findByRole('heading', { name: 'Платёж требует проверки' })).toBeInTheDocument();
+    const card = screen.getByRole('heading', { name: 'Платёж требует проверки' }).closest('section');
+    expect(card?.querySelector('.chk-done__mark')).toBeInTheDocument();
+    expect(card?.querySelector('.chk-done__lede')).toHaveTextContent('Заказ №42 сохранён.');
+    expect(card?.querySelector('.chk-done__actions')).toBeInTheDocument();
+    expect(card?.querySelectorAll('.chk-done__actions a')).toHaveLength(1);
     expect(screen.getByRole('link', { name: /42/ })).toHaveAttribute('href', '/orders/42?placed=1');
     expect(mocks.replace).toHaveBeenCalledWith('/orders/42?placed=1');
     expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
@@ -397,6 +415,26 @@ describe('Checkout Variant A', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
     await waitFor(() => expect(mocks.assign).toHaveBeenCalledWith('https://yookassa.test/confirmation'));
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('invalidates checkout and refreshes the empty cart after payment was not created', async () => {
+    mocks.placeOrder.mockResolvedValue({
+      ok: false,
+      code: 'PAYMENT_NOT_CREATED',
+      orderNumber: 15,
+      error: 'Payment was not created',
+    });
+    mocks.getCart.mockResolvedValue(emptyCart);
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.getCart).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/cart'));
+    expect(await screen.findByText('В корзине пока пусто')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Оформить заказ/ })).not.toBeInTheDocument();
+    expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
   });
 
   it('submits COD explicitly and navigates to the durable order', async () => {

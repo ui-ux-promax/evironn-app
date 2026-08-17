@@ -18,7 +18,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
   const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
     useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
-  const canCheckout = !loading && !error && items.length > 0 && items.every((item) => item.available);
+  const canCheckout = !loading && !error && items.length > 0 && items.every((item) => item.available && !item.isLegacy);
 
   return (
     <main className="cart-a" id="main-content">

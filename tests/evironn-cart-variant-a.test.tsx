@@ -371,4 +371,12 @@ describe('Cart Variant A', () => {
       'Оформление заказа доступно после загрузки товаров без ошибок.',
     );
   });
+
+  it('does not expose checkout links for available legacy cart lines', async () => {
+    renderCart(cart([{ ...line, isLegacy: true, available: true }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toBeInTheDocument();
+  });
 });

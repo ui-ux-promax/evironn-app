@@ -238,6 +238,16 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         router.replace(`/orders/${result.orderNumber}?placed=1`);
         return;
       }
+      if (result.code === 'PAYMENT_NOT_CREATED') {
+        ++quoteRevisionRef.current;
+        setQuote(null);
+        setQuotePending(false);
+        setQuoteError(null);
+        setSubmitLocked(true);
+        await useCartStore.getState().fetchCartItems();
+        router.replace('/cart');
+        return;
+      }
       if (result.code === 'PAYMENT_INITIALIZATION_BLOCKED') {
         setBlocked(result.paymentInitialization);
         setSubmitLocked(true);

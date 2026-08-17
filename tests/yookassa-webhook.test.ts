@@ -5,7 +5,11 @@ const { parseMock } = vi.hoisted(() => ({ parseMock: vi.fn() }));
 vi.mock('@webzaytsev/yookassa-ts-sdk', () => ({ parseNotification: parseMock }));
 vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock('@/lib/payment-sync', () => ({ reconcilePaymentStatus: vi.fn(), recoverPaymentCorrelation: vi.fn() }));
-vi.mock('@/lib/yookassa', () => ({ getPaymentStatus: vi.fn() }));
+vi.mock('@/lib/yookassa', () => ({
+  getPaymentStatus: vi.fn(),
+  isPaymentProviderStatus: (status: unknown) =>
+    status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled',
+}));
 
 import { POST } from '@/app/api/yookassa/webhook/route';
 import { reconcilePaymentStatus, recoverPaymentCorrelation } from '@/lib/payment-sync';
@@ -96,6 +100,18 @@ describe('yookassa webhook', () => {
     const res = await POST(req() as never);
 
     expect(res.status).toBe(500);
+  });
+
+  it('returns 500 when missing-payment recovery rejects malformed provider status', async () => {
+    parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_unknown_status' } });
+    statusMock.mockResolvedValue('succeeded');
+    reconcileMock.mockResolvedValue({ kind: 'missing' });
+    recoverMock.mockResolvedValue({ kind: 'error', reason: 'provider-lookup-failed' });
+
+    const res = await POST(req() as never);
+
+    expect(res.status).toBe(500);
+    expect(recoverMock).toHaveBeenCalledWith('pay_unknown_status');
   });
 
   it('ignores unsupported provider event after parsing', async () => {

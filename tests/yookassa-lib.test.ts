@@ -213,4 +213,14 @@ describe('getPaymentDetails', () => {
     });
     await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
   });
+
+  it('rejects unknown payment status in otherwise valid provider details', async () => {
+    loadMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'refunded',
+      amount: { value: '15999.00', currency: 'RUB' },
+      metadata: { orderNumber: '1025' },
+    });
+    await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
+  });
 });

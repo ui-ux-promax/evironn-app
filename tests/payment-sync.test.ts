@@ -13,7 +13,11 @@ vi.mock('@/lib/prisma-client', () => ({
     product: { update: vi.fn() },
   },
 }));
-vi.mock('@/lib/yookassa', () => ({ getPaymentDetails: vi.fn() }));
+vi.mock('@/lib/yookassa', () => ({
+  getPaymentDetails: vi.fn(),
+  isPaymentProviderStatus: (status: unknown) =>
+    status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled',
+}));
 
 import {
   applyPaymentCanceled,
@@ -383,6 +387,21 @@ describe('reconcilePaymentStatus', () => {
 });
 
 describe('recoverPaymentCorrelation', () => {
+  it('does not persist provider details with an unsupported payment status', async () => {
+    detailsMock.mockResolvedValue({
+      id: 'pay-unknown-status',
+      status: 'refunded',
+      amountRub: 159900,
+      orderNumber: '1042',
+      confirmationUrl: null,
+    });
+    await expect(recoverPaymentCorrelation('pay-unknown-status')).resolves.toEqual({
+      kind: 'error',
+      reason: 'provider-lookup-failed',
+    });
+    expect(orderFindMany).not.toHaveBeenCalled();
+  });
+
   it('classifies malformed provider payload failures as retryable lookup errors', async () => {
     detailsMock.mockRejectedValue(new Error('Malformed YooKassa payment response'));
     await expect(recoverPaymentCorrelation('pay-malformed')).resolves.toEqual({

@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma-client';
 import { logger } from '@/lib/logger';
 import { adjustSalesCount } from '@/lib/sales-count';
-import { getPaymentDetails } from '@/lib/yookassa';
+import { getPaymentDetails, isPaymentProviderStatus } from '@/lib/yookassa';
 
 export type YooKassaPaymentStatus = 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
 export type PaymentSyncSource = 'webhook' | 'order-page' | 'admin';
@@ -179,6 +179,12 @@ export async function recoverPaymentCorrelation(providerId: string): Promise<Pay
     return { kind: 'error', reason: 'provider-lookup-failed' };
   }
   if (!details) return { kind: 'ignored', reason: 'provider-payment-missing' };
+  if (!isPaymentProviderStatus(details.status)) {
+    logger.error('payment_recovery_invalid_provider_status', new Error('Malformed YooKassa payment response'), {
+      providerId,
+    });
+    return { kind: 'error', reason: 'provider-lookup-failed' };
+  }
   if (details.id !== providerId) return { kind: 'ignored', reason: 'invalid-provider-correlation' };
   const orderNumber = Number(details.orderNumber);
   if (!Number.isSafeInteger(orderNumber) || orderNumber <= 0 || String(orderNumber) !== details.orderNumber) {

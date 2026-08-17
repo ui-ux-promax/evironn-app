@@ -57,10 +57,16 @@ export interface CreatePaymentResult {
 
 export interface PaymentProviderDetails {
   id: string;
-  status: string;
+  status: PaymentProviderStatus;
   amountRub: number;
   orderNumber: string;
   confirmationUrl: string | null;
+}
+
+export type PaymentProviderStatus = 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
+
+export function isPaymentProviderStatus(status: unknown): status is PaymentProviderStatus {
+  return status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled';
 }
 
 export type PaymentProviderAttempt =
@@ -90,7 +96,7 @@ function paymentDetails(value: unknown): PaymentProviderDetails | null {
   const amountRub = typeof payment.amount?.value === 'string' ? Number(payment.amount.value) : Number.NaN;
   if (
     typeof payment.id !== 'string' ||
-    typeof payment.status !== 'string' ||
+    !isPaymentProviderStatus(payment.status) ||
     payment.amount?.currency !== 'RUB' ||
     !Number.isFinite(amountRub) ||
     typeof payment.metadata?.orderNumber !== 'string'
@@ -162,13 +168,7 @@ export async function cancelPayment(paymentId: string): Promise<void> {
 export async function getPaymentStatus(paymentId: string): Promise<string> {
   const sdk = getYooKassa();
   const payment = (await sdk.payments.load(paymentId)) as { status?: unknown } | null;
-  if (
-    !payment ||
-    (payment.status !== 'pending' &&
-      payment.status !== 'waiting_for_capture' &&
-      payment.status !== 'succeeded' &&
-      payment.status !== 'canceled')
-  ) {
+  if (!payment || !isPaymentProviderStatus(payment.status)) {
     throw new Error('Malformed YooKassa payment status response');
   }
   return payment.status;

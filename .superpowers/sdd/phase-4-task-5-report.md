@@ -64,3 +64,11 @@ Review result before remediation: Critical 0, Important 2, not approved.
 - The webhook also rejects an invalid status value before reconciliation, returning HTTP 500 for provider retry.
 - RED evidence: 3 files, 4 expected failures. Affected GREEN evidence: 45/45 passed.
 - Final focused suite: 8 files, 136 tests passed. Typecheck, touched Prettier, and diff check passed.
+
+### Shared Payment Details Status Remediation
+
+- Added the exact supported provider status union: `pending`, `waiting_for_capture`, `succeeded`, and `canceled`.
+- The shared YooKassa details parser rejects any missing or unknown status as malformed.
+- Missing-payment recovery also validates the runtime status before order lookup or persistence, so an invalid adapter result becomes `provider-lookup-failed` and webhook HTTP 500.
+- RED evidence: provider and recovery tests produced 2 expected failures; the webhook retry assertion already matched the hardened error contract.
+- Affected GREEN evidence: 3 files, 60 tests passed. Final focused suite: 8 files, 139 tests passed. Typecheck, touched Prettier, and diff check passed.

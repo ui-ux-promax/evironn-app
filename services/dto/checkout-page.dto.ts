@@ -63,7 +63,7 @@ export interface CheckoutQuoteDto {
 }
 
 export interface CheckoutPageDto {
-  status: 'READY' | 'EMPTY_CART';
+  status: 'READY' | 'EMPTY_CART' | 'NON_READY_CART';
   contactDefaults: {
     contactName: string;
     contactEmail: string;

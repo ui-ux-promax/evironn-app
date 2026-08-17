@@ -7,6 +7,7 @@ import {
   AddressBook,
   AddressFields,
   BlockedCard,
+  CompletedOrderCard,
   ContactFields,
   MobileBar,
   OrderLines,
@@ -30,6 +31,15 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
       <main className="chk-a chk-a--done" id="main-content">
         <Steps current="payment" />
         <BlockedCard blocked={blocked} />
+      </main>
+    );
+  }
+
+  if (controller.completedOrder) {
+    return (
+      <main className="chk-a chk-a--done" id="main-content">
+        <Steps current="payment" />
+        <CompletedOrderCard completion={controller.completedOrder} />
       </main>
     );
   }
@@ -59,6 +69,7 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
         onType={actions.setCouponDraft}
         onApply={actions.applyCoupon}
         onClear={actions.clearCoupon}
+        pending={controller.interactionsLocked}
       />
       <SummaryRows quote={quote} />
     </>
@@ -115,6 +126,7 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
                       role="radio"
                       aria-checked={form.deliveryZone === id}
                       className={form.deliveryZone === id ? 'is-on' : ''}
+                      disabled={controller.interactionsLocked}
                       onClick={() => actions.setDeliveryZone(id as 'moscow' | 'moscow-region')}
                     >
                       <span className="chk-receive__mark" />

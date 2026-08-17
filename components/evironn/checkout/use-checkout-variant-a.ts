@@ -16,6 +16,12 @@ import type {
 
 type Services = PlaceOrderInput['services'];
 type Address = NonNullable<PlaceOrderInput['address']>;
+type CompletedOrder = {
+  orderNumber: number;
+  heading: string;
+  message: string;
+  paymentUrl: string | null;
+};
 
 function messageOf(error: unknown): string {
   return error instanceof Error && error.message ? error.message : 'Не удалось обновить оформление заказа';
@@ -31,9 +37,12 @@ function slotsFor(data: CheckoutPageDto, method: DeliveryMethod) {
 
 export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const router = useRouter();
+  const refreshCheckoutPage = router.refresh;
   const cart = useCartStore((state) => state);
   const quoteRevisionRef = useRef(0);
   const mutationPendingRef = useRef(false);
+  const submitPendingRef = useRef(false);
+  const submitLockedRef = useRef(false);
   const initializedRef = useRef(false);
   const [deliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>('courier');
   const [deliveryZone, setDeliveryZone] = useState<'moscow' | 'moscow-region'>('moscow');
@@ -67,6 +76,8 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitLocked, setSubmitLocked] = useState(false);
   const [blocked, setBlocked] = useState<BlockedPaymentInitializationDto | null>(null);
+  const [completedOrder, setCompletedOrder] = useState<CompletedOrder | null>(null);
+  const [quoteRecoveryBlocked, setQuoteRecoveryBlocked] = useState(false);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -94,6 +105,12 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   );
 
   useEffect(() => {
+    if (quoteRecoveryBlocked) {
+      ++quoteRevisionRef.current;
+      setQuote(null);
+      setQuotePending(false);
+      return;
+    }
     if (mutationPending) {
       ++quoteRevisionRef.current;
       setQuote(null);
@@ -120,14 +137,28 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     setQuotePending(true);
     setQuoteError(null);
     void getCheckoutQuote(quoteInput)
-      .then((result) => {
+      .then(async (result) => {
         if (revision !== quoteRevisionRef.current) return;
         if (!result.ok) {
           setQuote(null);
           setQuoteError(result.message);
+          if (result.code === 'INVALID_COUPON' && appliedCouponCode) {
+            setCouponDraft('');
+            setAppliedCouponCode('');
+            setQuoteRequestVersion((version) => version + 1);
+          } else if (result.code === 'EMPTY_CART') {
+            useCartStore.setState({ ...EMPTY_CART_DTO, loading: false, error: false, totalAmount: 0 });
+          } else if (result.code === 'SKU_UNAVAILABLE' || result.code === 'QUANTITY_EXCEEDS_STOCK') {
+            setQuoteRecoveryBlocked(true);
+            await useCartStore.getState().fetchCartItems();
+          } else if (result.code === 'STALE_DELIVERY_SLOT') {
+            setQuoteRecoveryBlocked(true);
+            refreshCheckoutPage();
+          }
           return;
         }
         setQuote(result.quote);
+        setQuoteRecoveryBlocked(false);
         setMutationError(null);
       })
       .catch((error) => {
@@ -139,7 +170,18 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       .finally(() => {
         if (revision === quoteRevisionRef.current) setQuotePending(false);
       });
-  }, [cart.items, quoteInput, deliveryMethod, deliverySlotId, pickupPointId, mutationPending, quoteRequestVersion]);
+  }, [
+    appliedCouponCode,
+    cart.items,
+    quoteInput,
+    deliveryMethod,
+    deliverySlotId,
+    pickupPointId,
+    mutationPending,
+    quoteRecoveryBlocked,
+    quoteRequestVersion,
+    refreshCheckoutPage,
+  ]);
 
   const setDeliveryMethod = useCallback(
     (method: DeliveryMethod) => {
@@ -184,7 +226,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   );
 
   const mutateCart = useCallback(async (operation: () => Promise<unknown>) => {
-    if (mutationPendingRef.current) return;
+    if (mutationPendingRef.current || submitPendingRef.current || submitLockedRef.current) return;
     mutationPendingRef.current = true;
     ++quoteRevisionRef.current;
     setQuote(null);
@@ -194,6 +236,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     setSubmitError(null);
     setCouponDraft('');
     setAppliedCouponCode('');
+    setQuoteRecoveryBlocked(false);
     setMutationPending(true);
     try {
       await operation();
@@ -206,6 +249,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   }, []);
 
   const applyCoupon = useCallback(() => {
+    if (mutationPendingRef.current || submitPendingRef.current || submitLockedRef.current) return;
     const code = couponDraft.trim();
     setCouponDraft(code);
     setAppliedCouponCode(code);
@@ -213,15 +257,27 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   }, [couponDraft]);
 
   const clearCoupon = useCallback(() => {
+    if (mutationPendingRef.current || submitPendingRef.current || submitLockedRef.current) return;
     setCouponDraft('');
     setAppliedCouponCode('');
     setQuoteRequestVersion((version) => version + 1);
   }, []);
 
   const submit = useCallback(async () => {
-    if (mutationPending || submitPending || submitLocked || !quote) return;
+    if (mutationPendingRef.current || submitPendingRef.current || submitLockedRef.current || !quote) return;
+    submitPendingRef.current = true;
     setSubmitPending(true);
     setSubmitError(null);
+    const finalizeCommittedOrder = (completion: CompletedOrder) => {
+      ++quoteRevisionRef.current;
+      submitLockedRef.current = true;
+      setQuote(null);
+      setQuotePending(false);
+      setQuoteError(null);
+      setSubmitLocked(true);
+      setCompletedOrder(completion);
+      useCartStore.setState({ ...EMPTY_CART_DTO, loading: false, error: false, totalAmount: 0 });
+    };
     try {
       const payload: PlaceOrderInput = {
         ...quoteInput,
@@ -232,10 +288,22 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       };
       const result = await placeOrder(payload);
       if (result.ok && result.code === 'PAYMENT_REDIRECT_READY') {
+        finalizeCommittedOrder({
+          orderNumber: result.orderNumber,
+          heading: `Заказ №${result.orderNumber} создан`,
+          message: 'Заказ сохранён. Перейдите к безопасной оплате YooKassa.',
+          paymentUrl: result.paymentUrl,
+        });
         window.location.assign(result.paymentUrl);
         return;
       }
       if (result.ok || result.code === 'PAYMENT_INITIALIZATION_PENDING') {
+        finalizeCommittedOrder({
+          orderNumber: result.orderNumber,
+          heading: result.ok ? `Заказ №${result.orderNumber} оформлен` : `Заказ №${result.orderNumber} сохранён`,
+          message: result.ok ? 'Заказ сохранён. Откройте страницу заказа.' : 'Статус платежа проверяется.',
+          paymentUrl: null,
+        });
         router.replace(`/orders/${result.orderNumber}?placed=1`);
         return;
       }
@@ -244,6 +312,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         setQuote(null);
         setQuotePending(false);
         setQuoteError(null);
+        submitLockedRef.current = true;
         setSubmitLocked(true);
         useCartStore.setState({ ...EMPTY_CART_DTO, loading: false, error: false, totalAmount: 0 });
         await useCartStore.getState().fetchCartItems();
@@ -251,8 +320,13 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         return;
       }
       if (result.code === 'PAYMENT_INITIALIZATION_BLOCKED') {
+        finalizeCommittedOrder({
+          orderNumber: result.paymentInitialization.orderNumber,
+          heading: result.paymentInitialization.heading,
+          message: result.paymentInitialization.message,
+          paymentUrl: null,
+        });
         setBlocked(result.paymentInitialization);
-        setSubmitLocked(true);
         router.replace(`/orders/${result.paymentInitialization.orderNumber}?placed=1`);
         return;
       }
@@ -292,20 +366,18 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     } catch (error) {
       setSubmitError(messageOf(error));
     } finally {
-      setSubmitPending(false);
+      submitPendingRef.current = false;
+      if (!submitLockedRef.current) setSubmitPending(false);
     }
-  }, [
-    contactEmail,
-    contactName,
-    contactPhone,
-    mutationPending,
-    paymentMethod,
-    quote,
-    quoteInput,
-    router,
-    submitLocked,
-    submitPending,
-  ]);
+  }, [contactEmail, contactName, contactPhone, paymentMethod, quote, quoteInput, router]);
+
+  const interactionsLocked = mutationPending || submitPending || submitLocked;
+  const guardChange = useCallback(<T>(change: (value: T) => void) => {
+    return (value: T) => {
+      if (mutationPendingRef.current || submitPendingRef.current || submitLockedRef.current) return;
+      change(value);
+    };
+  }, []);
 
   return {
     cart,
@@ -318,6 +390,8 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     submitError,
     submitLocked,
     blocked,
+    completedOrder,
+    interactionsLocked,
     form: {
       deliveryMethod,
       deliveryZone,
@@ -340,20 +414,20 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       slots: slotsFor(initialData, deliveryMethod),
     },
     actions: {
-      setDeliveryMethod,
-      setDeliveryZone,
-      setDeliverySlotId,
-      setPickupPointId,
-      pickAddress,
-      setAddress,
-      setServices,
-      setCouponDraft,
+      setDeliveryMethod: guardChange(setDeliveryMethod),
+      setDeliveryZone: guardChange(setDeliveryZone),
+      setDeliverySlotId: guardChange(setDeliverySlotId),
+      setPickupPointId: guardChange(setPickupPointId),
+      pickAddress: guardChange(pickAddress),
+      setAddress: guardChange(setAddress),
+      setServices: guardChange(setServices),
+      setCouponDraft: guardChange(setCouponDraft),
       applyCoupon,
       clearCoupon,
-      setContactName,
-      setContactPhone,
-      setContactEmail,
-      setPaymentMethod,
+      setContactName: guardChange(setContactName),
+      setContactPhone: guardChange(setContactPhone),
+      setContactEmail: guardChange(setContactEmail),
+      setPaymentMethod: guardChange(setPaymentMethod),
       step: (id: string, quantity: number) => mutateCart(() => cart.updateItemQuantity(id, quantity)),
       remove: (id: string) => mutateCart(() => cart.removeCartItem(id)),
       submit,

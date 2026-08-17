@@ -164,6 +164,18 @@ describe('Checkout Variant A', () => {
     expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('Tverskaya, 10');
   });
 
+  it('renders clone lift labels while preserving production values', () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    expect(screen.getByRole('radio', { name: 'Пассажирский' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: 'Пассажирский' })).toHaveAttribute('title', 'Подъём входит в доставку');
+    expect(screen.getByRole('radio', { name: 'Грузовой' })).toHaveAttribute('title', 'Подъём входит в доставку');
+    expect(screen.getByRole('radio', { name: 'Лифта нет' })).toHaveAttribute(
+      'title',
+      'Подъём на руках, оплачивается по этажам',
+    );
+  });
+
   it('selects the first saved address when none is marked as default', () => {
     render(
       <CheckoutVariantA
@@ -216,7 +228,7 @@ describe('Checkout Variant A', () => {
     expect(screen.getByRole('textbox', { name: 'Город' })).toHaveValue('Moscow');
     expect(screen.getByRole('textbox', { name: 'Комментарий курьеру' })).toHaveValue('');
     expect(screen.getByRole('spinbutton', { name: 'Этаж' })).toHaveValue(null);
-    expect(screen.getByRole('radio', { name: 'passenger' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: 'Пассажирский' })).toHaveAttribute('aria-checked', 'true');
     await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
     expect(mocks.quote).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -370,6 +382,49 @@ describe('Checkout Variant A', () => {
     await act(async () => resolveRemove(cart));
   });
 
+  it('locks cart and quote-changing controls synchronously while placement is pending', async () => {
+    let resolvePlacement!: (value: { ok: true; code: 'ORDER_READY'; orderNumber: number }) => void;
+    mocks.placeOrder.mockReturnValue(new Promise((resolve) => (resolvePlacement = resolve)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить Noma' })[0]);
+    fireEvent.click(screen.getByRole('radio', { name: 'Московская область' }));
+
+    expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
+    expect(mocks.updateItemQuantity).not.toHaveBeenCalled();
+    expect(mocks.removeCartItem).not.toHaveBeenCalled();
+    expect(mocks.quote).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('radio', { name: 'Московская область' })).toBeDisabled();
+
+    await act(async () => resolvePlacement({ ok: true, code: 'ORDER_READY', orderNumber: 21 }));
+  });
+
+  it('caps checkout quantity at the canonical limit when stock exceeds 99', async () => {
+    const highStockCart = { ...cart, items: [{ ...cart.items[0], quantity: 99, stock: 120 }] };
+    mocks.quote.mockResolvedValue({
+      ok: true,
+      quote: {
+        ...quote,
+        cart: highStockCart,
+        totals: { ...quote.totals, itemCount: 99 },
+      },
+    });
+    render(
+      <CheckoutVariantA
+        initialData={{
+          ...initialData,
+          initialCart: highStockCart,
+        }}
+      />,
+    );
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    expect(screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' })[0]).toBeDisabled();
+  });
+
   it('surfaces a rejected quantity mutation and keeps stale quote submission disabled', async () => {
     let resolveRefresh!: (value: { ok: true; quote: CheckoutQuoteDto }) => void;
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -419,14 +474,22 @@ describe('Checkout Variant A', () => {
   });
 
   it.each([
-    [{ ok: true, code: 'ORDER_READY', orderNumber: 11 }, '/orders/11?placed=1'],
-    [{ ok: false, code: 'PAYMENT_INITIALIZATION_PENDING', orderNumber: 12, error: 'Pending' }, '/orders/12?placed=1'],
-  ])('routes durable order result %# to its order page', async (result, href) => {
+    [{ ok: true, code: 'ORDER_READY', orderNumber: 11 }, '/orders/11?placed=1', 'Заказ №11 оформлен'],
+    [
+      { ok: false, code: 'PAYMENT_INITIALIZATION_PENDING', orderNumber: 12, error: 'Pending' },
+      '/orders/12?placed=1',
+      'Заказ №12 сохранён',
+    ],
+  ])('locks durable order result %# before no-op order navigation', async (result, href, heading) => {
     mocks.placeOrder.mockResolvedValue(result);
     render(<CheckoutVariantA initialData={initialData} />);
     await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
     fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(href));
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
+    expect(useCartStore.getState().items).toEqual([]);
+    expect(screen.queryByRole('button', { name: /Оформить заказ/ })).not.toBeInTheDocument();
+    expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
     expect(mocks.assign).not.toHaveBeenCalled();
   });
 
@@ -441,7 +504,53 @@ describe('Checkout Variant A', () => {
     await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
     fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
     await waitFor(() => expect(mocks.assign).toHaveBeenCalledWith('https://yookassa.test/confirmation'));
+    expect(await screen.findByRole('heading', { name: 'Заказ №13 создан' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Перейти к оплате' })).toHaveAttribute(
+      'href',
+      'https://yookassa.test/confirmation',
+    );
+    expect(useCartStore.getState().items).toEqual([]);
+    expect(screen.queryByRole('button', { name: /Оформить заказ/ })).not.toBeInTheDocument();
+    expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('recovers an invalid coupon returned by the quote action', async () => {
+    mocks.quote
+      .mockResolvedValueOnce({ ok: true, quote })
+      .mockResolvedValueOnce({ ok: false, code: 'INVALID_COUPON', message: 'Coupon expired' })
+      .mockResolvedValueOnce({ ok: true, quote });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Промокод' })[0], { target: { value: 'EXPIRED' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Применить' })[0]);
+
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(3));
+    expect(mocks.quote).toHaveBeenLastCalledWith(expect.not.objectContaining({ couponCode: expect.anything() }));
+    expect(screen.getAllByRole('textbox', { name: 'Промокод' })[0]).toHaveValue('');
+  });
+
+  it.each([
+    ['EMPTY_CART', false],
+    ['SKU_UNAVAILABLE', true],
+    ['QUANTITY_EXCEEDS_STOCK', true],
+  ] as const)('reconciles quote failure %s with canonical cart state', async (code, refreshesCart) => {
+    mocks.quote.mockResolvedValue({ ok: false, code, message: 'Cart changed' });
+    mocks.getCart.mockResolvedValue(emptyCart);
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    expect(await screen.findByText('В корзине пока пусто')).toBeInTheDocument();
+    expect(mocks.getCart).toHaveBeenCalledTimes(refreshesCart ? 1 : 0);
+    expect(useCartStore.getState().items).toEqual([]);
+  });
+
+  it('refreshes server checkout data after a stale-slot quote failure', async () => {
+    mocks.quote.mockResolvedValue({ ok: false, code: 'STALE_DELIVERY_SLOT', message: 'Slot expired' });
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
   });
 
   it('clears a rejected coupon quote and re-quotes without the stale coupon', async () => {

@@ -155,13 +155,13 @@ describe('getCheckoutPageDto', () => {
     expect('create' in db.cart).toBe(false);
   });
 
-  it('fails closed when the owner cart contains a legacy or inactive line', async () => {
+  it('returns NON_READY_CART when the owner cart contains an inactive, legacy, or out-of-stock line', async () => {
     const inactive = canonicalCart();
     inactive.items[0].sku.active = false;
 
     await expect(
       getCheckoutPageDto({ userId: 'user-1', cookieToken: undefined, now, client: client(inactive) }),
-    ).rejects.toThrow('Canonical active checkout cart required');
+    ).resolves.toMatchObject({ status: 'NON_READY_CART' });
 
     const legacy = canonicalCart();
     legacy.items[0].sku = null as never;
@@ -171,7 +171,13 @@ describe('getCheckoutPageDto', () => {
 
     await expect(
       getCheckoutPageDto({ userId: 'user-1', cookieToken: undefined, now, client: client(legacy) }),
-    ).rejects.toThrow('Canonical active checkout cart required');
+    ).resolves.toMatchObject({ status: 'NON_READY_CART' });
+
+    const outOfStock = canonicalCart();
+    outOfStock.items[0].sku.stock = 0;
+    await expect(
+      getCheckoutPageDto({ userId: 'user-1', cookieToken: undefined, now, client: client(outOfStock) }),
+    ).resolves.toMatchObject({ status: 'NON_READY_CART' });
   });
 });
 

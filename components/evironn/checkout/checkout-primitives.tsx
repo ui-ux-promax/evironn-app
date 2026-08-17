@@ -32,19 +32,27 @@ export function Field({
   onChange,
   type = 'text',
   wide = false,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   wide?: boolean;
+  disabled?: boolean;
 }) {
   const id = useId();
   return (
     <p className={`chk-field chk-field--light${wide ? ' is-wide' : ''}`}>
       <label htmlFor={id}>{label}</label>
       <span className="chk-field__control">
-        <input id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+        <input
+          id={id}
+          type={type}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+        />
       </span>
     </p>
   );
@@ -54,9 +62,27 @@ export function ContactFields({ controller }: { controller: Controller }) {
   const { form, actions } = controller;
   return (
     <div className="chk-grid">
-      <Field label="Имя и фамилия" value={form.contactName} onChange={actions.setContactName} />
-      <Field label="Телефон" value={form.contactPhone} onChange={actions.setContactPhone} type="tel" />
-      <Field label="E-mail" value={form.contactEmail} onChange={actions.setContactEmail} type="email" wide />
+      <Field
+        label="Имя и фамилия"
+        value={form.contactName}
+        onChange={actions.setContactName}
+        disabled={controller.interactionsLocked}
+      />
+      <Field
+        label="Телефон"
+        value={form.contactPhone}
+        onChange={actions.setContactPhone}
+        type="tel"
+        disabled={controller.interactionsLocked}
+      />
+      <Field
+        label="E-mail"
+        value={form.contactEmail}
+        onChange={actions.setContactEmail}
+        type="email"
+        wide
+        disabled={controller.interactionsLocked}
+      />
     </div>
   );
 }
@@ -72,6 +98,7 @@ export function ReceivePicker({ controller }: { controller: Controller }) {
           role="radio"
           aria-checked={option.id === form.deliveryMethod}
           className={option.id === form.deliveryMethod ? 'is-on' : ''}
+          disabled={controller.interactionsLocked}
           onClick={() => actions.setDeliveryMethod(option.id)}
         >
           <span className="chk-receive__mark" aria-hidden="true" />
@@ -99,6 +126,7 @@ export function AddressBook({ controller }: { controller: Controller }) {
           role="radio"
           aria-checked={form.selectedAddressId === address.id}
           className={form.selectedAddressId === address.id ? 'is-on' : ''}
+          disabled={controller.interactionsLocked}
           onClick={() => actions.pickAddress(address.id)}
         >
           <FiHome aria-hidden="true" />
@@ -113,6 +141,7 @@ export function AddressBook({ controller }: { controller: Controller }) {
         role="radio"
         aria-checked={form.selectedAddressId === 'new'}
         className={form.selectedAddressId === 'new' ? 'is-on' : ''}
+        disabled={controller.interactionsLocked}
         onClick={() => actions.pickAddress('new')}
       >
         <FiEdit3 aria-hidden="true" />
@@ -133,42 +162,55 @@ export function AddressFields({ controller }: { controller: Controller }) {
         value={form.address.addressLine}
         onChange={(value) => actions.setAddress({ ...form.address, addressLine: value })}
         wide
+        disabled={controller.interactionsLocked}
       />
       <Field
         label="Город"
         value={form.address.city}
         onChange={(value) => actions.setAddress({ ...form.address, city: value })}
+        disabled={controller.interactionsLocked}
       />
       <Field
         label="Этаж"
         value={form.address.floor?.toString() ?? ''}
         onChange={(value) => actions.setAddress({ ...form.address, floor: value ? Number(value) : undefined })}
         type="number"
+        disabled={controller.interactionsLocked}
       />
       <Field
         label="Домофон"
         value={form.address.intercom ?? ''}
         onChange={(value) => actions.setAddress({ ...form.address, intercom: value })}
+        disabled={controller.interactionsLocked}
       />
       <Field
         label="Комментарий курьеру"
         value={form.address.addressComment ?? ''}
         onChange={(value) => actions.setAddress({ ...form.address, addressComment: value })}
         wide
+        disabled={controller.interactionsLocked}
       />
       <p className="chk-lift chk-lift--light">
         <span className="chk-label">Лифт</span>
         <span role="radiogroup" aria-label="Лифт">
-          {(['passenger', 'freight', 'none'] as const).map((lift) => (
+          {(
+            [
+              { id: 'passenger', label: 'Пассажирский', note: 'Подъём входит в доставку' },
+              { id: 'freight', label: 'Грузовой', note: 'Подъём входит в доставку' },
+              { id: 'none', label: 'Лифта нет', note: 'Подъём на руках, оплачивается по этажам' },
+            ] as const
+          ).map((lift) => (
             <button
-              key={lift}
+              key={lift.id}
               type="button"
               role="radio"
-              aria-checked={form.address.liftType === lift}
-              className={form.address.liftType === lift ? 'is-on' : ''}
-              onClick={() => actions.setAddress({ ...form.address, liftType: lift })}
+              aria-checked={form.address.liftType === lift.id}
+              className={form.address.liftType === lift.id ? 'is-on' : ''}
+              title={lift.note}
+              disabled={controller.interactionsLocked}
+              onClick={() => actions.setAddress({ ...form.address, liftType: lift.id })}
             >
-              {lift}
+              {lift.label}
             </button>
           ))}
         </span>
@@ -191,6 +233,7 @@ export function PointPicker({ controller }: { controller: Controller }) {
             role="radio"
             aria-checked={point.id === form.pickupPointId}
             className={point.id === form.pickupPointId ? 'is-on' : ''}
+            disabled={controller.interactionsLocked}
             onClick={() => actions.setPickupPointId(point.id)}
           >
             <FiMapPin aria-hidden="true" />
@@ -219,6 +262,7 @@ export function SlotPicker({ controller }: { controller: Controller }) {
             role="radio"
             aria-checked={slot.id === form.deliverySlotId}
             className={slot.id === form.deliverySlotId ? 'is-on' : ''}
+            disabled={controller.interactionsLocked}
             onClick={() => actions.setDeliverySlotId(slot.id)}
           >
             <b>{slot.date}</b>
@@ -257,6 +301,7 @@ export function ServiceOptions({ controller }: { controller: Controller }) {
             <input
               type="checkbox"
               checked={form.services[row.id]}
+              disabled={controller.interactionsLocked}
               onChange={(event) => actions.setServices({ ...form.services, [row.id]: event.target.checked })}
             />
             <span className="chk-check" aria-hidden="true">
@@ -287,6 +332,7 @@ export function PaymentPicker({ controller }: { controller: Controller }) {
           role="radio"
           aria-checked={form.paymentMethod === id}
           className={form.paymentMethod === id ? 'is-on' : ''}
+          disabled={controller.interactionsLocked}
           onClick={() => actions.setPaymentMethod(id as 'online' | 'cod')}
         >
           <span className="chk-receive__mark" aria-hidden="true" />
@@ -307,7 +353,7 @@ export function PaymentPicker({ controller }: { controller: Controller }) {
 }
 
 export function OrderLines({ controller }: { controller: Controller }) {
-  const { cart, quote, mutationPending, actions } = controller;
+  const { cart, quote, interactionsLocked, actions } = controller;
   const lines = quote?.cart.items ?? cart.items;
   return (
     <ul className="chk-lines chk-lines--light">
@@ -320,8 +366,8 @@ export function OrderLines({ controller }: { controller: Controller }) {
             <QtyStepper
               qty={line.quantity}
               name={line.name}
-              max={line.stock}
-              disabled={mutationPending || !line.available}
+              max={Math.min(line.stock, 99)}
+              disabled={interactionsLocked || !line.available}
               onStep={(delta) => void actions.step(line.id, line.quantity + delta).catch(() => undefined)}
             />
           </div>
@@ -329,7 +375,7 @@ export function OrderLines({ controller }: { controller: Controller }) {
             {formatPrice(line.lineTotal)}
             <button
               type="button"
-              disabled={mutationPending}
+              disabled={interactionsLocked}
               onClick={() => void actions.remove(line.id)}
               aria-label={`Удалить ${line.name}`}
             >
@@ -446,6 +492,31 @@ export function BlockedCard({ blocked }: { blocked: NonNullable<Controller['bloc
           </a>
         </span>
       )}
+    </section>
+  );
+}
+
+export function CompletedOrderCard({ completion }: { completion: NonNullable<Controller['completedOrder']> }) {
+  return (
+    <section className="chk-done chk-done--light" aria-label={completion.heading}>
+      <span className="chk-done__mark" aria-hidden="true">
+        <FiCheck />
+      </span>
+      <h1>{completion.heading}</h1>
+      <p className="chk-done__lede">{completion.message}</p>
+      <span className="chk-done__actions">
+        {completion.paymentUrl && (
+          <a className="chk-done__primary" href={completion.paymentUrl}>
+            Перейти к оплате
+          </a>
+        )}
+        <a
+          className={completion.paymentUrl ? '' : 'chk-done__primary'}
+          href={`/orders/${completion.orderNumber}?placed=1`}
+        >
+          Открыть заказ №{completion.orderNumber}
+        </a>
+      </span>
     </section>
   );
 }

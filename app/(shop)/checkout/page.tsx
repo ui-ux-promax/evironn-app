@@ -17,6 +17,6 @@ export default async function CheckoutPage() {
     cookieToken: store.get(cartCookieName)?.value,
     now: new Date(),
   });
-  if (checkout.status === 'EMPTY_CART') redirect('/cart');
+  if (checkout.status !== 'READY') redirect('/cart');
   return <CheckoutVariantA initialData={checkout} />;
 }

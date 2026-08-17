@@ -152,6 +152,19 @@ function hasNonCanonicalLine(cart: {
   );
 }
 
+function hasNonReadyLine(cart: {
+  items: Array<{
+    quantity: number;
+    sku: { active: boolean; stock: number; product: { active: boolean } } | null;
+    productVariantId: string | null;
+  }>;
+}): boolean {
+  return (
+    hasNonCanonicalLine(cart) ||
+    cart.items.some((item) => item.sku !== null && (item.sku.stock < 1 || item.quantity > item.sku.stock))
+  );
+}
+
 function asPresentationCart(cart: CanonicalCheckoutCart): CheckoutCart {
   return {
     ...cart,
@@ -175,12 +188,12 @@ export async function getCheckoutPageDto({
     client.cart.findFirst({ where: { userId }, include: cartPresentationInclude }),
   ]);
   if (!user) throw new Error('Checkout owner not found');
-  if (cart && hasNonCanonicalLine(cart)) throw new Error('Canonical active checkout cart required');
+  const nonReady = cart ? hasNonReadyLine(cart) : false;
 
   const addresses = savedAddresses(user);
   const selectedAddress = addresses.find((address) => address.isDefault) ?? addresses[0] ?? null;
   return {
-    status: !cart || cart.items.length === 0 ? 'EMPTY_CART' : 'READY',
+    status: !cart || cart.items.length === 0 ? 'EMPTY_CART' : nonReady ? 'NON_READY_CART' : 'READY',
     contactDefaults: {
       contactName: user.name ?? '',
       contactEmail: user.email,
@@ -194,7 +207,7 @@ export async function getCheckoutPageDto({
           addressComment: selectedAddress.comment,
         }
       : null,
-    initialCart: cart ? buildCartDto(cart) : EMPTY_CART_DTO,
+    initialCart: cart && !nonReady ? buildCartDto(cart) : EMPTY_CART_DTO,
     ...pageOptions(now),
   };
 }

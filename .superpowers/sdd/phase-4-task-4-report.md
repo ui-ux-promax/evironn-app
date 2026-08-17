@@ -100,3 +100,14 @@ Fresh remediation evidence:
 Concerns:
 
 - Provider and database concurrency behavior is covered with deterministic mocked transaction boundaries only; live non-production verification remains outside this bounded task.
+
+## Durable Claim Review Remediation
+
+- Claim time now comes from the live injected clock. The atomic claim requires an online pending order, no Payment, the exact READY/DISPATCHED origin, exact retained dispatch evidence, and `createdAt > claimNow - W`.
+- A fresh `dispatchNow` is captured immediately before durable-request construction/provider use. Crossing W releases only the exact owned claim to its exact origin, preserves prior evidence, performs zero provider calls, and fails closed on guard loss or release failure.
+- Claim release and finish mutations now include online method, pending status, no Payment where applicable, exact claim timestamp, and exact retained write-once evidence. First dispatch evidence uses `dispatchNow`; DISPATCHED replay preserves the original timestamp.
+- Verified provider correlation with a null confirmation URL persists `Payment` plus `CORRELATED` and returns `CREATED` with `confirmationUrl: null`.
+- Added deterministic same-claim correlation/no-dispatch races in both commit orders, READY/DISPATCHED advancing-clock releases, DISPATCHED replay preservation, changed-evidence rejection, release throw handling, and focused read/claim/request/provider/persist/correlation/cancellation failure coverage.
+- Added a placement retry integration regression where the first full callback completes then receives P2034; the second callback re-reads changed authoritative quote/snapshot/coupon/service/totals and its stock/order/item/cart-delete writes are the committed values.
+
+Review-remediation verification is limited to focused mocked tests, TypeScript, formatting, and diff checks. No database, provider, full gate, build, or E2E command was run.

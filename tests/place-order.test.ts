@@ -189,6 +189,62 @@ describe('placeOrder transactional canonical placement', () => {
     expect(mocks.transaction).toHaveBeenCalledTimes(3);
   });
 
+  it('reruns the complete authoritative placement callback and commits changed retry values', async () => {
+    const conflict = Object.assign(new Error('conflict'), { code: 'P2034' });
+    const first = transactionClient();
+    const second = transactionClient();
+    const changed = {
+      ...orderData,
+      snapshot: {
+        itemsTotal: 210000,
+        items: [{ ...orderData.snapshot.items[0], unitPrice: 105000, lineTotal: 210000 }],
+      },
+      quote: {
+        ...orderData.quote,
+        coupon: { code: 'EV20', percent: 20 },
+        serviceLines: [{ id: 'assembly', label: 'Сборка', amount: 4500 }],
+        totals: {
+          ...orderData.quote.totals,
+          itemsSubtotal: 210000,
+          couponDiscount: 42000,
+          serviceAmount: 4500,
+          total: 172500,
+        },
+      },
+    };
+    mocks.buildCheckoutOrderData.mockResolvedValueOnce(orderData).mockResolvedValueOnce(changed);
+    let attempt = 0;
+    mocks.transaction.mockImplementation(async (operation: (tx: ReturnType<typeof transactionClient>) => unknown) => {
+      attempt += 1;
+      const result = await operation(attempt === 1 ? first : second);
+      if (attempt === 1) throw conflict;
+      return result;
+    });
+
+    await expect(placeOrder(validForm)).resolves.toMatchObject({ ok: true, code: 'ORDER_READY' });
+    expect(mocks.buildCheckoutOrderData).toHaveBeenCalledTimes(2);
+    expect(first.sku.updateMany).toHaveBeenCalledOnce();
+    expect(first.order.create).toHaveBeenCalledOnce();
+    expect(first.cartItem.deleteMany).toHaveBeenCalledOnce();
+    expect(second.sku.updateMany).toHaveBeenCalledWith({
+      where: { id: 'sku-1', active: true, stock: { gte: 2 } },
+      data: { stock: { decrement: 2 } },
+    });
+    expect(second.order.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        itemsTotal: 210000,
+        discountAmount: 42000,
+        serviceAmount: 4500,
+        totalAmount: 172500,
+        couponCode: 'EV20',
+        serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 4500 }],
+        items: { create: [expect.objectContaining({ unitPrice: 105000, lineTotal: 210000 })] },
+      }),
+      select: { id: true, orderNumber: true, createdAt: true, totalAmount: true },
+    });
+    expect(second.cartItem.deleteMany).toHaveBeenCalledOnce();
+  });
+
   it('sanitizes coded infrastructure failures instead of exposing raw details', async () => {
     mocks.buildCheckoutOrderData.mockRejectedValue(Object.assign(new Error('database secret'), { code: 'P2002' }));
     await expect(placeOrder(validForm)).resolves.toEqual({

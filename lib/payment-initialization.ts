@@ -58,7 +58,7 @@ export interface PaymentInitializationClient {
 }
 export type PaymentInitializationResult =
   | { outcome: 'NOT_CREATED' }
-  | { outcome: 'CREATED'; confirmationUrl: string }
+  | { outcome: 'CREATED'; confirmationUrl: string | null }
   | { outcome: 'INDETERMINATE' }
   | { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
 
@@ -96,7 +96,7 @@ export async function ensureOnlinePayment({
   now,
   client = defaultClient,
   provider = defaultProvider,
-  clock = () => now,
+  clock = () => new Date(),
 }: {
   orderId: string;
   now: Date;
@@ -126,7 +126,10 @@ export async function ensureOnlinePayment({
               where: {
                 id: orderId,
                 status: 'PENDING',
+                paymentMethod: 'online',
+                payment: { isNot: null },
                 paymentInitializationState: { in: ['CLAIMED', 'DISPATCHED', 'CORRELATED'] },
+                paymentEverDispatchedAt: order.paymentEverDispatchedAt,
               },
               data: {
                 paymentInitializationState: 'CORRELATED',
@@ -154,7 +157,7 @@ export async function ensureOnlinePayment({
           },
           { isolationLevel: 'Serializable' },
         );
-        return saved && details.confirmationUrl
+        return saved
           ? { outcome: 'CREATED', confirmationUrl: details.confirmationUrl }
           : indeterminate('payment_correlation_guard_lost');
       } catch (error) {
@@ -168,36 +171,41 @@ export async function ensureOnlinePayment({
           ? 'READY'
           : null;
     if (!origin) return indeterminate('payment_initialization_state_not_claimable');
-    if (now.getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS)
+    const claimStartedAt = clock();
+    if (claimStartedAt.getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS)
       return { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
-    const claimStartedAt = now;
+    const originEvidence = order.paymentEverDispatchedAt;
     const claim = await client.$transaction(
       async (tx) =>
         tx.order.updateMany({
           where: {
             id: orderId,
             status: 'PENDING',
+            paymentMethod: 'online',
             payment: { is: null },
             paymentInitializationState: origin,
             paymentInitializationClaimedAt: null,
-            ...(origin === 'READY' ? { paymentEverDispatchedAt: null } : { paymentEverDispatchedAt: { not: null } }),
-            createdAt: { lt: new Date(order!.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS) },
+            paymentEverDispatchedAt: originEvidence,
+            createdAt: { gt: new Date(claimStartedAt.getTime() - PAYMENT_CREATE_RETRY_WINDOW_MS) },
           },
           data: { paymentInitializationState: 'CLAIMED', paymentInitializationClaimedAt: claimStartedAt },
         }),
       { isolationLevel: 'Serializable' },
     );
     if (!claim.count) return indeterminate('payment_claim_lost');
-    if (clock().getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS) {
+    const dispatchNow = clock();
+    if (dispatchNow.getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS) {
       const released = await client.$transaction(
         async (tx) =>
           tx.order.updateMany({
             where: {
               id: orderId,
               status: 'PENDING',
+              paymentMethod: 'online',
               payment: { is: null },
               paymentInitializationState: 'CLAIMED',
               paymentInitializationClaimedAt: claimStartedAt,
+              paymentEverDispatchedAt: originEvidence,
             },
             data: { paymentInitializationState: origin, paymentInitializationClaimedAt: null },
           }),
@@ -217,9 +225,11 @@ export async function ensureOnlinePayment({
               where: {
                 id: orderId,
                 status: 'PENDING',
+                paymentMethod: 'online',
                 payment: { is: null },
                 paymentInitializationState: 'CLAIMED',
                 paymentInitializationClaimedAt: claimStartedAt,
+                paymentEverDispatchedAt: originEvidence,
               },
               data: { paymentInitializationState: origin, paymentInitializationClaimedAt: null },
             }),
@@ -241,14 +251,16 @@ export async function ensureOnlinePayment({
               where: {
                 id: orderId,
                 status: 'PENDING',
+                paymentMethod: 'online',
                 payment: { is: null },
                 paymentInitializationState: 'CLAIMED',
                 paymentInitializationClaimedAt: claimStartedAt,
+                paymentEverDispatchedAt: originEvidence,
               },
               data: {
                 paymentInitializationState: 'DISPATCHED',
                 paymentInitializationClaimedAt: null,
-                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? claimStartedAt,
+                paymentEverDispatchedAt: originEvidence ?? dispatchNow,
               },
             }),
           { isolationLevel: 'Serializable' },
@@ -267,14 +279,16 @@ export async function ensureOnlinePayment({
               where: {
                 id: orderId,
                 status: 'PENDING',
+                paymentMethod: 'online',
                 payment: { is: null },
                 paymentInitializationState: 'CLAIMED',
                 paymentInitializationClaimedAt: claimStartedAt,
+                paymentEverDispatchedAt: originEvidence,
               },
               data: {
                 paymentInitializationState: 'CORRELATED',
                 paymentInitializationClaimedAt: null,
-                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? claimStartedAt,
+                paymentEverDispatchedAt: originEvidence ?? dispatchNow,
               },
             });
             if (!guard.count) return false;
@@ -297,7 +311,7 @@ export async function ensureOnlinePayment({
           },
           { isolationLevel: 'Serializable' },
         );
-        return saved && attempt.payment.confirmationUrl
+        return saved
           ? { outcome: 'CREATED', confirmationUrl: attempt.payment.confirmationUrl }
           : indeterminate('payment_create_guard_lost');
       } catch (error) {
@@ -312,14 +326,16 @@ export async function ensureOnlinePayment({
               where: {
                 id: orderId,
                 status: 'PENDING',
+                paymentMethod: 'online',
                 payment: { is: null },
                 paymentInitializationState: 'CLAIMED',
                 paymentInitializationClaimedAt: claimStartedAt,
+                paymentEverDispatchedAt: originEvidence,
               },
               data: {
                 paymentInitializationState: 'DISPATCHED',
                 paymentInitializationClaimedAt: null,
-                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? claimStartedAt,
+                paymentEverDispatchedAt: originEvidence ?? dispatchNow,
               },
             }),
           { isolationLevel: 'Serializable' },
@@ -337,10 +353,11 @@ export async function ensureOnlinePayment({
               where: {
                 id: orderId,
                 status: 'PENDING',
+                paymentMethod: 'online',
                 payment: { is: null },
                 paymentInitializationState: 'CLAIMED',
                 paymentInitializationClaimedAt: claimStartedAt,
-                paymentEverDispatchedAt: order.paymentEverDispatchedAt,
+                paymentEverDispatchedAt: originEvidence,
               },
               data: { paymentInitializationState: 'DISPATCHED', paymentInitializationClaimedAt: null },
             }),
@@ -360,6 +377,7 @@ export async function ensureOnlinePayment({
             where: {
               id: orderId,
               status: 'PENDING',
+              paymentMethod: 'online',
               payment: { is: null },
               paymentInitializationState: 'CLAIMED',
               paymentInitializationClaimedAt: claimStartedAt,

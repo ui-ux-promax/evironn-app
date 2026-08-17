@@ -1,12 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   PAYMENT_CREATE_RETRY_WINDOW_MS,
-  ensureOnlinePayment,
+  ensureOnlinePayment as ensureOnlinePaymentProduction,
   type PaymentInitializationClient,
   type PaymentProviderAdapter,
 } from '@/lib/payment-initialization';
 
 const createdAt = new Date('2026-08-16T00:00:00.000Z');
+
+function ensureOnlinePayment(
+  input: Parameters<typeof ensureOnlinePaymentProduction>[0],
+): ReturnType<typeof ensureOnlinePaymentProduction> {
+  return ensureOnlinePaymentProduction({ ...input, clock: input.clock ?? (() => input.now) });
+}
 
 function order(overrides: Record<string, unknown> = {}) {
   return {
@@ -27,24 +33,39 @@ function order(overrides: Record<string, unknown> = {}) {
 }
 
 function harness(providerResult: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) {
-  const state: { order: any; payment: null | Record<string, unknown>; stock: number } = {
+  const state: { order: any; payment: null | Record<string, unknown>; stock: number; allowDuplicateClaim: boolean } = {
     order: order(),
     payment: null,
     stock: 8,
+    allowDuplicateClaim: false,
   };
   const tx = {
     order: {
       updateMany: vi.fn(async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
         if (state.order.status !== 'PENDING') return { count: 0 };
+        if (where.paymentMethod && where.paymentMethod !== state.order.paymentMethod) return { count: 0 };
         if (where.payment?.is === null && state.payment !== null) return { count: 0 };
+        if (where.payment?.isNot === null && state.payment === null) return { count: 0 };
         if (
           where.paymentInitializationState &&
           where.paymentInitializationState !== state.order.paymentInitializationState
-        )
+        ) {
+          if (
+            state.allowDuplicateClaim &&
+            where.paymentInitializationState === 'READY' &&
+            state.order.paymentInitializationState === 'CLAIMED'
+          )
+            return { count: 1 };
           return { count: 0 };
+        }
         if (
           'paymentInitializationClaimedAt' in where &&
           where.paymentInitializationClaimedAt?.getTime?.() !== state.order.paymentInitializationClaimedAt?.getTime?.()
+        )
+          return { count: 0 };
+        if (
+          'paymentEverDispatchedAt' in where &&
+          where.paymentEverDispatchedAt?.getTime?.() !== state.order.paymentEverDispatchedAt?.getTime?.()
         )
           return { count: 0 };
         Object.assign(state.order, data);
@@ -76,6 +97,7 @@ function harness(providerResult: Awaited<ReturnType<PaymentProviderAdapter['crea
 describe('ensureOnlinePayment', () => {
   it('keeps CREATED persistence and proven NOT_CREATED cancellation mutually exclusive', async () => {
     const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'unused' });
+    h.state.allowDuplicateClaim = true;
     let resolveCreated!: (value: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) => void;
     let resolveNotCreated!: (value: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) => void;
     const createdProvider = {
@@ -111,7 +133,7 @@ describe('ensureOnlinePayment', () => {
     });
     await vi.waitFor(() => {
       expect(createdProvider.createPayment).toHaveBeenCalledOnce();
-      expect(notCreatedProvider.createPayment).not.toHaveBeenCalled();
+      expect(notCreatedProvider.createPayment).toHaveBeenCalledOnce();
     });
 
     resolveCreated({
@@ -128,10 +150,51 @@ describe('ensureOnlinePayment', () => {
       outcome: 'CREATED',
       confirmationUrl: 'https://yookassa.test/confirm',
     });
+    resolveNotCreated({ outcome: 'NOT_CREATED', dispatched: false });
     await expect(notCreated).resolves.toEqual({ outcome: 'INDETERMINATE' });
     expect(h.state.order.status).toBe('PENDING');
     expect(h.state.stock).toBe(8);
     expect(h.state.payment).toMatchObject({ id: 'pay-1' });
+  });
+
+  it('lets first no-dispatch cancellation win the same-claim race against correlation', async () => {
+    const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'unused' });
+    h.state.allowDuplicateClaim = true;
+    let resolveCreated!: (value: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) => void;
+    let resolveNotCreated!: (value: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) => void;
+    const createdProvider = {
+      ...h.provider,
+      createPayment: vi.fn(
+        () =>
+          new Promise<Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>>(
+            (resolve) => (resolveCreated = resolve),
+          ),
+      ),
+    } satisfies PaymentProviderAdapter;
+    const notCreatedProvider = {
+      ...h.provider,
+      createPayment: vi.fn(
+        () =>
+          new Promise<Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>>(
+            (resolve) => (resolveNotCreated = resolve),
+          ),
+      ),
+    } satisfies PaymentProviderAdapter;
+    const args = { orderId: 'order-1', now: new Date('2026-08-16T01:00:00.000Z'), client: h.client };
+    const created = ensureOnlinePayment({ ...args, provider: createdProvider });
+    const notCreated = ensureOnlinePayment({ ...args, provider: notCreatedProvider });
+    await vi.waitFor(() => expect(notCreatedProvider.createPayment).toHaveBeenCalledOnce());
+
+    resolveNotCreated({ outcome: 'NOT_CREATED', dispatched: false });
+    await expect(notCreated).resolves.toEqual({ outcome: 'NOT_CREATED' });
+    resolveCreated({
+      outcome: 'CREATED',
+      payment: { id: 'pay-1', status: 'pending', amountRub: 159900, orderNumber: '1042', confirmationUrl: null },
+    });
+    await expect(created).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.state.order.status).toBe('CANCELLED');
+    expect(h.state.stock).toBe(10);
+    expect(h.state.payment).toBeNull();
   });
 
   it('persists a verified provider correlation from durable request data', async () => {
@@ -207,7 +270,12 @@ describe('ensureOnlinePayment', () => {
 
   it('fails closed as indeterminate when guarded cancellation cannot commit', async () => {
     const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
-    (h.client.$transaction as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('transaction failed'));
+    let calls = 0;
+    (h.client.$transaction as ReturnType<typeof vi.fn>).mockImplementation(async (callback: any) => {
+      calls += 1;
+      if (calls === 2) throw new Error('transaction failed');
+      return callback(h.tx);
+    });
     await expect(
       ensureOnlinePayment({
         orderId: 'order-1',
@@ -218,6 +286,49 @@ describe('ensureOnlinePayment', () => {
     ).resolves.toEqual({ outcome: 'INDETERMINATE' });
     expect(h.state.order.status).toBe('PENDING');
     expect(h.state.stock).toBe(8);
+  });
+
+  it.each([
+    [
+      'initial read',
+      (h: ReturnType<typeof harness>) =>
+        (h.client.order.findUnique as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('read')),
+    ],
+    [
+      'claim',
+      (h: ReturnType<typeof harness>) =>
+        (h.client.$transaction as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('claim')),
+    ],
+    ['durable request', (h: ReturnType<typeof harness>) => (h.state.order.paymentReturnUrl = null)],
+  ])('makes %s failure total and indeterminate', async (_boundary, fail) => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    fail(h);
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+  });
+
+  it('makes dispatched-state persistence failure total and indeterminate', async () => {
+    const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'timeout' });
+    let calls = 0;
+    (h.client.$transaction as ReturnType<typeof vi.fn>).mockImplementation(async (callback: any) => {
+      calls += 1;
+      if (calls === 2) throw new Error('dispatch persist');
+      return callback(h.tx);
+    });
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
   });
 
   it.each([
@@ -261,6 +372,139 @@ describe('ensureOnlinePayment', () => {
     });
     expect(h.provider.createPayment).not.toHaveBeenCalled();
     expect(h.client.$transaction).not.toHaveBeenCalled();
+  });
+
+  it.each(['READY', 'DISPATCHED'] as const)(
+    'releases an exact %s claim when the live clock crosses the window',
+    async (origin) => {
+      const evidence = origin === 'DISPATCHED' ? new Date('2026-08-16T00:30:00.000Z') : null;
+      const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+      Object.assign(h.state.order, { paymentInitializationState: origin, paymentEverDispatchedAt: evidence });
+      const claimNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS - 1);
+      const dispatchNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS);
+      const times = [claimNow, dispatchNow];
+
+      await expect(
+        ensureOnlinePayment({
+          orderId: 'order-1',
+          now: claimNow,
+          clock: () => times.shift()!,
+          client: h.client,
+          provider: h.provider,
+        }),
+      ).resolves.toEqual({ outcome: 'BLOCKED_AFTER_RETRY_WINDOW' });
+      expect(h.provider.createPayment).not.toHaveBeenCalled();
+      expect(h.state.order).toMatchObject({
+        paymentInitializationState: origin,
+        paymentInitializationClaimedAt: null,
+        paymentEverDispatchedAt: evidence,
+      });
+    },
+  );
+
+  it('persists verified correlation with a null confirmation URL as CREATED', async () => {
+    const h = harness({
+      outcome: 'CREATED',
+      payment: { id: 'pay-1', status: 'pending', amountRub: 159900, orderNumber: '1042', confirmationUrl: null },
+    });
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'CREATED', confirmationUrl: null });
+    expect(h.state.order.paymentInitializationState).toBe('CORRELATED');
+  });
+
+  it('uses claim time in the atomic retry-window guard', async () => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    await ensureOnlinePayment({
+      orderId: 'order-1',
+      now: new Date('2026-08-16T01:00:00.000Z'),
+      client: h.client,
+      provider: h.provider,
+    });
+    expect(h.tx.order.updateMany.mock.calls[0][0].where.createdAt).toEqual({
+      gt: new Date('2026-08-15T02:00:00.000Z'),
+    });
+  });
+
+  it('uses the live claim clock instead of a stale caller timestamp', async () => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    const staleNow = new Date('2026-08-16T01:00:00.000Z');
+    const liveNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS);
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: staleNow,
+        clock: () => liveNow,
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'BLOCKED_AFTER_RETRY_WINDOW' });
+    expect(h.client.$transaction).not.toHaveBeenCalled();
+    expect(h.provider.createPayment).not.toHaveBeenCalled();
+  });
+
+  it('replays DISPATCHED with the original write-once evidence', async () => {
+    const evidence = new Date('2026-08-16T00:30:00.000Z');
+    const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'timeout' });
+    Object.assign(h.state.order, { paymentInitializationState: 'DISPATCHED', paymentEverDispatchedAt: evidence });
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.state.order).toMatchObject({
+      paymentInitializationState: 'DISPATCHED',
+      paymentEverDispatchedAt: evidence,
+    });
+  });
+
+  it('fails closed when write-once dispatch evidence changes after claim', async () => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    h.provider.createPayment.mockImplementation(async () => {
+      h.state.order.paymentEverDispatchedAt = new Date('2026-08-16T01:00:01.000Z');
+      return { outcome: 'NOT_CREATED', dispatched: false };
+    });
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.state.order.status).toBe('PENDING');
+    expect(h.state.stock).toBe(8);
+  });
+
+  it('returns indeterminate when an expired exact-claim release throws', async () => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    let calls = 0;
+    (h.client.$transaction as ReturnType<typeof vi.fn>).mockImplementation(async (callback: any) => {
+      calls += 1;
+      if (calls === 2) throw new Error('release failed');
+      return callback(h.tx);
+    });
+    const claimNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS - 1);
+    const dispatchNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS);
+    const times = [claimNow, dispatchNow];
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: claimNow,
+        clock: () => times.shift()!,
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.provider.createPayment).not.toHaveBeenCalled();
   });
 
   it('treats provider lookup rejection as indeterminate', async () => {

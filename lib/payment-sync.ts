@@ -180,7 +180,10 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
   return committed.result;
 }
 
-export async function recoverPaymentCorrelation(providerId: string): Promise<PaymentCorrelationRecoveryResult> {
+export async function recoverPaymentCorrelation(
+  providerId: string,
+  now: () => Date = () => new Date(),
+): Promise<PaymentCorrelationRecoveryResult> {
   let details;
   try {
     details = await getPaymentDetails(providerId);
@@ -196,6 +199,7 @@ export async function recoverPaymentCorrelation(providerId: string): Promise<Pay
     return { kind: 'error', reason: 'provider-lookup-failed' };
   }
   if (details.id !== providerId) return { kind: 'ignored', reason: 'invalid-provider-correlation' };
+  const paidAt = details.status === 'succeeded' ? now() : null;
   const orderNumber = Number(details.orderNumber);
   if (!Number.isSafeInteger(orderNumber) || orderNumber <= 0 || String(orderNumber) !== details.orderNumber) {
     return { kind: 'ignored', reason: 'invalid-provider-correlation' };
@@ -266,6 +270,7 @@ export async function recoverPaymentCorrelation(providerId: string): Promise<Pay
               orderId: current.id,
               amount: details.amountRub,
               status: details.status,
+              paidAt,
               confirmationUrl: details.confirmationUrl,
             },
           });

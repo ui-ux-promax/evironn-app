@@ -82,3 +82,11 @@ Review result before remediation: Critical 0, Important 2, not approved.
 - RED evidence: 1 file, 3 expected failures. Focused GREEN evidence: 29/29 passed.
 - External-service preflight remains unchanged: credentials are absent; no database, provider, Preview, E2E, build, or full-gate call was made.
 - Final focused suite: 8 files, 141 tests passed. Typecheck, touched ESLint, touched Prettier, and diff check passed.
+
+### Recovered Success Timestamp Remediation
+
+- Missing-payment recovery now records `paidAt` when the verified provider payment is already `succeeded`.
+- The timestamp uses an injectable clock for deterministic tests and is written only during new correlation creation; final-state and idempotency guards are unchanged.
+- RED evidence: the recovered succeeded row omitted `paidAt`. Focused GREEN evidence: 30/30 payment-sync tests passed.
+- External credentials remain absent. No database, provider, Preview, E2E, build, or full-gate call was made.
+- Final focused suite: 8 files, 142 tests passed. Typecheck, touched ESLint, touched Prettier, and diff check passed.

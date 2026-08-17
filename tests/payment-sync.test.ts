@@ -412,6 +412,45 @@ describe('reconcilePaymentStatus', () => {
 });
 
 describe('recoverPaymentCorrelation', () => {
+  it('records paidAt when recovering a provider-final succeeded payment', async () => {
+    const recoveredAt = new Date('2026-08-17T12:00:00.000Z');
+    detailsMock.mockResolvedValue({
+      id: 'pay-succeeded',
+      status: 'succeeded',
+      amountRub: 159900,
+      orderNumber: '1042',
+      confirmationUrl: null,
+    });
+    orderFindMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        orderNumber: 1042,
+        totalAmount: 159900,
+        paymentEverDispatchedAt: null,
+        payment: null,
+      },
+    ]);
+    orderFindUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 1042,
+      status: 'PENDING',
+      paymentMethod: 'online',
+      totalAmount: 159900,
+      paymentEverDispatchedAt: null,
+      payment: null,
+    });
+    const create = vi.fn().mockResolvedValue({});
+    (prisma.payment as any).create = create;
+
+    await expect(recoverPaymentCorrelation('pay-succeeded', () => recoveredAt)).resolves.toEqual({
+      kind: 'recovered',
+      paymentId: 'pay-succeeded',
+    });
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ status: 'succeeded', paidAt: recoveredAt }),
+    });
+  });
+
   it('does not persist provider details with an unsupported payment status', async () => {
     detailsMock.mockResolvedValue({
       id: 'pay-unknown-status',

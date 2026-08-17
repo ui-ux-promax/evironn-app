@@ -12,13 +12,25 @@ export interface CartVariantAProps {
   initialWishlistedIds: string[];
 }
 
-const CHECKOUT_DISABLED_LABEL = 'Оформление заказа доступно после загрузки товаров без ошибок.';
+const CHECKOUT_DISABLED_LABELS = {
+  loading: 'Дождитесь загрузки корзины.',
+  error: 'Не удалось загрузить корзину. Обновите страницу.',
+  unavailable: 'В корзине есть товары, которых нет в наличии.',
+  legacy: 'В корзине есть устаревшие позиции. Добавьте их заново.',
+} as const;
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
   const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
     useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
   const canCheckout = !loading && !error && items.length > 0 && items.every((item) => item.available && !item.isLegacy);
+  const checkoutDisabledLabel = loading
+    ? CHECKOUT_DISABLED_LABELS.loading
+    : error
+      ? CHECKOUT_DISABLED_LABELS.error
+      : items.some((item) => !item.available)
+        ? CHECKOUT_DISABLED_LABELS.unavailable
+        : CHECKOUT_DISABLED_LABELS.legacy;
 
   return (
     <main className="cart-a" id="main-content">
@@ -158,9 +170,9 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                   type="button"
                   disabled
                   aria-disabled="true"
-                  title={CHECKOUT_DISABLED_LABEL}
+                  title={checkoutDisabledLabel}
                 >
-                  {CHECKOUT_DISABLED_LABEL}
+                  {checkoutDisabledLabel}
                 </button>
               )}
             </div>
@@ -217,8 +229,8 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
               role="button"
               aria-disabled="true"
               tabIndex={-1}
-              title={CHECKOUT_DISABLED_LABEL}
-              aria-label={CHECKOUT_DISABLED_LABEL}
+              title={checkoutDisabledLabel}
+              aria-label={checkoutDisabledLabel}
               onClick={(event) => event.preventDefault()}
             >
               Недоступно

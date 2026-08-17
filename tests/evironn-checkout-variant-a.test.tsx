@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   quote: vi.fn(),
   placeOrder: vi.fn(),
   replace: vi.fn(),
+  refresh: vi.fn(),
   assign: vi.fn(),
   getCart: vi.fn(),
   updateItemQuantity: vi.fn(),
@@ -18,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/app/actions/checkout', () => ({ getCheckoutQuote: mocks.quote }));
 vi.mock('@/app/actions/order', () => ({ placeOrder: mocks.placeOrder }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }) }));
 vi.mock('@/services/api-client', () => ({
   Api: {
     cart: {
@@ -161,6 +162,32 @@ describe('Checkout Variant A', () => {
     render(<CheckoutVariantA initialData={initialData} />);
     fireEvent.click(screen.getByRole('radio', { name: /Home/ }));
     expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('Tverskaya, 10');
+  });
+
+  it('selects the first saved address when none is marked as default', () => {
+    render(
+      <CheckoutVariantA
+        initialData={{
+          ...initialData,
+          savedAddresses: [
+            {
+              id: 'office',
+              label: 'Office',
+              city: 'Moscow',
+              street: '  Presnenskaya, 8  ',
+              comment: 'Reception',
+              isDefault: false,
+            },
+            { id: 'home', label: 'Home', city: 'Moscow', street: 'Tverskaya, 10', comment: null, isDefault: false },
+          ],
+          addressDefaults: { city: 'Moscow', addressLine: 'Presnenskaya, 8', addressComment: 'Reception' },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: /Office/ })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /Новый адрес/ })).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('Presnenskaya, 8');
   });
 
   it('shows neutral disabled totals while a quote is pending or unavailable', async () => {
@@ -417,6 +444,66 @@ describe('Checkout Variant A', () => {
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
+  it('clears a rejected coupon quote and re-quotes without the stale coupon', async () => {
+    mocks.quote.mockImplementation(async (input: { couponCode?: string }) => ({
+      ok: true,
+      quote: {
+        ...quote,
+        coupon: input.couponCode ? { code: input.couponCode, percent: 5 } : null,
+        totals: { ...quote.totals, couponDiscount: input.couponCode ? 5000 : 0 },
+      },
+    }));
+    mocks.placeOrder.mockResolvedValue({ ok: false, code: 'INVALID_COUPON', error: 'Coupon expired' });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Промокод' })[0], { target: { value: 'SAVE5' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Применить' })[0]);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    expect(screen.getAllByText('Промокод −5%')).not.toHaveLength(0);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(3));
+    expect(mocks.quote).toHaveBeenLastCalledWith(expect.not.objectContaining({ couponCode: expect.anything() }));
+    expect(screen.queryByText('Промокод −5%')).not.toBeInTheDocument();
+  });
+
+  it('invalidates a stale quote before refreshing cart placement conflicts', async () => {
+    let resolveCart!: (value: typeof cart) => void;
+    mocks.placeOrder.mockResolvedValue({
+      ok: false,
+      code: 'QUANTITY_EXCEEDS_STOCK',
+      error: 'Stock changed',
+    });
+    mocks.getCart.mockReturnValue(new Promise((resolve) => (resolveCart = resolve)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.getCart).toHaveBeenCalledTimes(1));
+    for (const button of document.querySelectorAll('.chk-submit')) expect(button).toBeDisabled();
+    expect(screen.queryByText(/101 900/)).not.toBeInTheDocument();
+
+    await act(async () => resolveCart(cart));
+  });
+
+  it('invalidates a stale delivery slot quote and refreshes server page data', async () => {
+    mocks.placeOrder.mockResolvedValue({
+      ok: false,
+      code: 'STALE_DELIVERY_SLOT',
+      error: 'Delivery slot changed',
+    });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+  });
+
   it('invalidates checkout and refreshes the empty cart after payment was not created', async () => {
     mocks.placeOrder.mockResolvedValue({
       ok: false,
@@ -435,6 +522,28 @@ describe('Checkout Variant A', () => {
     expect(await screen.findByText('В корзине пока пусто')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Оформить заказ/ })).not.toBeInTheDocument();
     expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps payment-not-created terminal when the cart refresh fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let rejectCart!: (error: Error) => void;
+    mocks.placeOrder.mockResolvedValue({
+      ok: false,
+      code: 'PAYMENT_NOT_CREATED',
+      orderNumber: 16,
+      error: 'Payment was not created',
+    });
+    mocks.getCart.mockReturnValue(new Promise((_, reject) => (rejectCart = reject)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.getCart).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('В корзине пока пусто')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Оформить заказ/ })).not.toBeInTheDocument();
+    await act(async () => rejectCart(new Error('Cart refresh failed')));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/cart'));
   });
 
   it('submits COD explicitly and navigates to the durable order', async () => {

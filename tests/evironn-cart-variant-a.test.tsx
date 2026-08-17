@@ -347,11 +347,12 @@ describe('Cart Variant A', () => {
     expect(document.querySelector('.cart-a__mobile-bar')).toBeInTheDocument();
   });
 
-  it('disables checkout for loading, unavailable, and failed cart states', async () => {
+  it('explains loading, unavailable, and failed cart checkout blockers', async () => {
     let resolveCart!: (value: CartDto) => void;
     mocks.getCart.mockReturnValue(new Promise((resolve) => (resolveCart = resolve)));
     render(<CartVariantA related={[]} initialWishlistedIds={[]} />);
     expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__checkout[disabled]')).toHaveTextContent('Дождитесь загрузки корзины.');
     resolveCart(cart());
     await waitFor(() => expect(screen.getAllByRole('link', { name: 'Оформить заказ' })).toHaveLength(2));
     cleanup();
@@ -359,6 +360,9 @@ describe('Cart Variant A', () => {
     renderCart(cart([{ ...line, available: false }]));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
     expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__checkout[disabled]')).toHaveTextContent(
+      'В корзине есть товары, которых нет в наличии.',
+    );
     cleanup();
 
     mocks.getCart.mockRejectedValue(new Error('Cart failed'));
@@ -368,15 +372,17 @@ describe('Cart Variant A', () => {
     expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
     expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveTextContent('Недоступно');
     expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
-      'Оформление заказа доступно после загрузки товаров без ошибок.',
+      'Не удалось загрузить корзину. Обновите страницу.',
     );
   });
 
-  it('does not expose checkout links for available legacy cart lines', async () => {
+  it('explains legacy non-canonical checkout blockers', async () => {
     renderCart(cart([{ ...line, isLegacy: true, available: true }]));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
 
     expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
-    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'В корзине есть устаревшие позиции. Добавьте их заново.',
+    );
   });
 });

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getCheckoutQuote } from '@/app/actions/checkout';
 import { placeOrder } from '@/app/actions/order';
 import { useCartStore } from '@/store/cart';
+import { EMPTY_CART_DTO } from '@/services/dto/commerce-cart.dto';
 import type { CheckoutQuoteInput, PlaceOrderInput } from '@/services/dto/checkout.dto';
 import type {
   BlockedPaymentInitializationDto,
@@ -38,9 +39,9 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const [deliveryZone, setDeliveryZone] = useState<'moscow' | 'moscow-region'>('moscow');
   const [deliverySlotId, setDeliverySlotId] = useState(initialData.initialSlots.courier[0]?.id ?? '');
   const [pickupPointId, setPickupPointId] = useState('');
-  const [selectedAddressId, setSelectedAddressId] = useState(
-    initialData.savedAddresses.find((address) => address.isDefault)?.id ?? 'new',
-  );
+  const initialSavedAddress =
+    initialData.savedAddresses.find((address) => address.isDefault) ?? initialData.savedAddresses[0] ?? null;
+  const [selectedAddressId, setSelectedAddressId] = useState(initialSavedAddress?.id ?? 'new');
   const [address, setAddress] = useState<Address>({
     city: initialData.addressDefaults?.city ?? 'Москва',
     addressLine: initialData.addressDefaults?.addressLine ?? '',
@@ -244,6 +245,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         setQuotePending(false);
         setQuoteError(null);
         setSubmitLocked(true);
+        useCartStore.setState({ ...EMPTY_CART_DTO, loading: false, error: false, totalAmount: 0 });
         await useCartStore.getState().fetchCartItems();
         router.replace('/cart');
         return;
@@ -253,6 +255,38 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         setSubmitLocked(true);
         router.replace(`/orders/${result.paymentInitialization.orderNumber}?placed=1`);
         return;
+      }
+      const recoverablePlacement =
+        result.code === 'INVALID_COUPON' ||
+        result.code === 'EMPTY_CART' ||
+        result.code === 'SKU_UNAVAILABLE' ||
+        result.code === 'QUANTITY_EXCEEDS_STOCK' ||
+        result.code === 'CART_CONFLICT' ||
+        result.code === 'ORDER_TRANSACTION_CONFLICT' ||
+        result.code === 'STALE_DELIVERY_SLOT';
+      if (recoverablePlacement) {
+        ++quoteRevisionRef.current;
+        setQuote(null);
+        setQuotePending(false);
+        setQuoteError(null);
+      }
+      if (result.code === 'INVALID_COUPON') {
+        setCouponDraft('');
+        setAppliedCouponCode('');
+        setQuoteRequestVersion((version) => version + 1);
+      } else if (
+        result.code === 'EMPTY_CART' ||
+        result.code === 'SKU_UNAVAILABLE' ||
+        result.code === 'QUANTITY_EXCEEDS_STOCK' ||
+        result.code === 'CART_CONFLICT' ||
+        result.code === 'ORDER_TRANSACTION_CONFLICT'
+      ) {
+        if (result.code === 'EMPTY_CART') {
+          useCartStore.setState({ ...EMPTY_CART_DTO, loading: false, error: false, totalAmount: 0 });
+        }
+        await useCartStore.getState().fetchCartItems();
+      } else if (result.code === 'STALE_DELIVERY_SLOT') {
+        router.refresh();
       }
       setSubmitError(result.error);
     } catch (error) {

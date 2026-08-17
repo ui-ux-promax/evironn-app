@@ -61,7 +61,13 @@ describe('Evironn Cart Variant A source boundary', () => {
       expect(presentation).toContain(field);
     expect(variant).toContain('canCheckout');
     expect(variant).toContain('href="/checkout"');
-    expect(variant).toContain('Оформление заказа доступно после загрузки товаров без ошибок.');
+    for (const label of [
+      'Дождитесь загрузки корзины.',
+      'Не удалось загрузить корзину. Обновите страницу.',
+      'В корзине есть товары, которых нет в наличии.',
+      'В корзине есть устаревшие позиции. Добавьте их заново.',
+    ])
+      expect(variant).toContain(label);
     expect(variant).not.toContain('role="radiogroup"');
     expect(variant).toContain('aria-label={`Добавить ${product.name} в корзину`}');
     const page = readFileSync('app/(shop)/cart/page.tsx', 'utf8');

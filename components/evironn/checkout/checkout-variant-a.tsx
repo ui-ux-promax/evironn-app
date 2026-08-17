@@ -34,7 +34,7 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
     );
   }
 
-  if (cart.items.length === 0 && !cart.loading) {
+  if (controller.submitLocked || (cart.items.length === 0 && !cart.loading)) {
     return (
       <main className="chk-a" id="main-content">
         <header className="chk-a__head">

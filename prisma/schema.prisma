@@ -35,6 +35,14 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentInitializationState {
+  READY
+  CLAIMED
+  DISPATCHED
+  CORRELATED
+  NOT_CREATED
+}
+
 model Category {
   id                 String    @id @default(cuid())
   name               String
@@ -377,6 +385,9 @@ model Order {
   couponCode         String?
   paymentMethod      String
   paymentReturnUrl   String?
+  paymentInitializationState     PaymentInitializationState?
+  paymentInitializationClaimedAt DateTime?
+  paymentEverDispatchedAt        DateTime?
   deliveryZone       String?
   deliveryDate       DateTime?
   deliveryWindow     String?

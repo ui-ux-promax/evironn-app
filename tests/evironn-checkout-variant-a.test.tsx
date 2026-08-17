@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CheckoutPageDto, CheckoutQuoteDto } from '@/services/dto/checkout-page.dto';
 
@@ -189,6 +189,44 @@ describe('Checkout Variant A', () => {
     expect(mocks.placeOrder).not.toHaveBeenCalled();
   });
 
+  it('invalidates an in-flight quote when changed delivery input becomes invalid', async () => {
+    let resolveQuote!: (value: { ok: true; quote: CheckoutQuoteDto }) => void;
+    mocks.quote.mockReturnValue(new Promise((resolve) => (resolveQuote = resolve)));
+    render(
+      <CheckoutVariantA
+        initialData={{
+          ...initialData,
+          pickupPoints: initialData.pickupPoints.filter((point) => point.kind !== 'showroom'),
+        }}
+      />,
+    );
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('radio', { name: /Showroom/ }));
+    await act(async () => resolveQuote({ ok: true, quote }));
+
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+  });
+
+  it('keeps the newest successful quote when responses finish out of order', async () => {
+    let resolveFirst!: (value: { ok: true; quote: CheckoutQuoteDto }) => void;
+    let resolveSecond!: (value: { ok: true; quote: CheckoutQuoteDto }) => void;
+    mocks.quote
+      .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+      .mockReturnValueOnce(new Promise((resolve) => (resolveSecond = resolve)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Московская область' }));
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    await act(async () => resolveSecond({ ok: true, quote: { ...quote, totals: { ...quote.totals, total: 202000 } } }));
+    await screen.findAllByText(/202/);
+    await act(async () => resolveFirst({ ok: true, quote }));
+
+    expect(screen.getAllByText(/202/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/101 900/)).not.toBeInTheDocument();
+  });
+
   it('does not label unselected services as free without a server price', async () => {
     render(<CheckoutVariantA initialData={initialData} />);
     await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
@@ -199,11 +237,28 @@ describe('Checkout Variant A', () => {
   it('renders authoritative quote cart lines and mobile summary details', async () => {
     mocks.quote.mockResolvedValue({
       ok: true,
-      quote: { ...quote, cart: { ...cart, items: [{ ...cart.items[0], name: 'Server Noma', lineTotal: 99000 }] } },
+      quote: {
+        ...quote,
+        coupon: { code: 'SAVE5', percent: 5 },
+        cart: { ...cart, items: [{ ...cart.items[0], name: 'Server Noma', lineTotal: 99000 }] },
+        serviceLines: [{ id: 'assembly', label: 'Сборка на месте', amount: 3900 }],
+        totals: {
+          ...quote.totals,
+          compareAtSubtotal: 110000,
+          saleDiscount: 10000,
+          couponDiscount: 5000,
+          serviceAmount: 3900,
+          total: 100800,
+        },
+      },
     });
     render(<CheckoutVariantA initialData={initialData} />);
 
     expect(await screen.findAllByText('Server Noma')).not.toHaveLength(0);
+    expect(document.querySelector('.crt-qty')).toBeInTheDocument();
+    expect(document.querySelectorAll('.crt-sum')).toHaveLength(2);
+    expect(screen.getAllByText('Выгода по акции')).toHaveLength(2);
+    expect(screen.getAllByText('Промокод −5%')).toHaveLength(2);
     expect(document.querySelector('.chk-bar__details')).toBeInTheDocument();
     expect(document.querySelector('.chk-bar__sheet')).toHaveTextContent('Server Noma');
     expect(document.querySelector('.chk-bar__sheet')).toHaveTextContent('Доставка');
@@ -233,5 +288,18 @@ describe('Checkout Variant A', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
     await waitFor(() => expect(mocks.assign).toHaveBeenCalledWith('https://yookassa.test/confirmation'));
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('submits COD explicitly and navigates to the durable order', async () => {
+    mocks.placeOrder.mockResolvedValue({ ok: true, code: 'ORDER_READY', orderNumber: 14 });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('radio', { name: /При получении/ }));
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/orders/14?placed=1'));
+    expect(mocks.placeOrder).toHaveBeenCalledWith(expect.objectContaining({ paymentMethod: 'cod' }));
+    expect(mocks.assign).not.toHaveBeenCalled();
   });
 });

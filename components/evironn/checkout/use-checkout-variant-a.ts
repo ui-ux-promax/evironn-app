@@ -89,12 +89,16 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
 
   useEffect(() => {
     if (cart.items.length === 0 || !deliverySlotId) {
+      ++quoteRevisionRef.current;
       setQuote(null);
+      setQuotePending(false);
       setQuoteError(null);
       return;
     }
     if (deliveryMethod !== 'courier' && !pickupPointId) {
+      ++quoteRevisionRef.current;
       setQuote(null);
+      setQuotePending(false);
       setQuoteError(null);
       return;
     }

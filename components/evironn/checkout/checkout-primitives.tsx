@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import type { CheckoutQuoteDto, DeliveryMethod } from '@/services/dto/checkout-page.dto';
 import type { CheckoutVariantAController } from './use-checkout-variant-a';
+import { countLabel, QtyStepper } from '@/components/evironn/cart/cart-primitives';
 import { formatPrice } from '@/lib/format';
 import '../../../styles/evironn/CheckoutPrimitives.css';
 
@@ -316,25 +317,13 @@ export function OrderLines({ controller }: { controller: Controller }) {
           <div className="chk-lines__body">
             <b>{line.name}</b>
             <em>{line.configuration.map((option) => option.valueLabel).join(' · ')}</em>
-            <span>
-              <button
-                type="button"
-                disabled={line.quantity <= 1}
-                aria-label={`Уменьшить количество ${line.name}`}
-                onClick={() => void actions.step(line.id, line.quantity - 1).catch(() => undefined)}
-              >
-                −
-              </button>
-              {line.quantity} шт.
-              <button
-                type="button"
-                disabled={!line.available || line.quantity >= line.stock}
-                aria-label={`Увеличить количество ${line.name}`}
-                onClick={() => void actions.step(line.id, line.quantity + 1).catch(() => undefined)}
-              >
-                +
-              </button>
-            </span>
+            <QtyStepper
+              qty={line.quantity}
+              name={line.name}
+              max={line.stock}
+              disabled={!line.available}
+              onStep={(delta) => void actions.step(line.id, line.quantity + delta).catch(() => undefined)}
+            />
           </div>
           <div className="chk-lines__money">
             {formatPrice(line.lineTotal)}
@@ -351,22 +340,34 @@ export function OrderLines({ controller }: { controller: Controller }) {
 export function SummaryRows({ quote }: { quote: CheckoutQuoteDto | null }) {
   if (!quote) return <p role="status">Рассчитываем стоимость…</p>;
   return (
-    <dl className="chk-summary-rows">
-      <div>
-        <dt>Товары</dt>
-        <dd>{formatPrice(quote.totals.itemsSubtotal)}</dd>
+    <dl className="crt-sum crt-sum--light">
+      <div className="crt-sum__row">
+        <dt>{countLabel(quote.totals.itemCount)}</dt>
+        <dd>{formatPrice(quote.totals.compareAtSubtotal)}</dd>
       </div>
-      <div>
+      {quote.totals.saleDiscount > 0 && (
+        <div className="crt-sum__row is-save">
+          <dt>Выгода по акции</dt>
+          <dd>−{formatPrice(quote.totals.saleDiscount)}</dd>
+        </div>
+      )}
+      {quote.totals.couponDiscount > 0 && (
+        <div className="crt-sum__row is-save">
+          <dt>{quote.coupon ? `Промокод −${quote.coupon.percent}%` : 'Промокод'}</dt>
+          <dd>−{formatPrice(quote.totals.couponDiscount)}</dd>
+        </div>
+      )}
+      <div className="crt-sum__row">
         <dt>Доставка</dt>
-        <dd>{formatPrice(quote.totals.deliveryAmount)}</dd>
+        <dd>{quote.totals.deliveryAmount === 0 ? 'бесплатно' : formatPrice(quote.totals.deliveryAmount)}</dd>
       </div>
       {quote.serviceLines.map((line) => (
-        <div key={line.id}>
+        <div className="crt-sum__row" key={line.id}>
           <dt>{line.label}</dt>
-          <dd>{formatPrice(line.amount)}</dd>
+          <dd>{line.amount === 0 ? 'бесплатно' : formatPrice(line.amount)}</dd>
         </div>
       ))}
-      <div className="is-total">
+      <div className="crt-sum__row is-total">
         <dt>Итого</dt>
         <dd>{formatPrice(quote.totals.total)}</dd>
       </div>

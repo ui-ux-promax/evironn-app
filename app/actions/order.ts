@@ -296,13 +296,22 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
     payment: true,
   } as const;
   const order = await prisma.order.findUnique({
-    where: { id: orderId, userId, status: 'PENDING' },
+    where: { id: orderId, userId },
     include,
   });
-  if (!order || order.userId !== userId || order.status !== 'PENDING') {
+  if (!order || order.userId !== userId) {
     return { ok: false, error: 'Этот заказ нельзя отменить' };
   }
+  const productIds = [...new Set(canceledOrderProducts(order).map((item) => item.productId))];
+  if (order.status === 'CANCELLED') {
+    await pruneReviewsAfterCancel(userId, productIds);
+    revalidatePath('/profile');
+    revalidatePath(`/orders/${order.orderNumber}`);
+    return { ok: true };
+  }
+  if (order.status !== 'PENDING') return { ok: false, error: 'Этот заказ нельзя отменить' };
 
+  let pruneAfterCancel = order.paymentMethod !== 'online';
   if (order.paymentMethod === 'online') {
     let locallyCanceled = false;
     if (!order.payment) {
@@ -314,6 +323,7 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
       if (initialization.outcome === 'NOT_CREATED') {
         await adjustSalesCount(canceledOrderProducts(order), -1);
         locallyCanceled = true;
+        pruneAfterCancel = true;
       } else if (initialization.outcome !== 'CREATED') {
         return cancellationPendingSync();
       }
@@ -392,8 +402,7 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
     await adjustSalesCount(canceledOrderProducts(order), -1);
   }
 
-  const productIds = [...new Set(canceledOrderProducts(order).map((item) => item.productId))];
-  await pruneReviewsAfterCancel(userId, productIds);
+  if (pruneAfterCancel) await pruneReviewsAfterCancel(userId, productIds);
   revalidatePath('/profile');
   revalidatePath(`/orders/${order.orderNumber}`);
   return { ok: true };

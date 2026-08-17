@@ -163,4 +163,16 @@ describe('yookassa webhook', () => {
 
     expect(res.status).toBe(500);
   });
+
+  it('allows a provider retry after post-commit reconciliation side effects fail', async () => {
+    parseMock.mockReturnValue({ event: 'payment.canceled', object: { id: 'pay_1' } });
+    statusMock.mockResolvedValue('canceled');
+    reconcileMock
+      .mockRejectedValueOnce(new Error('review pruning failed'))
+      .mockResolvedValueOnce({ kind: 'ignored', reason: 'already-canceled' });
+
+    expect((await POST(req() as never)).status).toBe(500);
+    expect((await POST(req() as never)).status).toBe(200);
+    expect(reconcileMock).toHaveBeenCalledTimes(2);
+  });
 });

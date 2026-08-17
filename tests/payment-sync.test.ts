@@ -351,6 +351,25 @@ describe('reconcilePaymentStatus', () => {
     expect(pruneMock).not.toHaveBeenCalled();
   });
 
+  it('retries review pruning from final canceled state without repeating stock or sales', async () => {
+    paymentFindUnique
+      .mockResolvedValueOnce(payment('pending', null, 'PENDING'))
+      .mockResolvedValueOnce(payment('canceled', null, 'CANCELLED'));
+    pruneMock.mockRejectedValueOnce(new Error('review database unavailable')).mockResolvedValueOnce(undefined);
+
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'canceled', source: 'webhook' }),
+    ).rejects.toThrow('review database unavailable');
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'canceled', source: 'webhook' }),
+    ).resolves.toEqual({ kind: 'ignored', reason: 'already-canceled' });
+
+    expect(variantUpdate).toHaveBeenCalledTimes(1);
+    expect(productUpdate).toHaveBeenCalledTimes(1);
+    expect(pruneMock).toHaveBeenCalledTimes(2);
+    expect(pruneMock).toHaveBeenLastCalledWith('u1', ['prod_1']);
+  });
+
   it.each(['pending', 'waiting_for_capture'] satisfies YooKassaPaymentStatus[])(
     'pending local payment + %s remote status is a no-op',
     async (remoteStatus) => {

@@ -90,3 +90,13 @@ Review result before remediation: Critical 0, Important 2, not approved.
 - RED evidence: the recovered succeeded row omitted `paidAt`. Focused GREEN evidence: 30/30 payment-sync tests passed.
 - External credentials remain absent. No database, provider, Preview, E2E, build, or full-gate call was made.
 - Final focused suite: 8 files, 142 tests passed. Typecheck, touched ESLint, touched Prettier, and diff check passed.
+
+### Retry-Safe Review Pruning Remediation
+
+- A final local canceled payment/order now supports prune-only reconciliation replay. Retry does not repeat payment writes, order transition, stock restoration, or sales adjustment.
+- Owned `CANCELLED` customer orders support prune-only action replay, covering COD and online post-commit pruning failures without reopening cancellation transitions.
+- Reconciled online cancellation no longer performs a second redundant prune in `cancelOrder`; reconciliation owns that side effect. COD and provider-proven `NOT_CREATED` cancellation still prune from the action.
+- RED evidence: payment reconciliation retry, COD action retry, and online duplicate-prune tests produced 3 expected failures. Webhook retry coverage also proves first HTTP 500 then successful provider retry.
+- Affected GREEN evidence: 3 files, 59 tests passed.
+- External credentials remain absent. No database, provider, Preview, E2E, build, or full-gate call was made.
+- Final focused suite: 8 files, 145 tests passed. Typecheck, touched ESLint, touched Prettier, and diff check passed.

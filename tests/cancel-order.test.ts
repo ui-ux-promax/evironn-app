@@ -32,6 +32,7 @@ const findUnique = prisma.order.findUnique as unknown as ReturnType<typeof vi.fn
 const orderUpdateMany = prisma.order.updateMany as unknown as ReturnType<typeof vi.fn>;
 const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
 const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
+const productUpdate = prisma.product.update as unknown as ReturnType<typeof vi.fn>;
 const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 const cancelMock = cancelPayment as unknown as ReturnType<typeof vi.fn>;
 const detailsMock = getPaymentDetails as unknown as ReturnType<typeof vi.fn>;
@@ -77,6 +78,19 @@ describe('cancelOrder', () => {
     expect(pruneMock).toHaveBeenCalledWith('u1', ['p1']);
   });
 
+  it('retries COD review pruning from final canceled state without repeating stock or sales', async () => {
+    findUnique.mockResolvedValueOnce(order()).mockResolvedValueOnce(order({ status: 'CANCELLED' }));
+    pruneMock.mockRejectedValueOnce(new Error('review database unavailable')).mockResolvedValueOnce(undefined);
+
+    await expect(cancelOrder('o1')).rejects.toThrow('review database unavailable');
+    await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(skuUpdate).toHaveBeenCalledTimes(1);
+    expect(productUpdate).toHaveBeenCalledTimes(1);
+    expect(pruneMock).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps legacy ProductVariant as read-only cancellation compatibility', async () => {
     findUnique.mockResolvedValue(
       order({
@@ -117,6 +131,7 @@ describe('cancelOrder', () => {
     expect(detailsMock).toHaveBeenCalledWith('pay-1');
     expect(reconcileMock).toHaveBeenCalledWith({ paymentId: 'pay-1', remoteStatus: 'canceled', source: 'order-page' });
     expect(transaction).not.toHaveBeenCalled();
+    expect(pruneMock).not.toHaveBeenCalled();
   });
 
   it('uses newly persisted payment only after fresh owner-scoped reread', async () => {

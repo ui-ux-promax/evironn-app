@@ -56,7 +56,12 @@ const paymentWithOrderInclude = {
 
 type PaymentWithOrder = Prisma.PaymentGetPayload<{ include: typeof paymentWithOrderInclude }>;
 type ProductQuantity = { productId: string; quantity: number };
-type TransitionCommit = { result: PaymentReconciliationResult; salesItems: ProductQuantity[]; userId?: string };
+type TransitionCommit = {
+  result: PaymentReconciliationResult;
+  salesItems: ProductQuantity[];
+  pruneItems?: ProductQuantity[];
+  userId?: string;
+};
 
 function normalizeRemoteStatus(status: string): YooKassaPaymentStatus | null {
   return status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled'
@@ -139,7 +144,17 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
       }
 
       const repairing = payment.status === 'canceled';
-      if (repairing && payment.order.status !== 'PENDING') return ignored('already-canceled');
+      if (repairing && payment.order.status !== 'PENDING') {
+        if (payment.order.status === 'CANCELLED') {
+          return {
+            result: { kind: 'ignored', reason: 'already-canceled' },
+            salesItems: [],
+            pruneItems: salesItems(payment),
+            userId: payment.order.userId,
+          } satisfies TransitionCommit;
+        }
+        return ignored('already-canceled');
+      }
       if (!repairing) {
         const paymentWrite = await tx.payment.updateMany({
           where: { id: payment.id, status: { notIn: [...FINAL_PAYMENT_STATUSES] } },
@@ -162,6 +177,7 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
       return {
         result,
         salesItems: salesItems(payment),
+        pruneItems: salesItems(payment),
         userId: payment.order.userId,
       } satisfies TransitionCommit;
     },
@@ -173,9 +189,9 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
 
   if ((committed.result.kind === 'applied' || committed.result.kind === 'repaired') && committed.result.transition === 'canceled') {
     await adjustSalesCount(committed.salesItems, -1);
-    if (committed.userId) {
-      await pruneReviewsAfterCancel(committed.userId, [...new Set(committed.salesItems.map((item) => item.productId))]);
-    }
+  }
+  if (committed.userId && committed.pruneItems) {
+    await pruneReviewsAfterCancel(committed.userId, [...new Set(committed.pruneItems.map((item) => item.productId))]);
   }
   return committed.result;
 }

@@ -165,7 +165,7 @@ export async function cancelPayment(paymentId: string): Promise<void> {
 
 // Запрос актуального статуса платежа у ЮKassa (источник правды).
 // Используется страницей заказа, чтобы подтвердить оплату без зависимости от вебхука.
-export async function getPaymentStatus(paymentId: string): Promise<string> {
+export async function getPaymentStatus(paymentId: string): Promise<PaymentProviderStatus> {
   const sdk = getYooKassa();
   const payment = (await sdk.payments.load(paymentId)) as { status?: unknown } | null;
   if (!payment || !isPaymentProviderStatus(payment.status)) {

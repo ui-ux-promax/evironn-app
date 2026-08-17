@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma-client';
 import { logger } from '@/lib/logger';
 import { adjustSalesCount } from '@/lib/sales-count';
 import { getPaymentDetails, isPaymentProviderStatus } from '@/lib/yookassa';
+import { pruneReviewsAfterCancel } from '@/lib/review';
 
 export type YooKassaPaymentStatus = 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
 export type PaymentSyncSource = 'webhook' | 'order-page' | 'admin';
@@ -55,7 +56,7 @@ const paymentWithOrderInclude = {
 
 type PaymentWithOrder = Prisma.PaymentGetPayload<{ include: typeof paymentWithOrderInclude }>;
 type ProductQuantity = { productId: string; quantity: number };
-type TransitionCommit = { result: PaymentReconciliationResult; salesItems: ProductQuantity[] };
+type TransitionCommit = { result: PaymentReconciliationResult; salesItems: ProductQuantity[]; userId?: string };
 
 function normalizeRemoteStatus(status: string): YooKassaPaymentStatus | null {
   return status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled'
@@ -104,7 +105,12 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
 
       if (payment.status === 'succeeded' && remoteStatus === 'canceled') return ignored('final-state-conflict');
       if (payment.status === 'canceled' && remoteStatus === 'succeeded') return ignored('final-state-conflict');
-      if (payment.status !== 'pending' && payment.status !== 'succeeded' && payment.status !== 'canceled') {
+      if (
+        payment.status !== 'pending' &&
+        payment.status !== 'waiting_for_capture' &&
+        payment.status !== 'succeeded' &&
+        payment.status !== 'canceled'
+      ) {
         return ignored('unknown-local-status');
       }
 
@@ -156,6 +162,7 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
       return {
         result,
         salesItems: salesItems(payment),
+        userId: payment.order.userId,
       } satisfies TransitionCommit;
     },
     { isolationLevel: 'Serializable' },
@@ -166,6 +173,9 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
 
   if ((committed.result.kind === 'applied' || committed.result.kind === 'repaired') && committed.result.transition === 'canceled') {
     await adjustSalesCount(committed.salesItems, -1);
+    if (committed.userId) {
+      await pruneReviewsAfterCancel(committed.userId, [...new Set(committed.salesItems.map((item) => item.productId))]);
+    }
   }
   return committed.result;
 }

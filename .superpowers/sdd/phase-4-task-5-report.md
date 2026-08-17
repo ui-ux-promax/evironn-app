@@ -72,3 +72,13 @@ Review result before remediation: Critical 0, Important 2, not approved.
 - Missing-payment recovery also validates the runtime status before order lookup or persistence, so an invalid adapter result becomes `provider-lookup-failed` and webhook HTTP 500.
 - RED evidence: provider and recovery tests produced 2 expected failures; the webhook retry assertion already matched the hardened error contract.
 - Affected GREEN evidence: 3 files, 60 tests passed. Final focused suite: 8 files, 139 tests passed. Typecheck, touched Prettier, and diff check passed.
+
+### Capture-State And Review-Pruning Remediation
+
+- A persisted local `waiting_for_capture` payment is now transitionable to either provider-final `succeeded` or `canceled` inside the existing serializable transaction.
+- Every winning committed canceled reconciliation, including stale-final repair, now prunes reviews after commit for unique affected product ids and the order owner.
+- Losing guards, conflicts, and no-op paths do not prune reviews.
+- `getPaymentStatus` now exposes the exact `Promise<PaymentProviderStatus>` contract.
+- RED evidence: 1 file, 3 expected failures. Focused GREEN evidence: 29/29 passed.
+- External-service preflight remains unchanged: credentials are absent; no database, provider, Preview, E2E, build, or full-gate call was made.
+- Final focused suite: 8 files, 141 tests passed. Typecheck, touched ESLint, touched Prettier, and diff check passed.

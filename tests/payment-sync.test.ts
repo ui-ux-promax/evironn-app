@@ -18,6 +18,7 @@ vi.mock('@/lib/yookassa', () => ({
   isPaymentProviderStatus: (status: unknown) =>
     status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled',
 }));
+vi.mock('@/lib/review', () => ({ pruneReviewsAfterCancel: vi.fn() }));
 
 import {
   applyPaymentCanceled,
@@ -28,6 +29,7 @@ import {
 } from '@/lib/payment-sync';
 import { prisma } from '@/lib/prisma-client';
 import { getPaymentDetails } from '@/lib/yookassa';
+import { pruneReviewsAfterCancel } from '@/lib/review';
 
 const paymentUpdate = prisma.payment.update as unknown as ReturnType<typeof vi.fn>;
 const paymentUpdateMany = prisma.payment.updateMany as unknown as ReturnType<typeof vi.fn>;
@@ -41,6 +43,7 @@ const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 const orderFindMany = prisma.order.findMany as unknown as ReturnType<typeof vi.fn>;
 const orderFindUnique = prisma.order.findUnique as unknown as ReturnType<typeof vi.fn>;
 const detailsMock = getPaymentDetails as unknown as ReturnType<typeof vi.fn>;
+const pruneMock = pruneReviewsAfterCancel as unknown as ReturnType<typeof vi.fn>;
 
 const orderItems = [{ productVariantId: 'v1', quantity: 2, productVariant: { colorway: { productId: 'prod_1' } } }];
 
@@ -50,7 +53,7 @@ function payment(status = 'pending', paidAt: Date | null = null, orderStatus = '
     orderId: 'o1',
     status,
     paidAt,
-    order: { id: 'o1', status: orderStatus, items: orderItems },
+    order: { id: 'o1', userId: 'u1', status: orderStatus, items: orderItems },
   };
 }
 
@@ -114,6 +117,26 @@ describe('reconcilePaymentStatus', () => {
     expect(orderUpdate).not.toHaveBeenCalled();
     expect(variantUpdate).not.toHaveBeenCalled();
     expect(productUpdate).not.toHaveBeenCalled();
+  });
+
+  it('waiting_for_capture + succeeded remains transitionable', async () => {
+    paymentFindUnique.mockResolvedValue(payment('waiting_for_capture'));
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'succeeded', source: 'webhook', now: () => fixedNow }),
+    ).resolves.toEqual({ kind: 'applied', transition: 'succeeded' });
+    expect(paymentUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'pay_1', status: { notIn: ['succeeded', 'canceled'] } },
+      data: { status: 'succeeded', paidAt: fixedNow },
+    });
+  });
+
+  it('waiting_for_capture + canceled remains transitionable and prunes reviews after commit', async () => {
+    paymentFindUnique.mockResolvedValue(payment('waiting_for_capture'));
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'canceled', source: 'webhook' }),
+    ).resolves.toEqual({ kind: 'applied', transition: 'canceled' });
+    expect(variantUpdate).toHaveBeenCalledWith({ where: { id: 'v1' }, data: { stock: { increment: 2 } } });
+    expect(pruneMock).toHaveBeenCalledWith('u1', ['prod_1']);
   });
 
   it('repeated succeeded preserves existing paidAt but repairs a pending order', async () => {
@@ -242,6 +265,7 @@ describe('reconcilePaymentStatus', () => {
     });
     expect(variantUpdate).toHaveBeenCalledWith({ where: { id: 'v1' }, data: { stock: { increment: 2 } } });
     expect(productUpdate).toHaveBeenCalledWith({ where: { id: 'prod_1' }, data: { salesCount: { increment: -2 } } });
+    expect(pruneMock).toHaveBeenCalledWith('u1', ['prod_1']);
   });
 
   it('repeated canceled is ignored when the order is already repaired', async () => {
@@ -324,6 +348,7 @@ describe('reconcilePaymentStatus', () => {
     });
     expect(variantUpdate).not.toHaveBeenCalled();
     expect(productUpdate).not.toHaveBeenCalled();
+    expect(pruneMock).not.toHaveBeenCalled();
   });
 
   it.each(['pending', 'waiting_for_capture'] satisfies YooKassaPaymentStatus[])(

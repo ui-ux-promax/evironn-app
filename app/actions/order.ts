@@ -14,10 +14,11 @@ import {
   serializeServiceDetails,
 } from '@/lib/order';
 import { logger } from '@/lib/logger';
-import { cancelPayment, siteUrl, toOrigin, validateYooKassaConfiguration } from '@/lib/yookassa';
+import { cancelPayment, getPaymentDetails, siteUrl, toOrigin, validateYooKassaConfiguration } from '@/lib/yookassa';
 import { pruneReviewsAfterCancel } from '@/lib/review';
 import { adjustSalesCount } from '@/lib/sales-count';
 import { ensureOnlinePayment } from '@/lib/payment-initialization';
+import { reconcilePaymentStatus } from '@/lib/payment-sync';
 import { assertPortfolioPaymentMode } from '@/lib/payment-environment';
 import { buildBlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
 import {
@@ -256,78 +257,138 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   return { ok: true, code: 'ORDER_READY', orderNumber: committed.orderNumber };
 }
 
-export type CancelOrderResult = { ok: true } | { ok: false; error: string };
+export type CancelOrderResult =
+  | { ok: true }
+  | { ok: false; code?: 'CANCELLATION_PENDING_SYNC'; error: string };
+
+const cancellationPendingSync = (): CancelOrderResult => ({
+  ok: false,
+  code: 'CANCELLATION_PENDING_SYNC',
+  error: 'Статус отмены платежа проверяется. Обновите заказ и повторите попытку позже.',
+});
+
+const canceledOrderProducts = (order: {
+  items: Array<{
+    quantity: number;
+    canonicalSku: { productId: string } | null;
+    productVariant: { colorway: { productId: string } } | null;
+  }>;
+}) =>
+  order.items.flatMap((item) =>
+    item.canonicalSku
+      ? [{ productId: item.canonicalSku.productId, quantity: item.quantity }]
+      : item.productVariant
+        ? [{ productId: item.productVariant.colorway.productId, quantity: item.quantity }]
+        : [],
+  );
 
 export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: 'Не авторизован' };
   const userId = session.user.id;
-
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      items: {
-        include: {
-          canonicalSku: { select: { productId: true } },
-          productVariant: { select: { colorway: { select: { productId: true } } } },
-        },
+  const include = {
+    items: {
+      include: {
+        canonicalSku: { select: { productId: true } },
+        productVariant: { select: { colorway: { select: { productId: true } } } },
       },
-      payment: true,
     },
+    payment: true,
+  } as const;
+  const order = await prisma.order.findUnique({
+    where: { id: orderId, userId, status: 'PENDING' },
+    include,
   });
   if (!order || order.userId !== userId || order.status !== 'PENDING') {
     return { ok: false, error: 'Этот заказ нельзя отменить' };
   }
 
-  const cancelled = await prisma.$transaction(async (transaction) => {
-    const result = await transaction.order.updateMany({
-      where: { id: orderId, userId, status: 'PENDING' },
-      data: { status: 'CANCELLED' },
-    });
-    if (result.count === 0) return false;
-    for (const item of order.items) {
-      if (item.skuId) {
-        await transaction.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
-      } else if (item.productVariantId) {
-        await transaction.productVariant.update({
-          where: { id: item.productVariantId },
-          data: { stock: { increment: item.quantity } },
-        });
+  if (order.paymentMethod === 'online') {
+    let locallyCanceled = false;
+    if (!order.payment) {
+      const initialization = await ensureOnlinePayment({
+        orderId,
+        now: new Date(),
+        client: prisma as unknown as import('@/lib/payment-initialization').PaymentInitializationClient,
+      });
+      if (initialization.outcome === 'NOT_CREATED') {
+        await adjustSalesCount(canceledOrderProducts(order), -1);
+        locallyCanceled = true;
+      } else if (initialization.outcome !== 'CREATED') {
+        return cancellationPendingSync();
       }
     }
-    return true;
-  });
-  if (!cancelled) return { ok: false, error: 'Этот заказ нельзя отменить' };
 
-  if (order.payment?.status === 'pending') {
-    try {
-      await cancelPayment(order.payment.id);
-    } catch (error) {
-      logger.error('cancel_payment_failed', error, { orderId, paymentId: order.payment.id });
+    if (!locallyCanceled) {
+      const correlated = await prisma.order.findUnique({
+        where: { id: orderId, userId, status: 'PENDING', paymentMethod: 'online' },
+        include,
+      });
+      if (
+        !correlated ||
+        correlated.paymentInitializationState !== 'CORRELATED' ||
+        !correlated.payment ||
+        correlated.payment.status !== 'pending' ||
+        correlated.payment.amount !== correlated.totalAmount
+      ) {
+        return cancellationPendingSync();
+      }
+
+      const paymentId = correlated.payment.id;
+      let details;
+      try {
+        await cancelPayment(paymentId);
+        details = await getPaymentDetails(paymentId);
+      } catch (error) {
+        logger.error('cancel_payment_failed', error, { orderId, paymentId });
+        return cancellationPendingSync();
+      }
+      if (
+        !details ||
+        details.id !== paymentId ||
+        details.status !== 'canceled' ||
+        details.amountRub !== correlated.totalAmount ||
+        details.orderNumber !== String(correlated.orderNumber)
+      ) {
+        return cancellationPendingSync();
+      }
+      try {
+        const result = await reconcilePaymentStatus({ paymentId, remoteStatus: 'canceled', source: 'order-page' });
+        if ((result.kind !== 'applied' && result.kind !== 'repaired') || result.transition !== 'canceled') {
+          return cancellationPendingSync();
+        }
+      } catch (error) {
+        logger.error('cancel_payment_reconciliation_failed', error, { orderId, paymentId });
+        return cancellationPendingSync();
+      }
     }
+  } else {
+    const cancelled = await prisma.$transaction(
+      async (transaction) => {
+        const result = await transaction.order.updateMany({
+          where: { id: orderId, userId, status: 'PENDING', paymentMethod: 'cod' },
+          data: { status: 'CANCELLED' },
+        });
+        if (!result.count) return false;
+        for (const item of order.items) {
+          if (item.skuId) {
+            await transaction.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+          } else if (item.productVariantId) {
+            await transaction.productVariant.update({
+              where: { id: item.productVariantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+        }
+        return true;
+      },
+      { isolationLevel: 'Serializable' },
+    );
+    if (!cancelled) return { ok: false, error: 'Этот заказ нельзя отменить' };
+    await adjustSalesCount(canceledOrderProducts(order), -1);
   }
 
-  await adjustSalesCount(
-    order.items.flatMap((item) =>
-      item.canonicalSku
-        ? [{ productId: item.canonicalSku.productId, quantity: item.quantity }]
-        : item.productVariant
-          ? [{ productId: item.productVariant.colorway.productId, quantity: item.quantity }]
-          : [],
-    ),
-    -1,
-  );
-  const productIds = [
-    ...new Set(
-      order.items.flatMap((item) =>
-        item.canonicalSku
-          ? [item.canonicalSku.productId]
-          : item.productVariant
-            ? [item.productVariant.colorway.productId]
-            : [],
-      ),
-    ),
-  ];
+  const productIds = [...new Set(canceledOrderProducts(order).map((item) => item.productId))];
   await pruneReviewsAfterCancel(userId, productIds);
   revalidatePath('/profile');
   revalidatePath(`/orders/${order.orderNumber}`);

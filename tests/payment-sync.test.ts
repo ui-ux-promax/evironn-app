@@ -5,21 +5,25 @@ const fixedNow = new Date('2026-07-02T10:00:00.000Z');
 vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock('@/lib/prisma-client', () => ({
   prisma: {
+    $transaction: vi.fn(),
     payment: { update: vi.fn(), updateMany: vi.fn(), findUnique: vi.fn() },
-    order: { update: vi.fn(), updateMany: vi.fn() },
+    order: { update: vi.fn(), updateMany: vi.fn(), findMany: vi.fn() },
     productVariant: { update: vi.fn() },
     sku: { update: vi.fn() },
     product: { update: vi.fn() },
   },
 }));
+vi.mock('@/lib/yookassa', () => ({ getPaymentDetails: vi.fn() }));
 
 import {
   applyPaymentCanceled,
   applyPaymentSucceeded,
   reconcilePaymentStatus,
+  recoverPaymentCorrelation,
   type YooKassaPaymentStatus,
 } from '@/lib/payment-sync';
 import { prisma } from '@/lib/prisma-client';
+import { getPaymentDetails } from '@/lib/yookassa';
 
 const paymentUpdate = prisma.payment.update as unknown as ReturnType<typeof vi.fn>;
 const paymentUpdateMany = prisma.payment.updateMany as unknown as ReturnType<typeof vi.fn>;
@@ -29,6 +33,9 @@ const orderUpdateMany = prisma.order.updateMany as unknown as ReturnType<typeof 
 const variantUpdate = prisma.productVariant.update as unknown as ReturnType<typeof vi.fn>;
 const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
 const productUpdate = prisma.product.update as unknown as ReturnType<typeof vi.fn>;
+const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
+const orderFindMany = prisma.order.findMany as unknown as ReturnType<typeof vi.fn>;
+const detailsMock = getPaymentDetails as unknown as ReturnType<typeof vi.fn>;
 
 const orderItems = [{ productVariantId: 'v1', quantity: 2, productVariant: { colorway: { productId: 'prod_1' } } }];
 
@@ -52,6 +59,7 @@ beforeEach(() => {
   skuUpdate.mockResolvedValue({});
   productUpdate.mockResolvedValue({});
   paymentFindUnique.mockResolvedValue(payment());
+  transaction.mockImplementation(async (callback: (tx: typeof prisma) => unknown) => callback(prisma));
 });
 
 describe('reconcilePaymentStatus', () => {
@@ -64,6 +72,7 @@ describe('reconcilePaymentStatus', () => {
     });
 
     expect(result).toEqual({ kind: 'applied', transition: 'succeeded' });
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
     expect(paymentFindUnique).toHaveBeenCalledWith({
       where: { id: 'pay_1' },
       include: {
@@ -360,6 +369,71 @@ describe('reconcilePaymentStatus', () => {
     expect(result).toEqual({ kind: 'missing' });
     expect(paymentUpdateMany).not.toHaveBeenCalled();
     expect(orderUpdateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('recoverPaymentCorrelation', () => {
+  it('correlates one exact pending online order from verified provider details', async () => {
+    detailsMock.mockResolvedValue({ id: 'pay-recovered', status: 'succeeded', amountRub: 159900, orderNumber: '1042', confirmationUrl: null });
+    orderFindMany.mockResolvedValue([{ id: 'order-1', orderNumber: 1042, status: 'PENDING', paymentMethod: 'online', totalAmount: 159900, payment: null }]);
+    (prisma.payment as any).create = vi.fn().mockResolvedValue({});
+    await expect(recoverPaymentCorrelation('pay-recovered')).resolves.toEqual({ kind: 'recovered', paymentId: 'pay-recovered' });
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
+  });
+
+  it('rejects forged metadata without writes', async () => {
+    detailsMock.mockResolvedValue({ id: 'pay-forged', status: 'canceled', amountRub: 159900, orderNumber: 'not-an-order-number', confirmationUrl: null });
+    await expect(recoverPaymentCorrelation('pay-forged')).resolves.toEqual({ kind: 'ignored', reason: 'invalid-provider-correlation' });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a provider response whose id does not match the requested payment', async () => {
+    detailsMock.mockResolvedValue({ id: 'pay-other', status: 'canceled', amountRub: 159900, orderNumber: '1042', confirmationUrl: null });
+    await expect(recoverPaymentCorrelation('pay-requested')).resolves.toEqual({ kind: 'ignored', reason: 'invalid-provider-correlation' });
+    expect(orderFindMany).not.toHaveBeenCalled();
+  });
+
+  it('preserves state when exact metadata and amount do not identify exactly one pending online order', async () => {
+    detailsMock.mockResolvedValue({
+      id: 'pay-ambiguous',
+      status: 'canceled',
+      amountRub: 159900,
+      orderNumber: '1042',
+      confirmationUrl: null,
+    });
+    orderFindMany.mockResolvedValue([
+      { id: 'order-1', payment: null },
+      { id: 'order-2', payment: null },
+    ]);
+    await expect(recoverPaymentCorrelation('pay-ambiguous')).resolves.toEqual({
+      kind: 'ignored',
+      reason: 'order-correlation-conflict',
+    });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('repairs CORRELATED idempotently for an existing exact local payment', async () => {
+    detailsMock.mockResolvedValue({
+      id: 'pay-existing',
+      status: 'pending',
+      amountRub: 159900,
+      orderNumber: '1042',
+      confirmationUrl: null,
+    });
+    orderFindMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        paymentEverDispatchedAt: null,
+        payment: { id: 'pay-existing', amount: 159900 },
+      },
+    ]);
+    await expect(recoverPaymentCorrelation('pay-existing')).resolves.toEqual({
+      kind: 'recovered',
+      paymentId: 'pay-existing',
+    });
+    expect(orderUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ paymentInitializationState: 'CORRELATED' }) }),
+    );
   });
 });
 

@@ -150,6 +150,49 @@ describe('Checkout Variant A', () => {
     expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('Tverskaya, 10');
   });
 
+  it('shows neutral disabled totals while a quote is pending or unavailable', async () => {
+    let rejectQuote!: (error: Error) => void;
+    mocks.quote.mockReturnValue(new Promise((_, reject) => (rejectQuote = reject)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+
+    expect(screen.queryByText('0 ₽')).not.toBeInTheDocument();
+    expect(document.querySelector('.chk-bar__details > summary > span > b')).toHaveTextContent('Рассчитываем…');
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+
+    rejectQuote(new Error('Quote unavailable'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Quote unavailable');
+    expect(screen.queryByText('0 ₽')).not.toBeInTheDocument();
+    expect(document.querySelector('.chk-bar__details > summary > span > b')).toHaveTextContent('Стоимость недоступна');
+  });
+
+  it('clears saved address details when switching to a new manual address and re-quotes', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('radio', { name: /Новый адрес/ }));
+
+    expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('');
+    expect(screen.getByRole('textbox', { name: 'Город' })).toHaveValue('Moscow');
+    expect(screen.getByRole('textbox', { name: 'Комментарий курьеру' })).toHaveValue('');
+    expect(screen.getByRole('spinbutton', { name: 'Этаж' })).toHaveValue(null);
+    expect(screen.getByRole('radio', { name: 'passenger' })).toHaveAttribute('aria-checked', 'true');
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    expect(mocks.quote).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        address: expect.objectContaining({ city: 'Moscow', addressLine: '', liftType: 'passenger', intercom: '' }),
+      }),
+    );
+  });
+
+  it('uses the localized item count label in the mobile summary', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    expect(document.querySelector('.chk-bar__details > summary > span')).toHaveTextContent('1 товар');
+    expect(document.querySelector('.chk-bar__details > summary > span')).not.toHaveTextContent('1 товаров');
+  });
+
   it('locks blocked placement and exposes only order navigation', async () => {
     mocks.placeOrder.mockResolvedValue({
       ok: false,

@@ -382,6 +382,7 @@ export function SummaryRows({ quote }: { quote: CheckoutQuoteDto | null }) {
 
 export function SubmitButton({ controller }: { controller: Controller }) {
   const { quote, quotePending, mutationPending, submitPending, submitLocked, actions } = controller;
+  const unavailableTotal = quotePending || mutationPending ? 'Рассчитываем…' : 'Стоимость недоступна';
   return (
     <button
       className="chk-submit chk-submit--light"
@@ -390,21 +391,29 @@ export function SubmitButton({ controller }: { controller: Controller }) {
       aria-busy={submitPending}
       onClick={() => void actions.submit()}
     >
-      {submitPending ? 'Оформляем…' : `Оформить заказ · ${formatPrice(quote?.totals.total ?? 0)}`}
+      {submitPending
+        ? 'Оформляем…'
+        : quote
+          ? `Оформить заказ · ${formatPrice(quote.totals.total)}`
+          : `Оформить заказ · ${unavailableTotal}`}
     </button>
   );
 }
 
 export function MobileBar({ controller, summary }: { controller: Controller; summary: ReactNode }) {
-  const total = controller.quote?.totals.total ?? 0;
+  const total = controller.quote
+    ? formatPrice(controller.quote.totals.total)
+    : controller.quotePending || controller.mutationPending
+      ? 'Рассчитываем…'
+      : 'Стоимость недоступна';
   const count = controller.quote?.totals.itemCount ?? controller.cart.totals.itemCount;
   return (
     <div className="chk-bar chk-bar--light">
       <details className="chk-bar__details">
         <summary>
           <span>
-            <b>{formatPrice(total)}</b>
-            {count} товаров
+            <b>{total}</b>
+            {countLabel(count)}
           </span>
           <em>
             Состав заказа

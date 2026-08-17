@@ -159,6 +159,17 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const pickAddress = useCallback(
     (id: string) => {
       setSelectedAddressId(id);
+      if (id === 'new') {
+        setAddress({
+          city: initialData.addressDefaults?.city.trim() || 'Москва',
+          addressLine: '',
+          addressComment: undefined,
+          floor: undefined,
+          liftType: 'passenger',
+          intercom: '',
+        });
+        return;
+      }
       const saved = initialData.savedAddresses.find((candidate) => candidate.id === id);
       if (!saved) return;
       setAddress((current) => ({
@@ -168,7 +179,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         addressComment: saved.comment?.trim() || undefined,
       }));
     },
-    [initialData.savedAddresses],
+    [initialData.addressDefaults?.city, initialData.savedAddresses],
   );
 
   const mutateCart = useCallback(async (operation: () => Promise<unknown>) => {

@@ -37,3 +37,14 @@ No provider, database, Preview, E2E, build, or full-gate call was made. Live Yoo
 ## Preservation
 
 The pre-existing `.superpowers/sdd/progress.md` modification and the two protected untracked Phase 2 plan files were not included in Task 5 edits.
+
+## Task Review Remediation
+
+Review result before remediation: Critical 0, Important 2, not approved.
+
+- Recovery now re-reads the exact order and payment inside the serializable transaction. It preserves the fresh non-null `paymentEverDispatchedAt` value instead of writing stale candidate evidence, and the guarded update includes the exact order number and correlation facts.
+- `getPaymentDetails` returns null only for explicit provider not-found responses. Transport, authentication, and other provider failures propagate to recovery.
+- The webhook returns HTTP 500 when missing-payment provider lookup or correlation persistence fails, allowing YooKassa retry instead of acknowledging a lost event.
+- RED evidence: 3 files, 4 expected failures covering the evidence interleaving, provider transport failure, provider lookup recovery failure, and correlation persistence failure.
+- GREEN evidence: affected regressions passed 50/50; full Task 5 focused suite passed 128/128; typecheck, touched Prettier, and diff check passed.
+- No database, provider, E2E, build, or full-gate call was made.

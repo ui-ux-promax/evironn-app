@@ -7,7 +7,7 @@ vi.mock('@/lib/prisma-client', () => ({
   prisma: {
     $transaction: vi.fn(),
     payment: { update: vi.fn(), updateMany: vi.fn(), findUnique: vi.fn() },
-    order: { update: vi.fn(), updateMany: vi.fn(), findMany: vi.fn() },
+    order: { update: vi.fn(), updateMany: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
     productVariant: { update: vi.fn() },
     sku: { update: vi.fn() },
     product: { update: vi.fn() },
@@ -35,6 +35,7 @@ const skuUpdate = prisma.sku.update as unknown as ReturnType<typeof vi.fn>;
 const productUpdate = prisma.product.update as unknown as ReturnType<typeof vi.fn>;
 const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 const orderFindMany = prisma.order.findMany as unknown as ReturnType<typeof vi.fn>;
+const orderFindUnique = prisma.order.findUnique as unknown as ReturnType<typeof vi.fn>;
 const detailsMock = getPaymentDetails as unknown as ReturnType<typeof vi.fn>;
 
 const orderItems = [{ productVariantId: 'v1', quantity: 2, productVariant: { colorway: { productId: 'prod_1' } } }];
@@ -59,6 +60,15 @@ beforeEach(() => {
   skuUpdate.mockResolvedValue({});
   productUpdate.mockResolvedValue({});
   paymentFindUnique.mockResolvedValue(payment());
+  orderFindUnique.mockResolvedValue({
+    id: 'order-1',
+    orderNumber: 1042,
+    status: 'PENDING',
+    paymentMethod: 'online',
+    totalAmount: 159900,
+    paymentEverDispatchedAt: null,
+    payment: null,
+  });
   transaction.mockImplementation(async (callback: (tx: typeof prisma) => unknown) => callback(prisma));
 });
 
@@ -427,12 +437,66 @@ describe('recoverPaymentCorrelation', () => {
         payment: { id: 'pay-existing', amount: 159900 },
       },
     ]);
+    orderFindUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 1042,
+      status: 'PENDING',
+      paymentMethod: 'online',
+      totalAmount: 159900,
+      paymentEverDispatchedAt: null,
+      payment: { id: 'pay-existing', amount: 159900 },
+    });
     await expect(recoverPaymentCorrelation('pay-existing')).resolves.toEqual({
       kind: 'recovered',
       paymentId: 'pay-existing',
     });
     expect(orderUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ paymentInitializationState: 'CORRELATED' }) }),
+    );
+  });
+
+  it('preserves fresh write-once dispatch evidence acquired after the recovery candidate read', async () => {
+    const freshEvidence = new Date('2026-08-17T10:00:00.000Z');
+    detailsMock.mockResolvedValue({
+      id: 'pay-race',
+      status: 'pending',
+      amountRub: 159900,
+      orderNumber: '1042',
+      confirmationUrl: null,
+    });
+    orderFindMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        orderNumber: 1042,
+        totalAmount: 159900,
+        paymentEverDispatchedAt: null,
+        payment: null,
+      },
+    ]);
+    orderFindUnique.mockResolvedValue({
+      id: 'order-1',
+      orderNumber: 1042,
+      status: 'PENDING',
+      paymentMethod: 'online',
+      totalAmount: 159900,
+      paymentEverDispatchedAt: freshEvidence,
+      payment: null,
+    });
+    (prisma.payment as any).create = vi.fn().mockResolvedValue({});
+
+    await expect(recoverPaymentCorrelation('pay-race')).resolves.toEqual({
+      kind: 'recovered',
+      paymentId: 'pay-race',
+    });
+    expect(orderFindUnique).toHaveBeenCalledWith({
+      where: { id: 'order-1', orderNumber: 1042 },
+      select: expect.any(Object),
+    });
+    expect(orderUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'order-1', orderNumber: 1042 }),
+        data: expect.objectContaining({ paymentEverDispatchedAt: freshEvidence }),
+      }),
     );
   });
 });

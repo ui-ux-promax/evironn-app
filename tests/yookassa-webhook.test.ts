@@ -84,6 +84,20 @@ describe('yookassa webhook', () => {
     expect(reconcileMock).toHaveBeenCalledTimes(2);
   });
 
+  it.each([
+    { kind: 'error', reason: 'provider-lookup-failed' },
+    { kind: 'error', reason: 'correlation-persist-failed' },
+  ])('returns 500 when missing-payment recovery fails: $reason', async (recovery) => {
+    parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_missing' } });
+    statusMock.mockResolvedValue('succeeded');
+    reconcileMock.mockResolvedValue({ kind: 'missing' });
+    recoverMock.mockResolvedValue(recovery);
+
+    const res = await POST(req() as never);
+
+    expect(res.status).toBe(500);
+  });
+
   it('ignores unsupported provider event after parsing', async () => {
     parseMock.mockReturnValue({ event: 'refund.succeeded', object: { id: 'refund_1' } });
 

@@ -169,7 +169,21 @@ export async function getPaymentDetails(paymentId: string): Promise<PaymentProvi
   const sdk = getYooKassa();
   try {
     return paymentDetails(await sdk.payments.load(paymentId));
-  } catch {
-    return null;
+  } catch (error) {
+    const providerError = error as {
+      status?: unknown;
+      statusCode?: unknown;
+      response?: { status?: unknown };
+      code?: unknown;
+    };
+    if (
+      providerError.status === 404 ||
+      providerError.statusCode === 404 ||
+      providerError.response?.status === 404 ||
+      providerError.code === 'not_found'
+    ) {
+      return null;
+    }
+    throw error;
   }
 }

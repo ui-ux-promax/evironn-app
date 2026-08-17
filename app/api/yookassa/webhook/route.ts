@@ -32,6 +32,9 @@ export async function POST(req: Request) {
     });
     if (result.kind === 'missing') {
       const recovered = await recoverPaymentCorrelation(notification.object.id);
+      if (recovered.kind === 'error') {
+        throw new Error(`Payment correlation recovery failed: ${recovered.reason}`);
+      }
       if (recovered.kind === 'recovered') {
         await reconcilePaymentStatus({ paymentId: recovered.paymentId, remoteStatus, source: 'webhook' });
       }

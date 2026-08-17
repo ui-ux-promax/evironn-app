@@ -180,4 +180,14 @@ describe('getPaymentDetails', () => {
     loadMock.mockResolvedValue({ id: 'pay-1', status: 'pending' });
     await expect(getPaymentDetails('pay-1')).resolves.toBeNull();
   });
+
+  it('returns null only for provider not-found', async () => {
+    loadMock.mockRejectedValue(Object.assign(new Error('not found'), { status: 404 }));
+    await expect(getPaymentDetails('pay-missing')).resolves.toBeNull();
+  });
+
+  it('propagates provider transport and authentication failures', async () => {
+    loadMock.mockRejectedValue(Object.assign(new Error('provider unavailable'), { status: 503 }));
+    await expect(getPaymentDetails('pay-1')).rejects.toThrow('provider unavailable');
+  });
 });

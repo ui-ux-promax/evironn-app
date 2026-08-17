@@ -204,26 +204,50 @@ export async function recoverPaymentCorrelation(providerId: string): Promise<Pay
   try {
     const saved = await prisma.$transaction(
       async (tx) => {
+        const current = await tx.order.findUnique({
+          where: { id: candidate.id, orderNumber },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            paymentMethod: true,
+            totalAmount: true,
+            paymentEverDispatchedAt: true,
+            payment: { select: { id: true, amount: true } },
+          },
+        });
+        if (
+          !current ||
+          current.status !== 'PENDING' ||
+          current.paymentMethod !== 'online' ||
+          current.totalAmount !== details.amountRub ||
+          (current.payment && (current.payment.id !== providerId || current.payment.amount !== details.amountRub))
+        ) {
+          return false;
+        }
         const guard = await tx.order.updateMany({
           where: {
-            id: candidate.id,
+            id: current.id,
+            orderNumber,
             status: 'PENDING',
             paymentMethod: 'online',
             totalAmount: details.amountRub,
-            ...(candidate.payment ? { payment: { is: { id: providerId, amount: details.amountRub } } } : { payment: { is: null } }),
+            ...(current.payment
+              ? { payment: { is: { id: providerId, amount: details.amountRub } } }
+              : { payment: { is: null } }),
           },
           data: {
             paymentInitializationState: 'CORRELATED',
             paymentInitializationClaimedAt: null,
-            paymentEverDispatchedAt: candidate.paymentEverDispatchedAt ?? new Date(),
+            paymentEverDispatchedAt: current.paymentEverDispatchedAt ?? new Date(),
           },
         });
         if (!guard.count) return false;
-        if (!candidate.payment) {
+        if (!current.payment) {
           await tx.payment.create({
             data: {
               id: providerId,
-              orderId: candidate.id,
+              orderId: current.id,
               amount: details.amountRub,
               status: details.status,
               confirmationUrl: details.confirmationUrl,

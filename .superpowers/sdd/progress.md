@@ -13,7 +13,9 @@
 - Task 2 complete: commits `7a01515..cd3741e`; focused Vitest 6 files / 34 tests, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh final review approved Critical 0 / Important 0 / Minor 0. No database connection or migration application occurred.
 - Task 2A complete: commits `ca26715..e15dbd6`; the explicit guarded read-only migration checkpoint reported `UNAPPLIED` with `ok: true`, then added only nullable `Order.paymentReturnUrl` and the separate one-line additive migration. Focused Vitest 61/61, Prisma validate/generate, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. No migration deploy or application-data write occurred.
 - Task 3 complete: commit `52ba731`; authenticated owner-scoped checkout read model, server-owned quote, coupon reader/clock injection, bounded DaData projection, and payment-initialization DTO vocabulary implemented. Focused Vitest 41/41, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. External-service smoke remains deferred because presence-only preflight found all requested keys absent.
-- Tasks 4-9 pending. No push, Preview, PR, merge, branch deletion, or next phase.
+- Task 4 implementation and two remediation waves are committed through `c831598`. Focused evidence reached 11 files / 68 tests plus typecheck, Prettier, diff, and secret checks. The latest fresh xhigh review remains blocking at Critical 1 / Important 4 because cross-process payment-create attempts need a durable pre-dispatch claim and four adjacent contract fixes.
+- ADR-018 durable YooKassa create claim was approved by the user on 2026-08-17. Design: `docs/superpowers/specs/2026-08-17-phase-4-durable-payment-claim-design.md`. Task 4 implementation remains paused until the design checkpoint is committed and the executable plan is amended/reviewed.
+- Tasks 4-9 remain incomplete. No push, Preview, PR, merge, branch deletion, or next phase.
 
 # Phase 2 catalog pilot progress
 

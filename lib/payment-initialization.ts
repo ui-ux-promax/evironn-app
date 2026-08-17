@@ -171,6 +171,11 @@ export async function ensureOnlinePayment({
           ? 'READY'
           : null;
     if (!origin) return indeterminate('payment_initialization_state_not_claimable');
+    if (
+      (origin === 'READY' && order.paymentEverDispatchedAt !== null) ||
+      (origin === 'DISPATCHED' && order.paymentEverDispatchedAt === null)
+    )
+      return indeterminate('payment_initialization_evidence_incoherent');
     const claimStartedAt = clock();
     if (claimStartedAt.getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS)
       return { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };

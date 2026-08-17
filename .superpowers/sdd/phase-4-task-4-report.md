@@ -111,3 +111,11 @@ Concerns:
 - Added a placement retry integration regression where the first full callback completes then receives P2034; the second callback re-reads changed authoritative quote/snapshot/coupon/service/totals and its stock/order/item/cart-delete writes are the committed values.
 
 Review-remediation verification is limited to focused mocked tests, TypeScript, formatting, and diff checks. No database, provider, full gate, build, or E2E command was run.
+
+## Durable Claim Review Remediation 2
+
+- Added an explicit pre-claim coherence check: READY is claimable only with null dispatch evidence; DISPATCHED is claimable only with non-null evidence. Incoherent pairs and CLAIMED/CORRELATED/NOT_CREATED/null states perform zero transaction/provider calls.
+- Added deterministic normal concurrent READY coverage proving one claim winner and one provider call, plus prior-DISPATCHED proven-no-dispatch preservation and expired-release guard loss from changed evidence, missing claim ownership, changed state, and transaction throw.
+- Strengthened the real `placeOrder`/checkout-builder P2034 integration: both transaction clients execute two canonical cart reads, coupon lookup, SKU reservation, order/item creation, and targeted cart deletion. Changed second-attempt SKU price/stock/media/configuration, coupon, services, delivery, totals, and immutable snapshot values are asserted on the committed order write.
+
+This section reports deterministic focused evidence only. It does not claim live database/provider concurrency coverage.

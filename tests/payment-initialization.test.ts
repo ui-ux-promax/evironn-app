@@ -95,6 +95,61 @@ function harness(providerResult: Awaited<ReturnType<PaymentProviderAdapter['crea
 }
 
 describe('ensureOnlinePayment', () => {
+  it.each([
+    ['READY', new Date('2026-08-16T00:30:00.000Z')],
+    ['DISPATCHED', null],
+  ] as const)('rejects incoherent %s dispatch evidence before claim or provider', async (state, evidence) => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    Object.assign(h.state.order, { paymentInitializationState: state, paymentEverDispatchedAt: evidence });
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.client.$transaction).not.toHaveBeenCalled();
+    expect(h.provider.createPayment).not.toHaveBeenCalled();
+  });
+
+  it.each(['CLAIMED', 'CORRELATED', 'NOT_CREATED', null] as const)(
+    'does not claim nonclaimable state %s',
+    async (state) => {
+      const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+      h.state.order.paymentInitializationState = state;
+      await expect(
+        ensureOnlinePayment({
+          orderId: 'order-1',
+          now: new Date('2026-08-16T01:00:00.000Z'),
+          client: h.client,
+          provider: h.provider,
+        }),
+      ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+      expect(h.client.$transaction).not.toHaveBeenCalled();
+      expect(h.provider.createPayment).not.toHaveBeenCalled();
+    },
+  );
+
+  it('allows only one normal concurrent READY caller to reach the provider', async () => {
+    const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'timeout' });
+    const [left, right] = await Promise.all([
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ]);
+    expect([left, right]).toEqual([{ outcome: 'INDETERMINATE' }, { outcome: 'INDETERMINATE' }]);
+    expect(h.provider.createPayment).toHaveBeenCalledOnce();
+  });
   it('keeps CREATED persistence and proven NOT_CREATED cancellation mutually exclusive', async () => {
     const h = harness({ outcome: 'INDETERMINATE', dispatched: true, reason: 'unused' });
     h.state.allowDuplicateClaim = true;
@@ -466,6 +521,26 @@ describe('ensureOnlinePayment', () => {
     });
   });
 
+  it('returns prior DISPATCHED proven-no-dispatch to DISPATCHED without stock restoration', async () => {
+    const evidence = new Date('2026-08-16T00:30:00.000Z');
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    Object.assign(h.state.order, { paymentInitializationState: 'DISPATCHED', paymentEverDispatchedAt: evidence });
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: new Date('2026-08-16T01:00:00.000Z'),
+        client: h.client,
+        provider: h.provider,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.state.order).toMatchObject({
+      paymentInitializationState: 'DISPATCHED',
+      paymentEverDispatchedAt: evidence,
+    });
+    expect(h.state.stock).toBe(8);
+    expect(h.tx.sku.update).not.toHaveBeenCalled();
+  });
+
   it('fails closed when write-once dispatch evidence changes after claim', async () => {
     const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
     h.provider.createPayment.mockImplementation(async () => {
@@ -505,6 +580,36 @@ describe('ensureOnlinePayment', () => {
       }),
     ).resolves.toEqual({ outcome: 'INDETERMINATE' });
     expect(h.provider.createPayment).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'changed evidence',
+      (h: ReturnType<typeof harness>) => (h.state.order.paymentEverDispatchedAt = new Date('2026-08-16T00:45:00.000Z')),
+    ],
+    [
+      'missing claim timestamp',
+      (h: ReturnType<typeof harness>) => (h.state.order.paymentInitializationClaimedAt = null),
+    ],
+    [
+      'changed claim state',
+      (h: ReturnType<typeof harness>) => (h.state.order.paymentInitializationState = 'DISPATCHED'),
+    ],
+  ])('fails closed when expired release guard has %s', async (_case, mutate) => {
+    const h = harness({ outcome: 'NOT_CREATED', dispatched: false });
+    const claimNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS - 1);
+    const dispatchNow = new Date(createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS);
+    let calls = 0;
+    const clock = () => {
+      calls += 1;
+      if (calls === 2) mutate(h);
+      return calls === 1 ? claimNow : dispatchNow;
+    };
+    await expect(
+      ensureOnlinePayment({ orderId: 'order-1', now: claimNow, clock, client: h.client, provider: h.provider }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(h.provider.createPayment).not.toHaveBeenCalled();
+    expect(h.state.stock).toBe(8);
   });
 
   it('treats provider lookup rejection as indeterminate', async () => {

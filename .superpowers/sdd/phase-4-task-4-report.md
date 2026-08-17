@@ -70,3 +70,33 @@ Wave 2 RED/GREEN evidence:
 - `npm run typecheck`: passed.
 - Final Task 4 focused command, including wave 2 regressions: 11 files, 68 tests passed.
 - Final touched-file Prettier check, `git diff --check`, and changed-file secret scan: passed.
+
+## Durable Claim Remediation
+
+Ownership history remains separated as follows:
+
+- Existing Task 4 production: `cd982c7..c831598`.
+- ADR-018 durable-claim design: `8e289e7`.
+- Amended plan series: `08610e9..d2d23bd`.
+- Approved Task 3A schema foundation: `4340dc7`.
+- This remediation delta: `4340dc7..HEAD`.
+
+Changes in this remediation:
+
+- Replaced process-local payment initialization with a durable `READY`/`CLAIMED`/`DISPATCHED`/`CORRELATED`/`NOT_CREATED` claim protocol. Every create attempt is conditionally claimed by exact timestamp; only the claim owner may correlate, mark dispatch evidence, release an expired claim, or cancel a proven never-dispatched order.
+- Made `ensureOnlinePayment` total across read, claim, durable-request, provider, persistence, release, and cancellation failures. Failures return `INDETERMINATE`, emit structured logs, and preserve order/stock unless a guarded serializable first-attempt no-dispatch cancellation commits.
+- New online orders write `READY` in the placement transaction; COD orders write no payment initialization state. Pre-transaction Auth.js/cookie/cart failures are sanitized, unexpected post-commit initializer rejection becomes durable pending, and sales/address side-effect failures cannot replace the committed result.
+- Removed the inherited partial checkout action wrapper and disabled its legacy CTA. Added the boundary regression and removed the obsolete submission test.
+- Canonical snapshots now prefer SKU media and fall back to product media.
+
+Fresh remediation evidence:
+
+- Mandated focused GREEN command: 11 files, 73 tests passed.
+- `npm run typecheck`: passed.
+- Touched-file Prettier write/check: passed.
+- `git diff --check`: passed; only expected LF-to-CRLF warnings were emitted.
+- No database, migration, external provider, Preview, full gate, build, or E2E command was run.
+
+Concerns:
+
+- Provider and database concurrency behavior is covered with deterministic mocked transaction boundaries only; live non-production verification remains outside this bounded task.

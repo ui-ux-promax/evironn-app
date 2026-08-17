@@ -62,7 +62,11 @@ async function recordOrderSideEffects(
   orderNumber: number,
   salesItems: Array<{ productId: string; quantity: number }>,
 ): Promise<void> {
-  await adjustSalesCount(salesItems, 1);
+  try {
+    await adjustSalesCount(salesItems, 1);
+  } catch (error) {
+    logger.error('order_sales_count_failed', error, { orderNumber });
+  }
   if (!form.address) return;
   try {
     const { saveAddressFromOrder } = await import('@/app/actions/address');
@@ -77,8 +81,14 @@ async function recordOrderSideEffects(
 }
 
 export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
-  const session = await auth();
+  let session: { user?: { id?: string } } | null;
+  try {
+    session = (await auth()) as { user?: { id?: string } } | null;
+  } catch (error) {
+    return placementError(error);
+  }
   if (!session?.user?.id) return { ok: false, code: 'UNAUTHENTICATED', error: 'Не авторизован' };
+  const userId = session.user.id;
 
   const parsed = placeOrderSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, code: 'INVALID_INPUT', error: 'Проверьте поля формы' };
@@ -96,8 +106,13 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
     }
   }
 
-  const store = await cookies();
-  const owner = await resolveOwnerCart(session.user.id, store.get(cartCookieName)?.value, { create: false });
+  let owner: Awaited<ReturnType<typeof resolveOwnerCart>>;
+  try {
+    const store = await cookies();
+    owner = await resolveOwnerCart(userId, store.get(cartCookieName)?.value, { create: false });
+  } catch (error) {
+    return placementError(error);
+  }
   if (!owner) return { ok: false, code: 'EMPTY_CART', error: 'Корзина пуста' };
 
   let committed: {
@@ -110,7 +125,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   try {
     committed = await runSerializableOrderTransaction(prisma, async (transaction: OrderTransaction) => {
       const orderData = await buildCheckoutOrderData({
-        userId: session.user.id,
+        userId,
         cartId: owner.id,
         raw: form,
         now,
@@ -135,7 +150,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
       const point = orderData.quote.delivery.pickupPoint;
       const order = await transaction.order.create({
         data: {
-          userId: session.user.id,
+          userId,
           status: 'PENDING',
           contactName: form.contactName,
           contactPhone: form.contactPhone,
@@ -151,6 +166,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
           couponCode: orderData.quote.coupon?.code ?? null,
           paymentMethod: form.paymentMethod,
           paymentReturnUrl: null,
+          paymentInitializationState: form.paymentMethod === 'online' ? 'READY' : null,
           ...delivery,
           floor: address?.floor ?? null,
           liftType: address?.liftType ?? null,
@@ -192,7 +208,17 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   }
 
   if (form.paymentMethod === 'online') {
-    const initialization = await ensureOnlinePayment({ orderId: committed.id, now, client: prisma });
+    let initialization;
+    try {
+      initialization = await ensureOnlinePayment({
+        orderId: committed.id,
+        now,
+        client: prisma as unknown as import('@/lib/payment-initialization').PaymentInitializationClient,
+      });
+    } catch (error) {
+      logger.error('payment_initialization_unexpected_failure', error, { orderId: committed.id });
+      initialization = { outcome: 'INDETERMINATE' } as const;
+    }
     if (initialization.outcome === 'CREATED' && initialization.confirmationUrl) {
       await recordOrderSideEffects(form, committed.orderNumber, committed.salesItems);
       return {

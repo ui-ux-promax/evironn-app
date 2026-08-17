@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma-client';
+import { logger } from '@/lib/logger';
 import {
   createPaymentAttempt,
   getPaymentDetails,
@@ -6,7 +7,6 @@ import {
   type PaymentProviderDetails,
 } from '@/lib/yookassa';
 
-export const PAYMENT_PROVIDER_RETENTION_MS = 24 * 60 * 60 * 1000;
 export const PAYMENT_CREATE_RETRY_WINDOW_MS = 23 * 60 * 60 * 1000;
 
 export interface DurablePaymentRequest {
@@ -18,12 +18,10 @@ export interface DurablePaymentRequest {
   metadata: { orderNumber: string };
   returnUrl: string;
 }
-
 export interface PaymentProviderAdapter {
   createPayment(input: DurablePaymentRequest): Promise<PaymentProviderAttempt>;
   getPaymentDetails(paymentId: string): Promise<PaymentProviderDetails | null>;
 }
-
 interface InitializationOrder {
   id: string;
   orderNumber: number;
@@ -32,56 +30,47 @@ interface InitializationOrder {
   totalAmount: number;
   paymentReturnUrl: string | null;
   createdAt: Date;
+  paymentInitializationState: 'READY' | 'CLAIMED' | 'DISPATCHED' | 'CORRELATED' | 'NOT_CREATED' | null;
+  paymentInitializationClaimedAt: Date | null;
+  paymentEverDispatchedAt: Date | null;
   payment: { id: string; amount: number; status: string; confirmationUrl: string | null } | null;
   items: Array<{ skuId: string | null; quantity: number }>;
 }
-
-interface PaymentInitializationTransaction {
+interface Tx {
   order: {
-    updateMany(args: {
-      where: { id: string; status: 'PENDING'; payment?: { is: null } };
-      data: { status: 'PENDING' | 'CANCELLED' };
-    }): Promise<{ count: number }>;
+    updateMany(args: { where: Record<string, unknown>; data: Record<string, unknown> }): Promise<{ count: number }>;
   };
   payment: {
     findUnique(args: { where: { orderId: string }; select: { id: true } }): Promise<{ id: string } | null>;
     upsert(args: {
       where: { orderId: string };
-      create: { id: string; orderId: string; amount: number; status: string; confirmationUrl: string | null };
-      update: { amount: number; status: string; confirmationUrl: string | null };
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
     }): Promise<unknown>;
   };
-  sku: {
-    update(args: { where: { id: string }; data: { stock: { increment: number } } }): Promise<unknown>;
-  };
+  sku: { update(args: { where: { id: string }; data: { stock: { increment: number } } }): Promise<unknown> };
 }
-
 export interface PaymentInitializationClient {
   order: {
-    findUnique(args: {
-      where: { id: string };
-      include: { payment: true; items: { select: { skuId: true; quantity: true } } };
-    }): Promise<InitializationOrder | null>;
+    findUnique(args: { where: { id: string }; include: Record<string, unknown> }): Promise<InitializationOrder | null>;
   };
-  $transaction<T>(
-    operation: (transaction: PaymentInitializationTransaction) => Promise<T>,
-    options?: { isolationLevel: 'Serializable' },
-  ): Promise<T>;
+  $transaction<T>(operation: (tx: Tx) => Promise<T>, options?: { isolationLevel: 'Serializable' }): Promise<T>;
 }
-
 export type PaymentInitializationResult =
   | { outcome: 'NOT_CREATED' }
-  | { outcome: 'CREATED'; confirmationUrl: string | null }
+  | { outcome: 'CREATED'; confirmationUrl: string }
   | { outcome: 'INDETERMINATE' }
   | { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
 
 const defaultClient = prisma as unknown as PaymentInitializationClient;
-const defaultProvider: PaymentProviderAdapter = {
-  createPayment: createPaymentAttempt,
-  getPaymentDetails,
+const defaultProvider: PaymentProviderAdapter = { createPayment: createPaymentAttempt, getPaymentDetails };
+const include = { payment: true, items: { select: { skuId: true, quantity: true } } };
+const indeterminate = (event: string, error?: unknown) => {
+  if (error) logger.error(event, error);
+  return { outcome: 'INDETERMINATE' } as const;
 };
 
-function durableRequest(order: InitializationOrder): DurablePaymentRequest {
+function request(order: InitializationOrder): DurablePaymentRequest {
   if (!order.paymentReturnUrl) throw new Error('Online order is missing payment return URL');
   return {
     amountRub: order.totalAmount,
@@ -93,88 +82,13 @@ function durableRequest(order: InitializationOrder): DurablePaymentRequest {
     returnUrl: order.paymentReturnUrl,
   };
 }
-
-function verifyPayment(order: InitializationOrder, payment: PaymentProviderDetails): void {
-  if (payment.amountRub !== order.totalAmount || payment.orderNumber !== String(order.orderNumber)) {
+function verify(order: InitializationOrder, payment: PaymentProviderDetails) {
+  if (
+    payment.amountRub !== order.totalAmount ||
+    payment.orderNumber !== String(order.orderNumber) ||
+    (order.payment && order.payment.id !== payment.id)
+  )
     throw new Error('Provider payment correlation conflict');
-  }
-  if (order.payment && order.payment.id !== payment.id) throw new Error('Provider payment correlation conflict');
-}
-
-class PaymentCorrelationConflictError extends Error {
-  constructor() {
-    super('Provider payment correlation conflict');
-  }
-}
-
-async function persistPayment(
-  client: PaymentInitializationClient,
-  order: InitializationOrder,
-  payment: PaymentProviderDetails,
-): Promise<boolean> {
-  verifyPayment(order, payment);
-  try {
-    return await client.$transaction(
-      async (transaction) => {
-        const pending = await transaction.order.updateMany({
-          where: { id: order.id, status: 'PENDING' },
-          data: { status: 'PENDING' },
-        });
-        if (pending.count === 0) return false;
-
-        const current = await transaction.payment.findUnique({ where: { orderId: order.id }, select: { id: true } });
-        if (current && current.id !== payment.id) throw new PaymentCorrelationConflictError();
-        await transaction.payment.upsert({
-          where: { orderId: order.id },
-          create: {
-            id: payment.id,
-            orderId: order.id,
-            amount: order.totalAmount,
-            status: payment.status,
-            confirmationUrl: payment.confirmationUrl,
-          },
-          update: {
-            amount: order.totalAmount,
-            status: payment.status,
-            confirmationUrl: payment.confirmationUrl,
-          },
-        });
-        return true;
-      },
-      { isolationLevel: 'Serializable' },
-    );
-  } catch (error) {
-    if (error instanceof PaymentCorrelationConflictError) throw error;
-    return false;
-  }
-}
-
-async function cancelUncreatedPayment(
-  client: PaymentInitializationClient,
-  order: InitializationOrder,
-): Promise<boolean> {
-  try {
-    return await client.$transaction(
-      async (transaction) => {
-        const cancelled = await transaction.order.updateMany({
-          where: { id: order.id, status: 'PENDING', payment: { is: null } },
-          data: { status: 'CANCELLED' },
-        });
-        if (cancelled.count === 0) return false;
-        for (const item of order.items) {
-          if (!item.skuId) throw new Error('Canonical order item required for stock restoration');
-          await transaction.sku.update({
-            where: { id: item.skuId },
-            data: { stock: { increment: item.quantity } },
-          });
-        }
-        return true;
-      },
-      { isolationLevel: 'Serializable' },
-    );
-  } catch {
-    return false;
-  }
 }
 
 export async function ensureOnlinePayment({
@@ -182,48 +96,295 @@ export async function ensureOnlinePayment({
   now,
   client = defaultClient,
   provider = defaultProvider,
+  clock = () => now,
 }: {
   orderId: string;
   now: Date;
   client?: PaymentInitializationClient;
   provider?: PaymentProviderAdapter;
+  clock?: () => Date;
 }): Promise<PaymentInitializationResult> {
-  const order = await client.order.findUnique({
-    where: { id: orderId },
-    include: { payment: true, items: { select: { skuId: true, quantity: true } } },
-  });
-  if (!order || order.paymentMethod !== 'online' || order.status !== 'PENDING') return { outcome: 'INDETERMINATE' };
-
-  if (order.payment) {
-    let details: PaymentProviderDetails | null;
-    try {
-      details = await provider.getPaymentDetails(order.payment.id);
-    } catch {
-      return { outcome: 'INDETERMINATE' };
-    }
-    if (!details) return { outcome: 'INDETERMINATE' };
-    const persisted = await persistPayment(client, order, details);
-    return persisted ? { outcome: 'CREATED', confirmationUrl: details.confirmationUrl } : { outcome: 'INDETERMINATE' };
-  }
-
-  if (now.getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS) {
-    return { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
-  }
-
-  let attempt: PaymentProviderAttempt;
   try {
-    attempt = await provider.createPayment(durableRequest(order));
-  } catch {
-    return { outcome: 'INDETERMINATE' };
+    let order = await client.order.findUnique({ where: { id: orderId }, include });
+    if (!order || order.paymentMethod !== 'online' || order.status !== 'PENDING')
+      return indeterminate('payment_initialization_invalid_order');
+    if (order.payment) {
+      let details: PaymentProviderDetails | null;
+      try {
+        details = await provider.getPaymentDetails(order.payment.id);
+      } catch (error) {
+        return indeterminate('payment_lookup_failed', error);
+      }
+      if (!details) return indeterminate('payment_lookup_missing');
+      verify(order, details);
+      try {
+        const saved = await client.$transaction(
+          async (tx) => {
+            const current = await tx.payment.findUnique({ where: { orderId }, select: { id: true } });
+            if (current && current.id !== details!.id) throw new Error('Provider payment correlation conflict');
+            const guard = await tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: 'PENDING',
+                paymentInitializationState: { in: ['CLAIMED', 'DISPATCHED', 'CORRELATED'] },
+              },
+              data: {
+                paymentInitializationState: 'CORRELATED',
+                paymentInitializationClaimedAt: null,
+                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? clock(),
+              },
+            });
+            if (!guard.count) return false;
+            await tx.payment.upsert({
+              where: { orderId },
+              create: {
+                id: details!.id,
+                orderId,
+                amount: order!.totalAmount,
+                status: details!.status,
+                confirmationUrl: details!.confirmationUrl,
+              },
+              update: {
+                amount: order!.totalAmount,
+                status: details!.status,
+                confirmationUrl: details!.confirmationUrl,
+              },
+            });
+            return true;
+          },
+          { isolationLevel: 'Serializable' },
+        );
+        return saved && details.confirmationUrl
+          ? { outcome: 'CREATED', confirmationUrl: details.confirmationUrl }
+          : indeterminate('payment_correlation_guard_lost');
+      } catch (error) {
+        return indeterminate('payment_correlation_persist_failed', error);
+      }
+    }
+    const origin =
+      order.paymentInitializationState === 'DISPATCHED'
+        ? 'DISPATCHED'
+        : order.paymentInitializationState === 'READY' || !('paymentInitializationState' in order)
+          ? 'READY'
+          : null;
+    if (!origin) return indeterminate('payment_initialization_state_not_claimable');
+    if (now.getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS)
+      return { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
+    const claimStartedAt = now;
+    const claim = await client.$transaction(
+      async (tx) =>
+        tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: 'PENDING',
+            payment: { is: null },
+            paymentInitializationState: origin,
+            paymentInitializationClaimedAt: null,
+            ...(origin === 'READY' ? { paymentEverDispatchedAt: null } : { paymentEverDispatchedAt: { not: null } }),
+            createdAt: { lt: new Date(order!.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS) },
+          },
+          data: { paymentInitializationState: 'CLAIMED', paymentInitializationClaimedAt: claimStartedAt },
+        }),
+      { isolationLevel: 'Serializable' },
+    );
+    if (!claim.count) return indeterminate('payment_claim_lost');
+    if (clock().getTime() >= order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS) {
+      const released = await client.$transaction(
+        async (tx) =>
+          tx.order.updateMany({
+            where: {
+              id: orderId,
+              status: 'PENDING',
+              payment: { is: null },
+              paymentInitializationState: 'CLAIMED',
+              paymentInitializationClaimedAt: claimStartedAt,
+            },
+            data: { paymentInitializationState: origin, paymentInitializationClaimedAt: null },
+          }),
+        { isolationLevel: 'Serializable' },
+      );
+      return released.count ? { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' } : indeterminate('payment_claim_release_failed');
+    }
+    let attempt: PaymentProviderAttempt;
+    let durableRequest: DurablePaymentRequest;
+    try {
+      durableRequest = request(order);
+    } catch (error) {
+      try {
+        const released = await client.$transaction(
+          async (tx) =>
+            tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: 'PENDING',
+                payment: { is: null },
+                paymentInitializationState: 'CLAIMED',
+                paymentInitializationClaimedAt: claimStartedAt,
+              },
+              data: { paymentInitializationState: origin, paymentInitializationClaimedAt: null },
+            }),
+          { isolationLevel: 'Serializable' },
+        );
+        if (!released.count) logger.error('payment_request_release_guard_lost', error, { orderId });
+      } catch (releaseError) {
+        logger.error('payment_request_release_failed', releaseError, { orderId });
+      }
+      return indeterminate('payment_request_failed', error);
+    }
+    try {
+      attempt = await provider.createPayment(durableRequest);
+    } catch (error) {
+      try {
+        await client.$transaction(
+          async (tx) =>
+            tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: 'PENDING',
+                payment: { is: null },
+                paymentInitializationState: 'CLAIMED',
+                paymentInitializationClaimedAt: claimStartedAt,
+              },
+              data: {
+                paymentInitializationState: 'DISPATCHED',
+                paymentInitializationClaimedAt: null,
+                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? claimStartedAt,
+              },
+            }),
+          { isolationLevel: 'Serializable' },
+        );
+      } catch (releaseError) {
+        logger.error('payment_provider_failure_release_failed', releaseError, { orderId });
+      }
+      return indeterminate('payment_provider_failed', error);
+    }
+    if (attempt.outcome === 'CREATED') {
+      try {
+        verify(order, attempt.payment);
+        const saved = await client.$transaction(
+          async (tx) => {
+            const guard = await tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: 'PENDING',
+                payment: { is: null },
+                paymentInitializationState: 'CLAIMED',
+                paymentInitializationClaimedAt: claimStartedAt,
+              },
+              data: {
+                paymentInitializationState: 'CORRELATED',
+                paymentInitializationClaimedAt: null,
+                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? claimStartedAt,
+              },
+            });
+            if (!guard.count) return false;
+            await tx.payment.upsert({
+              where: { orderId },
+              create: {
+                id: attempt.payment.id,
+                orderId,
+                amount: order.totalAmount,
+                status: attempt.payment.status,
+                confirmationUrl: attempt.payment.confirmationUrl,
+              },
+              update: {
+                amount: order.totalAmount,
+                status: attempt.payment.status,
+                confirmationUrl: attempt.payment.confirmationUrl,
+              },
+            });
+            return true;
+          },
+          { isolationLevel: 'Serializable' },
+        );
+        return saved && attempt.payment.confirmationUrl
+          ? { outcome: 'CREATED', confirmationUrl: attempt.payment.confirmationUrl }
+          : indeterminate('payment_create_guard_lost');
+      } catch (error) {
+        return indeterminate('payment_create_persist_failed', error);
+      }
+    }
+    if (attempt.outcome === 'INDETERMINATE' && attempt.dispatched) {
+      try {
+        const saved = await client.$transaction(
+          async (tx) =>
+            tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: 'PENDING',
+                payment: { is: null },
+                paymentInitializationState: 'CLAIMED',
+                paymentInitializationClaimedAt: claimStartedAt,
+              },
+              data: {
+                paymentInitializationState: 'DISPATCHED',
+                paymentInitializationClaimedAt: null,
+                paymentEverDispatchedAt: order.paymentEverDispatchedAt ?? claimStartedAt,
+              },
+            }),
+          { isolationLevel: 'Serializable' },
+        );
+        return saved.count ? { outcome: 'INDETERMINATE' } : indeterminate('payment_dispatch_guard_lost');
+      } catch (error) {
+        return indeterminate('payment_dispatch_persist_failed', error);
+      }
+    }
+    if (origin === 'DISPATCHED') {
+      try {
+        const released = await client.$transaction(
+          async (tx) =>
+            tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: 'PENDING',
+                payment: { is: null },
+                paymentInitializationState: 'CLAIMED',
+                paymentInitializationClaimedAt: claimStartedAt,
+                paymentEverDispatchedAt: order.paymentEverDispatchedAt,
+              },
+              data: { paymentInitializationState: 'DISPATCHED', paymentInitializationClaimedAt: null },
+            }),
+          { isolationLevel: 'Serializable' },
+        );
+        return released.count
+          ? { outcome: 'INDETERMINATE' }
+          : indeterminate('payment_prior_dispatch_release_guard_lost');
+      } catch (error) {
+        return indeterminate('payment_prior_dispatch_release_failed', error);
+      }
+    }
+    try {
+      const cancelled = await client.$transaction(
+        async (tx) => {
+          const guard = await tx.order.updateMany({
+            where: {
+              id: orderId,
+              status: 'PENDING',
+              payment: { is: null },
+              paymentInitializationState: 'CLAIMED',
+              paymentInitializationClaimedAt: claimStartedAt,
+              paymentEverDispatchedAt: null,
+            },
+            data: {
+              status: 'CANCELLED',
+              paymentInitializationState: 'NOT_CREATED',
+              paymentInitializationClaimedAt: null,
+            },
+          });
+          if (!guard.count) return false;
+          for (const item of order!.items) {
+            if (!item.skuId) throw new Error('Canonical order item required');
+            await tx.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+          }
+          return true;
+        },
+        { isolationLevel: 'Serializable' },
+      );
+      return cancelled ? { outcome: 'NOT_CREATED' } : indeterminate('payment_cancel_guard_lost');
+    } catch (error) {
+      return indeterminate('payment_cancel_failed', error);
+    }
+  } catch (error) {
+    return indeterminate('payment_initialization_failed', error);
   }
-  if (attempt.outcome === 'NOT_CREATED' && attempt.dispatched === false) {
-    const cancelled = await cancelUncreatedPayment(client, order);
-    return cancelled ? { outcome: 'NOT_CREATED' } : { outcome: 'INDETERMINATE' };
-  }
-  if (attempt.outcome !== 'CREATED') return { outcome: 'INDETERMINATE' };
-
-  const persisted = await persistPayment(client, order, attempt.payment);
-  return persisted
-    ? { outcome: 'CREATED', confirmationUrl: attempt.payment.confirmationUrl }
-    : { outcome: 'INDETERMINATE' };
 }

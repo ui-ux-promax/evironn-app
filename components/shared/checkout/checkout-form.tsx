@@ -1,10 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/format';
 import { calcShipping } from '@/lib/order';
 import { FREE_SHIPPING_THRESHOLD } from '@/constants/config';
@@ -14,23 +13,13 @@ import { PromoCodeField } from '@/components/shared/promo-code-field';
 import { useCouponStore } from '@/store/coupon';
 import type { CheckoutDefaults } from '@/lib/checkout-defaults';
 import type { CartDetails } from '@/services/dto/cart.dto';
-import { submitCheckoutValues } from './checkout-submit';
 
 const SHIP_INFO = {
   courier: { label: 'Курьер', desc: '2–4 дня, от 390 ₽' },
   pickup: { label: 'Пункт выдачи', desc: '2–5 дней', extra: `Бесплатно от ${formatPrice(FREE_SHIPPING_THRESHOLD)}` },
 } as const;
 
-export function CheckoutForm({
-  details,
-  defaults,
-}: {
-  details: CartDetails;
-  defaults: CheckoutDefaults;
-  buyNowVariantId?: string;
-}) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+export function CheckoutForm({ details, defaults }: { details: CartDetails; defaults: CheckoutDefaults }) {
   const coupon = useCouponStore((state) => state.coupon);
 
   const methods = useForm<CheckoutValues>({
@@ -39,10 +28,9 @@ export function CheckoutForm({
   });
   const {
     register,
-    handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = methods;
   const addressLineRegistration = register('addressLine');
 
@@ -56,24 +44,9 @@ export function CheckoutForm({
     setValue('couponCode', coupon?.code ?? '');
   }, [coupon?.code, setValue]);
 
-  const onSubmit = async (v: CheckoutValues) => {
-    setError(null);
-    const res = await submitCheckoutValues(v);
-    if (!res.ok) {
-      setError('paymentInitialization' in res ? res.paymentInitialization.heading : res.error);
-      return;
-    }
-    if (res.paymentUrl) {
-      window.location.href = res.paymentUrl;
-      return;
-    }
-    router.push(`/orders/${res.orderNumber}`);
-    router.refresh();
-  };
-
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form noValidate>
         <input type="hidden" {...register('couponCode')} />
         <input type="hidden" {...register('city')} />
 
@@ -334,12 +307,6 @@ export function CheckoutForm({
                 </div>
 
                 {/* Error */}
-                {error && (
-                  <p className="text-danger text-sm font-semibold" role="alert">
-                    {error}
-                  </p>
-                )}
-
                 {/* Pay button */}
                 {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && paymentMethod === 'online' && (
                   <p role="status" className="rounded-xl border border-black/10 bg-black/[.03] px-4 py-3 text-sm">
@@ -347,22 +314,11 @@ export function CheckoutForm({
                   </p>
                 )}
                 <button
-                  type="submit"
-                  disabled={isSubmitting}
+                  type="button"
+                  disabled
                   className="h-14 rounded-full bg-primary text-primary-foreground text-[16px] font-bold inline-flex items-center justify-center gap-2.5 w-full hover:bg-footer transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? (
-                    'Проверяем данные…'
-                  ) : (
-                    <>
-                      Оплатить <span className="tnum">{formatPrice(total)}</span>
-                    </>
-                  )}
-                  {!isSubmitting && (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <path d="M5 12h14M13 6l6 6-6 6" />
-                    </svg>
-                  )}
+                  Оформление недоступно
                 </button>
               </div>
             </div>

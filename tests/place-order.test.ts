@@ -148,6 +148,7 @@ describe('placeOrder transactional canonical placement', () => {
         deliveryZone: 'moscow',
         deliveryWindow: slot.windowLabel,
         paymentReturnUrl: null,
+        paymentInitializationState: null,
         serviceDetails: [
           { id: 'carrying', label: 'Подъём без лифта', amount: 1400 },
           { id: 'assembly', label: 'Сборка', amount: 3900 },
@@ -195,6 +196,16 @@ describe('placeOrder transactional canonical placement', () => {
       code: 'ORDER_FAILED',
       error: 'Не удалось оформить заказ. Попробуйте позже.',
     });
+    expect(mocks.loggerError).toHaveBeenCalledWith('place_order_failed', expect.any(Error));
+  });
+
+  it.each([
+    ['auth', () => mocks.auth.mockRejectedValue(new Error('auth secret'))],
+    ['cookies', () => mocks.cookies.mockRejectedValue(new Error('cookie secret'))],
+    ['owner', () => mocks.resolveOwnerCart.mockRejectedValue(new Error('owner secret'))],
+  ])('sanitizes pre-transaction %s failures', async (_boundary, fail) => {
+    fail();
+    await expect(placeOrder(validForm)).resolves.toMatchObject({ ok: false, code: 'ORDER_FAILED' });
     expect(mocks.loggerError).toHaveBeenCalledWith('place_order_failed', expect.any(Error));
   });
 });

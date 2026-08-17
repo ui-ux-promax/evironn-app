@@ -17,6 +17,9 @@ function order(overrides: Record<string, unknown> = {}) {
     totalAmount: 159900,
     paymentReturnUrl: 'https://preview.test/orders/1042',
     createdAt,
+    paymentInitializationState: 'READY',
+    paymentInitializationClaimedAt: null,
+    paymentEverDispatchedAt: null,
     payment: null,
     items: [{ skuId: 'sku-1', quantity: 2 }],
     ...overrides,
@@ -24,13 +27,27 @@ function order(overrides: Record<string, unknown> = {}) {
 }
 
 function harness(providerResult: Awaited<ReturnType<PaymentProviderAdapter['createPayment']>>) {
-  const state = { order: order(), payment: null as null | Record<string, unknown>, stock: 8 };
+  const state: { order: any; payment: null | Record<string, unknown>; stock: number } = {
+    order: order(),
+    payment: null,
+    stock: 8,
+  };
   const tx = {
     order: {
-      updateMany: vi.fn(async ({ where, data }: { where: { payment?: { is: null } }; data: { status: string } }) => {
+      updateMany: vi.fn(async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
         if (state.order.status !== 'PENDING') return { count: 0 };
         if (where.payment?.is === null && state.payment !== null) return { count: 0 };
-        state.order.status = data.status;
+        if (
+          where.paymentInitializationState &&
+          where.paymentInitializationState !== state.order.paymentInitializationState
+        )
+          return { count: 0 };
+        if (
+          'paymentInitializationClaimedAt' in where &&
+          where.paymentInitializationClaimedAt?.getTime?.() !== state.order.paymentInitializationClaimedAt?.getTime?.()
+        )
+          return { count: 0 };
+        Object.assign(state.order, data);
         return { count: 1 };
       }),
     },
@@ -94,7 +111,7 @@ describe('ensureOnlinePayment', () => {
     });
     await vi.waitFor(() => {
       expect(createdProvider.createPayment).toHaveBeenCalledOnce();
-      expect(notCreatedProvider.createPayment).toHaveBeenCalledOnce();
+      expect(notCreatedProvider.createPayment).not.toHaveBeenCalled();
     });
 
     resolveCreated({
@@ -111,7 +128,6 @@ describe('ensureOnlinePayment', () => {
       outcome: 'CREATED',
       confirmationUrl: 'https://yookassa.test/confirm',
     });
-    resolveNotCreated({ outcome: 'NOT_CREATED', dispatched: false });
     await expect(notCreated).resolves.toEqual({ outcome: 'INDETERMINATE' });
     expect(h.state.order.status).toBe('PENDING');
     expect(h.state.stock).toBe(8);
@@ -170,11 +186,12 @@ describe('ensureOnlinePayment', () => {
         provider: h.provider,
       }),
     ).toEqual({ outcome: 'NOT_CREATED' });
-    expect(h.tx.order.updateMany).toHaveBeenCalledOnce();
-    expect(h.tx.order.updateMany).toHaveBeenCalledWith({
-      where: { id: 'order-1', status: 'PENDING', payment: { is: null } },
-      data: { status: 'CANCELLED' },
-    });
+    expect(h.tx.order.updateMany).toHaveBeenCalledTimes(2);
+    expect(h.tx.order.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'CANCELLED', paymentInitializationState: 'NOT_CREATED' }),
+      }),
+    );
     expect(h.client.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
     expect(h.tx.sku.update).toHaveBeenCalledOnce();
     expect(h.state.stock).toBe(10);
@@ -217,7 +234,7 @@ describe('ensureOnlinePayment', () => {
         provider: h.provider,
       }),
     ).toEqual({ outcome: 'INDETERMINATE' });
-    expect(h.client.$transaction).not.toHaveBeenCalled();
+    expect(h.client.$transaction).toHaveBeenCalledTimes(2);
     expect(h.state.stock).toBe(8);
   });
 
@@ -232,7 +249,7 @@ describe('ensureOnlinePayment', () => {
         provider: h.provider,
       }),
     ).resolves.toEqual({ outcome: 'INDETERMINATE' });
-    expect(h.client.$transaction).not.toHaveBeenCalled();
+    expect(h.client.$transaction).toHaveBeenCalledTimes(2);
     expect(h.state.stock).toBe(8);
   });
 
@@ -278,9 +295,9 @@ describe('ensureOnlinePayment', () => {
         client: h.client,
         provider: h.provider,
       }),
-    ).rejects.toThrow('Provider payment correlation conflict');
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
     expect(h.tx.payment.upsert).not.toHaveBeenCalled();
-    expect(h.client.$transaction).not.toHaveBeenCalled();
+    expect(h.client.$transaction).toHaveBeenCalledOnce();
   });
 
   it('returns indeterminate when local correlation persistence fails', async () => {

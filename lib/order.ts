@@ -123,7 +123,10 @@ export function buildOrderSnapshot(cart: CartWithItems): OrderSnapshot {
         productName: i.sku.product.name,
         productSlug: i.sku.product.slug,
         configuration,
-        imageUrl: i.sku.media[0]?.url ?? null,
+        imageUrl:
+          i.sku.media[0]?.url ??
+          (i.sku.product as typeof i.sku.product & { media?: Array<{ url: string }> }).media?.[0]?.url ??
+          null,
         unitPrice: i.sku.price,
         oldUnitPrice: i.sku.oldPrice,
         quantity: i.quantity,

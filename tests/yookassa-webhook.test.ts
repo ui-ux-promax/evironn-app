@@ -128,6 +128,16 @@ describe('yookassa webhook', () => {
     expect(reconcileMock).not.toHaveBeenCalled();
   });
 
+  it('returns 500 when provider status boundary yields malformed data', async () => {
+    parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_1' } });
+    statusMock.mockResolvedValue(undefined);
+
+    const res = await POST(req() as never);
+
+    expect(res.status).toBe(500);
+    expect(reconcileMock).not.toHaveBeenCalled();
+  });
+
   it('unexpected reconciliation error returns 500', async () => {
     parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_1' } });
     statusMock.mockResolvedValue('succeeded');

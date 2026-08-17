@@ -148,9 +148,41 @@ describe('cancelOrder', () => {
     const correlated = order({ paymentMethod: 'online', paymentInitializationState: 'CORRELATED', payment: { id: 'pay-1', status: 'pending', amount: 159900 } });
     findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
     cancelMock.mockRejectedValue(new Error('timeout'));
+    detailsMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      amountRub: 159900,
+      orderNumber: '1025',
+      confirmationUrl: null,
+    });
     await expect(cancelOrder('o1')).resolves.toMatchObject({ ok: false, code: 'CANCELLATION_PENDING_SYNC' });
     expect(reconcileMock).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('reconciles an already-canceled provider payment even when repeated cancel rejects', async () => {
+    const correlated = order({
+      paymentMethod: 'online',
+      paymentInitializationState: 'CORRELATED',
+      payment: { id: 'pay-1', status: 'pending', amount: 159900 },
+    });
+    findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
+    cancelMock.mockRejectedValue(new Error('payment already canceled'));
+    detailsMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'canceled',
+      amountRub: 159900,
+      orderNumber: '1025',
+      confirmationUrl: null,
+    });
+
+    await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
+    expect(detailsMock).toHaveBeenCalledWith('pay-1');
+    expect(reconcileMock).toHaveBeenCalledWith({
+      paymentId: 'pay-1',
+      remoteStatus: 'canceled',
+      source: 'order-page',
+    });
   });
 
   it('preserves local state when provider reload is not canceled', async () => {

@@ -56,3 +56,11 @@ Review result before remediation: Critical 0, Important 2, not approved.
 - A successful but malformed/invalid provider payload now throws `Malformed YooKassa payment response`; it is never classified as absent. Recovery maps it to `provider-lookup-failed`, and the webhook returns HTTP 500 for retry.
 - RED evidence: exact SDK-name and malformed-payload tests produced 3 expected failures.
 - Final focused suite: 8 files, 132 tests passed. Typecheck, touched Prettier, and diff check passed.
+
+### Cancellation Retry And Status Validation Remediation
+
+- Customer cancellation now reloads authoritative provider details even when a repeated provider cancel call rejects. A verified `canceled` payment still enters local reconciliation; failed cancel plus pending/non-final reload remains `CANCELLATION_PENDING_SYNC`.
+- `getPaymentStatus` now accepts only `pending`, `waiting_for_capture`, `succeeded`, or `canceled` from a valid response object. Missing or unknown status throws.
+- The webhook also rejects an invalid status value before reconciliation, returning HTTP 500 for provider retry.
+- RED evidence: 3 files, 4 expected failures. Affected GREEN evidence: 45/45 passed.
+- Final focused suite: 8 files, 136 tests passed. Typecheck, touched Prettier, and diff check passed.

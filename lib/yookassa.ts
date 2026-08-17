@@ -161,7 +161,16 @@ export async function cancelPayment(paymentId: string): Promise<void> {
 // Используется страницей заказа, чтобы подтвердить оплату без зависимости от вебхука.
 export async function getPaymentStatus(paymentId: string): Promise<string> {
   const sdk = getYooKassa();
-  const payment = await sdk.payments.load(paymentId);
+  const payment = (await sdk.payments.load(paymentId)) as { status?: unknown } | null;
+  if (
+    !payment ||
+    (payment.status !== 'pending' &&
+      payment.status !== 'waiting_for_capture' &&
+      payment.status !== 'succeeded' &&
+      payment.status !== 'canceled')
+  ) {
+    throw new Error('Malformed YooKassa payment status response');
+  }
   return payment.status;
 }
 

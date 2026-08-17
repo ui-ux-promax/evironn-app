@@ -335,12 +335,16 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
       }
 
       const paymentId = correlated.payment.id;
-      let details;
       try {
         await cancelPayment(paymentId);
-        details = await getPaymentDetails(paymentId);
       } catch (error) {
         logger.error('cancel_payment_failed', error, { orderId, paymentId });
+      }
+      let details;
+      try {
+        details = await getPaymentDetails(paymentId);
+      } catch (error) {
+        logger.error('cancel_payment_reload_failed', error, { orderId, paymentId });
         return cancellationPendingSync();
       }
       if (

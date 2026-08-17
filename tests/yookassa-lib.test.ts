@@ -156,6 +156,14 @@ describe('getPaymentStatus', () => {
     expect(loadMock).toHaveBeenCalledWith('pay_1');
     expect(status).toBe('succeeded');
   });
+
+  it.each([[{ id: 'pay-1' }], [{ id: 'pay-1', status: 'refunded' }]])(
+    'rejects malformed or unknown provider status',
+    async (payload) => {
+      loadMock.mockResolvedValue(payload);
+      await expect(getPaymentStatus('pay-1')).rejects.toThrow('Malformed YooKassa payment status response');
+    },
+  );
 });
 
 describe('getPaymentDetails', () => {

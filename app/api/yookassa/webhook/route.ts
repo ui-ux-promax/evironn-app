@@ -7,6 +7,7 @@ import { getPaymentStatus } from '@/lib/yookassa';
 export const runtime = 'nodejs';
 
 const SUPPORTED_PAYMENT_EVENTS = new Set(['payment.succeeded', 'payment.canceled']);
+const SUPPORTED_PAYMENT_STATUSES = new Set(['pending', 'waiting_for_capture', 'succeeded', 'canceled']);
 
 export async function POST(req: Request) {
   let notification;
@@ -25,6 +26,9 @@ export async function POST(req: Request) {
 
   try {
     const remoteStatus = await getPaymentStatus(notification.object.id);
+    if (!SUPPORTED_PAYMENT_STATUSES.has(remoteStatus)) {
+      throw new Error('Malformed YooKassa payment status response');
+    }
     const result = await reconcilePaymentStatus({
       paymentId: notification.object.id,
       remoteStatus,

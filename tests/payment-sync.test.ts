@@ -383,6 +383,15 @@ describe('reconcilePaymentStatus', () => {
 });
 
 describe('recoverPaymentCorrelation', () => {
+  it('classifies malformed provider payload failures as retryable lookup errors', async () => {
+    detailsMock.mockRejectedValue(new Error('Malformed YooKassa payment response'));
+    await expect(recoverPaymentCorrelation('pay-malformed')).resolves.toEqual({
+      kind: 'error',
+      reason: 'provider-lookup-failed',
+    });
+    expect(orderFindMany).not.toHaveBeenCalled();
+  });
+
   it('correlates one exact pending online order from verified provider details', async () => {
     detailsMock.mockResolvedValue({ id: 'pay-recovered', status: 'succeeded', amountRub: 159900, orderNumber: '1042', confirmationUrl: null });
     orderFindMany.mockResolvedValue([{ id: 'order-1', orderNumber: 1042, status: 'PENDING', paymentMethod: 'online', totalAmount: 159900, payment: null }]);

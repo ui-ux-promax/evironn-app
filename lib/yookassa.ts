@@ -168,9 +168,12 @@ export async function getPaymentStatus(paymentId: string): Promise<string> {
 export async function getPaymentDetails(paymentId: string): Promise<PaymentProviderDetails | null> {
   const sdk = getYooKassa();
   try {
-    return paymentDetails(await sdk.payments.load(paymentId));
+    const details = paymentDetails(await sdk.payments.load(paymentId));
+    if (!details) throw new Error('Malformed YooKassa payment response');
+    return details;
   } catch (error) {
     const providerError = error as {
+      name?: unknown;
       status?: unknown;
       statusCode?: unknown;
       response?: { status?: unknown };
@@ -180,7 +183,9 @@ export async function getPaymentDetails(paymentId: string): Promise<PaymentProvi
       providerError.status === 404 ||
       providerError.statusCode === 404 ||
       providerError.response?.status === 404 ||
-      providerError.code === 'not_found'
+      providerError.code === 'not_found' ||
+      providerError.name === 'not_found' ||
+      providerError.name === 'HTTP_404'
     ) {
       return null;
     }

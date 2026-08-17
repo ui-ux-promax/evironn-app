@@ -48,3 +48,11 @@ Review result before remediation: Critical 0, Important 2, not approved.
 - RED evidence: 3 files, 4 expected failures covering the evidence interleaving, provider transport failure, provider lookup recovery failure, and correlation persistence failure.
 - GREEN evidence: affected regressions passed 50/50; full Task 5 focused suite passed 128/128; typecheck, touched Prettier, and diff check passed.
 - No database, provider, E2E, build, or full-gate call was made.
+
+### Provider Boundary Re-review Remediation
+
+- Inspected installed `@webzaytsev/yookassa-ts-sdk`: `YooKassaErr` stores the provider error code in `Error.name`; HTTP fallback errors use names such as `HTTP_404`.
+- Explicit absence now recognizes exact SDK names `not_found` and `HTTP_404` in addition to explicit numeric 404 shapes.
+- A successful but malformed/invalid provider payload now throws `Malformed YooKassa payment response`; it is never classified as absent. Recovery maps it to `provider-lookup-failed`, and the webhook returns HTTP 500 for retry.
+- RED evidence: exact SDK-name and malformed-payload tests produced 3 expected failures.
+- Final focused suite: 8 files, 132 tests passed. Typecheck, touched Prettier, and diff check passed.

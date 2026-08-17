@@ -176,9 +176,9 @@ describe('getPaymentDetails', () => {
     });
   });
 
-  it('returns null for malformed provider data', async () => {
+  it('rejects malformed provider data', async () => {
     loadMock.mockResolvedValue({ id: 'pay-1', status: 'pending' });
-    await expect(getPaymentDetails('pay-1')).resolves.toBeNull();
+    await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
   });
 
   it('returns null only for provider not-found', async () => {
@@ -186,8 +186,23 @@ describe('getPaymentDetails', () => {
     await expect(getPaymentDetails('pay-missing')).resolves.toBeNull();
   });
 
+  it.each(['not_found', 'HTTP_404'])('returns null for installed SDK YooKassaErr name %s', async (name) => {
+    loadMock.mockRejectedValue(Object.assign(new Error('payment absent'), { name }));
+    await expect(getPaymentDetails('pay-missing')).resolves.toBeNull();
+  });
+
   it('propagates provider transport and authentication failures', async () => {
     loadMock.mockRejectedValue(Object.assign(new Error('provider unavailable'), { status: 503 }));
     await expect(getPaymentDetails('pay-1')).rejects.toThrow('provider unavailable');
+  });
+
+  it('rejects invalid successful provider payloads instead of treating them as absence', async () => {
+    loadMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      amount: { value: '15999.00', currency: 'USD' },
+      metadata: { orderNumber: '1025' },
+    });
+    await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
   });
 });

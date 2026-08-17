@@ -3,8 +3,8 @@
 ## Coordinator state
 
 - Delivery base: `868310f`; branch: `phase/04-checkout-orders`; plan: `docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md`.
-- Current ADR-018-amended plan hash: `9792556792BE7DE1E11F9C6EF74C850FF02A62C1060B0604F8E181D7D6CB118A`; ADR-017/payment-safety amendment commits: `5b08806`, `7c88133`; ADR-018 design commit: `8e289e7`.
-- Original and amended plan reviews approved Critical 0 / Important 0; amended plan final review also reported Minor 0.
+- Current ADR-018-amended plan hash pending fresh review: `151F49F424CAAAA1A2D8D9A582054CF0437689235FD4F1EF223852AFF796B3E3`; ADR-017/payment-safety amendment commits: `5b08806`, `7c88133`; ADR-018 design commit: `8e289e7`.
+- Prior approvals apply only to earlier plan versions. The current ADR-018-amended plan has blocking review findings under remediation and is not approved pending a fresh review.
 - Phase 3 merge: PR #3, merge `868310f`; final Phase 3 commit `f3d8a93`.
 - Protected plan hashes: `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
 - ADR-015 approved shared non-production Neon E2E fingerprint confirmed; user confirmed no separate Production database exists. ADR-016 delivery/service policy approved 2026-08-16.
@@ -15,7 +15,7 @@
 - Task 3 complete: commit `52ba731`; authenticated owner-scoped checkout read model, server-owned quote, coupon reader/clock injection, bounded DaData projection, and payment-initialization DTO vocabulary implemented. Focused Vitest 41/41, typecheck, Prettier, and diff checks pass. Fresh xhigh review approved Critical 0 / Important 0 / Minor 0. External-service smoke remains deferred because presence-only preflight found all requested keys absent.
 - Task 4 implementation and two remediation waves are committed through `c831598`. Focused evidence reached 11 files / 68 tests plus typecheck, Prettier, diff, and secret checks. The latest fresh xhigh review remains blocking at Critical 1 / Important 4 because cross-process payment-create attempts need a durable pre-dispatch claim and four adjacent contract fixes.
 - ADR-018 durable YooKassa create claim was approved by the user on 2026-08-17. Design: `docs/superpowers/specs/2026-08-17-phase-4-durable-payment-claim-design.md`. The executable plan now adds a separate additive Task 3A schema checkpoint and a bounded Task 4 remediation sequence; Task 4 production work remains paused until fresh plan review approval.
-- Tasks 4-9 remain incomplete. No push, Preview, PR, merge, branch deletion, or next phase.
+- Task 3A and Tasks 4-9 remain incomplete. No push, Preview, PR, merge, branch deletion, or next phase.
 
 # Phase 2 catalog pilot progress
 

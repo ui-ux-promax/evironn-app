@@ -52,7 +52,8 @@ Tasks 2, 2A, and 3A must use the `migration` skill in addition to TDD.
 - `payments.list` may be used only as a non-authoritative secondary lookup. Zero matches never proves `NOT_CREATED`; multiple or conflicting matches fail closed. No stock or order decision may depend on list absence.
 - Missing-Payment webhook recovery loads provider details by provider id, then correlates exactly one online `PENDING` order by unique `orderNumber` metadata and RUB amount. Missing/forged metadata, amount mismatch, wrong method/state, or any correlation conflict preserves the order and stock for investigation.
 - Only adapter-proven no-dispatch `NOT_CREATED` may use the guarded cancellation/restoration transaction. `CREATED`, `INDETERMINATE`, post-window state, and local persistence failure preserve the durable order and its stock reservation. No fake success, automatic order deletion, automatic stock release, outbox, payment-event architecture, refund flow, or two-stage capture is added.
-- Before every create call, ADR-018 requires an atomic durable claim. Eligible rows are online, `PENDING`, before `createdAt + W`, without a local `Payment`, and in `READY` or `DISPATCHED`. One conditional update stores `CLAIMED` plus a caller-generated `paymentInitializationClaimedAt`; only a winning update count of one authorizes dispatch. A loser, null historical state, existing `CLAIMED`, final state, or failed claim returns `INDETERMINATE` without provider or inventory mutation.
+- Before every create call, ADR-018 requires an atomic durable claim. Eligible rows are online, `PENDING`, before `createdAt + W`, without a local `Payment`, and in `READY` or `DISPATCHED`. One conditional update stores `CLAIMED` plus a caller-generated `paymentInitializationClaimedAt`; only a winning update count of one may advance to the mandatory fresh pre-dispatch window check. A loser, null historical state, existing `CLAIMED`, final state, or failed claim returns `INDETERMINATE` without provider or inventory mutation.
+- Winning a claim does not authorize a later out-of-window dispatch. Immediately before invoking the provider adapter, `ensureOnlinePayment` reads a fresh injected clock and rechecks `freshNow < createdAt + W`. If the bound has closed, it makes zero provider calls and guardedly changes the exact owned `CLAIMED` row to `READY` with `paymentInitializationClaimedAt: null`; a successful release returns `BLOCKED_AFTER_RETRY_WINDOW`, while a failed/throwing release returns `INDETERMINATE` and remains fail-closed.
 - A dispatched or potentially dispatched result changes the winning `CLAIMED` row to `DISPATCHED` and sets `paymentEverDispatchedAt` only when null before returning `INDETERMINATE`. A verified provider object creates or repairs `Payment` and changes the same claimed order to `CORRELATED` in one serializable transaction. A proven no-dispatch result may change `CLAIMED` to `NOT_CREATED`, cancel, and restore stock only when the caller still owns the exact `paymentInitializationClaimedAt`, `paymentEverDispatchedAt` is null, the order remains `PENDING`, and no `Payment` exists.
 - Every `ensureOnlinePayment` database read, claim, provider-detail lookup, provider attempt, dispatched-state write, correlation transaction, or no-dispatch cancellation exception maps to the total public outcome `INDETERMINATE` after structured logging. No exception may escape through `placeOrder` after its durable order transaction commits. Cart ownership and other pre-commit failures use the sanitized placement error boundary.
 
@@ -79,8 +80,8 @@ The reviewed Phase 4 plan may also be untracked when Task 1 begins. Task 1 stage
 ### Current Execution Checkpoint — ADR-018 Amendment
 
 - Tasks 1, 2, 2A, and 3 are complete and remain closed. Their commits, focused evidence, migration-status evidence, and clean reviews recorded in `.superpowers/sdd/progress.md` are not repeated or invalidated by this amendment.
-- Task 4 implementation and two remediation waves are preserved through `c831598`. The blocking review found Critical 1 and Important 4; those findings are addressed by Task 3A plus the amended Task 4 sequence below. Do not rewrite, squash, or pretend the prior Task 4 evidence proves the amended contracts.
-- ADR-018 and its approved design are committed at `8e289e7`. Task 4 production remediation remains paused until Task 3A is implemented, focused checks pass, and a fresh Task 3A review reports Critical 0 / Important 0.
+- Task 4 implementation and two remediation waves occupy the fixed production range `cd982c7..c831598` (`59b5944`, `932f335`, `c831598`). The blocking review found Critical 1 and Important 4; those findings are addressed by Task 3A plus the amended Task 4 sequence below. Do not rewrite, squash, or pretend the prior Task 4 evidence proves the amended contracts.
+- ADR-018 and its approved design are the separate dependency commit `8e289e7`. Plan amendment/remediation commits, beginning with `08610e9`, are documentation-only and must be recorded separately from Task 4 production work. The future Task 3A schema commit is another isolated dependency and must not be counted again inside the Task 4 implementation range. Task 4 production remediation remains paused until Task 3A is implemented, focused checks pass, and a fresh Task 3A review reports Critical 0 / Important 0.
 - This amendment authorizes plan and schema-contract work only. It does not authorize migration deploy, application-data writes, real YooKassa/DaData calls, Preview smoke, push, pull request, merge, or Task 5.
 
 ---
@@ -792,7 +793,7 @@ Reviewer checks exact ADR-018 enum/columns, separate additive migration, prior m
 
 **Required skills:** `superpowers:test-driven-development`, `superpowers:systematic-debugging` for any unexpected failure
 
-**Existing evidence retained:** commits `59b5944`, `932f335`, and `c831598`; focused evidence through 11 files / 68 tests; latest review Critical 1 / Important 4. This task adds remediation commits from current HEAD. It does not rewrite the existing commits or claim their prior review passed.
+**Existing evidence retained:** Task 4 production range `cd982c7..c831598`, containing `59b5944`, `932f335`, and `c831598`; focused evidence through 11 files / 68 tests; latest review Critical 1 / Important 4. ADR-018 design commit `8e289e7`, plan amendment/remediation commits beginning with `08610e9`, and the future isolated Task 3A schema commit are separate dependencies, not part of that existing Task 4 range. This task adds only the Task 4 production/test/report delta after `c831598`; it does not rewrite the existing commits or claim their prior review passed.
 
 **Files:**
 
@@ -828,7 +829,7 @@ Get-FileHash 'docs\superpowers\plans\2026-08-12-phase-2a-executable-storefront-h
 Get-FileHash 'docs\superpowers\plans\phase-2-task-3-execution.md' -Algorithm SHA256
 ```
 
-Expected: HEAD contains the approved Task 3A checkpoint after `8e289e7`; protected hashes remain `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Record the existing Task 4 commit range and prior focused evidence in the report, then list the still-open findings exactly: durable cross-process claim, total outcome error handling, pre-commit sanitization, inherited checkout action-wrapper removal, and canonical product-media snapshot fallback.
+Expected: HEAD contains the approved isolated Task 3A checkpoint after ADR-018 design commit `8e289e7`; protected hashes remain `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`. Record four separate ownership buckets in the report: existing Task 4 production range `cd982c7..c831598`; ADR-018 design dependency `8e289e7`; plan amendment/remediation commits beginning with `08610e9`; and the isolated Task 3A schema commit. Record the Task 4 remediation base immediately after those dependencies so its production/test/report delta can be reviewed without attributing or counting Task 3A twice. Then list the still-open findings exactly: durable cross-process claim, total outcome error handling, pre-commit sanitization, inherited checkout action-wrapper removal, and canonical product-media snapshot fallback.
 
 - [ ] **Step 2: Write RED durable-claim and total-outcome tests**
 
@@ -844,6 +845,7 @@ type PaymentInitializationResult =
 
 - two concurrent calls for one `READY` order produce one successful conditional claim, exactly one provider create call, and one loser returning `INDETERMINATE` without cancellation or stock mutation;
 - a `DISPATCHED` order may be claimed once and reuses the exact ADR-017 durable request and `payment-<orderId>` idempotency key;
+- a `DISPATCHED` replay with an existing `paymentEverDispatchedAt` that receives another dispatched/unknown result finishes in `DISPATCHED`, retains the original `paymentEverDispatchedAt` byte-for-time, and does not leave the row in `CLAIMED`;
 - `READY | DISPATCHED -> CLAIMED` stores an injected claim timestamp, and every correlation, dispatched-state, or no-dispatch transaction matches that exact timestamp so only the claim owner can finish it;
 - `CLAIMED`, null historical state, `CORRELATED`, and `NOT_CREATED` never dispatch automatically; a crashed `CLAIMED` row remains `INDETERMINATE` with no timeout takeover;
 - a dispatched/unknown provider result changes `CLAIMED` to `DISPATCHED` and sets `paymentEverDispatchedAt` only when null before returning `INDETERMINATE`;
@@ -852,8 +854,9 @@ type PaymentInitializationResult =
 - verified provider correlation creates or repairs the provider-id `Payment` and changes exact claimed state to `CORRELATED` in one serializable transaction; a conflicting provider id, amount, order number, order state, or claim token returns `INDETERMINATE` and preserves stock;
 - `order.findUnique`, claim update, durable request construction, provider detail lookup, provider create, dispatched-state persistence, correlation persistence, and no-dispatch cancellation may each throw independently; every case resolves to `INDETERMINATE`, logs a structured category, and never rejects;
 - at or after `createdAt + W`, a `READY` or `DISPATCHED` order returns `BLOCKED_AFTER_RETRY_WINDOW` without claiming or dispatching; a pre-existing ambiguous `CLAIMED` order remains `INDETERMINATE`.
+- an advancing injected clock may pass the initial eligibility/claim check and reach `createdAt + W` immediately before dispatch; this path makes zero provider calls, guardedly releases the exact claim to `READY` with a null claimed-at timestamp, and returns `BLOCKED_AFTER_RETRY_WINDOW`; a zero-count or throwing release returns `INDETERMINATE`.
 
-Keep tests deterministic by injecting `now`, claim timestamps, client doubles, and provider doubles. Do not use timers, a real database, process-local mutex assertions, or real YooKassa.
+Keep tests deterministic by injecting `now`, a separately advancing `clock: () => Date`, claim timestamps, client doubles, and provider doubles. Do not use timers, a real database, process-local mutex assertions, or real YooKassa.
 
 - [ ] **Step 3: Write RED placement-boundary, checkout-boundary, and media-fallback tests**
 
@@ -883,7 +886,7 @@ Expected: fail on the missing durable schema usage/claim transitions, escaping e
 
 - [ ] **Step 5: Implement the ADR-018 claim state machine as a total API**
 
-Update `PaymentInitializationClient` so its injectable contract supports the exact conditional claim and guarded serializable transactions. Generate one `claimStartedAt` value per call. Before create dispatch, conditionally update only an online `PENDING` order with no `Payment`, `paymentInitializationState in ['READY', 'DISPATCHED']`, and `createdAt` inside ADR-017's window:
+Update `PaymentInitializationClient` so its injectable contract supports the exact conditional claim and guarded serializable transactions. Keep the public `now` input for the initial eligibility check and add an injected `clock: () => Date = () => new Date()` for the mandatory pre-dispatch recheck. Generate one `claimStartedAt` value per call. Before create dispatch, conditionally update only an online `PENDING` order with no `Payment`, `paymentInitializationState in ['READY', 'DISPATCHED']`, and `createdAt` inside ADR-017's window:
 
 ```typescript
 where: {
@@ -900,10 +903,12 @@ data: {
 }
 ```
 
-Only `count === 1` authorizes `provider.createPayment(durableRequest(order))`. Every finishing mutation includes `paymentInitializationState: 'CLAIMED'` and `paymentInitializationClaimedAt: claimStartedAt` in its guard. Implement these terminal paths:
+After `count === 1`, call `const dispatchNow = clock()` immediately before the provider boundary. Recheck `dispatchNow.getTime() < order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS`. If false, do not call `durableRequest` or any provider method. Run one guarded release matching order id, online `PENDING`, absent `Payment`, `CLAIMED`, and exact `claimStartedAt`; set state to `READY` and `paymentInitializationClaimedAt` to null. Return `BLOCKED_AFTER_RETRY_WINDOW` only when that release updates one row. Zero count or exception returns `INDETERMINATE`.
+
+Only a winning claim plus the fresh successful window check authorizes `provider.createPayment(durableRequest(order))`. Every finishing mutation includes `paymentInitializationState: 'CLAIMED'` and `paymentInitializationClaimedAt: claimStartedAt` in its guard. Implement these terminal paths:
 
 - verified provider object: in one serializable transaction recheck pending ownership/claim, reject conflicting local correlation, upsert provider-id `Payment`, and set `CORRELATED`;
-- dispatched/unknown result: guarded update to `DISPATCHED`, retain the claim timestamp for audit, and set `paymentEverDispatchedAt` only when it is null;
+- dispatched/unknown result: guarded update to `DISPATCHED`; if `paymentEverDispatchedAt` is null, set it to the fresh dispatch-boundary time; if already non-null, preserve the original timestamp exactly. A successful replay transition must not strand the row in `CLAIMED`;
 - proven no dispatch with no prior dispatch: in one serializable transaction set `NOT_CREATED`, cancel `PENDING`, and restore canonical stock once;
 - proven no dispatch after any prior dispatch: guarded return to `DISPATCHED` or retain equivalent durable dispatched evidence, return `INDETERMINATE`, and preserve stock/order;
 - claim loser, crash-left `CLAIMED`, null historical state, transition conflict, transaction failure, correlation conflict, or unexpected adapter exception: structured log plus `INDETERMINATE`.
@@ -947,10 +952,11 @@ Commit subject:
 fix: enforce durable payment create claims
 ```
 
-Update `.superpowers/sdd/phase-4-task-4-report.md` by appending ADR-018 remediation evidence; preserve earlier RED/GREEN and review-wave history. A fresh Sol xhigh reviewer receives the amended Task 4 brief, report, Task 3A approval, `cd982c7..HEAD` Task 4 diff plus the isolated Task 3A schema commit, and fresh focused evidence. Reviewer checks:
+Update `.superpowers/sdd/phase-4-task-4-report.md` by appending ADR-018 remediation evidence; preserve earlier RED/GREEN and review-wave history. A fresh Sol xhigh reviewer receives the amended Task 4 brief, report, fresh focused evidence, and these separately identified inputs: retained existing Task 4 range `cd982c7..c831598`; ADR-018 design dependency `8e289e7`; the already approved isolated Task 3A schema commit; and the Task 4 production/test/report delta introduced after `c831598` through HEAD, excluding the separately identified ADR/plan and Task 3A files from Task 4 attribution. Task 3A is inspected once as a dependency, never counted again in the Task 4 delta. Reviewer checks:
 
 - one durable cross-process claim winner and no process-local correctness dependency;
-- exact claim-owner guards, write-once dispatch evidence, fail-closed crash behavior, and no stale takeover;
+- a fresh injected clock recheck immediately before durable-request/provider dispatch; a closed window makes zero provider/durable-request calls and returns `BLOCKED_AFTER_RETRY_WINDOW` only after an exact-claim `CLAIMED -> READY` release succeeds;
+- exact claim-owner guards, fail-closed release/write failures, write-once dispatch evidence, replay preservation of the original `paymentEverDispatchedAt`, no successful replay stranded in `CLAIMED`, fail-closed crash behavior, and no stale takeover;
 - mutually exclusive correlation and no-dispatch cancellation with exactly-once stock effects;
 - total four-outcome API under every database/provider exception;
 - sanitized pre-commit failures and no raw infrastructure leakage;
@@ -995,6 +1001,8 @@ Extend tests to prove:
 - payment-list absence never proves `NOT_CREATED`; empty, multiple, or conflicting secondary lookup results preserve order/stock and cannot authorize cancellation;
 - an online order page with no local `Payment` may call `ensureOnlinePayment` with the exact durable request only while `now < createdAt + W` and ADR-018 state is claimable `READY` or `DISPATCHED`; `CLAIMED` and null historical state are lookup/manual-investigation only, and at/after the bound no create claim or dispatch occurs;
 - online cancellation first ensures durable provider correlation, calls YooKassa cancellation, reloads the provider status, and does not mutate local order/payment/stock until `canceled` is verified;
+- when `ensureOnlinePayment` returns `CREATED` after persisting a previously missing local `Payment`, cancellation performs a fresh owner-scoped order/payment read and uses only that newly persisted provider id; the stale pre-initialization order object is never used as correlation evidence;
+- an absent payment, non-`CORRELATED` initialization state, amount mismatch, or otherwise conflicting fresh correlation returns `CANCELLATION_PENDING_SYNC` without calling provider cancellation; focused coverage pins the newly persisted provider id passed to `cancelPayment`;
 - only an ADR-018 claim owner with adapter-proven no dispatch, null `paymentEverDispatchedAt`, exact claim timestamp, absent `Payment`, and pending order may reach durable `NOT_CREATED` and the guarded cancellation/restoration transaction exactly once; every claim loss, ambiguous `CLAIMED`, prior dispatch, provider rejection/error, local persistence failure, or `BLOCKED_AFTER_RETRY_WINDOW` preserves stock;
 - provider cancel failure/timeout or non-final status returns `CANCELLATION_PENDING_SYNC`, leaves local order/payment/stock unchanged, and remains recoverable by retry/webhook/order-page resync;
 - verified provider cancellation followed by an injected local transaction failure also returns `CANCELLATION_PENDING_SYNC`; a later webhook/resync applies local payment/order/stock cancellation exactly once;
@@ -1022,7 +1030,8 @@ Refactor `cancelOrder`:
 - authenticate and load only an owned `PENDING` order;
 - for online payment with no local `Payment`, call total `ensureOnlinePayment`; it may create only under its internal ADR-017 window and ADR-018 claim guard. `INDETERMINATE` includes claim loss, ambiguous crash, null historical state, prior-dispatch uncertainty, and transition failure; return `CANCELLATION_PENDING_SYNC` and preserve local state;
 - if `ensureOnlinePayment` returns `NOT_CREATED`, the claim-owner transaction has already set `NOT_CREATED`, canceled the order, and restored stock; do not run a second cancellation transaction. If it returns `BLOCKED_AFTER_RETRY_WINDOW`, expose lookup/manual investigation and preserve local state;
-- call `cancelPayment(providerId)`, then load verified provider details; only verified `canceled` enters the shared reconciliation transaction;
+- after `CREATED`, or before using any pre-existing local correlation, re-read the order with `{ id: orderId, userId, status: 'PENDING', paymentMethod: 'online' }` and select stored total, `paymentInitializationState`, and `payment { id, amount }`. Continue only when the fresh row is owned, pending, `CORRELATED`, has one payment, and its payment amount equals stored total. Otherwise return `CANCELLATION_PENDING_SYNC` with zero provider calls;
+- call `cancelPayment` with only the provider id from that fresh owner-scoped read, then load verified provider details; only verified `canceled` enters the shared reconciliation transaction;
 - if the provider is canceled but the local transaction fails, return `CANCELLATION_PENDING_SYNC`; retry/webhook/order-page resync loads the same terminal provider state and applies it exactly once;
 - for COD, use the same local cancellation transaction without provider calls;
 - revalidate profile and order paths only after success.
@@ -1050,7 +1059,7 @@ Commit subject:
 fix: harden payment and cancellation transitions
 ```
 
-Reviewer checks missing-payment recovery by verified metadata/RUB amount, `CORRELATED` state repair, no authority from payment-list absence, strict `createdAt + W` create cutoff under official `T = 24 hours`, ADR-018 claim ownership/write-once dispatch evidence, adapter-proven no-dispatch-only `NOT_CREATED`, no second cancellation after a completed `NOT_CREATED` transaction, provider-confirmed customer cancellation, provider-canceled/local-failure recovery, transactional inventory gate, repeated-event idempotency, final-state conflicts, review pruning, and preservation of webhook source verification.
+Reviewer checks missing-payment recovery by verified metadata/RUB amount, `CORRELATED` state repair, fresh owner-scoped pending-online order/payment re-read before cancellation, stored-total/payment-amount equality, use only of the newly persisted provider id, zero provider cancellation calls for absent/conflicting fresh correlation, no authority from payment-list absence, strict `createdAt + W` create cutoff under official `T = 24 hours`, ADR-018 claim ownership/write-once dispatch evidence, adapter-proven no-dispatch-only `NOT_CREATED`, no second cancellation after a completed `NOT_CREATED` transaction, provider-confirmed customer cancellation, provider-canceled/local-failure recovery, transactional inventory gate, repeated-event idempotency, final-state conflicts, review pruning, and preservation of webhook source verification.
 
 ---
 
@@ -1570,7 +1579,7 @@ Stop. Do not push, create a Vercel Preview, open a pull request, merge, delete t
 
 - [x] Tasks 1, 2, 2A, and 3 remain closed with prior commits/evidence preserved; Task 4 remains incomplete until Task 3A schema checkpoint, remediation, focused evidence, and fresh review are clean.
 - [x] ADR-018 uses one separate `PaymentInitializationState` enum and three nullable `Order` columns with no default or historical backfill; migration deployment remains deferred to Task 8.
-- [x] One durable `READY | DISPATCHED -> CLAIMED` winner may dispatch; exact claim ownership and null write-once dispatch evidence are required for `NOT_CREATED`; claim loss, ambiguous crash, provider rejection/error after dispatch, and transition failure are `INDETERMINATE`.
+- [x] One durable `READY | DISPATCHED -> CLAIMED` winner may dispatch only after a fresh pre-provider window check; a closed window makes zero provider/durable-request calls and requires an exact-claim release before `BLOCKED_AFTER_RETRY_WINDOW`. Exact claim ownership and null write-once dispatch evidence are required for `NOT_CREATED`; replay preserves an existing dispatch timestamp and never leaves a successfully finished row in `CLAIMED`; claim loss, ambiguous crash, provider rejection/error after dispatch, and transition failure are `INDETERMINATE`.
 - [x] `ensureOnlinePayment` is total for database/provider exceptions; pre-commit ownership/database failures use sanitized placement errors without raw infrastructure detail.
 - [x] Canonical immutable snapshots use SKU IMAGE first, canonical product IMAGE second, and null last; no new legacy media lookup is introduced.
 - [x] The inherited checkout wrapper is removed and cannot submit partial legacy values; Task 6 owns the first enabled canonical `PlaceOrderInput` submitter.
@@ -1586,7 +1595,7 @@ Stop. Do not push, create a Vercel Preview, open a pull request, merge, delete t
 - [x] The existing coupon is proven stateless; no usage mutation is invented, and E2E uses a namespace-owned coupon.
 - [x] Online provider work is real YooKassa sandbox only; `NOT_CREATED` requires adapter-proven no dispatch plus exact ADR-018 claim ownership and null durable dispatch evidence; every claim loss, ambiguous crash, provider rejection/error after dispatch, or transition failure is `INDETERMINATE` unless a verified object proves `CREATED`; official retention is `T = 24 hours`; exact-request continuation stops at conservative `W = 23 hours`; verified metadata and RUB amount can recover a missing local `Payment`.
 - [x] `PAYMENT_INITIALIZATION_BLOCKED` is serialized consistently through checkout/order DTOs, Checkout A, Order A, actions, source tests, and E2E with exact copy/order number, no redirect/continue/retry create, lookup-only resync, and provider-proof-gated cancellation.
-- [x] Provider-confirmed cancellation plus local failure is recoverable by retry/webhook/order-page reconciliation with exactly-once inventory effects.
+- [x] Customer cancellation uses a fresh owner-scoped pending-online order/payment read, requires `CORRELATED` plus stored-total/payment-amount equality, and uses only that fresh provider id; absent/conflicting correlation makes zero provider cancellation calls. Provider-confirmed cancellation plus local failure is recoverable by retry/webhook/order-page reconciliation with exactly-once inventory effects.
 - [x] New order writes are canonical SKU-only and cart-only; legacy ProductVariant remains read-compatible only.
 - [x] Order placement and payment-cancellation inventory transitions are transactionally gated and idempotent.
 - [x] Order UI does not fabricate courier, support, document, reorder, recommendation, payment, or review state.

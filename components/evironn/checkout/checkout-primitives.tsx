@@ -231,21 +231,21 @@ export function SlotPicker({ controller }: { controller: Controller }) {
 
 export function ServiceOptions({ controller }: { controller: Controller }) {
   const { form, actions, quote } = controller;
-  const rows: Array<{ id: keyof typeof form.services; label: string; amount: number }> = [
+  const rows: Array<{ id: keyof typeof form.services; label: string; amount: number | null }> = [
     {
       id: 'carrying',
       label: 'Подъем без лифта',
-      amount: quote?.serviceLines.find((line) => line.id === 'carrying')?.amount ?? 0,
+      amount: quote?.serviceLines.find((line) => line.id === 'carrying')?.amount ?? null,
     },
     {
       id: 'assembly',
       label: 'Сборка на месте',
-      amount: quote?.serviceLines.find((line) => line.id === 'assembly')?.amount ?? 0,
+      amount: quote?.serviceLines.find((line) => line.id === 'assembly')?.amount ?? null,
     },
     {
       id: 'removal',
       label: 'Вывоз старой мебели',
-      amount: quote?.serviceLines.find((line) => line.id === 'removal')?.amount ?? 0,
+      amount: quote?.serviceLines.find((line) => line.id === 'removal')?.amount ?? null,
     },
   ];
   return (
@@ -264,7 +264,7 @@ export function ServiceOptions({ controller }: { controller: Controller }) {
             <span className="chk-services__body">
               <b>{row.label}</b>Цена рассчитана сервером
             </span>
-            <em>{row.amount ? `+ ${formatPrice(row.amount)}` : 'Бесплатно'}</em>
+            <em>{row.amount === null ? 'Рассчитывается после выбора' : `+ ${formatPrice(row.amount)}`}</em>
           </label>
         </li>
       ))}
@@ -306,10 +306,11 @@ export function PaymentPicker({ controller }: { controller: Controller }) {
 }
 
 export function OrderLines({ controller }: { controller: Controller }) {
-  const { cart, actions } = controller;
+  const { cart, quote, actions } = controller;
+  const lines = quote?.cart.items ?? cart.items;
   return (
     <ul className="chk-lines chk-lines--light">
-      {cart.items.map((line) => (
+      {lines.map((line) => (
         <li key={line.id}>
           <div className="chk-lines__thumb">{line.imageUrl && <img src={line.imageUrl} alt="" />}</div>
           <div className="chk-lines__body">
@@ -388,11 +389,25 @@ export function SubmitButton({ controller }: { controller: Controller }) {
   );
 }
 
-export function MobileBar({ controller }: { controller: Controller }) {
+export function MobileBar({ controller, summary }: { controller: Controller; summary: ReactNode }) {
+  const total = controller.quote?.totals.total ?? 0;
+  const count = controller.quote?.totals.itemCount ?? controller.cart.totals.itemCount;
   return (
     <div className="chk-bar chk-bar--light">
+      <details className="chk-bar__details">
+        <summary>
+          <span>
+            <b>{formatPrice(total)}</b>
+            {count} товаров
+          </span>
+          <em>
+            Состав заказа
+            <FiChevronUp aria-hidden="true" />
+          </em>
+        </summary>
+        <div className="chk-bar__sheet">{summary}</div>
+      </details>
       <SubmitButton controller={controller} />
-      <FiChevronUp aria-hidden="true" />
     </div>
   );
 }

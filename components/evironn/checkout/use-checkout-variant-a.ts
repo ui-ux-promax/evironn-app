@@ -90,10 +90,16 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   useEffect(() => {
     if (cart.items.length === 0 || !deliverySlotId) {
       setQuote(null);
+      setQuoteError(null);
       return;
     }
-    if (deliveryMethod !== 'courier' && !pickupPointId) return;
+    if (deliveryMethod !== 'courier' && !pickupPointId) {
+      setQuote(null);
+      setQuoteError(null);
+      return;
+    }
     const revision = ++quoteRevisionRef.current;
+    setQuote(null);
     setQuotePending(true);
     setQuoteError(null);
     void getCheckoutQuote(quoteInput)
@@ -107,7 +113,10 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         setQuote(result.quote);
       })
       .catch((error) => {
-        if (revision === quoteRevisionRef.current) setQuoteError(messageOf(error));
+        if (revision === quoteRevisionRef.current) {
+          setQuote(null);
+          setQuoteError(messageOf(error));
+        }
       })
       .finally(() => {
         if (revision === quoteRevisionRef.current) setQuotePending(false);

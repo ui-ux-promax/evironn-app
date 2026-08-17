@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   quote: vi.fn(),
   placeOrder: vi.fn(),
   replace: vi.fn(),
+  assign: vi.fn(),
   getCart: vi.fn(),
   updateItemQuantity: vi.fn(),
   removeCartItem: vi.fn(),
@@ -126,8 +127,12 @@ beforeEach(() => {
   mocks.quote.mockResolvedValue({ ok: true, quote });
   mocks.getCart.mockResolvedValue(cart);
   useCartStore.setState({ ...cart, loading: false, error: false, totalAmount: 100000 });
+  vi.stubGlobal('location', { assign: mocks.assign });
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('Checkout Variant A', () => {
   it('renders three receiving modes and replaces quote from server', async () => {
@@ -166,5 +171,67 @@ describe('Checkout Variant A', () => {
     expect(screen.getByRole('link', { name: /42/ })).toHaveAttribute('href', '/orders/42?placed=1');
     expect(mocks.replace).toHaveBeenCalledWith('/orders/42?placed=1');
     expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('invalidates the old quote while a changed delivery quote rejects', async () => {
+    let rejectQuote!: (error: Error) => void;
+    mocks.quote
+      .mockResolvedValueOnce({ ok: true, quote })
+      .mockReturnValueOnce(new Promise((_, reject) => (rejectQuote = reject)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Московская область' }));
+    rejectQuote(new Error('Quote network failed'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Quote network failed');
+    for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+  });
+
+  it('does not label unselected services as free without a server price', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+    expect(screen.getByText('Сборка на месте').closest('li')).not.toHaveTextContent('Бесплатно');
+    expect(screen.getByText('Вывоз старой мебели').closest('li')).not.toHaveTextContent('Бесплатно');
+  });
+
+  it('renders authoritative quote cart lines and mobile summary details', async () => {
+    mocks.quote.mockResolvedValue({
+      ok: true,
+      quote: { ...quote, cart: { ...cart, items: [{ ...cart.items[0], name: 'Server Noma', lineTotal: 99000 }] } },
+    });
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    expect(await screen.findAllByText('Server Noma')).not.toHaveLength(0);
+    expect(document.querySelector('.chk-bar__details')).toBeInTheDocument();
+    expect(document.querySelector('.chk-bar__sheet')).toHaveTextContent('Server Noma');
+    expect(document.querySelector('.chk-bar__sheet')).toHaveTextContent('Доставка');
+  });
+
+  it.each([
+    [{ ok: true, code: 'ORDER_READY', orderNumber: 11 }, '/orders/11?placed=1'],
+    [{ ok: false, code: 'PAYMENT_INITIALIZATION_PENDING', orderNumber: 12, error: 'Pending' }, '/orders/12?placed=1'],
+  ])('routes durable order result %# to its order page', async (result, href) => {
+    mocks.placeOrder.mockResolvedValue(result);
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(href));
+    expect(mocks.assign).not.toHaveBeenCalled();
+  });
+
+  it('redirects a ready online payment only to the YooKassa URL', async () => {
+    mocks.placeOrder.mockResolvedValue({
+      ok: true,
+      code: 'PAYMENT_REDIRECT_READY',
+      orderNumber: 13,
+      paymentUrl: 'https://yookassa.test/confirmation',
+    });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalled());
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+    await waitFor(() => expect(mocks.assign).toHaveBeenCalledWith('https://yookassa.test/confirmation'));
+    expect(mocks.replace).not.toHaveBeenCalled();
   });
 });

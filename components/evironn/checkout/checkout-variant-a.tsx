@@ -163,7 +163,7 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
           </div>
         </aside>
       </div>
-      <MobileBar controller={controller} />
+      <MobileBar controller={controller} summary={summary} />
     </main>
   );
 }

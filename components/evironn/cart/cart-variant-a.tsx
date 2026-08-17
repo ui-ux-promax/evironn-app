@@ -18,7 +18,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
   const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
     useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
-  const canCheckout = !loading && items.length > 0 && items.every((item) => item.available);
+  const canCheckout = !loading && !error && items.length > 0 && items.every((item) => item.available);
 
   return (
     <main className="cart-a" id="main-content">
@@ -218,9 +218,10 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
               aria-disabled="true"
               tabIndex={-1}
               title={CHECKOUT_DISABLED_LABEL}
+              aria-label={CHECKOUT_DISABLED_LABEL}
               onClick={(event) => event.preventDefault()}
             >
-              {CHECKOUT_DISABLED_LABEL}
+              Недоступно
             </a>
           )}
         </div>

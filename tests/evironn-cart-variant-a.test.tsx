@@ -346,4 +346,29 @@ describe('Cart Variant A', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Недостаточно на складе');
     expect(document.querySelector('.cart-a__mobile-bar')).toBeInTheDocument();
   });
+
+  it('disables checkout for loading, unavailable, and failed cart states', async () => {
+    let resolveCart!: (value: CartDto) => void;
+    mocks.getCart.mockReturnValue(new Promise((resolve) => (resolveCart = resolve)));
+    render(<CartVariantA related={[]} initialWishlistedIds={[]} />);
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    resolveCart(cart());
+    await waitFor(() => expect(screen.getAllByRole('link', { name: 'Оформить заказ' })).toHaveLength(2));
+    cleanup();
+
+    renderCart(cart([{ ...line, available: false }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    cleanup();
+
+    mocks.getCart.mockRejectedValue(new Error('Cart failed'));
+    useCartStore.setState({ ...cart(), loading: false, error: false, totalAmount: 100000 });
+    render(<CartVariantA related={[]} initialWishlistedIds={[]} />);
+    await waitFor(() => expect(useCartStore.getState().error).toBe(true));
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveTextContent('Недоступно');
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'Оформление заказа доступно после загрузки товаров без ошибок.',
+    );
+  });
 });

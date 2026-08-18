@@ -124,6 +124,31 @@ function assertNamespace(namespace: string): void {
   if (!/^phase4-e2e-[a-z0-9-]{8,80}$/.test(namespace)) throw new Error('Invalid Phase 4 E2E namespace');
 }
 
+export function decidePhase4Cleanup(input: {
+  namespace: string;
+  orderNumbers: readonly number[];
+  indeterminateOrderNumbers: readonly number[];
+  hasOwnedResources?: boolean;
+}): Phase4CleanupResult {
+  assertNamespace(input.namespace);
+  const orderNumbers = [...new Set(input.orderNumbers)].sort((left, right) => left - right);
+  const indeterminateOrderNumbers = [...new Set(input.indeterminateOrderNumbers)].sort((left, right) => left - right);
+  if (indeterminateOrderNumbers.length) {
+    return {
+      ok: false,
+      namespace: input.namespace,
+      reason: 'PROVIDER_STATE_INDETERMINATE',
+      orderNumbers: indeterminateOrderNumbers,
+    };
+  }
+  return {
+    ok: true,
+    namespace: input.namespace,
+    deleted: input.hasOwnedResources ?? orderNumbers.length > 0,
+    orderNumbers,
+  };
+}
+
 function namespaceEmail(namespace: string): string {
   assertNamespace(namespace);
   return `${namespace}@${E2E_EMAIL_DOMAIN}`;
@@ -639,9 +664,6 @@ export async function cleanupPhase4Namespace(
       }
     }
   }
-  if (indeterminate.length)
-    return { ok: false, namespace, reason: 'PROVIDER_STATE_INDETERMINATE', orderNumbers: indeterminate };
-
   const userIds = roots.map((user) => user.id);
   const cartIds = roots.flatMap((user) => user.carts.map((cart) => cart.id));
   const wishlistIds = roots.flatMap((user) => user.wishlists.map((wishlist) => wishlist.id));
@@ -652,8 +674,13 @@ export async function cleanupPhase4Namespace(
   const skuIds = products.flatMap((product) => product.skus.map((sku) => sku.id));
   const couponIds = coupons.map((coupon) => coupon.id);
 
-  if (!userIds.length && !productIds.length && !couponIds.length)
-    return { ok: true, namespace, deleted: false, orderNumbers };
+  const cleanupDecision = decidePhase4Cleanup({
+    namespace,
+    orderNumbers,
+    indeterminateOrderNumbers: indeterminate,
+    hasOwnedResources: Boolean(userIds.length || productIds.length || couponIds.length),
+  });
+  if (!cleanupDecision.ok || !cleanupDecision.deleted) return cleanupDecision;
 
   await getPhase4Database().$transaction(
     async (transaction) => {
@@ -698,7 +725,7 @@ export async function cleanupPhase4Namespace(
     },
     { isolationLevel: 'Serializable' },
   );
-  return { ok: true, namespace, deleted: true, orderNumbers };
+  return cleanupDecision;
 }
 
 export async function disconnectPhase4Database(): Promise<void> {

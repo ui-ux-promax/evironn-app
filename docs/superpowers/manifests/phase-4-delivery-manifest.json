@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "baseSha": "868310f",
   "fileCount": 107,
-  "totalBytes": 986672,
+  "totalBytes": 1004921,
   "entries": [
     {
       "path": ".env.example",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".superpowers/sdd/phase-4-delivery-report.md",
-      "sha256": "33625f26f228e23726e6909e2f467d96abd1b4eec535713006219ca8241c4d7a",
-      "bytes": 5030
+      "sha256": "4cf49a531f20896e06e731d96efc2d660fab51ae0774c4ba309bc58abcf3c018",
+      "bytes": 6114
     },
     {
       "path": ".superpowers/sdd/phase-4-plan-review.md",
@@ -61,8 +61,8 @@
     },
     {
       "path": ".superpowers/sdd/progress.md",
-      "sha256": "f0ac8e99fcccac477f1147da63a1534afa014f721111f28fcab8165c93a1709a",
-      "bytes": 51471
+      "sha256": "68832244546d667d3d79b0c0d7522c63d302fc61d8ad7e531bfb7cef538ffe2d",
+      "bytes": 51581
     },
     {
       "path": "app/(shop)/checkout/loading.tsx",
@@ -161,8 +161,8 @@
     },
     {
       "path": "docs/roadmap/STATUS.md",
-      "sha256": "527916f9c7991ec3ddb330c761b6c94e13a8707bd582dc12016e8ce7cd27dd27",
-      "bytes": 28246
+      "sha256": "a138f7221bc37dabe78315798b01527262657674bd370d83a27374c03761ce6c",
+      "bytes": 28442
     },
     {
       "path": "docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md",
@@ -211,8 +211,8 @@
     },
     {
       "path": "e2e/phase4-database.ts",
-      "sha256": "50701408450a2e56ec73c80a5b53d90202b5d95497a8c331f31ecafcff0c5320",
-      "bytes": 26893
+      "sha256": "65ff71712f10f91eb87c8ba48a9e9ac8362e51343a5f35eeda01f8b6ed75b37b",
+      "bytes": 27702
     },
     {
       "path": "e2e/phase4-namespace.ts",
@@ -266,8 +266,8 @@
     },
     {
       "path": "lib/payment-sync.ts",
-      "sha256": "ae52811cb9b7475e61bd8ae75f65b38f87834c3998fb5d3a5c6aa0f63e773315",
-      "bytes": 12365
+      "sha256": "a4b4d0a65e2cf63831ceed2032666058ea5c14938094d98928543e04105a80cf",
+      "bytes": 12572
     },
     {
       "path": "lib/yookassa.ts",
@@ -301,8 +301,8 @@
     },
     {
       "path": "scripts/e2e-database-fingerprint.ts",
-      "sha256": "b2644d68a2a9d0d41df0d0945219d4065d15b1f5377e1ef134acc3831f83b9ab",
-      "bytes": 1195
+      "sha256": "9e2c739963ae2c541ff02fb00f531c97a8a6cdbc13ce5f7c4554048f36cf5ea0",
+      "bytes": 1841
     },
     {
       "path": "scripts/e2e-prisma-migrate.ts",
@@ -496,8 +496,8 @@
     },
     {
       "path": "tests/phase-4-integration-contract.test.ts",
-      "sha256": "6a1dd52a8dac6984695f68408e0d870100740aa7a3005133fa48ac954d1c116d",
-      "bytes": 41960
+      "sha256": "46cbbd3292e4262a5852754a01e3c2e1c233df0c910363cb2904874217de26c6",
+      "bytes": 57157
     },
     {
       "path": "tests/phase-4-migration-status.test.ts",

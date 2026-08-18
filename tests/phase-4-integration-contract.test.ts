@@ -29,21 +29,28 @@ vi.mock('@/lib/checkout-page', async (importOriginal) => {
 });
 vi.mock('@/lib/payment-initialization', () => ({ ensureOnlinePayment: contractMocks.ensureOnlinePayment }));
 vi.mock('@/lib/payment-environment', () => ({ assertPortfolioPaymentMode: contractMocks.assertPaymentMode }));
-vi.mock('@/lib/yookassa', () => ({
-  cancelPayment: vi.fn(),
-  createPaymentAttempt: vi.fn(),
-  getPaymentDetails: vi.fn(),
-  validateYooKassaConfiguration: contractMocks.validateYooKassaConfiguration,
-  siteUrl: () => 'https://preview.test',
-  toOrigin: (value: string) => value,
-}));
+vi.mock('@/lib/yookassa', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/yookassa')>();
+  return {
+    ...actual,
+    cancelPayment: vi.fn(),
+    createPaymentAttempt: vi.fn(),
+    getPaymentDetails: vi.fn(),
+    validateYooKassaConfiguration: contractMocks.validateYooKassaConfiguration,
+    siteUrl: () => 'https://preview.test',
+    toOrigin: (value: string) => value,
+  };
+});
 vi.mock('@/lib/sales-count', () => ({ adjustSalesCount: contractMocks.adjustSalesCount }));
 vi.mock('@/app/actions/address', () => ({ saveAddressFromOrder: contractMocks.saveAddress }));
 vi.mock('@/lib/review', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/review')>();
   return { ...actual, pruneReviewsAfterCancel: vi.fn() };
 });
-vi.mock('@/lib/payment-sync', () => ({ reconcilePaymentStatus: vi.fn() }));
+vi.mock('@/lib/payment-sync', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/payment-sync')>();
+  return { ...actual, reconcilePaymentStatus: vi.fn() };
+});
 vi.mock('@/lib/logger', () => ({
   logger: { error: contractMocks.loggerError, warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
@@ -60,13 +67,16 @@ import {
 } from '@/lib/checkout-domain';
 import { purchasedOrderWhere } from '@/lib/review';
 import { runSerializableOrderTransaction } from '@/lib/order';
+import { recoverPaymentCorrelation } from '@/lib/payment-sync';
 import { buildBlockedOrderPaymentInitialization } from '@/services/dto/order-page.dto';
 import { buildBlockedPaymentInitializationDto } from '@/services/dto/checkout-page.dto';
 import { fingerprintDatabaseUrl, hasCompleteForbiddenFingerprintPolicy } from '@/e2e/database-target';
 import { resolveE2eDatabaseEnvironment } from '@/e2e/database-guard';
 import { phase4Namespace } from '@/e2e/phase4-namespace';
 import { validatePhase4NeverAttemptedProof } from '@/e2e/phase4-database';
+import { decidePhase4Cleanup } from '@/e2e/phase4-database';
 import { EXPECTED_PHASE4_MIGRATIONS, runPhase4DatabaseReadiness } from '@/e2e/database-readiness';
+import { acquireDatabaseFingerprints } from '@/scripts/e2e-database-fingerprint';
 
 const root = resolve(__dirname, '..');
 const manifestPath = 'docs/superpowers/manifests/phase-4-delivery-manifest.json';
@@ -226,6 +236,7 @@ function paymentHarness(overrides: Record<string, unknown> = {}) {
   };
   const tx = {
     order: {
+      findUnique: vi.fn(async () => ({ ...state.order })),
       updateMany: vi.fn(async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
         if (state.order.status !== 'PENDING') return { count: 0 };
         if (where.paymentMethod && where.paymentMethod !== state.order.paymentMethod) return { count: 0 };
@@ -251,6 +262,10 @@ function paymentHarness(overrides: Record<string, unknown> = {}) {
       }),
     },
     payment: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        state.order.payment = { ...data };
+        return state.order.payment;
+      }),
       findUnique: vi.fn(async () => (state.order.payment ? { id: String(state.order.payment.id) } : null)),
       upsert: vi.fn(
         async ({ create, update }: { create: Record<string, unknown>; update: Record<string, unknown> }) => {
@@ -262,10 +277,167 @@ function paymentHarness(overrides: Record<string, unknown> = {}) {
     sku: { update: vi.fn(async () => ((state.stock += 2), {})) },
   };
   const client = {
-    order: { findUnique: vi.fn(async () => ({ ...state.order })) },
+    order: {
+      findUnique: vi.fn(async () => ({ ...state.order })),
+      findMany: vi.fn(async () => [
+        {
+          id: state.order.id,
+          orderNumber: state.order.orderNumber,
+          totalAmount: state.order.totalAmount,
+          paymentInitializationState: state.order.paymentInitializationState,
+          paymentEverDispatchedAt: state.order.paymentEverDispatchedAt,
+          payment: state.order.payment
+            ? { id: String(state.order.payment.id), amount: Number(state.order.payment.amount) }
+            : null,
+        },
+      ]),
+    },
     $transaction: vi.fn(async (operation: (transaction: typeof tx) => unknown) => operation(tx)),
   };
   return { state, tx, client };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+function scheduledPaymentBoundary() {
+  const state = {
+    order: {
+      id: 'order-1',
+      orderNumber: 1042,
+      status: 'PENDING',
+      paymentMethod: 'online',
+      totalAmount: 159900,
+      paymentReturnUrl: 'https://preview.test/orders/1042',
+      createdAt: new Date('2026-08-16T00:00:00.000Z'),
+      paymentInitializationState: 'READY' as PaymentState,
+      paymentInitializationClaimedAt: null as Date | null,
+      paymentEverDispatchedAt: null as Date | null,
+      payment: null as Record<string, unknown> | null,
+      items: [{ skuId: 'sku-1', quantity: 2 }],
+    },
+    stock: 8,
+  };
+  let revision = 0;
+  let transactionNumber = 0;
+  const cancellationReady = deferred<void>();
+  const correlationReady = deferred<void>();
+  const allowCancellationCommit = deferred<void>();
+  const allowCorrelationCommit = deferred<void>();
+
+  const clone = () => ({
+    order: { ...state.order, payment: state.order.payment ? { ...state.order.payment } : null },
+    stock: state.stock,
+  });
+  const matches = (order: typeof state.order, where: Record<string, any>) => {
+    if (where.id && where.id !== order.id) return false;
+    if (where.orderNumber && where.orderNumber !== order.orderNumber) return false;
+    if (where.status && where.status !== order.status) return false;
+    if (where.paymentMethod && where.paymentMethod !== order.paymentMethod) return false;
+    if (where.totalAmount && where.totalAmount !== order.totalAmount) return false;
+    if (where.payment?.is === null && order.payment !== null) return false;
+    if (where.payment?.isNot === null && order.payment === null) return false;
+    if (where.payment?.is?.id && where.payment.is.id !== order.payment?.id) return false;
+    if (where.payment?.is?.amount && where.payment.is.amount !== order.payment?.amount) return false;
+    if (
+      typeof where.paymentInitializationState === 'string' &&
+      where.paymentInitializationState !== order.paymentInitializationState
+    )
+      return false;
+    if (
+      where.paymentInitializationState?.in &&
+      !where.paymentInitializationState.in.includes(order.paymentInitializationState)
+    )
+      return false;
+    if (
+      'paymentInitializationClaimedAt' in where &&
+      where.paymentInitializationClaimedAt?.getTime?.() !== order.paymentInitializationClaimedAt?.getTime?.()
+    )
+      return false;
+    if (
+      'paymentEverDispatchedAt' in where &&
+      where.paymentEverDispatchedAt?.getTime?.() !== order.paymentEverDispatchedAt?.getTime?.()
+    )
+      return false;
+    return true;
+  };
+  const makeTransaction = (local: ReturnType<typeof clone>) => ({
+    order: {
+      findUnique: vi.fn(async () => ({
+        ...local.order,
+        payment: local.order.payment ? { ...local.order.payment } : null,
+      })),
+      updateMany: vi.fn(async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
+        if (!matches(local.order, where)) return { count: 0 };
+        Object.assign(local.order, data);
+        return { count: 1 };
+      }),
+    },
+    payment: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        local.order.payment = { ...data };
+        return local.order.payment;
+      }),
+    },
+    sku: {
+      update: vi.fn(async ({ data }: { data: { stock: { increment: number } } }) => {
+        local.stock += data.stock.increment;
+        return {};
+      }),
+    },
+  });
+  const client = {
+    order: {
+      findUnique: vi.fn(async () => ({
+        ...state.order,
+        payment: state.order.payment ? { ...state.order.payment } : null,
+      })),
+      findMany: vi.fn(async () => [
+        {
+          id: state.order.id,
+          orderNumber: state.order.orderNumber,
+          totalAmount: state.order.totalAmount,
+          paymentInitializationState: state.order.paymentInitializationState,
+          paymentEverDispatchedAt: state.order.paymentEverDispatchedAt,
+          payment: state.order.payment
+            ? { id: String(state.order.payment.id), amount: Number(state.order.payment.amount) }
+            : null,
+        },
+      ]),
+    },
+    $transaction: vi.fn(async (operation: (transaction: ReturnType<typeof makeTransaction>) => Promise<unknown>) => {
+      const currentRevision = revision;
+      const local = clone();
+      const number = ++transactionNumber;
+      const result = await operation(makeTransaction(local));
+      if (number === 2) {
+        cancellationReady.resolve();
+        await allowCancellationCommit.promise;
+      }
+      if (number === 3) {
+        correlationReady.resolve();
+        await allowCorrelationCommit.promise;
+      }
+      if (currentRevision !== revision) throw Object.assign(new Error('serialization conflict'), { code: 'P2034' });
+      state.order = local.order;
+      state.stock = local.stock;
+      revision += 1;
+      return result;
+    }),
+  };
+  return {
+    state,
+    client,
+    cancellationReady,
+    correlationReady,
+    allowCancellationCommit,
+    allowCorrelationCommit,
+  };
 }
 
 beforeEach(() => {
@@ -597,7 +769,7 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
         return value;
       }),
     };
-    await expect(runSerializableOrderTransaction(client, operation)).resolves.toBe('second');
+    await expect(runSerializableOrderTransaction(client as never, operation)).resolves.toBe('second');
     expect(operation).toHaveBeenNthCalledWith(1, first);
     expect(operation).toHaveBeenNthCalledWith(2, second);
     expect(client.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
@@ -713,6 +885,160 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
       }),
     ).resolves.toEqual({ outcome: 'INDETERMINATE' });
     expect(stuckProvider.createPayment).not.toHaveBeenCalled();
+
+    const blocked = paymentHarness();
+    const blockedProvider = { createPayment: vi.fn(), getPaymentDetails: vi.fn() };
+    const retryWindowBound = new Date(blocked.state.order.createdAt.getTime() + 23 * 60 * 60 * 1000);
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: retryWindowBound,
+        client: blocked.client as never,
+        provider: blockedProvider as never,
+        clock: () => retryWindowBound,
+      }),
+    ).resolves.toEqual({ outcome: 'BLOCKED_AFTER_RETRY_WINDOW' });
+    expect(blocked.client.$transaction).not.toHaveBeenCalled();
+    expect(blockedProvider.createPayment).not.toHaveBeenCalled();
+    expect(blockedProvider.getPaymentDetails).not.toHaveBeenCalled();
+
+    const readyWindowClose = paymentHarness();
+    const readyProvider = { createPayment: vi.fn(), getPaymentDetails: vi.fn() };
+    const readyClock = [claimAt, retryWindowBound];
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: claimAt,
+        client: readyWindowClose.client as never,
+        provider: readyProvider as never,
+        clock: () => readyClock.shift() ?? retryWindowBound,
+      }),
+    ).resolves.toEqual({ outcome: 'BLOCKED_AFTER_RETRY_WINDOW' });
+    expect(readyWindowClose.state.order).toMatchObject({
+      paymentInitializationState: 'READY',
+      paymentInitializationClaimedAt: null,
+      paymentEverDispatchedAt: null,
+    });
+    expect(readyProvider.createPayment).not.toHaveBeenCalled();
+
+    const dispatchedWindowClose = paymentHarness({
+      paymentInitializationState: 'DISPATCHED',
+      paymentEverDispatchedAt: priorEvidence,
+    });
+    const dispatchedProvider = { createPayment: vi.fn(), getPaymentDetails: vi.fn() };
+    const dispatchedClock = [claimAt, retryWindowBound];
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: claimAt,
+        client: dispatchedWindowClose.client as never,
+        provider: dispatchedProvider as never,
+        clock: () => dispatchedClock.shift() ?? retryWindowBound,
+      }),
+    ).resolves.toEqual({ outcome: 'BLOCKED_AFTER_RETRY_WINDOW' });
+    expect(dispatchedWindowClose.state.order).toMatchObject({
+      paymentInitializationState: 'DISPATCHED',
+      paymentInitializationClaimedAt: null,
+      paymentEverDispatchedAt: priorEvidence,
+    });
+    expect(dispatchedProvider.createPayment).not.toHaveBeenCalled();
+
+    const releaseFailure = paymentHarness();
+    const releaseFailureProvider = { createPayment: vi.fn(), getPaymentDetails: vi.fn() };
+    const releaseFailureTransaction = releaseFailure.client.$transaction;
+    let releaseFailureCall = 0;
+    releaseFailure.client.$transaction = vi.fn(async (operation: any, options?: any) => {
+      releaseFailureCall += 1;
+      if (releaseFailureCall === 2) throw new Error('guarded release write failed');
+      return (releaseFailureTransaction as any)(operation, options);
+    }) as never;
+    const releaseFailureClock = [claimAt, retryWindowBound];
+    await expect(
+      ensureOnlinePayment({
+        orderId: 'order-1',
+        now: claimAt,
+        client: releaseFailure.client as never,
+        provider: releaseFailureProvider as never,
+        clock: () => releaseFailureClock.shift() ?? retryWindowBound,
+      }),
+    ).resolves.toEqual({ outcome: 'INDETERMINATE' });
+    expect(releaseFailure.state.order).toMatchObject({
+      paymentInitializationState: 'CLAIMED',
+      paymentInitializationClaimedAt: claimAt,
+      paymentEverDispatchedAt: null,
+    });
+    expect(releaseFailureProvider.createPayment).not.toHaveBeenCalled();
+
+    const missingPayment = paymentHarness();
+    const recovered = await recoverPaymentCorrelation('pay-recovered', () => dispatchAt, {
+      providerLookup: vi.fn(async () => ({
+        id: 'pay-recovered',
+        status: 'pending' as const,
+        amountRub: 159900,
+        orderNumber: '1042',
+        confirmationUrl: null,
+      })),
+      client: missingPayment.client as never,
+    });
+    expect(recovered).toEqual({ kind: 'recovered', paymentId: 'pay-recovered' });
+    expect(missingPayment.state.order).toMatchObject({
+      paymentInitializationState: 'CORRELATED',
+      paymentInitializationClaimedAt: null,
+      paymentEverDispatchedAt: dispatchAt,
+      payment: { id: 'pay-recovered', amount: 159900 },
+    });
+
+    for (const correlationFirst of [true, false]) {
+      const race = scheduledPaymentBoundary();
+      const raceProvider = {
+        createPayment: vi.fn(async () => ({ outcome: 'NOT_CREATED' as const, dispatched: false })),
+        getPaymentDetails: vi.fn(async () => null),
+      };
+      const cancellation = ensureOnlinePayment({
+        orderId: 'order-1',
+        now: claimAt,
+        client: race.client as never,
+        provider: raceProvider as never,
+        clock: () => claimAt,
+      });
+      await vi.waitFor(() => expect(raceProvider.createPayment).toHaveBeenCalledOnce());
+      await race.cancellationReady.promise;
+      const correlation = recoverPaymentCorrelation('pay-race', () => dispatchAt, {
+        providerLookup: vi.fn(async () => ({
+          id: 'pay-race',
+          status: 'pending' as const,
+          amountRub: 159900,
+          orderNumber: '1042',
+          confirmationUrl: null,
+        })),
+        client: race.client as never,
+      });
+      await race.correlationReady.promise;
+      if (correlationFirst) {
+        race.allowCorrelationCommit.resolve();
+        await expect(correlation).resolves.toEqual({ kind: 'recovered', paymentId: 'pay-race' });
+        race.allowCancellationCommit.resolve();
+        await expect(cancellation).resolves.toEqual({ outcome: 'INDETERMINATE' });
+        expect(race.state.order).toMatchObject({
+          status: 'PENDING',
+          paymentInitializationState: 'CORRELATED',
+          payment: { id: 'pay-race' },
+        });
+        expect(race.state.stock).toBe(8);
+      } else {
+        race.allowCancellationCommit.resolve();
+        await expect(cancellation).resolves.toEqual({ outcome: 'NOT_CREATED' });
+        race.allowCorrelationCommit.resolve();
+        await expect(correlation).resolves.toEqual({ kind: 'error', reason: 'correlation-persist-failed' });
+        expect(race.state.order).toMatchObject({
+          status: 'CANCELLED',
+          paymentInitializationState: 'NOT_CREATED',
+          payment: null,
+        });
+        expect(race.state.stock).toBe(10);
+      }
+      expect(raceProvider.createPayment).toHaveBeenCalledOnce();
+    }
   });
 
   it('executes exact delivery methods, zones, services, and Europe/Moscow slot sentinels', () => {
@@ -727,15 +1053,39 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
         { id: '18-22', label: '18:00 – 22:00' },
       ],
     });
-    expect(CHECKOUT_POLICY.pickupPoints.map(({ id, kind, leadDays }) => ({ id, kind, leadDays }))).toEqual([
-      { id: 'pt-dizavod', kind: 'showroom', leadDays: 1 },
-      { id: 'pt-danilov', kind: 'pickup-point', leadDays: 2 },
-      { id: 'pt-vdnh', kind: 'pickup-point', leadDays: 2 },
+    expect(CHECKOUT_POLICY.pickupPoints).toEqual([
+      {
+        id: 'pt-dizavod',
+        kind: 'showroom',
+        name: 'Шоурум Evironn',
+        address: 'Большая Новодмитровская, 36',
+        hours: '11:00 – 21:00',
+        metro: 'Дмитровская',
+        leadDays: 1,
+      },
+      {
+        id: 'pt-danilov',
+        kind: 'pickup-point',
+        name: 'Пункт «Даниловский»',
+        address: 'Дубининская, 71',
+        hours: '10:00 – 22:00',
+        metro: 'Тульская',
+        leadDays: 2,
+      },
+      {
+        id: 'pt-vdnh',
+        kind: 'pickup-point',
+        name: 'Пункт «ВДНХ»',
+        address: 'Проспект Мира, 119',
+        hours: '09:00 – 21:00',
+        metro: 'ВДНХ',
+        leadDays: 2,
+      },
     ]);
     expect(
       calculateServiceLines({
         deliveryMethod: 'courier',
-        address: { floor: 5, liftType: 'none' },
+        address: { city: 'Москва', addressLine: 'Тверская, 1', floor: 5, liftType: 'none' },
         services: { carrying: true, assembly: true, removal: true },
       }),
     ).toEqual([
@@ -746,7 +1096,7 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     expect(
       calculateServiceLines({
         deliveryMethod: 'showroom',
-        address: null,
+        address: undefined,
         services: { carrying: true, assembly: true, removal: true },
       }),
     ).toEqual([]);
@@ -804,11 +1154,29 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
         { orderId: 'order-1', kind: 'NOT_CREATED_BY_CONSTRUCTION', providerRequestIssued: true as never },
       ]),
     ).toBe(false);
-    const cleanup = read('e2e/phase4-database.ts');
-    expect(cleanup).toMatch(/export async function cleanupPhase4Namespace\(\s*namespace: string/s);
-    expect(cleanup).toContain("reason: 'PROVIDER_STATE_INDETERMINATE'");
-    expect(cleanup).toContain('where: { id: { in: orderIds }, userId: { in: userIds } }');
-    expect(cleanup).toContain('where: { id: { in: productIds }, slug: `${namespace}-fixture-product` }');
+    const cleanupRefusal = decidePhase4Cleanup({
+      namespace,
+      orderNumbers: [1042, 1042],
+      indeterminateOrderNumbers: [1042],
+    });
+    expect(cleanupRefusal).toEqual({
+      ok: false,
+      namespace,
+      reason: 'PROVIDER_STATE_INDETERMINATE',
+      orderNumbers: [1042],
+    });
+    const cleanupDelete = decidePhase4Cleanup({
+      namespace,
+      orderNumbers: [1042, 1042, 1043],
+      indeterminateOrderNumbers: [],
+    });
+    expect(cleanupDelete).toEqual({ ok: true, namespace, deleted: true, orderNumbers: [1042, 1043] });
+    const cleanupNoopInput = { namespace, orderNumbers: [], indeterminateOrderNumbers: [] } as const;
+    expect(decidePhase4Cleanup(cleanupNoopInput)).toEqual({ ok: true, namespace, deleted: false, orderNumbers: [] });
+    expect(decidePhase4Cleanup(cleanupNoopInput)).toEqual({ ok: true, namespace, deleted: false, orderNumbers: [] });
+    expect(() => decidePhase4Cleanup({ ...cleanupNoopInput, namespace: 'foreign' })).toThrow(
+      'Invalid Phase 4 E2E namespace',
+    );
   });
 
   it('executes injectable target policy, forbidden identity refusal, namespace ownership, and sanitized readiness', async () => {
@@ -830,6 +1198,25 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
         forbiddenFingerprints: [forbiddenFingerprint, forbiddenFingerprint],
       }),
     ).toBe(false);
+    const fingerprintOutput = acquireDatabaseFingerprints(
+      ['E2E_DATABASE_URL', 'E2E_DATABASE_URL_UNPOOLED', 'DATABASE_URL'],
+      {
+        E2E_DATABASE_URL: approvedUrl,
+        E2E_DATABASE_URL_UNPOOLED: approvedUrl,
+        DATABASE_URL: forbiddenUrl,
+      } as unknown as NodeJS.ProcessEnv,
+    );
+    expect(Object.keys(fingerprintOutput).sort()).toEqual(['allEqual', 'allPresent', 'allValid', 'targets']);
+    expect(fingerprintOutput.targets).toEqual([
+      { name: 'E2E_DATABASE_URL', present: true, valid: true, fingerprint: approvedFingerprint },
+      { name: 'E2E_DATABASE_URL_UNPOOLED', present: true, valid: true, fingerprint: approvedFingerprint },
+      { name: 'DATABASE_URL', present: true, valid: true, fingerprint: forbiddenFingerprint },
+    ]);
+    expect(fingerprintOutput.allPresent).toBe(true);
+    expect(fingerprintOutput.allValid).toBe(true);
+    expect(fingerprintOutput.allEqual).toBe(false);
+    expect(JSON.stringify(fingerprintOutput)).not.toContain(approvedUrl);
+    expect(JSON.stringify(fingerprintOutput)).not.toContain(forbiddenUrl);
     const env = {
       E2E_DATABASE_URL: approvedUrl,
       E2E_DATABASE_URL_UNPOOLED: approvedUrl,

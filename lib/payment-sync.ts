@@ -199,10 +199,13 @@ export async function reconcilePaymentStatus(input: ReconcilePaymentStatusInput)
 export async function recoverPaymentCorrelation(
   providerId: string,
   now: () => Date = () => new Date(),
+  dependencies: { providerLookup?: typeof getPaymentDetails; client?: typeof prisma } = {},
 ): Promise<PaymentCorrelationRecoveryResult> {
+  const providerLookup = dependencies.providerLookup ?? getPaymentDetails;
+  const client = dependencies.client ?? prisma;
   let details;
   try {
-    details = await getPaymentDetails(providerId);
+    details = await providerLookup(providerId);
   } catch (error) {
     logger.error('payment_recovery_lookup_failed', error, { providerId });
     return { kind: 'error', reason: 'provider-lookup-failed' };
@@ -220,7 +223,7 @@ export async function recoverPaymentCorrelation(
   if (!Number.isSafeInteger(orderNumber) || orderNumber <= 0 || String(orderNumber) !== details.orderNumber) {
     return { kind: 'ignored', reason: 'invalid-provider-correlation' };
   }
-  const candidates = await prisma.order.findMany({
+  const candidates = await client.order.findMany({
     where: { orderNumber, paymentMethod: 'online', status: 'PENDING', totalAmount: details.amountRub },
     select: {
       id: true,
@@ -238,7 +241,7 @@ export async function recoverPaymentCorrelation(
   }
 
   try {
-    const saved = await prisma.$transaction(
+    const saved = await client.$transaction(
       async (tx) => {
         const current = await tx.order.findUnique({
           where: { id: candidate.id, orderNumber },
@@ -275,7 +278,7 @@ export async function recoverPaymentCorrelation(
           data: {
             paymentInitializationState: 'CORRELATED',
             paymentInitializationClaimedAt: null,
-            paymentEverDispatchedAt: current.paymentEverDispatchedAt ?? new Date(),
+            paymentEverDispatchedAt: current.paymentEverDispatchedAt ?? now(),
           },
         });
         if (!guard.count) return false;

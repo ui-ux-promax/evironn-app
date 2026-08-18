@@ -2,13 +2,13 @@
 
 ## Scope
 
-Task 9 remediation only: harden the integration contract after the acceptance review's four Important findings. Product behavior was not changed. Accepted Task 7/8 source, reports, progress history, and protected untracked Phase 2 plans were preserved.
+Task 9 remediation only: close the three Important findings in acceptance re-review 2. Accepted Task 7/8 source, reports, progress history, and protected untracked Phase 2 plans were preserved. Task 9-owned changes add injected reconciliation/cleanup boundaries and import-safe fingerprint acquisition; no checkout/payment product flow was redesigned.
 
-Remediation commit subject: `fix: harden phase 4 delivery contracts`. The final commit hash is intentionally not embedded: the manifest and this report are tracked evidence, and embedding the commit hash would create self-referential hash drift. The authoritative range is `868310f..HEAD`.
+Remediation commit subject: `test: complete phase 4 delivery contracts`. The final commit hash is intentionally not embedded: the manifest and this report are tracked evidence, and embedding the commit hash would create self-referential hash drift. The authoritative range is `868310f..HEAD`.
 
 ## RED evidence
 
-The remediation RED run was `npx vitest run tests/phase-4-integration-contract.test.ts` after adding the independent assertions and before updating the closeout inventory. It failed as expected: 1 test file, 14 tests collected, 6 failed. Failures exposed the stale manifest/report boundary plus exact harness/schema/ADR binding gaps; no product source was changed to silence them.
+The remediation RED run was `npx vitest run tests/phase-4-integration-contract.test.ts` after adding the independent assertions and before implementing the missing production-boundary exports or updating the closeout inventory. It failed as expected: 1 test file, 14 tests collected, 4 failed. Failures exposed the stale manifest plus missing executable reconciliation, cleanup, and fingerprint boundaries.
 
 ## GREEN evidence
 
@@ -16,7 +16,9 @@ Focused GREEN is recorded after the remediation commit below:
 
 `npx vitest run tests/phase-4-integration-contract.test.ts tests/phase-4-schema-contract.test.ts tests/phase-4-e2e-safety-contract.test.ts`
 
-Result: 12 files, 154 tests passed, 0 failures.
+Result: 3 test files, 41 tests passed, 0 failures.
+
+Integration-only result: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 14 tests passed, 0 failures.
 
 `npx prettier --check docs/superpowers/manifests/phase-4-delivery-manifest.json tests/phase-4-integration-contract.test.ts docs/roadmap/STATUS.md .superpowers/sdd/progress.md .superpowers/sdd/phase-4-delivery-report.md`
 
@@ -32,9 +34,9 @@ No full gate, production build, full Vitest, or full Phase 4 E2E was run.
 
 - Manifest inventory is derived at runtime from `git diff --name-status 868310f..HEAD`; existing added/modified/renamed destinations must equal manifest entries except the manifest, and the deleted set must equal `components/shared/checkout/checkout-form.tsx`.
 - The report is force-added despite `.superpowers/sdd/.gitignore`, and its exact bytes/hash/count are included in the regenerated manifest.
-- Placement executes the exported `placeOrder` boundary with an injected transaction module boundary. A forced P2034 retry proves second-attempt quote/cart/coupon/SKU/delivery/service/snapshot/stock/order/cart-delete values are the committed values. Payment initialization executes the production `ensureOnlinePayment` boundary with injected provider/transaction doubles and asserts claim, correlation, no-dispatch cancellation, prior-dispatch preservation, claim-loss, blocked-window, and stuck-claim outcomes with exact timestamps.
+- Placement executes the exported `placeOrder` boundary with an injected transaction module boundary. A forced P2034 retry proves second-attempt quote/cart/coupon/SKU/delivery/service/snapshot/stock/order/cart-delete values are the committed values. Payment initialization executes production `ensureOnlinePayment` and missing-payment reconciliation boundaries with injected transaction/provider module doubles and forced commit scheduling; assertions cover exact correlation/cancellation winners and losers, READY/DISPATCHED closed-window release, guarded release failure, blocked-window no-dispatch, prior timestamp preservation, and no timeout takeover.
 - DTO/action behavior is asserted through callable production builders and `placeOrder`, including the exhaustive four initialization outcomes and exact Checkout/Order action tuples.
-- All three additive migrations are checked by exact SQL, exact schema field types/nullability/default correspondence, and destructive-operation exclusion. Review eligibility is checked through the exported purchase predicate. Delivery policy, slots, services, Moscow date sentinels, ADR facts/citations, injectable database target policy, forbidden identity refusal, namespace ownership, provider-terminal proof refusal, targeted-readiness report, and sanitized output are independently executed.
+- All three additive migrations are checked by exact SQL, exact schema field types/nullability/default correspondence, and destructive-operation exclusion. Review eligibility is checked through the exported purchase predicate. Delivery policy, slots, services, Moscow date sentinels, full ADR-016 pickup facts, ADR facts/citations, injectable database target policy, namespace ownership, pure provider-terminal cleanup refusal, concurrent/idempotent no-op planning, targeted-readiness report, and sanitized output are independently executed. Fingerprint acquisition is imported and executed from environment variable names only; output is limited to names, booleans, fingerprints, and equality.
 
 The final local manifest uses schema `{ schemaVersion, baseSha, fileCount, totalBytes, entries[] }`, pins base `868310f`, excludes itself, sorts entries lexicographically, and records exact final tracked bytes. It does not claim completion-gate readiness.
 
@@ -49,3 +51,7 @@ Presence-only checks returned false for: `E2E_DATABASE_URL`, `E2E_DATABASE_URL_U
 ## Concerns
 
 Real additive migration deployment, database readiness, checkout/order/review browser flows, durable payment-claim concurrency, YooKassa sandbox recovery/cancellation, and external DaData/email smoke remain deferred or blocked. Missing credentials are not replaced with fake behavior. No push, Preview, pull request, merge, branch deletion, or Phase 5 work occurred.
+
+## Acceptance-review remediation evidence
+
+Acceptance re-review 2 identified exactly three Important findings: incomplete ADR-018 interleaving coverage, shallow independent policy/cleanup/fingerprint contracts, and stale durable focused-test counts. This remediation closes those findings with executable production-boundary tests and exact evidence. `BLOCKED_COMPLETION_READINESS` remains honest; no full format, gate, build, full Vitest, full E2E, database, provider, or migration command was run.

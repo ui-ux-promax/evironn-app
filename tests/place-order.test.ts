@@ -182,7 +182,11 @@ describe('placeOrder transactional canonical placement', () => {
     mocks.buildCheckoutOrderData.mockResolvedValue(overLimit);
     mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown) => operation(tx));
 
-    await expect(placeOrder(validForm)).resolves.toMatchObject({ ok: false, code: 'QUANTITY_EXCEEDS_STOCK' });
+    await expect(placeOrder(validForm)).resolves.toEqual({
+      ok: false,
+      code: 'QUANTITY_EXCEEDS_STOCK',
+      error: 'Количество товара в одной позиции не может превышать 99.',
+    });
     expect(tx.sku.updateMany).not.toHaveBeenCalled();
     expect(tx.order.create).not.toHaveBeenCalled();
   });

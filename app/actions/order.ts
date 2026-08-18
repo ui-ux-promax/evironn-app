@@ -136,7 +136,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
 
       for (const item of orderData.snapshot.items) {
         if (!isCanonicalCartQuantity(item.quantity)) {
-          throw Object.assign(new Error('Cart line quantity cannot exceed 99.'), {
+          throw Object.assign(new Error('Количество товара в одной позиции не может превышать 99.'), {
             code: 'QUANTITY_EXCEEDS_STOCK',
           });
         }

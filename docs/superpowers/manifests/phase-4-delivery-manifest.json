@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "baseSha": "868310f",
   "fileCount": 107,
-  "totalBytes": 1017909,
+  "totalBytes": 1017842,
   "entries": [
     {
       "path": ".env.example",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".superpowers/sdd/phase-4-delivery-report.md",
-      "sha256": "06d0e78ee710ffbe47c4e731a551e38661c01c12086d815cc3c9818ffe932316",
-      "bytes": 7682
+      "sha256": "2f3bc9a153ac5a4e19de00179227923c2861573b8b290dae38342be2d2856cf3",
+      "bytes": 7648
     },
     {
       "path": ".superpowers/sdd/phase-4-plan-review.md",
@@ -61,8 +61,8 @@
     },
     {
       "path": ".superpowers/sdd/progress.md",
-      "sha256": "a3ec6a989232161f0ab1d1c4d00855189f5fdae6856042e5633199ad62065600",
-      "bytes": 51275
+      "sha256": "234a327c350c17477cb0b29407121cb533bfe91003e8e4375a931090074e9cbf",
+      "bytes": 51284
     },
     {
       "path": "app/(shop)/checkout/loading.tsx",
@@ -161,8 +161,8 @@
     },
     {
       "path": "docs/roadmap/STATUS.md",
-      "sha256": "5e83ca4ac8daf7573469ab7d0549452899f1051a57d823a94c9579e5a2740e6c",
-      "bytes": 28442
+      "sha256": "3f25802a077d4ba3ef2ef0722b70d7c6d6d494d68837e3646dacdafbf74b8c7e",
+      "bytes": 28400
     },
     {
       "path": "docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md",

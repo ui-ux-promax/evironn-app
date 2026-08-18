@@ -12,13 +12,13 @@ The remediation RED run was `npx vitest run tests/phase-4-integration-contract.t
 
 ## GREEN evidence
 
-Focused GREEN is recorded after the remediation commit below:
+Current HEAD focused GREEN:
 
 `npx vitest run tests/phase-4-integration-contract.test.ts tests/phase-4-schema-contract.test.ts tests/phase-4-e2e-safety-contract.test.ts`
 
-Result: 3 test files, 41 tests passed, 0 failures.
+Result: 3 test files, 45 tests passed, 0 failures.
 
-Integration-only result: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 14 tests passed, 0 failures.
+Integration-only result: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 18 tests passed, 0 failures.
 
 `npx prettier --check docs/superpowers/manifests/phase-4-delivery-manifest.json tests/phase-4-integration-contract.test.ts docs/roadmap/STATUS.md .superpowers/sdd/progress.md .superpowers/sdd/phase-4-delivery-report.md`
 

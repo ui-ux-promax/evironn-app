@@ -18,7 +18,7 @@ Tasks 7 and 8 remain accepted on their focused evidence: Task 7 review `6373dac.
 
 Task 9 RED was observed: the initial contract run failed 9 expected assertions before the manifest and closeout records existed. Acceptance-review remediation added a fresh RED run of 1 file / 14 tests / 4 expected failures before exact closeout regeneration. The current manifest is exact for `868310f..HEAD` but is not completion-gate evidence. `BLOCKED_COMPLETION_READINESS` is the current delivery state. Presence-only environment state is recorded as: `E2E_DATABASE_URL=false`, `E2E_DATABASE_URL_UNPOOLED=false`, `E2E_DATABASE_ALLOW_WRITES=false`, `E2E_DATABASE_TARGET_FINGERPRINT=false`, `AUTH_SECRET=false`, `AUTH_TRUST_HOST=false`, `RESEND_API_KEY=false`, `EMAIL_FROM_TRANSACTIONAL=false`, `YOOKASSA_SHOP_ID=false`, `YOOKASSA_SECRET_KEY=false`, `YOOKASSA_MODE=false`, `DADATA_TOKEN=false`, `NEXT_PUBLIC_SITE_URL=false`. No raw identity, URL, secret, or provider value was inspected or recorded.
 
-Task 9 focused GREEN is corrected to the reproducible commands at current HEAD: `npx vitest run tests/phase-4-integration-contract.test.ts` passed 1 test file / 14 tests; the documented combined command passed 3 test files / 41 tests. This is task-level evidence only, not completion-gate evidence.
+Task 9 focused GREEN at current HEAD: `npx vitest run tests/phase-4-integration-contract.test.ts` passed 1 test file / 18 tests; the documented combined command passed 3 test files / 45 tests. This is task-level evidence only, not completion-gate evidence.
 
 ### Task 9 acceptance-review remediation
 

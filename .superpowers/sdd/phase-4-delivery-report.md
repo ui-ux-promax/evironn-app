@@ -2,7 +2,7 @@
 
 ## Scope
 
-Task 9 remediation only: close the three Important findings in acceptance re-review 2. Accepted Task 7/8 source, reports, progress history, and protected untracked Phase 2 plans were preserved. Task 9-owned changes add injected reconciliation/cleanup boundaries and import-safe fingerprint acquisition; no checkout/payment product flow was redesigned.
+Task 9 remediation plus portfolio-only E2E readiness alignment. Accepted Task 7/8 source, reports, progress history, and protected untracked Phase 2 plans were preserved. The delivery now permits the user-approved empty forbidden-fingerprint policy, loads `.env.local` at standalone E2E boundaries, and fixes guarded Prisma migration invocation on Windows; no checkout/payment product flow was redesigned.
 
 Remediation commit subject: `test: complete phase 4 delivery contracts`. The final commit hash is intentionally not embedded: the manifest and this report are tracked evidence, and embedding the commit hash would create self-referential hash drift. The authoritative range is `868310f..HEAD`.
 
@@ -46,11 +46,11 @@ Task 7 review `6373dac..f303387` approved Critical 0 / Important 0 / Minor 0 wit
 
 ## Sanitized environment state
 
-Initial review checked only the parent process and did not load `.env.local`, so it reported the recorded names as absent. Current presence-only inspection confirms all recorded E2E, Auth.js, transactional-email, YooKassa, DaData, and site URL names are present in `.env.local`; no values were read, printed, or persisted. ADR-019 intentionally permits the empty forbidden-fingerprint policy for this portfolio-only dev target. Completion state remains `BLOCKED_COMPLETION_READINESS` until the sanitized readiness command proves database connectivity, current identity, migrations, and required external checks.
+Initial review checked only the parent process and did not load `.env.local`, so it reported the recorded names as absent. Current presence-only inspection confirms all recorded E2E, Auth.js, transactional-email, YooKassa, DaData, and site URL names are present in `.env.local`; no values were read, printed, or persisted. ADR-019 intentionally permits the empty forbidden-fingerprint policy for this portfolio-only dev target. Sanitized completion readiness passed: explicit E2E URL, write opt-in, approved target fingerprint, empty-policy acceptance, read-only connectivity, current database identity, Auth readiness, and all three Phase 4 migration checks are true. Guarded Prisma deployment applied all three additive migrations on shared Neon `dev`. Required local external values are present and YooKassa mode is sandbox; external provider/browser smoke remains part of the completion gate.
 
 ## Concerns
 
-Real additive migration deployment, database readiness, checkout/order/review browser flows, durable payment-claim concurrency, YooKassa sandbox recovery/cancellation, and external DaData/email smoke remain deferred or blocked. Missing credentials are not replaced with fake behavior. No push, Preview, pull request, merge, branch deletion, or Phase 5 work occurred.
+Checkout/order/review browser flows, durable payment-claim concurrency, YooKassa sandbox recovery/cancellation, and external DaData/email smoke remain pending the completion gate. No push, Preview, pull request, merge, branch deletion, or Phase 5 work occurred.
 
 ## Acceptance-review remediation evidence
 

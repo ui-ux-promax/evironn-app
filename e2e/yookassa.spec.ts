@@ -1,5 +1,9 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
 import { expect, test, type Page } from '@playwright/test';
 
+import { ensureOnlinePayment, PAYMENT_CREATE_RETRY_WINDOW_MS } from '@/lib/payment-initialization';
 import { cancelPayment, getPaymentDetails } from '@/lib/yookassa';
 import { reconcilePaymentStatus } from '@/lib/payment-sync';
 
@@ -22,8 +26,53 @@ const hasExplicitDatabase = Boolean(
 const hasSandboxCredentials = Boolean(
   process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY && process.env.YOOKASSA_MODE === 'sandbox',
 );
-const onlineGuarded = hasExplicitDatabase && hasSandboxCredentials ? test : test.skip;
+const hasAuthPrerequisites = Boolean(process.env.AUTH_SECRET && process.env.AUTH_TRUST_HOST);
+const onlineGuarded = hasExplicitDatabase && hasSandboxCredentials && hasAuthPrerequisites ? test : test.skip;
 const dbGuarded = hasExplicitDatabase ? test : test.skip;
+const execFileAsync = promisify(execFile);
+const AMBIENT_DATABASE_VARIABLES = new Set([
+  'DATABASE_URL',
+  'DATABASE_URL_UNPOOLED',
+  'POSTGRES_URL',
+  'POSTGRES_URL_NON_POOLING',
+]);
+
+async function assertRealPaymentReadiness() {
+  const readinessEnvironment = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !AMBIENT_DATABASE_VARIABLES.has(name)),
+  );
+  let stdout = '';
+  try {
+    const result = await execFileAsync(
+      process.platform === 'win32' ? 'npx.cmd' : 'npx',
+      ['tsx', 'e2e/database-readiness.ts', '--mode=completion'],
+      {
+        env: readinessEnvironment,
+        windowsHide: true,
+        maxBuffer: 1024 * 1024,
+      },
+    );
+    stdout = result.stdout;
+  } catch (error) {
+    if (error && typeof error === 'object' && 'stdout' in error && typeof error.stdout === 'string') {
+      stdout = error.stdout;
+    }
+  }
+  let readiness: { ok: boolean; checks: Record<string, boolean> };
+  try {
+    readiness = JSON.parse(stdout.trim()) as { ok: boolean; checks: Record<string, boolean> };
+  } catch {
+    throw new Error('Real YooKassa readiness wrapper returned no sanitized report');
+  }
+  expect(readiness.ok, 'Real YooKassa flow requires completion readiness').toBe(true);
+  for (const migrationName of [
+    '20260816_phase4_delivery_snapshots',
+    '20260816_phase4_payment_replay',
+    '20260817_phase4_payment_claim',
+  ]) {
+    expect(readiness.checks[`${migrationName}Applied`], `${migrationName} must be applied`).toBe(true);
+  }
+}
 
 async function fillCheckout(page: Page) {
   await page.getByLabel('Имя и фамилия').fill('Phase 4 Payment Customer');
@@ -68,6 +117,7 @@ onlineGuarded(
     const namespace = phase4Namespace(testInfo.title);
     let cleanupAsserted = false;
     try {
+      await assertRealPaymentReadiness();
       const fixture = await createPhase4CheckoutFixture(namespace);
       await registerAndVerify(page, fixture.email);
       await seedOwnedCartLine(fixture.email, fixture.skuId);
@@ -86,7 +136,29 @@ onlineGuarded(
       expect(created.paymentEverDispatchedAt).not.toBeNull();
       expect(created.paymentId).not.toBeNull();
       expect(created.paymentStatus).toMatch(/pending|waiting_for_capture/);
-      expect(Date.now() - Date.parse(created.createdAt)).toBeLessThan(23 * 60 * 60 * 1000);
+      const preWindowNow = new Date(Date.parse(created.createdAt) + PAYMENT_CREATE_RETRY_WINDOW_MS - 1_000);
+      expect(preWindowNow.getTime()).toBeLessThan(Date.parse(created.createdAt) + PAYMENT_CREATE_RETRY_WINDOW_MS);
+      const providerBefore = await getPaymentDetails(created.paymentId!);
+      expect(providerBefore).not.toBeNull();
+
+      const continuationResults = await Promise.all([
+        ensureOnlinePayment({ orderId: created.id, now: preWindowNow }),
+        ensureOnlinePayment({ orderId: created.id, now: preWindowNow }),
+      ]);
+      expect(continuationResults).toHaveLength(2);
+      for (const continuationResult of continuationResults) {
+        expect(continuationResult).toMatchObject({
+          outcome: 'CREATED',
+          confirmationUrl: providerBefore?.confirmationUrl,
+        });
+      }
+      const recovered = await readLatestOwnedOrder(fixture.email);
+      expect(recovered).toMatchObject({
+        paymentInitializationState: 'CORRELATED',
+        paymentInitializationClaimedAt: null,
+        paymentEverDispatchedAt: created.paymentEverDispatchedAt,
+        paymentId: created.paymentId,
+      });
 
       await page.goto(`/orders/${created.orderNumber}`);
       const continuation = page.getByRole('link', { name: 'Продолжить оплату' });
@@ -111,12 +183,12 @@ onlineGuarded(
       const final = await readLatestOwnedOrder(fixture.email);
       expect(final).toMatchObject({ status: 'CANCELLED', paymentStatus: 'canceled', stock: 20 });
       const cleanupResult = await cleanupPhase4Namespace(namespace);
-      expect(cleanupResult).toMatchObject({ ok: true, namespace });
+      expect(cleanupResult).toMatchObject({ ok: true, namespace, deleted: true, orderNumbers: [created.orderNumber] });
       cleanupAsserted = true;
     } finally {
       if (!cleanupAsserted) {
         const cleanupResult = await cleanupPhase4Namespace(namespace);
-        expect(cleanupResult).toMatchObject({ ok: true, namespace });
+        expect(cleanupResult).toMatchObject({ ok: true, namespace, deleted: true });
       }
     }
   },
@@ -125,19 +197,35 @@ onlineGuarded(
 dbGuarded('blocked payment shows lookup-only state without provider substitute', async ({ page }, testInfo) => {
   const namespace = phase4Namespace(testInfo.title);
   let proof;
+  let blockedOrderNumber: number | undefined;
   try {
     const fixture = await createPhase4BlockedPaymentFixture(namespace);
     proof = fixture.neverAttemptedProof;
+    blockedOrderNumber = fixture.orderNumber;
     await signIn(page, fixture.email, fixture.password);
     await page.goto(`/orders/${fixture.orderNumber}`);
     await expect(page.getByText('Платёж требует проверки')).toBeVisible();
+    await expect(
+      page.getByText(
+        `Заказ №${fixture.orderNumber} сохранён. Повторное создание платежа отключено; статус проверяется.`,
+        {
+          exact: true,
+        },
+      ),
+    ).toBeVisible();
     await expect(page.getByText(String(fixture.orderNumber))).toBeVisible();
     await expect(page.getByText('Продолжить оплату')).toHaveCount(0);
     await expect(page.getByText('Проверить статус платежа')).toBeVisible();
     await expect(page.getByText('Повторить создание платежа')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Отменить заказ' })).toHaveCount(0);
   } finally {
-    await cleanupPhase4Namespace(namespace, proof ? [proof] : []);
+    const cleanupResult = await cleanupPhase4Namespace(namespace, proof ? [proof] : []);
+    expect(cleanupResult).toMatchObject({
+      ok: true,
+      namespace,
+      deleted: Boolean(blockedOrderNumber),
+      orderNumbers: blockedOrderNumber ? [blockedOrderNumber] : [],
+    });
   }
 });
 

@@ -1,7 +1,5 @@
 import { pathToFileURL } from 'node:url';
 
-import { Pool } from '@neondatabase/serverless';
-
 import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from './database-command-report';
 import { resolveE2eDatabaseEnvironment, type E2eDatabaseEnvironment } from './database-guard';
 import {
@@ -30,6 +28,16 @@ export type DeliveryMigrationStatusResult = {
 };
 
 type MigrationQuery = (databaseUrl: string, migrationName: string) => Promise<readonly DeliveryMigrationRow[]>;
+
+type NeonPool = {
+  query<T>(queryText: string, values?: readonly unknown[]): Promise<{ rows: T[] }>;
+  end(): Promise<void>;
+};
+
+async function createNeonPool(connectionString: string): Promise<NeonPool> {
+  const { Pool } = await import('@neondatabase/serverless');
+  return new Pool({ connectionString }) as unknown as NeonPool;
+}
 
 type MigrationStatusDependencies = {
   resolveEnvironment?: (env: Record<string, string | undefined>) => E2eDatabaseEnvironment;
@@ -157,7 +165,7 @@ export function classifyDeliveryMigration(
 }
 
 async function queryDeliveryMigration(databaseUrl: string, migrationName: string): Promise<DeliveryMigrationRow[]> {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = await createNeonPool(databaseUrl);
   try {
     const result = await pool.query<DeliveryMigrationRow>(
       `SELECT migration_name, checksum, finished_at, rolled_back_at
@@ -314,7 +322,7 @@ function readinessFailure(
 async function queryReadinessDatabase(
   databaseUrl: string,
 ): Promise<{ databaseName: string; migrations: ReadonlyArray<ReadinessMigrationRow> }> {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = await createNeonPool(databaseUrl);
   try {
     const current = await pool.query<{ current_database: string }>(
       ['SEL', 'ECT current_database() AS current_database'].join(''),

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
 
 import {
   cleanupPhase4Namespace,
@@ -48,9 +48,52 @@ async function applyCoupon(page: Page, code: string) {
   await expect(page.getByText(/Сервер подтвердил итоговую стоимость/)).toBeVisible();
 }
 
-async function expectQuoteAmount(page: Page, amount: number) {
-  const formatted = new Intl.NumberFormat('ru-RU').format(amount).replace(/\u00a0/g, '\\s*');
-  await expect(page.getByRole('complementary', { name: 'Сводка заказа' })).toContainText(new RegExp(formatted));
+function parseMoney(value: string): number {
+  if (value.includes('бесплатно')) return 0;
+  return Number(value.replace(/\D/g, ''));
+}
+
+async function summaryValue(page: Page, label: string, partial = false): Promise<number> {
+  const summary = page.getByRole('complementary', { name: 'Сводка заказа' });
+  const row = summary.locator('dt').filter({ hasText: label }).first().locator('..');
+  if (!partial) await expect(row.locator('dt')).toHaveText(label);
+  return parseMoney(await row.locator('dd').innerText());
+}
+
+async function captureBrowserQuote(page: Page, couponCode: string) {
+  const summary = page.getByRole('complementary', { name: 'Сводка заказа' });
+  await expect(summary).toContainText(couponCode);
+  await expect(page.getByText(/Сервер подтвердил итоговую стоимость/)).toBeVisible();
+  return {
+    couponDiscount: await summaryValue(page, 'Промокод', true),
+    shippingAmount: await summaryValue(page, 'Доставка'),
+    serviceAmount: await summaryValue(page, 'Сборка'),
+    totalAmount: await summaryValue(page, 'Итого'),
+  };
+}
+
+async function captureSelectedSlot(page: Page) {
+  const selected = page
+    .getByRole('radiogroup', { name: 'Дата получения' })
+    .locator('button[role="radio"][aria-checked="true"]');
+  const [date, windowLabel] = (await selected.innerText()).split(/\r?\n/);
+  const [from, to] = windowLabel.split(' – ');
+  return { date, windowId: `${from.slice(0, 2)}-${to.slice(0, 2)}` };
+}
+
+async function replaySupportedServerAction(page: Page, request: Request) {
+  const requestHeaders = request.headers();
+  const headers = Object.fromEntries(
+    Object.entries(requestHeaders).filter(([name]) =>
+      ['accept', 'content-type', 'next-action', 'next-router-state-tree', 'next-url', 'rsc'].includes(name),
+    ),
+  );
+  const response = await page.request.fetch(request.url(), {
+    method: request.method(),
+    headers,
+    data: request.postDataBuffer() ?? undefined,
+  });
+  expect(response.status()).toBe(200);
 }
 
 guarded('signed-out /checkout redirects to login with safe callback', async ({ page }) => {
@@ -67,7 +110,11 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
     await page.getByLabel('Город').fill('Химки');
     await chooseFirstSlot(page);
     await applyCoupon(page, fixture.couponCode);
+    await page.getByLabel('Сборка на месте').check();
+    await expect(page.getByLabel('Сборка на месте')).toBeChecked();
     await chooseCod(page);
+    const selectedSlot = await captureSelectedSlot(page);
+    const browserQuote = await captureBrowserQuote(page, fixture.couponCode);
     await page
       .getByRole('button', { name: /Оформить заказ/ })
       .last()
@@ -81,17 +128,42 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
       skuId: fixture.skuId,
       itemsTotal: fixture.unitPrice,
       discountAmount: discount,
-      shippingAmount: 1900,
-      totalAmount: fixture.unitPrice - discount + 1900,
+      shippingAmount: browserQuote.shippingAmount,
+      totalAmount: browserQuote.totalAmount,
       couponCode: fixture.couponCode,
       shippingMethod: 'courier',
       deliveryZone: 'moscow-region',
       pickupPointId: null,
       pickupPointName: null,
       pickupPointAddress: null,
-      serviceAmount: 0,
+      deliveryDate: selectedSlot.date,
+      deliveryWindow: selectedSlot.windowId,
+      serviceAmount: browserQuote.serviceAmount,
+      serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }],
     });
-    await expectQuoteAmount(page, fixture.unitPrice - discount + 1900);
+    expect(browserQuote).toEqual({
+      couponDiscount: discount,
+      shippingAmount: 1900,
+      serviceAmount: 3900,
+      totalAmount: fixture.unitPrice - discount + 1900 + 3900,
+    });
+    expect({
+      deliveryDate: probe.deliveryDate,
+      deliveryWindow: probe.deliveryWindow,
+      serviceDetails: probe.serviceDetails,
+      discountAmount: probe.discountAmount,
+      shippingAmount: probe.shippingAmount,
+      serviceAmount: probe.serviceAmount,
+      totalAmount: probe.totalAmount,
+    }).toEqual({
+      deliveryDate: selectedSlot.date,
+      deliveryWindow: selectedSlot.windowId,
+      serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }],
+      discountAmount: browserQuote.couponDiscount,
+      shippingAmount: browserQuote.shippingAmount,
+      serviceAmount: browserQuote.serviceAmount,
+      totalAmount: browserQuote.totalAmount,
+    });
     await page.goto('/cart');
     await expect(page.getByText(/Корзина пуста|Пусто/)).toBeVisible();
   } finally {
@@ -106,6 +178,7 @@ guarded('showroom COD persists approved showroom snapshot', async ({ page }, tes
     await page.getByRole('radio', { name: /Шоурум Evironn/ }).click();
     await chooseFirstSlot(page);
     await chooseCod(page);
+    const showroomSlot = await captureSelectedSlot(page);
     await page
       .getByRole('button', { name: /Оформить заказ/ })
       .last()
@@ -113,14 +186,31 @@ guarded('showroom COD persists approved showroom snapshot', async ({ page }, tes
     await expect(page).toHaveURL(/\/orders\/\d+/);
     await expect(page.getByText('Шоурум Evironn')).toBeVisible();
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
-    expect(await readOwnedOrder(fixture.email, orderNumber)).toMatchObject({
+    const showroomOrder = await readOwnedOrder(fixture.email, orderNumber);
+    expect({
       paymentMethod: 'cod',
       shippingMethod: 'pickup',
       deliveryZone: null,
+      deliveryDate: showroomOrder.deliveryDate,
+      deliveryWindow: showroomOrder.deliveryWindow,
       pickupPointId: 'pt-dizavod',
       pickupPointName: 'Шоурум Evironn',
       pickupPointAddress: 'Большая Новодмитровская, 36',
       shippingAmount: 0,
+      serviceDetails: showroomOrder.serviceDetails,
+      serviceAmount: 0,
+      totalAmount: fixture.unitPrice,
+    }).toEqual({
+      paymentMethod: 'cod',
+      shippingMethod: 'pickup',
+      deliveryZone: null,
+      deliveryDate: showroomSlot.date,
+      deliveryWindow: showroomSlot.windowId,
+      pickupPointId: 'pt-dizavod',
+      pickupPointName: 'Шоурум Evironn',
+      pickupPointAddress: 'Большая Новодмитровская, 36',
+      shippingAmount: 0,
+      serviceDetails: [],
       serviceAmount: 0,
       totalAmount: fixture.unitPrice,
     });
@@ -136,6 +226,7 @@ guarded('pickup-point COD uses server-owned pickup address', async ({ page }, te
     await page.getByRole('radio', { name: /Даниловский/ }).click();
     await chooseFirstSlot(page);
     await chooseCod(page);
+    const pickupSlot = await captureSelectedSlot(page);
     await page
       .getByRole('button', { name: /Оформить заказ/ })
       .last()
@@ -143,14 +234,31 @@ guarded('pickup-point COD uses server-owned pickup address', async ({ page }, te
     await expect(page).toHaveURL(/\/orders\/\d+/);
     await expect(page.getByText('Дубининская, 71')).toBeVisible();
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
-    expect(await readOwnedOrder(fixture.email, orderNumber)).toMatchObject({
+    const pickupOrder = await readOwnedOrder(fixture.email, orderNumber);
+    expect({
       paymentMethod: 'cod',
       shippingMethod: 'pickup',
       deliveryZone: null,
+      deliveryDate: pickupOrder.deliveryDate,
+      deliveryWindow: pickupOrder.deliveryWindow,
       pickupPointId: 'pt-danilov',
       pickupPointName: 'Пункт «Даниловский»',
       pickupPointAddress: 'Дубининская, 71',
       shippingAmount: 0,
+      serviceDetails: pickupOrder.serviceDetails,
+      serviceAmount: 0,
+      totalAmount: fixture.unitPrice,
+    }).toEqual({
+      paymentMethod: 'cod',
+      shippingMethod: 'pickup',
+      deliveryZone: null,
+      deliveryDate: pickupSlot.date,
+      deliveryWindow: pickupSlot.windowId,
+      pickupPointId: 'pt-danilov',
+      pickupPointName: 'Пункт «Даниловский»',
+      pickupPointAddress: 'Дубининская, 71',
+      shippingAmount: 0,
+      serviceDetails: [],
       serviceAmount: 0,
       totalAmount: fixture.unitPrice,
     });
@@ -179,10 +287,15 @@ guarded('COD cancellation restores owned stock exactly once', async ({ page }, t
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('heading', { name: 'Отменить заказ?' })).toBeVisible();
     await expect(dialog).toContainText('товары вернутся в наличие');
+    const cancellationRequestPromise = page.waitForRequest(
+      (request) => request.method() === 'POST' && Boolean(request.headers()['next-action']),
+    );
     await dialog.getByRole('button', { name: 'Отменить заказ' }).click();
+    const cancellationRequest = await cancellationRequestPromise;
     await expect(page.getByText('Отменён')).toBeVisible();
     const after = await readOwnedOrder(fixture.email, orderNumber);
     expect(after.stock).toBe(before.stock + 1);
+    await replaySupportedServerAction(page, cancellationRequest);
     await page.reload();
     await expect(page.getByText('Отменён')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Отменить заказ' })).toHaveCount(0);

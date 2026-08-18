@@ -270,6 +270,48 @@ describe('Phase 4 E2E safety contract', () => {
     expect(payment).not.toMatch(/test-only|fake|fabricat/i);
   });
 
+  it('proves checkout quote capture and exact persisted delivery snapshots before leaving checkout', () => {
+    const checkout = read('e2e/checkout.spec.ts');
+    expect(checkout).toContain('captureBrowserQuote');
+    expect(checkout).toContain('fixture.couponCode');
+    expect(checkout).toContain("getByLabel('Сборка на месте')");
+    expect(checkout).toContain('deliveryDate: selectedSlot.date');
+    expect(checkout).toContain('deliveryWindow: selectedSlot.windowId');
+    expect(checkout).toContain("serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }]");
+    expect(checkout).toContain('browserQuote.totalAmount');
+    expect(checkout).not.toContain('expectQuoteAmount(page');
+    expect(checkout).toContain('deliveryDate: showroomOrder.deliveryDate');
+    expect(checkout).toContain('deliveryDate: pickupOrder.deliveryDate');
+  });
+
+  it('replays supported cancellation server action and proves exactly-once restoration', () => {
+    const checkout = read('e2e/checkout.spec.ts');
+    expect(checkout).toContain('waitForRequest');
+    expect(checkout).toContain('page.request.fetch');
+    expect(checkout).toContain('replaySupportedServerAction');
+    expect(checkout).toContain('stock).toBe(after.stock');
+  });
+
+  it('gates real YooKassa on migrations and proves pre-window recovery plus asserted cleanup', () => {
+    const payment = read('e2e/yookassa.spec.ts');
+    expect(payment).toContain('e2e/database-readiness.ts');
+    expect(payment).toContain("'--mode=completion'");
+    expect(payment).toContain('ensureOnlinePayment');
+    expect(payment).toContain('Promise.all');
+    expect(payment).toContain('PAYMENT_CREATE_RETRY_WINDOW_MS');
+    expect(payment).toContain('preWindowNow');
+    expect(payment).toContain('Платёж требует проверки');
+    expect(payment).toContain('Повторное создание платежа отключено; статус проверяется.');
+    expect(payment).toContain('expect(cleanupResult).toMatchObject');
+    expect(payment).toContain('deleted: true');
+  });
+
+  it('keeps readiness import-safe during Playwright collection', () => {
+    const readiness = read('e2e/database-readiness.ts');
+    expect(readiness).not.toContain("import { Pool } from '@neondatabase/serverless'");
+    expect(readiness).toContain("import('@neondatabase/serverless')");
+  });
+
   it('does not invent coupon usage storage or provider endpoints', () => {
     const schema = read('prisma/schema.prisma');
     const source = e2eFiles.map(read).join('\n');

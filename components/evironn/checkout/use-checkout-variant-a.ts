@@ -51,10 +51,19 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const initialSavedAddress =
     initialData.savedAddresses.find((address) => address.isDefault) ?? initialData.savedAddresses[0] ?? null;
   const [selectedAddressId, setSelectedAddressId] = useState(initialSavedAddress?.id ?? 'new');
+  const normalizedInitialAddress = initialSavedAddress
+    ? {
+        city: initialSavedAddress.city.trim(),
+        addressLine: initialSavedAddress.street.trim(),
+        addressComment: initialSavedAddress.comment?.trim() || undefined,
+      }
+    : {
+        city: initialData.addressDefaults?.city.trim() || 'Москва',
+        addressLine: initialData.addressDefaults?.addressLine.trim() ?? '',
+        addressComment: initialData.addressDefaults?.addressComment?.trim() || undefined,
+      };
   const [address, setAddress] = useState<Address>({
-    city: initialData.addressDefaults?.city ?? 'Москва',
-    addressLine: initialData.addressDefaults?.addressLine ?? '',
-    addressComment: initialData.addressDefaults?.addressComment ?? undefined,
+    ...normalizedInitialAddress,
     floor: undefined,
     liftType: 'passenger',
     intercom: '',
@@ -185,6 +194,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
 
   const setDeliveryMethod = useCallback(
     (method: DeliveryMethod) => {
+      setQuoteRecoveryBlocked(false);
       setDeliveryMethodState(method);
       const slots = slotsFor(initialData, method);
       setDeliverySlotId(slots[0]?.id ?? '');
@@ -198,6 +208,11 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     },
     [initialData],
   );
+
+  const setDeliverySlot = useCallback((slotId: string) => {
+    setQuoteRecoveryBlocked(false);
+    setDeliverySlotId(slotId);
+  }, []);
 
   const pickAddress = useCallback(
     (id: string) => {
@@ -416,7 +431,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     actions: {
       setDeliveryMethod: guardChange(setDeliveryMethod),
       setDeliveryZone: guardChange(setDeliveryZone),
-      setDeliverySlotId: guardChange(setDeliverySlotId),
+      setDeliverySlotId: guardChange(setDeliverySlot),
       setPickupPointId: guardChange(setPickupPointId),
       pickAddress: guardChange(pickAddress),
       setAddress: guardChange(setAddress),

@@ -17,20 +17,30 @@ const CHECKOUT_DISABLED_LABELS = {
   error: 'Не удалось загрузить корзину. Обновите страницу.',
   unavailable: 'В корзине есть товары, которых нет в наличии.',
   legacy: 'В корзине есть устаревшие позиции. Добавьте их заново.',
+  stock: 'Количество некоторых товаров превышает доступный остаток.',
+  limit: 'Количество товара в одной позиции не может превышать 99.',
 } as const;
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
   const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
     useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
-  const canCheckout = !loading && !error && items.length > 0 && items.every((item) => item.available && !item.isLegacy);
+  const canCheckout =
+    !loading &&
+    !error &&
+    items.length > 0 &&
+    items.every((item) => item.available && !item.isLegacy && item.quantity <= item.stock && item.quantity <= 99);
   const checkoutDisabledLabel = loading
     ? CHECKOUT_DISABLED_LABELS.loading
     : error
       ? CHECKOUT_DISABLED_LABELS.error
       : items.some((item) => !item.available)
         ? CHECKOUT_DISABLED_LABELS.unavailable
-        : CHECKOUT_DISABLED_LABELS.legacy;
+        : items.some((item) => item.isLegacy)
+          ? CHECKOUT_DISABLED_LABELS.legacy
+          : items.some((item) => item.quantity > 99)
+            ? CHECKOUT_DISABLED_LABELS.limit
+            : CHECKOUT_DISABLED_LABELS.stock;
 
   return (
     <main className="cart-a" id="main-content">

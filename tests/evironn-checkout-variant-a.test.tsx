@@ -164,6 +164,33 @@ describe('Checkout Variant A', () => {
     expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('Tverskaya, 10');
   });
 
+  it('normalizes the initially selected saved address like later selections', () => {
+    render(
+      <CheckoutVariantA
+        initialData={{
+          ...initialData,
+          savedAddresses: [
+            {
+              ...initialData.savedAddresses[0],
+              city: '  Moscow  ',
+              street: '  Tverskaya, 10  ',
+              comment: '  Intercom 7  ',
+            },
+          ],
+          addressDefaults: {
+            city: '  Moscow  ',
+            addressLine: '  Tverskaya, 10  ',
+            addressComment: '  Intercom 7  ',
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('textbox', { name: 'Город' })).toHaveValue('Moscow');
+    expect(screen.getByRole('textbox', { name: 'Адрес' })).toHaveValue('Tverskaya, 10');
+    expect(screen.getByRole('textbox', { name: 'Комментарий курьеру' })).toHaveValue('Intercom 7');
+  });
+
   it('renders clone lift labels while preserving production values', () => {
     render(<CheckoutVariantA initialData={initialData} />);
 
@@ -551,6 +578,40 @@ describe('Checkout Variant A', () => {
 
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
     for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
+  });
+
+  it('quotes a newly selected valid slot after stale-slot recovery', async () => {
+    const validSlot = {
+      id: '2026-08-20:14-18',
+      date: '2026-08-20',
+      windowId: '14-18',
+      windowLabel: '14:00 - 18:00',
+    };
+    mocks.quote
+      .mockResolvedValueOnce({ ok: false, code: 'STALE_DELIVERY_SLOT', message: 'Slot expired' })
+      .mockResolvedValueOnce({
+        ok: true,
+        quote: {
+          ...quote,
+          delivery: { ...quote.delivery, slot: validSlot },
+          totals: { ...quote.totals, total: 102000 },
+        },
+      });
+    render(
+      <CheckoutVariantA
+        initialData={{
+          ...initialData,
+          initialSlots: { ...initialData.initialSlots, courier: [...initialData.initialSlots.courier, validSlot] },
+        }}
+      />,
+    );
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('radio', { name: /2026-08-20 14:00 - 18:00/ }));
+
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    expect(mocks.quote).toHaveBeenLastCalledWith(expect.objectContaining({ deliverySlotId: validSlot.id }));
+    expect(screen.getAllByText(/102 000/).length).toBeGreaterThan(0);
   });
 
   it('clears a rejected coupon quote and re-quotes without the stale coupon', async () => {

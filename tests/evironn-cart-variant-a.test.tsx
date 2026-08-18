@@ -385,4 +385,24 @@ describe('Cart Variant A', () => {
       'В корзине есть устаревшие позиции. Добавьте их заново.',
     );
   });
+
+  it('blocks checkout when a concurrent stock drop leaves quantity above stock', async () => {
+    renderCart(cart([{ ...line, quantity: 2, stock: 1, available: true }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'Количество некоторых товаров превышает доступный остаток.',
+    );
+  });
+
+  it('blocks checkout when a canonical line exceeds the quantity limit of 99', async () => {
+    renderCart(cart([{ ...line, quantity: 100, stock: 120, available: true }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'Количество товара в одной позиции не может превышать 99.',
+    );
+  });
 });

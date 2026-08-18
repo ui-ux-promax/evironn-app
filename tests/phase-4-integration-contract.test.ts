@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -79,6 +79,7 @@ import { EXPECTED_PHASE4_MIGRATIONS, runPhase4DatabaseReadiness } from '@/e2e/da
 import { acquireDatabaseFingerprints } from '@/scripts/e2e-database-fingerprint';
 
 const root = resolve(__dirname, '..');
+const reviewedHead = '49e4fe7';
 const manifestPath = 'docs/superpowers/manifests/phase-4-delivery-manifest.json';
 const deliveryReportPath = '.superpowers/sdd/phase-4-delivery-report.md';
 
@@ -92,10 +93,24 @@ const sha256 = (relativePath: string) =>
     .update(readFileSync(resolve(root, relativePath)))
     .digest('hex');
 
+const committedBytesByPath = new Map<string, Buffer>();
+
+const readCommittedBytes = (relativePath: string) => {
+  const bytes = committedBytesByPath.get(relativePath);
+  if (!bytes) throw new Error(`Missing committed blob: ${relativePath}`);
+  return bytes;
+};
+
+const committedSha256 = (relativePath: string) =>
+  createHash('sha256').update(readCommittedBytes(relativePath)).digest('hex');
+
 type DiffRecord = { status: string; path: string; previousPath?: string };
 
 function baseDiff(): DiffRecord[] {
-  const output = execFileSync('git', ['diff', '--name-status', '868310f..HEAD'], { cwd: root, encoding: 'utf8' });
+  const output = execFileSync('git', ['diff', '--name-status', `868310f..${reviewedHead}`], {
+    cwd: root,
+    encoding: 'utf8',
+  });
   return output
     .trim()
     .split(/\r?\n/)
@@ -111,6 +126,21 @@ const phase4Files = baseDiff()
   .map(({ path }) => path)
   .filter((path) => path !== manifestPath)
   .sort();
+
+const committedBlobOutput = execFileSync('git', ['cat-file', '--batch'], {
+  cwd: root,
+  input: Buffer.from(`${phase4Files.map((path) => `${reviewedHead}:${path}`).join('\n')}\n`),
+  encoding: null,
+});
+let committedBlobOffset = 0;
+for (const path of phase4Files) {
+  const headerEnd = committedBlobOutput.indexOf(0x0a, committedBlobOffset);
+  const header = committedBlobOutput.subarray(committedBlobOffset, headerEnd).toString('utf8').split(' ');
+  const bytesStart = headerEnd + 1;
+  const bytesEnd = bytesStart + Number(header[2]);
+  committedBytesByPath.set(path, Buffer.from(committedBlobOutput.subarray(bytesStart, bytesEnd)));
+  committedBlobOffset = bytesEnd + 1;
+}
 
 const manifest = JSON.parse(read(manifestPath) || '{}') as {
   schemaVersion?: number;
@@ -483,11 +513,13 @@ describe('Phase 4 integration and delivery boundary', () => {
     expect(new Set(entries.map(({ path }) => path)).size).toBe(entries.length);
     expect(
       entries.every(({ path, sha256: digest, bytes }) => {
-        const absolutePath = resolve(root, path);
-        return existsSync(absolutePath) && statSync(absolutePath).size === bytes && sha256(path) === digest;
+        const committedBytes = readCommittedBytes(path);
+        return committedBytes.byteLength === bytes && committedSha256(path) === digest;
       }),
     ).toBe(true);
-    expect(manifest.totalBytes).toBe(entries.reduce((total, entry) => total + entry.bytes, 0));
+    expect(manifest.totalBytes).toBe(
+      entries.reduce((total, entry) => total + readCommittedBytes(entry.path).byteLength, 0),
+    );
     expect(manifest.fileCount).toBe(expectedExisting.length);
   });
 

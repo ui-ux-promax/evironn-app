@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "baseSha": "868310f",
   "fileCount": 107,
-  "totalBytes": 1004921,
+  "totalBytes": 1003944,
   "entries": [
     {
       "path": ".env.example",
-      "sha256": "470e07d690c59285900be64caf24d1c613b84edf4eb187412723349fc0bbd601",
-      "bytes": 2283
+      "sha256": "4953076b4b6c322d12215c76ad8962bc12932a36814ee4bb2a58ee4b330c9ae6",
+      "bytes": 2219
     },
     {
       "path": ".superpowers/sdd/phase-4-delivery-report.md",
@@ -61,8 +61,8 @@
     },
     {
       "path": ".superpowers/sdd/progress.md",
-      "sha256": "68832244546d667d3d79b0c0d7522c63d302fc61d8ad7e531bfb7cef538ffe2d",
-      "bytes": 51581
+      "sha256": "a3ec6a989232161f0ab1d1c4d00855189f5fdae6856042e5633199ad62065600",
+      "bytes": 51275
     },
     {
       "path": "app/(shop)/checkout/loading.tsx",
@@ -256,8 +256,8 @@
     },
     {
       "path": "lib/order.ts",
-      "sha256": "bf38cd9c1916031b2ad9171bb3eba641a478ee28ff89f5c9552595983431b381",
-      "bytes": 6718
+      "sha256": "65f01299de49f694d593b1e72ec070aa8f7fc21b4ace37e7b362f3412db0f2a4",
+      "bytes": 6605
     },
     {
       "path": "lib/payment-initialization.ts",
@@ -451,8 +451,8 @@
     },
     {
       "path": "tests/order-page-canonical.test.ts",
-      "sha256": "36becad6fffc6ac2a07ae33569d1aac0e06bd26d0e876cafb6ab29ceb6f0b19f",
-      "bytes": 505
+      "sha256": "9eb1d3442ec08203244a3f7b7e18baa7d35954b3db76af97c4a7ea5f54e1eef8",
+      "bytes": 496
     },
     {
       "path": "tests/order-page-dto.test.ts",
@@ -471,8 +471,8 @@
     },
     {
       "path": "tests/order-snapshot.test.ts",
-      "sha256": "ca51e6d3063e565f020e2c01af81476158ff67aa110922f89170d4c98d44792b",
-      "bytes": 4652
+      "sha256": "04cca12d5442933f7116660706a8643852327e22a5060c15981b00a86b38a8e4",
+      "bytes": 4533
     },
     {
       "path": "tests/order-transaction.test.ts",
@@ -486,8 +486,8 @@
     },
     {
       "path": "tests/payment-sync.test.ts",
-      "sha256": "f6fb4f634d51c4b5cbe7aede327d08b3a43c611a82d9d2de7e384f1a30587e28",
-      "bytes": 24452
+      "sha256": "9cb0e3e6489894bee349d5fce1845fbb52bb7f701cbff11073c347077233d149",
+      "bytes": 24086
     },
     {
       "path": "tests/phase-4-e2e-safety-contract.test.ts",

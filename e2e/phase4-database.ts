@@ -5,7 +5,10 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { CHECKOUT_POLICY } from '@/constants/config';
 import { hashPassword } from '@/lib/password';
 import { resolveE2eDatabaseEnvironment } from './database-guard';
+import { loadE2eEnvironment } from './load-env';
 export { phase4Namespace } from './phase4-namespace';
+
+loadE2eEnvironment();
 
 const E2E_PASSWORD = 'Passw0rd!1';
 const E2E_EMAIL_DOMAIN = 'phase4-e2e.invalid';

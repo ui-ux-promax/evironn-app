@@ -2,6 +2,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from './database-command-report';
 import { resolveE2eDatabaseEnvironment, type E2eDatabaseEnvironment } from './database-guard';
+import { loadE2eEnvironment } from './load-env';
 import {
   fingerprintDatabaseUrl,
   hasCompleteForbiddenFingerprintPolicy,
@@ -227,6 +228,7 @@ export async function runMigrationStatusCli(options: MigrationStatusCliOptions =
     if (!argv.includes('--mode=migration-status')) {
       result = blockedReport('CONFIGURATION');
     } else {
+      if (!options.run) loadE2eEnvironment();
       result = await (
         options.run ??
         (() =>
@@ -455,6 +457,7 @@ export async function runPhase4ReadinessCli(options: Phase4ReadinessCliOptions =
     if (modeArg !== '--mode=migration' && modeArg !== '--mode=completion') {
       result = readinessFailure('CONFIGURATION');
     } else {
+      loadE2eEnvironment();
       result = await runPhase4DatabaseReadiness(
         process.env,
         modeArg === '--mode=completion' ? 'completion' : 'migration',

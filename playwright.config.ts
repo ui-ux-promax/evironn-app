@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
 
 import { resolveE2eDatabaseEnvironment } from './e2e/database-guard';
+import { loadE2eEnvironment } from './e2e/load-env';
+
+loadE2eEnvironment();
 
 const explicitE2eEnvironment = (() => {
   try {

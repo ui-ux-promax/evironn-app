@@ -6,6 +6,7 @@ import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from '@/e2e/
 import { resolveE2eDatabaseEnvironment } from '@/e2e/database-guard';
 import { runPhase4DatabaseReadiness } from '@/e2e/database-readiness';
 import { isDatabaseFingerprint } from '@/e2e/database-target';
+import { loadE2eEnvironment } from '@/e2e/load-env';
 
 const migrationNamesOnDisk = (): string[] => {
   try {
@@ -148,9 +149,10 @@ export async function runPrismaMigrationCli(
   try {
     result =
       argv[0] === 'deploy'
-        ? await runPrismaMigrationDeploy(process.env, {
+        ? (loadE2eEnvironment(),
+          await runPrismaMigrationDeploy(process.env, {
             resolveEnvironment: () => resolveE2eDatabaseEnvironment(process.env),
-          })
+          }))
         : report({ ok: false, exitCode: 1, errorCategory: 'CONFIGURATION' });
   } catch {
     result = report({ ok: false, exitCode: 1, errorCategory: 'UNRECOGNIZED_DATABASE_COMMAND_ERROR' });

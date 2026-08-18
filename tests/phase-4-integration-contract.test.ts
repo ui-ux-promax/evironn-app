@@ -866,8 +866,13 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     const phase4Database = read('e2e/phase4-database.ts');
     const checkoutE2e = read('e2e/checkout.spec.ts');
     const orderE2e = read('e2e/order.spec.ts');
+    const playwrightConfig = read('playwright.config.ts');
     expect(wrapper).toContain("import { resolveE2eDatabaseEnvironment } from '@/e2e/database-guard';");
     expect(wrapper).toContain("import { runPhase4DatabaseReadiness } from '@/e2e/database-readiness';");
+    expect(wrapper).toContain("import { loadE2eEnvironment } from '@/e2e/load-env';");
+    expect(wrapper).toContain('loadE2eEnvironment()');
+    expect(playwrightConfig).toContain("import { loadE2eEnvironment } from './e2e/load-env';");
+    expect(playwrightConfig).toContain('loadE2eEnvironment()');
     expect(wrapper).toContain("stdio: ['pipe', 'pipe', 'pipe']");
     expect(wrapper).toContain('stdout = Buffer.alloc(0);');
     expect(wrapper).toContain('stderr = Buffer.alloc(0);');
@@ -876,6 +881,8 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     expect(phase4Database).toMatch(
       /export async function seedOwnedCartLine\(email: string, skuId: string, quantity = 1\): Promise<void>/,
     );
+    expect(phase4Database).toContain("import { loadE2eEnvironment } from './load-env';");
+    expect(phase4Database).toContain('loadE2eEnvironment()');
     expect(phase4Database).toContain('const namespace = namespaceFromEmail(email);');
     expect(phase4Database).toContain(
       "if (!user?.emailVerified) throw new Error('Phase 4 cart owner must be verified');",
@@ -1551,9 +1558,8 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
   it('records honest blocked completion readiness and presence-only environment state', () => {
     const closeout = `${read('docs/roadmap/STATUS.md')}\n${read('.superpowers/sdd/progress.md')}\n${read(deliveryReportPath)}`;
     expect(closeout).toContain('BLOCKED_COMPLETION_READINESS');
-    expect(closeout).toContain('E2E_DATABASE_URL=false');
-    expect(closeout).toContain('YOOKASSA_SHOP_ID=false');
-    expect(closeout).toContain('DADATA_TOKEN=false');
+    expect(closeout).toMatch(/\.env\.local/);
+    expect(closeout).toMatch(/empty forbidden-fingerprint policy|ADR-019/i);
     expect(closeout).toMatch(/full gate|completion gate/i);
     expect(closeout).toMatch(/not run|deferred|blocked/i);
     expect(closeout).not.toMatch(/postgres(?:ql)?:\/\/|password\s*[:=]|hostname\s*[:=]/i);

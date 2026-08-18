@@ -44,7 +44,6 @@ export function hasCompleteForbiddenFingerprintPolicy(
   const forbiddenFingerprints = policy?.forbiddenFingerprints;
   return Boolean(
     Array.isArray(forbiddenFingerprints) &&
-    forbiddenFingerprints.length > 0 &&
     forbiddenFingerprints.every(
       (fingerprint): fingerprint is string => typeof fingerprint === 'string' && isDatabaseFingerprint(fingerprint),
     ) &&

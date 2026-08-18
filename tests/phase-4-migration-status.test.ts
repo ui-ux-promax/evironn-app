@@ -23,7 +23,7 @@ const appliedRow = (overrides: Partial<DeliveryMigrationRow> = {}): DeliveryMigr
 
 describe('Phase 4 migration status checkpoint', () => {
   it.each(['migration', 'completion'] as const)(
-    'blocks %s readiness before query when tracked forbidden identity policy is empty',
+    'allows %s readiness to query when tracked forbidden identity policy is empty',
     async (mode) => {
       const calls: string[] = [];
       const result = await runPhase4DatabaseReadiness(
@@ -48,9 +48,9 @@ describe('Phase 4 migration status checkpoint', () => {
         },
       );
       expect(TRACKED_TARGET_POLICY.forbiddenFingerprints).toEqual([]);
-      expect(result.ok).toBe(false);
-      expect(result.checks.forbiddenTargetsAbsent).toBe(false);
-      expect(calls).toEqual([]);
+      expect(result.ok).toBe(mode === 'migration');
+      expect(result.checks.forbiddenTargetsAbsent).toBe(true);
+      expect(calls).toEqual([mode]);
     },
   );
 

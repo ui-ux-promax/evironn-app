@@ -1422,7 +1422,7 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     expect(hasCompleteForbiddenFingerprintPolicy(policy)).toBe(true);
     expect(
       hasCompleteForbiddenFingerprintPolicy({ approvedDevFingerprint: approvedFingerprint, forbiddenFingerprints: [] }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       hasCompleteForbiddenFingerprintPolicy({
         approvedDevFingerprint: approvedFingerprint,

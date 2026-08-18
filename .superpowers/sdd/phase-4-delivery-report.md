@@ -46,7 +46,7 @@ Task 7 review `6373dac..f303387` approved Critical 0 / Important 0 / Minor 0 wit
 
 ## Sanitized environment state
 
-Presence-only checks returned false for: `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `E2E_DATABASE_ALLOW_WRITES`, `E2E_DATABASE_TARGET_FINGERPRINT`, `AUTH_SECRET`, `AUTH_TRUST_HOST`, `RESEND_API_KEY`, `EMAIL_FROM_TRANSACTIONAL`, `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, `YOOKASSA_MODE`, `DADATA_TOKEN`, and `NEXT_PUBLIC_SITE_URL`. No values were read, printed, or persisted. Required completion state is `BLOCKED_COMPLETION_READINESS` until explicit approved non-production E2E configuration and required credentials are available.
+Initial review checked only the parent process and did not load `.env.local`, so it reported the recorded names as absent. Current presence-only inspection confirms all recorded E2E, Auth.js, transactional-email, YooKassa, DaData, and site URL names are present in `.env.local`; no values were read, printed, or persisted. ADR-019 intentionally permits the empty forbidden-fingerprint policy for this portfolio-only dev target. Completion state remains `BLOCKED_COMPLETION_READINESS` until the sanitized readiness command proves database connectivity, current identity, migrations, and required external checks.
 
 ## Concerns
 

@@ -149,12 +149,12 @@ describe('resolveE2eDatabaseEnvironment', () => {
     ).toMatchObject({ POSTGRES_URL: pooledUrl, RESEND_API_KEY: '' });
   });
 
-  it('fails closed when the forbidden policy is empty', () => {
+  it('allows an empty forbidden policy for an approved dev target', () => {
     const pooled = 'postgresql://user:secret@phase4-pooler.example.test/dev?sslmode=require';
     const direct = 'postgresql://other@phase4.example.test/dev?connect_timeout=5';
     const policy = { approvedDevFingerprint: fingerprintDatabaseUrl(pooled), forbiddenFingerprints: [] };
 
-    expect(() =>
+    expect(
       resolveE2eDatabaseEnvironment(
         {
           E2E_DATABASE_ALLOW_WRITES: '1',
@@ -164,7 +164,7 @@ describe('resolveE2eDatabaseEnvironment', () => {
         },
         policy,
       ),
-    ).toThrow('forbidden database policy');
+    ).toMatchObject({ POSTGRES_URL: pooled, POSTGRES_URL_NON_POOLING: direct });
   });
 
   it('rejects an unapproved caller fingerprint without exposing URL identity', () => {

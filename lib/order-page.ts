@@ -1,9 +1,15 @@
+import { CHECKOUT_POLICY } from '@/constants/config';
+import { fromDeliveryDateSentinel } from '@/lib/checkout-domain';
 import { prisma } from '@/lib/prisma-client';
 import { formatOrderItemConfiguration } from '@/lib/order';
 import { getReviewEligibility } from '@/lib/review';
-import { recoverPaymentCorrelation, reconcilePaymentStatus } from '@/lib/payment-sync';
+import { reconcilePaymentStatus } from '@/lib/payment-sync';
 import { getPaymentDetails } from '@/lib/yookassa';
-import { PAYMENT_CREATE_RETRY_WINDOW_MS } from '@/lib/payment-initialization';
+import {
+  ensureOnlinePayment,
+  PAYMENT_CREATE_RETRY_WINDOW_MS,
+  type PaymentInitializationClient,
+} from '@/lib/payment-initialization';
 import { logger } from '@/lib/logger';
 import {
   buildBlockedOrderPaymentInitialization,
@@ -12,13 +18,12 @@ import {
 } from '@/services/dto/order-page.dto';
 
 export function formatOrderDateOnly(value: string): string {
-  const [year, month, day] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('ru-RU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    timeZone: 'Europe/Moscow',
-  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+    timeZone: CHECKOUT_POLICY.timezone,
+  }).format(new Date(`${value}T12:00:00.000Z`));
 }
 
 export function mapOrderStatus(status: string): { stage: OrderStage; label: string } {
@@ -78,16 +83,33 @@ type OrderInput = {
   reviewTargets: Array<{ productId: string; name: string; slug: string | null; reviewed: boolean; eligible: boolean }>;
 };
 
-export function buildOrderPageDto(order: OrderInput): OrderPageDto {
+type BuildContext = { now: Date; providerProof?: boolean };
+
+function pickupMethod(order: OrderInput): string {
+  if (order.shippingMethod !== 'pickup') return 'Курьер';
+  if (!order.pickupPointId) return 'Самовывоз';
+  const point = CHECKOUT_POLICY.pickupPoints.find((candidate) => candidate.id === order.pickupPointId);
+  if (point?.kind === 'showroom' && point.name === order.pickupPointName && point.address === order.pickupPointAddress)
+    return 'Самовывоз из шоурума';
+  return 'Пункт выдачи';
+}
+
+export function buildOrderPageDto(
+  order: OrderInput,
+  { now, providerProof = false }: BuildContext = { now: new Date() },
+): OrderPageDto {
   const mapped = mapOrderStatus(order.status);
-  const date = order.deliveryDate ? order.deliveryDate.toISOString().slice(0, 10) : null;
+  const date = order.deliveryDate ? fromDeliveryDateSentinel(order.deliveryDate) : null;
   const details = Array.isArray(order.serviceDetails)
-    ? order.serviceDetails.filter((v): v is { id: string; label: string; amount: number } =>
-        Boolean(v && typeof v === 'object' && 'id' in v && 'label' in v && 'amount' in v),
+    ? order.serviceDetails.filter((value): value is { id: string; label: string; amount: number } =>
+        Boolean(value && typeof value === 'object' && 'id' in value && 'label' in value && 'amount' in value),
       )
     : [];
-  const retryWindowClosed = order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS <= Date.now();
+  const paymentFinal = order.payment?.status === 'succeeded' || order.payment?.status === 'canceled';
+  const pendingOnline = order.status === 'PENDING' && order.paymentMethod === 'online' && !paymentFinal;
+  const retryWindowClosed = order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS <= now.getTime();
   const safelyCorrelated =
+    providerProof &&
     order.payment?.status === 'pending' &&
     order.payment.amount === order.totalAmount &&
     order.paymentInitializationState === 'CORRELATED';
@@ -106,21 +128,23 @@ export function buildOrderPageDto(order: OrderInput): OrderPageDto {
                 ? 'Оплата отменена'
                 : 'Ожидает оплаты',
           confirmationUrl: order.payment?.confirmationUrl ?? null,
-          initialization: retryWindowClosed
-            ? buildBlockedOrderPaymentInitialization(order.orderNumber, safelyCorrelated)
-            : order.payment?.confirmationUrl
-              ? {
-                  status: 'READY' as const,
-                  continuePaymentUrl: order.payment.confirmationUrl,
-                  canRetryCreate: false as const,
-                  allowedActions: [] as const,
-                }
-              : {
-                  status: 'PENDING' as const,
-                  continuePaymentUrl: null,
-                  canRetryCreate: false as const,
-                  allowedActions: ['RESYNC_PAYMENT'] as const,
-                },
+          initialization: !pendingOnline
+            ? null
+            : retryWindowClosed
+              ? buildBlockedOrderPaymentInitialization(order.orderNumber, safelyCorrelated)
+              : safelyCorrelated && order.payment?.confirmationUrl
+                ? {
+                    status: 'READY' as const,
+                    continuePaymentUrl: order.payment.confirmationUrl,
+                    canRetryCreate: false as const,
+                    allowedActions: [] as const,
+                  }
+                : {
+                    status: 'PENDING' as const,
+                    continuePaymentUrl: null,
+                    canRetryCreate: false as const,
+                    allowedActions: ['RESYNC_PAYMENT'] as const,
+                  },
         };
   return {
     id: order.id,
@@ -131,7 +155,7 @@ export function buildOrderPageDto(order: OrderInput): OrderPageDto {
     createdAt: order.createdAt.toISOString(),
     contact: { name: order.contactName, phone: order.contactPhone, email: order.contactEmail },
     delivery: {
-      method: order.shippingMethod === 'pickup' ? (order.pickupPointId ? 'Пункт выдачи' : 'Самовывоз') : 'Курьер',
+      method: pickupMethod(order),
       address: [order.city, order.addressLine].filter(Boolean).join(', '),
       date,
       dateLabel: date ? formatOrderDateOnly(date) : null,
@@ -173,25 +197,48 @@ export function buildOrderPageDto(order: OrderInput): OrderPageDto {
   };
 }
 
+const orderInclude = {
+  items: {
+    include: {
+      canonicalSku: { select: { product: { select: { id: true, slug: true, name: true } } } },
+      productVariant: {
+        select: { colorway: { select: { product: { select: { id: true, slug: true, name: true } } } } },
+      },
+    },
+  },
+  payment: true,
+} as const;
+
 export async function getOrderPageDto({
   userId,
   orderNumber,
+  now = new Date(),
 }: {
   userId: string;
   orderNumber: number;
+  now?: Date;
 }): Promise<OrderPageDto | null> {
-  const include = {
-    items: {
-      include: {
-        canonicalSku: { select: { product: { select: { id: true, slug: true, name: true } } } },
-        productVariant: {
-          select: { colorway: { select: { product: { select: { id: true, slug: true, name: true } } } } },
-        },
-      },
-    },
-    payment: true,
-  } as const;
-  let order = await prisma.order.findFirst({ where: { userId, orderNumber }, include });
+  let order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
+  if (!order) return null;
+  let providerProof = false;
+  if (
+    order.status === 'PENDING' &&
+    order.paymentMethod === 'online' &&
+    !order.payment &&
+    now.getTime() < order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS
+  ) {
+    try {
+      await ensureOnlinePayment({
+        orderId: order.id,
+        now,
+        clock: () => now,
+        client: prisma as unknown as PaymentInitializationClient,
+      });
+      order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
+    } catch (error) {
+      logger.error('order_page_payment_initialization_failed', error, { orderNumber });
+    }
+  }
   if (!order) return null;
   if (order.status === 'PENDING' && order.paymentMethod === 'online' && order.payment?.id) {
     try {
@@ -202,13 +249,14 @@ export async function getOrderPageDto({
         details.amountRub === order.totalAmount &&
         details.orderNumber === String(order.orderNumber)
       ) {
+        providerProof = details.status === 'pending';
         const result = await reconcilePaymentStatus({
           paymentId: order.payment.id,
           remoteStatus: details.status,
           source: 'order-page',
         });
         if (result.kind === 'applied' || result.kind === 'repaired')
-          order = await prisma.order.findFirst({ where: { userId, orderNumber }, include });
+          order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
       }
     } catch (error) {
       logger.error('order_page_payment_reconciliation_failed', error, { orderNumber });
@@ -235,20 +283,22 @@ export async function getOrderPageDto({
       };
     }),
   );
-  return buildOrderPageDto({
-    ...order,
-    items: order.items.map((item) => ({
-      ...item,
-      productSlug: (item.canonicalSku?.product ?? item.productVariant?.colorway.product)?.slug ?? null,
-    })),
-    reviewTargets: reviewTargets.filter(Boolean) as OrderInput['reviewTargets'],
-  });
+  return buildOrderPageDto(
+    {
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        productSlug: (item.canonicalSku?.product ?? item.productVariant?.colorway.product)?.slug ?? null,
+      })),
+      reviewTargets: reviewTargets.filter(Boolean) as OrderInput['reviewTargets'],
+    },
+    { now, providerProof },
+  );
 }
 
 export {
   buildBlockedOrderPaymentInitialization,
   PAYMENT_CREATE_RETRY_WINDOW_MS,
-  recoverPaymentCorrelation,
   reconcilePaymentStatus,
   getPaymentDetails,
 };

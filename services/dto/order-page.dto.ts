@@ -1,3 +1,5 @@
+import type { BlockedPaymentInitializationDto } from '@/services/dto/payment-initialization.dto';
+
 export type OrderPageAction = 'RESYNC_PAYMENT' | 'CANCEL_ORDER';
 export type OrderStage = 'placed' | 'collecting' | 'on-way' | 'delivered' | 'cancelled';
 export type OrderPayment =
@@ -75,4 +77,3 @@ export function buildBlockedOrderPaymentInitialization(
     allowedActions: canCancel ? ['RESYNC_PAYMENT', 'CANCEL_ORDER'] : ['RESYNC_PAYMENT'],
   };
 }
-import type { BlockedPaymentInitializationDto } from '@/services/dto/payment-initialization.dto';

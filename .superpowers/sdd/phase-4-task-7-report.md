@@ -49,3 +49,9 @@ Additional focused evidence:
 ## Residual concerns
 
 Live database/provider behavior remains deferred to Phase 4 Task 8 E2E and the final completion gate. Missing-provider-id recovery cannot infer a provider object from absence and deliberately remains blocked/lookup-only.
+
+## Task 7 Remediation 1
+
+Review remediation hardened the production order boundary without changing the approved clone CSS. Initialization is now null for final orders and terminal payment states; missing online payment is recovered with audited `ensureOnlinePayment` only before the retry window, while reads at or after the window remain lookup/reconciliation-only. Continue and cancellation require fresh verified provider metadata and a pending provider status; failed or non-pending lookups suppress both actions. Showroom labels require an exact `CHECKOUT_POLICY` id/name/address snapshot, and legacy, incomplete, or unknown pickup rows remain neutral. Order A restores the supported metadata, placed-banner, address, summary, tracking, and review hierarchy, with the production `ReviewForm` outside the clone rating selector.
+
+Remediation RED reproduced 10 behavioral failures across the DTO, payment recovery, source-contract, and hierarchy assertions. One source assertion was corrected after identifying a false-positive regex that crossed the closed rating block. The final focused remediation command passed 4 files / 28 tests. The complete Task 7 focused regression command passed 13 files / 111 tests. `npm run typecheck`, touched-file Prettier, and `git diff --check` passed. CSS fingerprints remain the approved `OrderVariantA.css` and `OrderPrimitives.css` hashes above. No database, provider, full gate, build, E2E, push, pull request, or merge was performed.

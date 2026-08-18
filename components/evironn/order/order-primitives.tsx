@@ -20,6 +20,36 @@ export function Crumbs({ number }: { number: number }) {
 export function StatusChip({ order }: { order: OrderPageDto }) {
   return <span className={`ord-chip ord-chip--light is-${order.stage}`}>{order.statusLabel}</span>;
 }
+export function OrderMeta({ order }: { order: OrderPageDto }) {
+  const count = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  return (
+    <p className="ord-meta">
+      {new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' }).format(new Date(order.createdAt))} · {count} поз.
+    </p>
+  );
+}
+export function PlacedBanner({ order }: { order: OrderPageDto }) {
+  const paid = order.payment.kind === 'online' && order.payment.status === 'succeeded';
+  return (
+    <section className="ord-placed ord-placed--light" aria-label="Заказ оформлен">
+      <span className="ord-placed__mark" aria-hidden="true">
+        <Check />
+      </span>
+      <div>
+        <p className="ord-eyebrow">Заказ принят</p>
+        <h2>{paid ? 'Спасибо, оплата прошла' : 'Заказ сохранён'}</h2>
+        <p className="ord-placed__lede">
+          Статус заказа доступен в личном кабинете. Уведомления отправляются на {order.contact.email}.
+        </p>
+      </div>
+      <ol className="ord-placed__next">
+        <li>Состав и стоимость зафиксированы в момент оформления.</li>
+        <li>Актуальный статус платежа и заказа отображается на этой странице.</li>
+        <li>Дата, окно и адрес получения указаны ниже.</li>
+      </ol>
+    </section>
+  );
+}
 export function Tracking({ order }: { order: OrderPageDto }) {
   const steps = ['Оформлен', 'Собирается', 'В пути', 'Доставлен'];
   const current = ['placed', 'collecting', 'on-way', 'delivered'].indexOf(order.stage);
@@ -32,7 +62,11 @@ export function Tracking({ order }: { order: OrderPageDto }) {
   return (
     <ol className="ord-track ord-track--light ord-track--row" aria-label="Статус заказа">
       {steps.map((label, index) => (
-        <li key={label} className={index < current ? 'is-done' : index === current ? 'is-current' : ''}>
+        <li
+          key={label}
+          className={index < current ? 'is-done' : index === current ? 'is-current' : ''}
+          aria-current={index === current ? 'step' : undefined}
+        >
           <span className="ord-track__dot">{index < current ? <Check /> : index + 1}</span>
           <b>{label}</b>
           <span className="ord-track__note">{index <= current ? 'Статус подтверждён' : 'Ожидается'}</span>
@@ -136,6 +170,14 @@ export function DeliveryFacts({ order }: { order: OrderPageDto }) {
         </div>
       </dl>
     </div>
+  );
+}
+export function AddressLine({ order }: { order: OrderPageDto }) {
+  return (
+    <p className="ord-address">
+      <span>{order.delivery.method}</span>
+      <b>{order.delivery.address}</b>
+    </p>
   );
 }
 export function Panel({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {

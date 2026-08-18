@@ -369,6 +369,7 @@ export function OrderLines({ controller }: { controller: Controller }) {
               max={Math.min(line.stock, 99)}
               disabled={interactionsLocked || !line.available}
               onStep={(delta) => void actions.step(line.id, line.quantity + delta).catch(() => undefined)}
+              onSet={(quantity) => void actions.step(line.id, quantity).catch(() => undefined)}
             />
           </div>
           <div className="chk-lines__money">
@@ -511,7 +512,7 @@ export function CompletedOrderCard({ completion }: { completion: NonNullable<Con
           </a>
         )}
         <a
-          className={completion.paymentUrl ? '' : 'chk-done__primary'}
+          className={completion.paymentUrl ? 'chk-done__ghost' : 'chk-done__primary'}
           href={`/orders/${completion.orderNumber}?placed=1`}
         >
           Открыть заказ №{completion.orderNumber}

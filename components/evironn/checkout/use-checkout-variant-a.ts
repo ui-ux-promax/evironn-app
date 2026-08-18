@@ -169,6 +169,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         setQuote(result.quote);
         setQuoteRecoveryBlocked(false);
         setMutationError(null);
+        setSubmitError(null);
       })
       .catch((error) => {
         if (revision === quoteRevisionRef.current) {

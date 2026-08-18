@@ -452,6 +452,15 @@ describe('Checkout Variant A', () => {
     expect(screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' })[0]).toBeDisabled();
   });
 
+  it('updates canonical quantity when a typed quantity changes', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Количество Noma' })[0], { target: { value: '2' } });
+
+    await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
+  });
+
   it('surfaces a rejected quantity mutation and keeps stale quote submission disabled', async () => {
     let resolveRefresh!: (value: { ok: true; quote: CheckoutQuoteDto }) => void;
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -536,6 +545,7 @@ describe('Checkout Variant A', () => {
       'href',
       'https://yookassa.test/confirmation',
     );
+    expect(screen.getByRole('link', { name: /Открыть заказ/ })).toHaveClass('chk-done__ghost');
     expect(useCartStore.getState().items).toEqual([]);
     expect(screen.queryByRole('button', { name: /Оформить заказ/ })).not.toBeInTheDocument();
     expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
@@ -556,6 +566,21 @@ describe('Checkout Variant A', () => {
     await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(3));
     expect(mocks.quote).toHaveBeenLastCalledWith(expect.not.objectContaining({ couponCode: expect.anything() }));
     expect(screen.getAllByRole('textbox', { name: 'Промокод' })[0]).toHaveValue('');
+  });
+
+  it('clears a recoverable placement error after the replacement quote succeeds', async () => {
+    mocks.quote.mockResolvedValue({ ok: true, quote });
+    mocks.placeOrder.mockResolvedValue({ ok: false, code: 'INVALID_COUPON', error: 'Coupon expired' });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Промокод' })[0], { target: { value: 'EXPIRED' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Применить' })[0]);
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Coupon expired');
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });
 
   it.each([

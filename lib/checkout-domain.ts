@@ -36,11 +36,15 @@ export function calculateServiceLines(input: Pick<CheckoutQuoteInput, 'deliveryM
   if (input.deliveryMethod !== 'courier') return [] as Array<{ id: string; amount: number }>;
   if (input.services.carrying && !input.address?.liftType) throw new Error('Lift type required for carrying');
   const lines: Array<{ id: string; amount: number }> = [];
-  if (input.services.carrying && input.address?.liftType === 'none')
+  if (input.services.carrying) {
     lines.push({
       id: 'carrying',
-      amount: Math.max(0, (input.address.floor ?? 1) - 1) * CHECKOUT_POLICY.services.carryingPerFloor,
+      amount:
+        input.address?.liftType === 'none'
+          ? Math.max(0, (input.address.floor ?? 1) - 1) * CHECKOUT_POLICY.services.carryingPerFloor
+          : 0,
     });
+  }
   if (input.services.assembly) lines.push({ id: 'assembly', amount: CHECKOUT_POLICY.services.assembly });
   if (input.services.removal) lines.push({ id: 'removal', amount: CHECKOUT_POLICY.services.removal });
   return lines;

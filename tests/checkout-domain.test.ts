@@ -90,6 +90,14 @@ describe('ADR-016 checkout policy', () => {
     ).toThrow('Lift type required for carrying');
   });
 
+  it.each(['passenger', 'freight'] as const)('emits an authoritative free carrying line for a %s lift', (liftType) => {
+    expect(calculateServiceLines({ ...courier, address: { ...courier.address, liftType } })).toEqual([
+      expect.objectContaining({ id: 'carrying', amount: 0 }),
+      expect.objectContaining({ id: 'assembly', amount: 3900 }),
+      expect.objectContaining({ id: 'removal', amount: 2400 }),
+    ]);
+  });
+
   it('resolves exact pickup snapshots and legacy compatibility', () => {
     expect(resolveDeliverySelection(courier, new Date('2026-08-16T21:00:00Z'))).toMatchObject({
       shippingMethod: 'courier',

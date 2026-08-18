@@ -6,11 +6,21 @@
 - Active phase: Phase 4 — checkout, payments, and orders.
 - Integration branch: `dev`.
 - Current branch: `phase/04-checkout-orders` from `origin/dev` merge `868310f`.
-- Phase state: Phase 1, Phase 2, and Phase 3 accepted and merged; Phase 4 authorized; Task 1 environment foundation is implemented locally and awaiting focused review.
-- Current delivery: Phase 4 environment guard and durable policy records; checkout, payment, order, and review implementation has not started.
+- Phase state: Phase 1, Phase 2, and Phase 3 accepted and merged; Phase 4 authorized; Tasks 1–8 are implemented and focused-reviewed locally; Task 9 is at provisional contract/closeout stage.
+- Current delivery: Phase 4 checkout, payment, order, review, guarded E2E safety, and migration-readiness contracts are implemented. Completion readiness is blocked by absent explicit E2E database identity/write variables and absent external credentials; no full Phase 4 gate is claimed.
 - Previous delivery: Phase 3 — commerce and authentication, visually accepted and merged.
 
-Phase 3 pull request #3 merged with merge commit `868310f`; final Phase 3 branch commit is `f3d8a93`. Auth Variant B, Cart Variant A, and Profile Variant A desktop/mobile visual acceptance is complete. Phase 3 completion evidence remains `format`, `gate` (170 files / 930 tests), and `build` passed. Phase 3 E2E was invoked but stopped before Playwright because explicit E2E database variables were absent; no ambient database was used. Google OAuth and other external smoke not proved by that local gate remain unproved. Phase 4 Task 1 focused database-guard evidence is 20/20 tests, touched-file Prettier, and `git diff --check`; no database connection or write occurred.
+Phase 3 pull request #3 merged with merge commit `868310f`; final Phase 3 branch commit is `f3d8a93`. Auth Variant B, Cart Variant A, and Profile Variant A desktop/mobile visual acceptance is complete. Phase 3 completion evidence remains `format`, `gate` (170 files / 930 tests), and `build` passed. Phase 3 E2E was invoked but stopped before Playwright because explicit E2E database variables were absent; no ambient database was used. Google OAuth and other external smoke not proved by that local gate remain unproved.
+
+## Phase 4 Task 9 provisional closeout
+
+Tasks 7 and 8 remain accepted on their focused evidence: Task 7 review `6373dac..f303387` approved with Critical 0 / Important 0 / Minor 0; its focused Vitest evidence was 9 files / 115 tests plus typecheck, Prettier, and diff-check. Task 8 review `f303387..015018e` approved with Critical 0 / Important 0 / Minor 0; its focused safety/migration/guard evidence was 3 files / 77 tests plus typecheck, Prettier, and diff-check. Task 8 browser collection stopped at the explicit guard; no database or provider call occurred and no E2E pass is claimed.
+
+Task 9 RED was observed: `npx vitest run tests/phase-4-integration-contract.test.ts` failed 9 expected contract assertions before the manifest and closeout records existed. The provisional manifest is schema-valid in shape but is not a final HEAD manifest until the completion gate and final evidence commit. `BLOCKED_COMPLETION_READINESS` is the current delivery state. Presence-only environment state is recorded as: `E2E_DATABASE_URL=false`, `E2E_DATABASE_URL_UNPOOLED=false`, `E2E_DATABASE_ALLOW_WRITES=false`, `E2E_DATABASE_TARGET_FINGERPRINT=false`, `AUTH_SECRET=false`, `AUTH_TRUST_HOST=false`, `RESEND_API_KEY=false`, `EMAIL_FROM_TRANSACTIONAL=false`, `YOOKASSA_SHOP_ID=false`, `YOOKASSA_SECRET_KEY=false`, `YOOKASSA_MODE=false`, `DADATA_TOKEN=false`, `NEXT_PUBLIC_SITE_URL=false`. No raw identity, URL, secret, or provider value was inspected or recorded.
+
+Task 9 focused GREEN passed 3 files / 37 tests. The listed manifest/contract/closeout files matched Prettier, and `git diff --check` exited 0 with only existing line-ending normalization warnings. This is task-level evidence only, not completion-gate evidence.
+
+The Phase 4 completion gate (`npm run format`, `npm run gate`, `npm run build`, and critical Phase 4 E2E) has not run in Task 9. Readiness, real migration deployment, shared non-production database writes, checkout/order/review browser flows, and YooKassa sandbox smoke remain deferred or blocked until the approved explicit environment is supplied. No push, Preview, pull request, merge, branch deletion, or Phase 5 work is authorized.
 
 ## Bootstrap contents
 

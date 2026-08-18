@@ -1,9 +1,10 @@
 import { expect, type Page } from '@playwright/test';
+import { phase4Namespace } from './phase4-database';
 
 export const E2E_CODE = '424242';
 export const E2E_PASSWORD = 'Passw0rd!1';
 
-export const uniqueEmail = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}@auth-e2e.invalid`;
+export const uniqueEmail = (testInfoTitle = 'shared-auth') => `${phase4Namespace(testInfoTitle)}@phase4-e2e.invalid`;
 
 export async function registerAndVerify(page: Page, email = uniqueEmail()): Promise<string> {
   await page.goto('/register?callbackUrl=%2Fprofile');
@@ -18,6 +19,14 @@ export async function registerAndVerify(page: Page, email = uniqueEmail()): Prom
   await page.getByRole('button', { name: 'Подтвердить' }).click();
   await expect(page).toHaveURL(/\/profile/);
   return email;
+}
+
+export async function signIn(page: Page, email: string, password = E2E_PASSWORD): Promise<void> {
+  await page.goto('/login?callbackUrl=%2Fprofile');
+  await page.getByLabel('E-mail').fill(email);
+  await page.getByLabel('Пароль').fill(password);
+  await page.getByRole('button', { name: /Войти/i }).click();
+  await expect(page).toHaveURL(/\/profile/);
 }
 
 export async function expectNoEnabledReviewSubmission(page: Page): Promise<void> {

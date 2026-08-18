@@ -1,40 +1,93 @@
-import { test, expect, type Page } from '@playwright/test';
-import { registerAndVerify } from './helpers';
+import { expect, test, type Page } from '@playwright/test';
 
-async function addSeedProductToCart(page: Page) {
-  await page.goto('/product/ritm-white-tee-oversize');
-  await page.getByRole('button', { name: 'L', exact: true }).click();
-  await page.getByRole('button', { name: /Р’ РєРѕСЂР·РёРЅСѓ/ }).click();
-  await expect(page.getByRole('button', { name: /Р”РѕР±Р°РІР»РµРЅРѕ/ })).toBeVisible();
-}
+import {
+  cleanupPhase4Namespace,
+  createPhase4BlockedPaymentFixture,
+  createPhase4CheckoutFixture,
+  disconnectPhase4Database,
+  phase4Namespace,
+  seedOwnedCartLine,
+} from './phase4-database';
+import { registerAndVerify, signIn } from './helpers';
+
+const hasExplicitDatabase = Boolean(
+  process.env.E2E_DATABASE_URL &&
+  process.env.E2E_DATABASE_ALLOW_WRITES === '1' &&
+  process.env.E2E_DATABASE_TARGET_FINGERPRINT,
+);
+const hasSandboxCredentials = Boolean(
+  process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY && process.env.YOOKASSA_MODE === 'sandbox',
+);
+const onlineGuarded = hasExplicitDatabase && hasSandboxCredentials ? test : test.skip;
+const dbGuarded = hasExplicitDatabase ? test : test.skip;
 
 async function fillCheckout(page: Page) {
-  await page.getByLabel('РўРµР»РµС„РѕРЅ').fill('+79990000000');
-  await page.getByLabel('РђРґСЂРµСЃ', { exact: true }).fill('РњРѕСЃРєРІР°, РўРІРµСЂСЃРєР°СЏ 1');
+  await page.getByLabel('Имя и фамилия').fill('Phase 4 Payment Customer');
+  await page.getByLabel('Телефон').fill('+79990000000');
+  await page.getByLabel('Адрес').fill('Москва, улица Фазовая, 1');
+  await page.getByLabel('Город').fill('Москва');
+  await page.getByRole('radiogroup', { name: 'Дата получения' }).getByRole('radio').first().click();
 }
 
-test('COD-Р·Р°РєР°Р· РїРѕ-РїСЂРµР¶РЅРµРјСѓ СЂР°Р±РѕС‚Р°РµС‚ (СЂРµРіСЂРµСЃСЃРёСЏ)', async ({ page }) => {
-  await registerAndVerify(page);
-  await addSeedProductToCart(page);
-  await page.goto('/checkout');
-  await fillCheckout(page);
-  await page.getByRole('radio', { name: /РџСЂРё РїРѕР»СѓС‡РµРЅРёРё/ }).check();
-  await page.getByRole('button', { name: 'РћС„РѕСЂРјРёС‚СЊ Р·Р°РєР°Р· в†’' }).click();
-  await expect(page).toHaveURL(/\/orders\/\d+/);
-  await expect(page.getByText('РћРїР»Р°С‚Р° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё')).toBeVisible();
-});
-
-const hasYooKassa = !!process.env.YOOKASSA_SHOP_ID && !!process.env.YOOKASSA_SECRET_KEY;
-(hasYooKassa ? test : test.skip)(
-  'РѕРЅР»Р°Р№РЅ-РѕРїР»Р°С‚Р° РІРµРґС‘С‚ РЅР° РІРЅРµС€РЅРёР№ СЂРµРґРёСЂРµРєС‚ Р®Kassa',
-  async ({ page }) => {
-    await registerAndVerify(page);
-    await addSeedProductToCart(page);
+dbGuarded('COD regression remains real production payment method', async ({ page }, testInfo) => {
+  const namespace = phase4Namespace(testInfo.title);
+  try {
+    const fixture = await createPhase4CheckoutFixture(namespace);
+    await registerAndVerify(page, fixture.email);
+    await seedOwnedCartLine(fixture.email, fixture.skuId);
     await page.goto('/checkout');
     await fillCheckout(page);
-    await page.getByRole('radio', { name: /РљР°СЂС‚РѕР№ РѕРЅР»Р°Р№РЅ/ }).check();
-    await page.getByRole('button', { name: 'РћС„РѕСЂРјРёС‚СЊ Р·Р°РєР°Р· в†’' }).click();
-    await page.waitForURL(/yoo(money|kassa)\.ru|3ds|yookassa/i, { timeout: 30000 }).catch(() => {});
+    await page.getByRole('radio', { name: /При получении/ }).click();
+    await page
+      .getByRole('button', { name: /Оформить заказ/ })
+      .last()
+      .click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+    await expect(page.getByText('Оплата при получении')).toBeVisible();
+  } finally {
+    await cleanupPhase4Namespace(namespace);
+  }
+});
+
+onlineGuarded('real YooKassa sandbox payment uses external redirect only', async ({ page }, testInfo) => {
+  const namespace = phase4Namespace(testInfo.title);
+  try {
+    const fixture = await createPhase4CheckoutFixture(namespace);
+    await registerAndVerify(page, fixture.email);
+    await seedOwnedCartLine(fixture.email, fixture.skuId);
+    await page.goto('/checkout');
+    await fillCheckout(page);
+    await page.getByRole('radio', { name: /Картой онлайн/ }).click();
+    await page
+      .getByRole('button', { name: /Оформить заказ/ })
+      .last()
+      .click();
+    await page.waitForURL(/yoo(money|kassa)\.ru|3ds|yookassa/i, { timeout: 30_000 });
     await expect(page).not.toHaveURL(/\/checkout$/);
-  },
-);
+  } finally {
+    await cleanupPhase4Namespace(namespace);
+  }
+});
+
+dbGuarded('blocked payment shows lookup-only state without provider substitute', async ({ page }, testInfo) => {
+  const namespace = phase4Namespace(testInfo.title);
+  let proof;
+  try {
+    const fixture = await createPhase4BlockedPaymentFixture(namespace);
+    proof = fixture.neverAttemptedProof;
+    await signIn(page, fixture.email, fixture.password);
+    await page.goto(`/orders/${fixture.orderNumber}`);
+    await expect(page.getByText('Платёж требует проверки')).toBeVisible();
+    await expect(page.getByText(String(fixture.orderNumber))).toBeVisible();
+    await expect(page.getByText('Продолжить оплату')).toHaveCount(0);
+    await expect(page.getByText('Проверить статус платежа')).toBeVisible();
+    await expect(page.getByText('Повторить создание платежа')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Отменить заказ' })).toHaveCount(0);
+  } finally {
+    await cleanupPhase4Namespace(namespace, proof ? [proof] : []);
+  }
+});
+
+test.afterAll(async () => {
+  if (hasExplicitDatabase) await disconnectPhase4Database();
+});

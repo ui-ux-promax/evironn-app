@@ -16,3 +16,16 @@ export interface DatabaseCommandReport {
   migrationCount: number;
   noPendingMigrations: boolean;
 }
+
+export function createDatabaseCommandReport(
+  values: Partial<DatabaseCommandReport> & Pick<DatabaseCommandReport, 'ok' | 'exitCode' | 'errorCategory'>,
+): DatabaseCommandReport {
+  return {
+    targetFingerprint: null,
+    checks: {},
+    migrationNames: [],
+    migrationCount: 0,
+    noPendingMigrations: false,
+    ...values,
+  };
+}

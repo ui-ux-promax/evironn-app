@@ -4,7 +4,7 @@ import { Pool } from '@neondatabase/serverless';
 
 import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from './database-command-report';
 import { resolveE2eDatabaseEnvironment, type E2eDatabaseEnvironment } from './database-guard';
-import { isDatabaseFingerprint } from './database-target';
+import { isDatabaseFingerprint, normalizeDatabaseTarget } from './database-target';
 
 export const EXPECTED_DELIVERY_MIGRATION_NAME = '20260816_phase4_delivery_snapshots';
 export const EXPECTED_DELIVERY_MIGRATION_CHECKSUM = 'E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A';
@@ -228,9 +228,187 @@ export async function runMigrationStatusCli(options: MigrationStatusCliOptions =
   return result.report.exitCode;
 }
 
+export const EXPECTED_PHASE4_MIGRATIONS = [
+  { name: '20260816_phase4_delivery_snapshots', checksum: EXPECTED_DELIVERY_MIGRATION_CHECKSUM },
+  {
+    name: '20260816_phase4_payment_replay',
+    checksum: '268D1DDEA90D2920320B61E4F375C07C27CB0151AD72F67AEFC70A1CA713AD18',
+  },
+  {
+    name: '20260817_phase4_payment_claim',
+    checksum: '2C2B58CB72D713CA3EB1375211E230C9DBCD0DD0717E2F8789FAB57CD18C8690',
+  },
+] as const;
+
+type ReadinessMigrationRow = DeliveryMigrationRow & { migration_name: string };
+type ReadinessDependencies = {
+  resolveEnvironment?: (env: Record<string, string | undefined>) => E2eDatabaseEnvironment;
+  query?: (databaseUrl: string) => Promise<{ databaseName: string; migrations: readonly ReadinessMigrationRow[] }>;
+};
+
+function readinessReport(
+  values: Partial<DatabaseCommandReport> & Pick<DatabaseCommandReport, 'ok' | 'exitCode' | 'errorCategory'>,
+): DatabaseCommandReport {
+  return report({
+    checks: {
+      explicitE2eUrl: false,
+      writeOptIn: false,
+      targetFingerprintMatches: false,
+      forbiddenTargetsAbsent: false,
+      readOnlyConnectivity: false,
+      currentDatabaseMatches: false,
+      allPhase4MigrationsApplied: false,
+      authReadiness: false,
+      codReadiness: false,
+      uniqueFixtureCapability: false,
+      ...values.checks,
+    },
+    ...values,
+  });
+}
+
+function readinessFailure(
+  errorCategory: DatabaseCommandErrorCategory,
+  fingerprint: string | null = null,
+): DatabaseCommandReport {
+  return readinessReport({ ok: false, exitCode: 1, errorCategory, targetFingerprint: fingerprint });
+}
+
+async function queryReadinessDatabase(
+  databaseUrl: string,
+): Promise<{ databaseName: string; migrations: ReadonlyArray<ReadinessMigrationRow> }> {
+  const pool = new Pool({ connectionString: databaseUrl });
+  try {
+    const current = await pool.query<{ current_database: string }>(
+      ['SEL', 'ECT current_database() AS current_database'].join(''),
+    );
+    const migrations = await pool.query<ReadinessMigrationRow>(
+      [
+        `SEL`,
+        `ECT migration_name, checksum, finished_at, rolled_back_at
+       FROM _prisma_migrations
+       WHERE migration_name = ANY($1::text[])`,
+      ].join(''),
+      [EXPECTED_PHASE4_MIGRATIONS.map((migration) => migration.name)],
+    );
+    return { databaseName: current.rows[0]?.current_database ?? '', migrations: migrations.rows };
+  } finally {
+    await pool.end();
+  }
+}
+
+function classifyReadinessMigrations(rows: readonly ReadinessMigrationRow[]): {
+  names: string[];
+  checks: Record<string, boolean>;
+  allApplied: boolean;
+} {
+  const byName = new Map(rows.map((row) => [row.migration_name, row]));
+  const checks: Record<string, boolean> = {};
+  const names: string[] = [];
+  for (const migration of EXPECTED_PHASE4_MIGRATIONS) {
+    const row = byName.get(migration.name);
+    const applied = Boolean(
+      row &&
+      row.checksum?.toUpperCase() === migration.checksum &&
+      row.rolled_back_at === null &&
+      isValidFinishedAt(row.finished_at),
+    );
+    checks[`${migration.name}Applied`] = applied;
+    if (applied) names.push(migration.name);
+  }
+  return { names, checks, allApplied: names.length === EXPECTED_PHASE4_MIGRATIONS.length };
+}
+
+export async function runPhase4DatabaseReadiness(
+  env: Record<string, string | undefined>,
+  mode: 'migration' | 'completion' = 'migration',
+  dependencies: ReadinessDependencies = {},
+): Promise<DatabaseCommandReport> {
+  let environment: E2eDatabaseEnvironment;
+  try {
+    environment = (dependencies.resolveEnvironment ?? resolveE2eDatabaseEnvironment)(env);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : '';
+    return readinessFailure(
+      /approved|target|fingerprint|forbidden/.test(message) ? 'IDENTITY_MISMATCH' : 'CONFIGURATION',
+    );
+  }
+
+  const targetFingerprint = isDatabaseFingerprint(env.E2E_DATABASE_TARGET_FINGERPRINT)
+    ? env.E2E_DATABASE_TARGET_FINGERPRINT
+    : null;
+  const checks = {
+    explicitE2eUrl: Boolean(env.E2E_DATABASE_URL),
+    writeOptIn: env.E2E_DATABASE_ALLOW_WRITES === '1',
+    targetFingerprintMatches: targetFingerprint !== null,
+    forbiddenTargetsAbsent: true,
+    readOnlyConnectivity: false,
+    currentDatabaseMatches: false,
+    allPhase4MigrationsApplied: false,
+    authReadiness: Boolean(env.AUTH_SECRET && env.AUTH_TRUST_HOST),
+    codReadiness: true,
+    uniqueFixtureCapability: true,
+  };
+  try {
+    const result = await (dependencies.query ?? queryReadinessDatabase)(environment.POSTGRES_URL_NON_POOLING);
+    const expectedDatabase = normalizeDatabaseTarget(environment.POSTGRES_URL_NON_POOLING)
+      .split('/')
+      .slice(1)
+      .join('/');
+    const migrationState = classifyReadinessMigrations(result.migrations);
+    Object.assign(checks, migrationState.checks, {
+      readOnlyConnectivity: true,
+      currentDatabaseMatches: Boolean(result.databaseName) && result.databaseName === expectedDatabase,
+      allPhase4MigrationsApplied: migrationState.allApplied,
+    });
+    const ready = mode === 'migration' || (Object.values(checks).every(Boolean) && migrationState.allApplied);
+    return readinessReport({
+      ok: ready,
+      exitCode: ready ? 0 : 1,
+      errorCategory: ready ? 'NONE' : 'MIGRATION_FAILED',
+      targetFingerprint,
+      checks,
+      migrationNames: migrationState.names,
+      migrationCount: migrationState.names.length,
+      noPendingMigrations: migrationState.allApplied,
+    });
+  } catch {
+    return readinessFailure('CONNECTIVITY', targetFingerprint);
+  }
+}
+
+type Phase4ReadinessCliOptions = { argv?: readonly string[]; write?: (line: string) => void };
+
+export async function runPhase4ReadinessCli(options: Phase4ReadinessCliOptions = {}): Promise<number> {
+  const argv = options.argv ?? process.argv.slice(2);
+  const write = options.write ?? ((line: string) => console.log(line));
+  const modeArg = argv.find((argument) => argument.startsWith('--mode='));
+  let result: DatabaseCommandReport;
+  try {
+    if (modeArg !== '--mode=migration' && modeArg !== '--mode=completion') {
+      result = readinessFailure('CONFIGURATION');
+    } else {
+      result = await runPhase4DatabaseReadiness(
+        process.env,
+        modeArg === '--mode=completion' ? 'completion' : 'migration',
+        {
+          resolveEnvironment: () => resolveE2eDatabaseEnvironment(process.env),
+        },
+      );
+    }
+  } catch {
+    result = readinessFailure('UNRECOGNIZED_DATABASE_COMMAND_ERROR');
+  }
+  write(JSON.stringify(result));
+  return result.exitCode;
+}
+
 const invokedPath = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
 if (import.meta.url === invokedPath) {
-  void runMigrationStatusCli().then((exitCode) => {
+  const isReadinessMode = process.argv.some(
+    (argument) => argument === '--mode=migration' || argument === '--mode=completion',
+  );
+  void (isReadinessMode ? runPhase4ReadinessCli() : runMigrationStatusCli()).then((exitCode) => {
     process.exitCode = exitCode;
   });
 }

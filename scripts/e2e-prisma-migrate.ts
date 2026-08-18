@@ -59,6 +59,10 @@ export type MigrationDeployDependencies = {
   migrations?: () => string[];
 };
 
+export function prismaCliExecutable(platform: NodeJS.Platform = process.platform): string {
+  return platform === 'win32' ? 'npx.cmd' : 'npx';
+}
+
 export async function runPrismaMigrationDeploy(
   env: Record<string, string | undefined> = process.env,
   dependencies: MigrationDeployDependencies = {},
@@ -98,13 +102,14 @@ export async function runPrismaMigrationDeploy(
     };
 
     try {
-      const child = command('npx', ['prisma', 'migrate', 'deploy'], {
+      const child = command(prismaCliExecutable(), ['prisma', 'migrate', 'deploy'], {
         cwd: process.cwd(),
         env: {
           ...childEnvironmentWithoutAmbientDatabaseUrls(),
           POSTGRES_URL: databaseEnvironment.POSTGRES_URL,
           POSTGRES_URL_NON_POOLING: databaseEnvironment.POSTGRES_URL_NON_POOLING,
         },
+        shell: process.platform === 'win32',
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       child.stdout?.on('data', (chunk: Buffer) => {

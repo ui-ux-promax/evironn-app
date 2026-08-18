@@ -78,7 +78,7 @@ import { validatePhase4NeverAttemptedProof } from '@/e2e/phase4-database';
 import { decidePhase4Cleanup } from '@/e2e/phase4-database';
 import { EXPECTED_PHASE4_MIGRATIONS, runPhase4DatabaseReadiness } from '@/e2e/database-readiness';
 import { acquireDatabaseFingerprints } from '@/scripts/e2e-database-fingerprint';
-import { runPrismaMigrationDeploy } from '@/scripts/e2e-prisma-migrate';
+import { prismaCliExecutable, runPrismaMigrationDeploy } from '@/scripts/e2e-prisma-migrate';
 
 const root = resolve(__dirname, '..');
 const deliveryBaseRef = '868310f';
@@ -871,6 +871,8 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     expect(wrapper).toContain("import { runPhase4DatabaseReadiness } from '@/e2e/database-readiness';");
     expect(wrapper).toContain("import { loadE2eEnvironment } from '@/e2e/load-env';");
     expect(wrapper).toContain('loadE2eEnvironment()');
+    expect(prismaCliExecutable('win32')).toBe('npx.cmd');
+    expect(prismaCliExecutable('linux')).toBe('npx');
     expect(playwrightConfig).toContain("import { loadE2eEnvironment } from './e2e/load-env';");
     expect(playwrightConfig).toContain('loadE2eEnvironment()');
     expect(wrapper).toContain("stdio: ['pipe', 'pipe', 'pipe']");

@@ -24,7 +24,7 @@ export function OrderMeta({ order }: { order: OrderPageDto }) {
   const count = order.items.reduce((sum, item) => sum + item.quantity, 0);
   return (
     <p className="ord-meta">
-      {new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' }).format(new Date(order.createdAt))} · {count} поз.
+      {order.createdAtLabel} · {count} поз.
     </p>
   );
 }
@@ -87,7 +87,7 @@ export function Lines({ order }: { order: OrderPageDto }) {
     <ul className="ord-lines ord-lines--light ord-lines--list">
       {order.items.map((line) => (
         <li key={line.id}>
-          <Link className="ord-lines__thumb" href={line.href}>
+          <Link className="ord-lines__thumb" href={line.href} aria-label={`Открыть ${line.name}`}>
             {line.imageUrl ? <Image src={line.imageUrl} alt="" width={96} height={96} /> : <Package />}
           </Link>
           <div className="ord-lines__body">
@@ -183,12 +183,12 @@ export function AddressLine({ order }: { order: OrderPageDto }) {
 export function Panel({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <section className="ord-panel ord-a__panel">
-      <div className="ord-panel__head">
+      <header className="ord-panel__head">
         <div>
           <h2>{title}</h2>
           {note && <p>{note}</p>}
         </div>
-      </div>
+      </header>
       {children}
     </section>
   );

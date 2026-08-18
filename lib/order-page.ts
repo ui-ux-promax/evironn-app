@@ -26,6 +26,13 @@ export function formatOrderDateOnly(value: string): string {
   }).format(new Date(`${value}T12:00:00.000Z`));
 }
 
+export function formatOrderCreatedAt(value: Date): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'long',
+    timeZone: CHECKOUT_POLICY.timezone,
+  }).format(value);
+}
+
 export function mapOrderStatus(status: string): { stage: OrderStage; label: string } {
   const map: Record<string, { stage: OrderStage; label: string }> = {
     PENDING: { stage: 'placed', label: 'Оформлен' },
@@ -100,10 +107,18 @@ export function buildOrderPageDto(
 ): OrderPageDto {
   const mapped = mapOrderStatus(order.status);
   const date = order.deliveryDate ? fromDeliveryDateSentinel(order.deliveryDate) : null;
-  const details = Array.isArray(order.serviceDetails)
-    ? order.serviceDetails.filter((value): value is { id: string; label: string; amount: number } =>
-        Boolean(value && typeof value === 'object' && 'id' in value && 'label' in value && 'amount' in value),
-      )
+  const validServiceDetails =
+    Array.isArray(order.serviceDetails) &&
+    order.serviceDetails.every(
+      (value) =>
+        Boolean(value && typeof value === 'object') &&
+        typeof (value as { id?: unknown }).id === 'string' &&
+        typeof (value as { label?: unknown }).label === 'string' &&
+        typeof (value as { amount?: unknown }).amount === 'number' &&
+        Number.isFinite((value as { amount: number }).amount),
+    );
+  const details = validServiceDetails
+    ? (order.serviceDetails as Array<{ id: string; label: string; amount: number }>)
     : [];
   const paymentFinal = order.payment?.status === 'succeeded' || order.payment?.status === 'canceled';
   const pendingOnline = order.status === 'PENDING' && order.paymentMethod === 'online' && !paymentFinal;
@@ -153,6 +168,7 @@ export function buildOrderPageDto(
     stage: mapped.stage,
     statusLabel: mapped.label,
     createdAt: order.createdAt.toISOString(),
+    createdAtLabel: formatOrderCreatedAt(order.createdAt),
     contact: { name: order.contactName, phone: order.contactPhone, email: order.contactEmail },
     delivery: {
       method: pickupMethod(order),
@@ -180,7 +196,7 @@ export function buildOrderPageDto(
       itemsSubtotal: order.itemsTotal,
       discount: order.discountAmount,
       delivery: order.shippingAmount,
-      services: order.serviceAmount,
+      services: validServiceDetails ? order.serviceAmount : 0,
       total: order.totalAmount,
       couponCode: order.couponCode,
       serviceLines: details,
@@ -213,10 +229,12 @@ export async function getOrderPageDto({
   userId,
   orderNumber,
   now = new Date(),
+  clock = () => new Date(),
 }: {
   userId: string;
   orderNumber: number;
   now?: Date;
+  clock?: () => Date;
 }): Promise<OrderPageDto | null> {
   let order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
   if (!order) return null;
@@ -231,7 +249,7 @@ export async function getOrderPageDto({
       await ensureOnlinePayment({
         orderId: order.id,
         now,
-        clock: () => now,
+        clock,
         client: prisma as unknown as PaymentInitializationClient,
       });
       order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });

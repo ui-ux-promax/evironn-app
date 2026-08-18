@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { RefreshCw, XCircle } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import { ReviewForm } from '@/components/shared/product/review-form';
+import { CancelOrderButton } from '@/components/shared/orders/cancel-order-button';
 import type { OrderPageDto } from '@/services/dto/order-page.dto';
 import {
   AddressLine,
@@ -90,16 +91,10 @@ export function OrderVariantA({ order, placed = false }: { order: OrderPageDto; 
                   Проверить статус платежа
                 </button>
               )}
-              {order.canCancel && (!blocked || blocked.allowedActions.includes('CANCEL_ORDER')) && (
-                <button
-                  className="ord-btn ord-btn--danger"
-                  type="button"
-                  onClick={controller.cancel}
-                  disabled={controller.busy}
-                >
-                  <XCircle />
+              {order.canCancel && (!blocked || blocked.allowedActions.length === 2) && (
+                <CancelOrderButton orderId={order.id} className="ord-btn ord-btn--danger">
                   Отменить заказ
-                </button>
+                </CancelOrderButton>
               )}
             </div>
             {controller.notice && <p role="status">{controller.notice}</p>}

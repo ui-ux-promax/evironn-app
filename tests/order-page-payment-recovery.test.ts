@@ -90,6 +90,19 @@ describe('order page payment recovery', () => {
     if (dto?.payment.kind === 'online') expect(dto.payment.initialization?.status).toBe('READY');
   });
 
+  it('passes a live clock into payment initialization after the request crosses W', async () => {
+    const startedAt = new Date('2026-08-18T10:00:00Z');
+    const beforeWindow = new Date(startedAt.getTime() + 22 * 60 * 60 * 1000);
+    const afterWindow = new Date(startedAt.getTime() + 23 * 60 * 60 * 1000);
+    mocks.findFirst.mockResolvedValue(base);
+    mocks.ensure.mockImplementation(async ({ clock }) => {
+      expect(clock()).toEqual(afterWindow);
+      return { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
+    });
+    await getOrderPageDto({ userId: 'u1', orderNumber: 52, now: beforeWindow, clock: () => afterWindow });
+    expect(mocks.ensure).toHaveBeenCalledOnce();
+  });
+
   it('does not create after W and suppresses stale actions when lookup fails', async () => {
     const correlated = {
       ...base,

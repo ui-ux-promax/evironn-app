@@ -12,4 +12,11 @@ describe('order source contract', () => {
     expect(source).toContain('className="ord-review"');
     expect(source).toMatch(/className="ord-rate ord-rate--light"[\s\S]*?<\/div>\s*\{target\.eligible/);
   });
+
+  it('keeps payment status vocabulary in the shared DTO module', () => {
+    const shared = fs.readFileSync('services/dto/payment-initialization.dto.ts', 'utf8');
+    expect(shared).toContain('BlockedPaymentInitializationBaseDto');
+    expect(shared).toContain('PAYMENT_INITIALIZATION_STATUSES');
+    expect(shared).not.toContain('checkout-page.dto');
+  });
 });

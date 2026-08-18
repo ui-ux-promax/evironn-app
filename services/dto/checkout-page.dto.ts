@@ -1,5 +1,12 @@
 import type { CartDto } from '@/services/dto/commerce-cart.dto';
 import type { CheckoutQuoteInput } from '@/services/dto/checkout.dto';
+import {
+  type BlockedPaymentInitializationBaseDto,
+  type CheckoutPaymentInitializationAction,
+} from '@/services/dto/payment-initialization.dto';
+
+export { PAYMENT_INITIALIZATION_STATUSES } from '@/services/dto/payment-initialization.dto';
+export type { PaymentInitializationStatus } from '@/services/dto/payment-initialization.dto';
 
 export type DeliveryMethod = CheckoutQuoteInput['deliveryMethod'];
 export type DeliveryZone = NonNullable<CheckoutQuoteInput['deliveryZone']>;
@@ -97,22 +104,8 @@ export type CheckoutQuoteErrorCode =
 export type CheckoutQuoteResult =
   { ok: true; quote: CheckoutQuoteDto } | { ok: false; code: CheckoutQuoteErrorCode; message: string; stock?: number };
 
-export const PAYMENT_INITIALIZATION_STATUSES = [
-  'PAYMENT_INITIALIZATION_READY',
-  'PAYMENT_INITIALIZATION_PENDING',
-  'PAYMENT_INITIALIZATION_BLOCKED',
-] as const;
-
-export type PaymentInitializationStatus = (typeof PAYMENT_INITIALIZATION_STATUSES)[number];
-
-export interface BlockedPaymentInitializationDto {
-  status: 'PAYMENT_INITIALIZATION_BLOCKED';
-  orderNumber: number;
-  heading: 'Платёж требует проверки';
-  message: string;
-  continuePaymentUrl: null;
-  canRetryCreate: false;
-  allowedActions: readonly ['OPEN_ORDER'];
+export interface BlockedPaymentInitializationDto extends BlockedPaymentInitializationBaseDto {
+  allowedActions: readonly [CheckoutPaymentInitializationAction];
 }
 
 export function buildBlockedPaymentInitializationDto(orderNumber: number): BlockedPaymentInitializationDto {

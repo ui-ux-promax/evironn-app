@@ -1,6 +1,10 @@
-import type { BlockedPaymentInitializationDto } from '@/services/dto/payment-initialization.dto';
+import type {
+  BlockedPaymentInitializationBaseDto,
+  OrderPaymentInitializationAction,
+  OrderPaymentInitializationActionTuple,
+} from '@/services/dto/payment-initialization.dto';
 
-export type OrderPageAction = 'RESYNC_PAYMENT' | 'CANCEL_ORDER';
+export type OrderPageAction = OrderPaymentInitializationAction;
 export type OrderStage = 'placed' | 'collecting' | 'on-way' | 'delivered' | 'cancelled';
 export type OrderPayment =
   | { kind: 'cod'; label: string; initialization: null }
@@ -14,8 +18,8 @@ export type OrderPayment =
 export type OrderPaymentInitialization =
   | { status: 'READY'; continuePaymentUrl: string; canRetryCreate: false; allowedActions: readonly [] }
   | { status: 'PENDING'; continuePaymentUrl: null; canRetryCreate: false; allowedActions: readonly ['RESYNC_PAYMENT'] }
-  | (Omit<BlockedPaymentInitializationDto, 'allowedActions'> & {
-      allowedActions: readonly OrderPageAction[];
+  | (BlockedPaymentInitializationBaseDto & {
+      allowedActions: OrderPaymentInitializationActionTuple;
     })
   | null;
 
@@ -26,6 +30,7 @@ export interface OrderPageDto {
   stage: OrderStage;
   statusLabel: string;
   createdAt: string;
+  createdAtLabel: string;
   contact: { name: string; phone: string; email: string };
   delivery: {
     method: string;

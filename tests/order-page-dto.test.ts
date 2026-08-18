@@ -109,7 +109,20 @@ describe('order page DTO', () => {
       dto.totals.itemsSubtotal - dto.totals.discount + dto.totals.delivery + dto.totals.services,
     );
     expect(dto.payment.kind).toBe('cod');
+    expect(dto.createdAtLabel).toBe('17 августа 2026 г.');
   });
+
+  it.each([null, [{ id: 'assembly', label: 'Сборка', amount: '3900' }]])(
+    'drops legacy invalid service totals',
+    (serviceDetails) => {
+      const dto = buildOrderPageDto(
+        onlineOrder({ paymentMethod: 'cod', payment: null, serviceDetails, serviceAmount: 3900 }),
+        { now },
+      );
+      expect(dto.totals.serviceLines).toEqual([]);
+      expect(dto.totals.services).toBe(0);
+    },
+  );
 
   it.each(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])(
     'never exposes initialization on final %s orders',

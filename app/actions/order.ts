@@ -28,6 +28,37 @@ import {
   type PlaceOrderInput,
   type PlaceOrderResult,
 } from '@/services/dto/order.dto';
+import { getOrderPageDto } from '@/lib/order-page';
+
+export async function resyncOrderPayment(orderNumber: number): Promise<
+  | { ok: true; order: Awaited<ReturnType<typeof getOrderPageDto>> }
+  | { ok: false; error: string }
+> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: 'Не авторизован' };
+  const order = await prisma.order.findFirst({ where: { userId: session.user.id, orderNumber }, include: { payment: true } });
+  if (!order) return { ok: false, error: 'Заказ не найден' };
+  if (order.status !== 'PENDING' || order.paymentMethod !== 'online') {
+    return { ok: false, error: 'Статус платежа этого заказа нельзя обновить' };
+  }
+  if (order.payment?.id) {
+    try {
+      const details = await getPaymentDetails(order.payment.id);
+      if (
+        details &&
+        details.id === order.payment.id &&
+        details.amountRub === order.totalAmount &&
+        details.orderNumber === String(order.orderNumber)
+      ) {
+        await reconcilePaymentStatus({ paymentId: order.payment.id, remoteStatus: details.status, source: 'order-page' });
+      }
+    } catch (error) { logger.error('order_payment_resync_failed', error, { orderNumber }); }
+  }
+  const refreshed = await getOrderPageDto({ userId: session.user.id, orderNumber });
+  if (!refreshed) return { ok: false, error: 'Заказ не найден' };
+  revalidatePath(`/orders/${orderNumber}`);
+  return { ok: true, order: refreshed };
+}
 
 type OrderTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 

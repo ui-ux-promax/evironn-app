@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui';
 // Скелетон заказа — повторяет раскладку page.tsx (заголовок+статус, позиции, итоги, доставка).
 export default function OrderLoading() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-6" aria-hidden>
+    <main className="ord-a ord-loading" aria-hidden>
       <div className="flex items-center justify-between">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-7 w-28 rounded-full" />

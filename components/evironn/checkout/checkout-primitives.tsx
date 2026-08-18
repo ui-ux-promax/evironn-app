@@ -276,10 +276,16 @@ export function SlotPicker({ controller }: { controller: Controller }) {
 
 export function ServiceOptions({ controller }: { controller: Controller }) {
   const { form, actions, quote } = controller;
-  const rows: Array<{ id: keyof typeof form.services; label: string; amount: number | null }> = [
+  const rows: Array<{ id: keyof typeof form.services; label: string; note?: string; amount: number | null }> = [
     {
       id: 'carrying',
-      label: 'Подъем без лифта',
+      label: 'Подъём на этаж',
+      note:
+        form.address.liftType === 'none'
+          ? 'Без лифта — 350 ₽ за этаж выше первого'
+          : form.address.liftType === 'freight'
+            ? 'Грузовой лифт — подъём уже включён в доставку'
+            : 'Пассажирский лифт — подъём уже включён в доставку',
       amount: quote?.serviceLines.find((line) => line.id === 'carrying')?.amount ?? null,
     },
     {
@@ -308,9 +314,16 @@ export function ServiceOptions({ controller }: { controller: Controller }) {
               <FiCheck />
             </span>
             <span className="chk-services__body">
-              <b>{row.label}</b>Цена рассчитана сервером
+              <b>{row.label}</b>
+              {row.id === 'carrying' ? row.note : 'Цена рассчитана сервером'}
             </span>
-            <em>{row.amount === null ? 'Рассчитывается после выбора' : `+ ${formatPrice(row.amount)}`}</em>
+            <em>
+              {row.amount === null
+                ? 'Рассчитывается после выбора'
+                : row.amount === 0
+                  ? 'бесплатно'
+                  : `+ ${formatPrice(row.amount)}`}
+            </em>
           </label>
         </li>
       ))}

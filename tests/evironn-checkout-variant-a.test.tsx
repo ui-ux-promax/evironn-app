@@ -122,7 +122,7 @@ const quote: CheckoutQuoteDto = {
   cart,
   coupon: null,
   delivery: { method: 'courier', zone: 'moscow', slot: initialData.initialSlots.courier[0], pickupPoint: null },
-  serviceLines: [],
+  serviceLines: [{ id: 'carrying', label: 'Подъём на этаж', amount: 0 }],
   totals: {
     itemsSubtotal: 100000,
     compareAtSubtotal: 100000,
@@ -201,6 +201,53 @@ describe('Checkout Variant A', () => {
       'title',
       'Подъём на руках, оплачивается по этажам',
     );
+  });
+
+  it('starts with carrying selected to match the clone default', () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    expect(screen.getByRole('checkbox', { name: /Подъём на этаж/ })).toBeChecked();
+  });
+
+  it('preserves service selections across pickup and courier switches', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+    const assembly = screen.getByRole('checkbox', { name: /Сборка на месте/ });
+    const removal = screen.getByRole('checkbox', { name: /Вывоз старой мебели/ });
+    fireEvent.click(assembly);
+    fireEvent.click(removal);
+    fireEvent.click(screen.getByRole('radio', { name: /Showroom/ }));
+    await waitFor(() =>
+      expect(mocks.quote).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          deliveryMethod: 'showroom',
+          services: { carrying: false, assembly: false, removal: false },
+        }),
+      ),
+    );
+    fireEvent.click(screen.getByRole('radio', { name: /Courier/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('checkbox', { name: /Подъём на этаж/ })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: /Сборка на месте/ })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: /Вывоз старой мебели/ })).toBeChecked();
+      expect(mocks.quote).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          deliveryMethod: 'courier',
+          services: { carrying: true, assembly: true, removal: true },
+        }),
+      );
+    });
+  });
+
+  it('uses the truthful floor-lift service label and dynamic lift notes', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    expect(await screen.findByRole('checkbox', { name: /Подъём на этаж.*бесплатно/ })).toBeChecked();
+    expect(screen.getByText('Пассажирский лифт — подъём уже включён в доставку')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Грузовой' }));
+    expect(screen.getByText('Грузовой лифт — подъём уже включён в доставку')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Лифта нет' }));
+    expect(screen.getByText('Без лифта — 350 ₽ за этаж выше первого')).toBeInTheDocument();
   });
 
   it('selects the first saved address when none is marked as default', () => {

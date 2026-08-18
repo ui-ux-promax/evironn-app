@@ -68,7 +68,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     liftType: 'passenger',
     intercom: '',
   });
-  const [services, setServices] = useState<Services>({ carrying: false, assembly: false, removal: false });
+  const [services, setServices] = useState<Services>({ carrying: true, assembly: false, removal: false });
   const [couponDraft, setCouponDraft] = useState('');
   const [appliedCouponCode, setAppliedCouponCode] = useState('');
   const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
@@ -204,7 +204,6 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       } else {
         const point = initialData.pickupPoints.find((candidate) => candidate.kind === method);
         setPickupPointId(point?.id ?? '');
-        setServices({ carrying: false, assembly: false, removal: false });
       }
     },
     [initialData],

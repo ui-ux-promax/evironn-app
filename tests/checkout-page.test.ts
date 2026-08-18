@@ -189,6 +189,28 @@ describe('getCheckoutPageDto', () => {
 });
 
 describe('buildCheckoutQuote', () => {
+  it('returns a truthful included carrying line for lift delivery', async () => {
+    const result = await buildCheckoutQuote({
+      userId: 'user-1',
+      cookieToken: undefined,
+      raw: {
+        ...quoteRaw,
+        address: { ...quoteRaw.address, liftType: 'passenger' },
+        services: { carrying: true, assembly: false, removal: false },
+      },
+      now,
+      client: client(),
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      quote: {
+        serviceLines: [{ id: 'carrying', label: 'Подъём на этаж', amount: 0 }],
+        totals: { serviceAmount: 0 },
+      },
+    });
+  });
+
   it('re-reads canonical cart facts and calculates all money on the server', async () => {
     const db = client();
 

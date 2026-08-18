@@ -216,7 +216,7 @@ export async function getCheckoutPageDto({
 }
 
 const serviceLabels: Record<CheckoutServiceLineDto['id'], string> = {
-  carrying: 'Подъём без лифта',
+  carrying: 'Подъём на этаж',
   assembly: 'Сборка',
   removal: 'Вывоз старой мебели',
 };

@@ -9,6 +9,7 @@ import {
   ensureOnlinePayment,
   PAYMENT_CREATE_RETRY_WINDOW_MS,
   type PaymentInitializationClient,
+  type PaymentInitializationResult,
 } from '@/lib/payment-initialization';
 import { logger } from '@/lib/logger';
 import {
@@ -90,7 +91,11 @@ type OrderInput = {
   reviewTargets: Array<{ productId: string; name: string; slug: string | null; reviewed: boolean; eligible: boolean }>;
 };
 
-type BuildContext = { now: Date; providerProof?: boolean };
+type BuildContext = {
+  now: Date;
+  providerProof?: boolean;
+  paymentInitializationOutcome?: PaymentInitializationResult['outcome'];
+};
 
 function pickupMethod(order: OrderInput): string {
   if (order.shippingMethod !== 'pickup') return 'Курьер';
@@ -103,7 +108,7 @@ function pickupMethod(order: OrderInput): string {
 
 export function buildOrderPageDto(
   order: OrderInput,
-  { now, providerProof = false }: BuildContext = { now: new Date() },
+  { now, providerProof = false, paymentInitializationOutcome }: BuildContext = { now: new Date() },
 ): OrderPageDto {
   const mapped = mapOrderStatus(order.status);
   const date = order.deliveryDate ? fromDeliveryDateSentinel(order.deliveryDate) : null;
@@ -122,7 +127,9 @@ export function buildOrderPageDto(
     : [];
   const paymentFinal = order.payment?.status === 'succeeded' || order.payment?.status === 'canceled';
   const pendingOnline = order.status === 'PENDING' && order.paymentMethod === 'online' && !paymentFinal;
-  const retryWindowClosed = order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS <= now.getTime();
+  const retryWindowClosed =
+    order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS <= now.getTime() ||
+    paymentInitializationOutcome === 'BLOCKED_AFTER_RETRY_WINDOW';
   const safelyCorrelated =
     providerProof &&
     order.payment?.status === 'pending' &&
@@ -149,13 +156,13 @@ export function buildOrderPageDto(
               ? buildBlockedOrderPaymentInitialization(order.orderNumber, safelyCorrelated)
               : safelyCorrelated && order.payment?.confirmationUrl
                 ? {
-                    status: 'READY' as const,
+                    status: 'PAYMENT_INITIALIZATION_READY' as const,
                     continuePaymentUrl: order.payment.confirmationUrl,
                     canRetryCreate: false as const,
                     allowedActions: [] as const,
                   }
                 : {
-                    status: 'PENDING' as const,
+                    status: 'PAYMENT_INITIALIZATION_PENDING' as const,
                     continuePaymentUrl: null,
                     canRetryCreate: false as const,
                     allowedActions: ['RESYNC_PAYMENT'] as const,
@@ -239,6 +246,7 @@ export async function getOrderPageDto({
   let order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
   if (!order) return null;
   let providerProof = false;
+  let paymentInitializationOutcome: PaymentInitializationResult['outcome'] | undefined;
   if (
     order.status === 'PENDING' &&
     order.paymentMethod === 'online' &&
@@ -246,12 +254,14 @@ export async function getOrderPageDto({
     now.getTime() < order.createdAt.getTime() + PAYMENT_CREATE_RETRY_WINDOW_MS
   ) {
     try {
-      await ensureOnlinePayment({
-        orderId: order.id,
-        now,
-        clock,
-        client: prisma as unknown as PaymentInitializationClient,
-      });
+      paymentInitializationOutcome = (
+        await ensureOnlinePayment({
+          orderId: order.id,
+          now,
+          clock,
+          client: prisma as unknown as PaymentInitializationClient,
+        })
+      ).outcome;
       order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
     } catch (error) {
       logger.error('order_page_payment_initialization_failed', error, { orderNumber });
@@ -310,7 +320,7 @@ export async function getOrderPageDto({
       })),
       reviewTargets: reviewTargets.filter(Boolean) as OrderInput['reviewTargets'],
     },
-    { now, providerProof },
+    { now, providerProof, paymentInitializationOutcome },
   );
 }
 

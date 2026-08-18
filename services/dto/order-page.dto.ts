@@ -2,6 +2,7 @@ import type {
   BlockedPaymentInitializationBaseDto,
   OrderPaymentInitializationAction,
   OrderPaymentInitializationActionTuple,
+  PaymentInitializationStatus,
 } from '@/services/dto/payment-initialization.dto';
 
 export type OrderPageAction = OrderPaymentInitializationAction;
@@ -16,8 +17,18 @@ export type OrderPayment =
       initialization: OrderPaymentInitialization;
     };
 export type OrderPaymentInitialization =
-  | { status: 'READY'; continuePaymentUrl: string; canRetryCreate: false; allowedActions: readonly [] }
-  | { status: 'PENDING'; continuePaymentUrl: null; canRetryCreate: false; allowedActions: readonly ['RESYNC_PAYMENT'] }
+  | {
+      status: Extract<PaymentInitializationStatus, 'PAYMENT_INITIALIZATION_READY'>;
+      continuePaymentUrl: string;
+      canRetryCreate: false;
+      allowedActions: readonly [];
+    }
+  | {
+      status: Extract<PaymentInitializationStatus, 'PAYMENT_INITIALIZATION_PENDING'>;
+      continuePaymentUrl: null;
+      canRetryCreate: false;
+      allowedActions: readonly ['RESYNC_PAYMENT'];
+    }
   | (BlockedPaymentInitializationBaseDto & {
       allowedActions: OrderPaymentInitializationActionTuple;
     })

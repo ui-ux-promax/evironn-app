@@ -15,8 +15,13 @@ describe('order source contract', () => {
 
   it('keeps payment status vocabulary in the shared DTO module', () => {
     const shared = fs.readFileSync('services/dto/payment-initialization.dto.ts', 'utf8');
+    const orderDto = fs.readFileSync('services/dto/order-page.dto.ts', 'utf8');
     expect(shared).toContain('BlockedPaymentInitializationBaseDto');
     expect(shared).toContain('PAYMENT_INITIALIZATION_STATUSES');
     expect(shared).not.toContain('checkout-page.dto');
+    expect(orderDto).toContain('PAYMENT_INITIALIZATION_READY');
+    expect(orderDto).toContain('PAYMENT_INITIALIZATION_PENDING');
+    expect(orderDto).toContain('PAYMENT_INITIALIZATION_BLOCKED');
+    expect(orderDto).not.toMatch(/status: '(?:READY|PENDING)'/);
   });
 });

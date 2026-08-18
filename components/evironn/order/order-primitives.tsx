@@ -183,11 +183,9 @@ export function AddressLine({ order }: { order: OrderPageDto }) {
 export function Panel({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <section className="ord-panel ord-a__panel">
-      <header className="ord-panel__head">
-        <div>
-          <h2>{title}</h2>
-          {note && <p>{note}</p>}
-        </div>
+      <header>
+        <h2>{title}</h2>
+        {note && <p>{note}</p>}
       </header>
       {children}
     </section>

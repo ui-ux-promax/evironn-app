@@ -80,12 +80,12 @@ export function OrderVariantA({ order, placed = false }: { order: OrderPageDto; 
               <Link className="ord-btn ord-btn--primary" href="/catalog">
                 Вернуться в магазин
               </Link>
-              {initialization?.status === 'READY' && (
+              {initialization?.status === 'PAYMENT_INITIALIZATION_READY' && (
                 <a className="ord-btn ord-btn--primary" href={initialization.continuePaymentUrl}>
                   Продолжить оплату
                 </a>
               )}
-              {(initialization?.status === 'PENDING' || blocked) && (
+              {(initialization?.status === 'PAYMENT_INITIALIZATION_PENDING' || blocked) && (
                 <button className="ord-btn" type="button" onClick={controller.resync} disabled={controller.busy}>
                   <RefreshCw />
                   Проверить статус платежа

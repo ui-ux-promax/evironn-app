@@ -87,7 +87,7 @@ describe('order page payment recovery', () => {
     const dto = await getOrderPageDto({ userId: 'u1', orderNumber: 52, now: new Date('2026-08-18T12:00:00Z') });
     expect(mocks.ensure).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'o1' }));
     expect(mocks.findFirst).toHaveBeenCalledTimes(2);
-    if (dto?.payment.kind === 'online') expect(dto.payment.initialization?.status).toBe('READY');
+    if (dto?.payment.kind === 'online') expect(dto.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_READY');
   });
 
   it('passes a live clock into payment initialization after the request crosses W', async () => {
@@ -99,8 +99,16 @@ describe('order page payment recovery', () => {
       expect(clock()).toEqual(afterWindow);
       return { outcome: 'BLOCKED_AFTER_RETRY_WINDOW' };
     });
-    await getOrderPageDto({ userId: 'u1', orderNumber: 52, now: beforeWindow, clock: () => afterWindow });
+    const dto = await getOrderPageDto({ userId: 'u1', orderNumber: 52, now: beforeWindow, clock: () => afterWindow });
     expect(mocks.ensure).toHaveBeenCalledOnce();
+    expect(dto?.payment).toMatchObject({
+      kind: 'online',
+      initialization: expect.objectContaining({
+        status: 'PAYMENT_INITIALIZATION_BLOCKED',
+        orderNumber: 52,
+        continuePaymentUrl: null,
+      }),
+    });
   });
 
   it('does not create after W and suppresses stale actions when lookup fails', async () => {
@@ -183,7 +191,8 @@ describe('order page payment recovery', () => {
     mocks.reconcile.mockResolvedValue({ kind: 'ignored', reason: 'transition-conflict' });
     const dto = await getOrderPageDto({ userId: 'u1', orderNumber: 52, now: new Date('2026-08-18T12:00:00Z') });
     expect(dto?.canCancel).toBe(false);
-    if (dto?.payment.kind === 'online') expect(dto.payment.initialization?.status).toBe('PENDING');
+    if (dto?.payment.kind === 'online')
+      expect(dto.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_PENDING');
   });
 
   it('derives review targets through shared eligibility while preserving snapshot items', async () => {

@@ -17,7 +17,8 @@ describe('OrderVariantA', () => {
     expect(primitives).toContain('ord-placed__lede');
     expect(primitives).toContain('ord-placed__next');
     expect(primitives).toContain("aria-current={index === current ? 'step' : undefined}");
-    expect(primitives).toContain('<header className="ord-panel__head">');
+    expect(primitives).toMatch(/<header>\s*<h2>\{title\}<\/h2>\s*\{note && <p>\{note\}<\/p>\}\s*<\/header>/);
+    expect(primitives).not.toContain('ord-panel__head');
     expect(primitives).toContain('aria-label={`Открыть ${line.name}`}');
     expect(primitives).not.toContain('new Date(order.createdAt)');
     expect(variant).toContain('<CancelOrderButton');

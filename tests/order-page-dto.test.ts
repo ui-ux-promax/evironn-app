@@ -55,6 +55,35 @@ describe('order page DTO', () => {
     expect(formatOrderDateOnly('2026-08-18')).toBe('18 августа 2026 г.');
   });
 
+  it.each([
+    {
+      createdAt: new Date('2026-08-17T20:59:59.999Z'),
+      deliveryDate: new Date('2026-08-18T00:00:00.000Z'),
+      createdAtLabel: '17 августа 2026 г.',
+      deliveryDateLabel: '18 августа 2026 г.',
+    },
+    {
+      createdAt: new Date('2026-08-17T21:00:00.000Z'),
+      deliveryDate: new Date('2026-08-17T00:00:00.000Z'),
+      createdAtLabel: '18 августа 2026 г.',
+      deliveryDateLabel: '17 августа 2026 г.',
+    },
+  ])('keeps stored dates stable at UTC/Moscow midnight boundary', (fixture) => {
+    const dto = buildOrderPageDto(
+      onlineOrder({
+        payment: null,
+        paymentMethod: 'cod',
+        createdAt: fixture.createdAt,
+        deliveryDate: fixture.deliveryDate,
+        deliveryWindow: '10:00-14:00',
+      }),
+      { now },
+    );
+    expect(dto.createdAtLabel).toBe(fixture.createdAtLabel);
+    expect(dto.delivery.date).toBe(fixture.deliveryDate.toISOString().slice(0, 10));
+    expect(dto.delivery.dateLabel).toBe(fixture.deliveryDateLabel);
+  });
+
   it('renders immutable snapshots and service totals', () => {
     const dto = buildOrderPageDto(
       {
@@ -143,9 +172,11 @@ describe('order page DTO', () => {
   it('requires fresh verified provider proof for continue and cancel', () => {
     const stale = buildOrderPageDto(onlineOrder(), { now, providerProof: false });
     const verified = buildOrderPageDto(onlineOrder(), { now, providerProof: true });
-    if (stale.payment.kind === 'online') expect(stale.payment.initialization?.status).toBe('PENDING');
+    if (stale.payment.kind === 'online')
+      expect(stale.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_PENDING');
     expect(stale.canCancel).toBe(false);
-    if (verified.payment.kind === 'online') expect(verified.payment.initialization?.status).toBe('READY');
+    if (verified.payment.kind === 'online')
+      expect(verified.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_READY');
     expect(verified.canCancel).toBe(true);
   });
 

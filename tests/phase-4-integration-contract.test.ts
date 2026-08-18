@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -77,9 +78,12 @@ import { validatePhase4NeverAttemptedProof } from '@/e2e/phase4-database';
 import { decidePhase4Cleanup } from '@/e2e/phase4-database';
 import { EXPECTED_PHASE4_MIGRATIONS, runPhase4DatabaseReadiness } from '@/e2e/database-readiness';
 import { acquireDatabaseFingerprints } from '@/scripts/e2e-database-fingerprint';
+import { runPrismaMigrationDeploy } from '@/scripts/e2e-prisma-migrate';
 
 const root = resolve(__dirname, '..');
-const reviewedHead = '49e4fe7';
+const deliveryBaseRef = '868310f';
+const deliveryBase = execFileSync('git', ['rev-parse', deliveryBaseRef], { cwd: root, encoding: 'utf8' }).trim();
+const reviewedHead = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 const manifestPath = 'docs/superpowers/manifests/phase-4-delivery-manifest.json';
 const deliveryReportPath = '.superpowers/sdd/phase-4-delivery-report.md';
 
@@ -107,7 +111,7 @@ const committedSha256 = (relativePath: string) =>
 type DiffRecord = { status: string; path: string; previousPath?: string };
 
 function baseDiff(): DiffRecord[] {
-  const output = execFileSync('git', ['diff', '--name-status', `868310f..${reviewedHead}`], {
+  const output = execFileSync('git', ['diff', '--name-status', `${deliveryBase}..${reviewedHead}`], {
     cwd: root,
     encoding: 'utf8',
   });
@@ -585,6 +589,26 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     expect(sha256('prisma/migrations/20260816_phase4_payment_replay/migration.sql').toUpperCase()).toBe(
       '268D1DDEA90D2920320B61E4F375C07C27CB0151AD72F67AEFC70A1CA713AD18',
     );
+    const previousMigrationPaths = execFileSync(
+      'git',
+      ['ls-tree', '-r', '--name-only', deliveryBase, '--', 'prisma/migrations'],
+      { cwd: root, encoding: 'utf8' },
+    )
+      .trim()
+      .split(/\r?\n/)
+      .filter((path) => path.endsWith('/migration.sql'));
+    expect(previousMigrationPaths.length).toBeGreaterThan(0);
+    for (const path of previousMigrationPaths) {
+      const baseBlob = execFileSync('git', ['rev-parse', `${deliveryBase}:${path}`], {
+        cwd: root,
+        encoding: 'utf8',
+      }).trim();
+      const reviewedBlob = execFileSync('git', ['rev-parse', `${reviewedHead}:${path}`], {
+        cwd: root,
+        encoding: 'utf8',
+      }).trim();
+      expect(reviewedBlob, `${path} changed after Phase 3`).toBe(baseBlob);
+    }
   });
 
   it('keeps canonical SKU cart writes, cart-only placement, and one quote authority', () => {
@@ -752,6 +776,181 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
       canRetryCreate: false,
       allowedActions: ['RESYNC_PAYMENT', 'CANCEL_ORDER'],
     });
+  });
+
+  it('preserves the historical Task 2 PAYMENT_AUTO_RETRY_UNSAFE SDK audit', () => {
+    const config = read('constants/config.ts');
+    const audit = read('tests/yookassa-provider-contract.test.ts');
+    const report = read('.superpowers/sdd/phase-4-task-2-report.md');
+    expect(config).toContain("PAYMENT_AUTO_RETRY_SAFETY = 'PAYMENT_AUTO_RETRY_UNSAFE'");
+    expect(audit).toContain("import { PAYMENT_AUTO_RETRY_SAFETY } from '@/constants/config';");
+    expect(audit).toContain(
+      "it('records automatic retry as unsafe because installed SDK proves no bounded retention window or metadata lookup'",
+    );
+    expect(audit).toContain("expect(PAYMENT_AUTO_RETRY_SAFETY).toBe('PAYMENT_AUTO_RETRY_UNSAFE')");
+    expect(report).toContain(
+      "Decision: committed stop marker `PAYMENT_AUTO_RETRY_SAFETY = 'PAYMENT_AUTO_RETRY_UNSAFE'`.",
+    );
+    expect(report).toContain(
+      'No automatic late retry, stock release, provider-dependent cleanup, or provider-dependent assumption',
+    );
+  });
+
+  it('binds exact blocked payment rules across Checkout A, Order A, source tests, and E2E', () => {
+    const checkout = read('components/evironn/checkout/checkout-primitives.tsx');
+    const checkoutHook = read('components/evironn/checkout/use-checkout-variant-a.ts');
+    const checkoutSource = read('tests/evironn-checkout-source-contract.test.ts');
+    const checkoutComponent = read('tests/evironn-checkout-variant-a.test.tsx');
+    const order = read('components/evironn/order/order-variant-a.tsx');
+    const orderHook = read('components/evironn/order/use-order-variant-a.ts');
+    const orderSource = read('tests/evironn-order-source-contract.test.ts');
+    const orderActions = read('tests/order-payment-actions.test.ts');
+    const orderRecovery = read('tests/order-page-payment-recovery.test.ts');
+    const yookassaE2e = read('e2e/yookassa.spec.ts');
+    const checkoutBoundary = read('tests/checkout-form-boundary.test.ts');
+    const blockedMessage = 'Заказ №42 сохранён. Повторное создание платежа отключено; статус проверяется.';
+
+    expect(checkoutHook).toMatch(
+      /if \(result\.code === 'PAYMENT_INITIALIZATION_BLOCKED'\)[\s\S]*?setBlocked\(result\.paymentInitialization\)[\s\S]*?router\.replace\(`/,
+    );
+    expect(checkout).toContain("blocked.allowedActions.includes('OPEN_ORDER')");
+    expect(checkout).toContain('data-continue-payment-url={blocked.continuePaymentUrl ?? undefined}');
+    expect(checkoutSource).toContain("expect(production).toContain('PAYMENT_INITIALIZATION_BLOCKED')");
+    expect(checkoutSource).toContain("expect(production).toContain('continuePaymentUrl')");
+    expect(checkoutComponent).toContain("it('locks blocked placement and exposes only order navigation'");
+    expect(checkoutBoundary).toContain('placeOrder(payload)');
+    expect(checkoutBoundary).toContain('PlaceOrderInput');
+
+    expect(order).toMatch(/\(initialization\?\.status === 'PAYMENT_INITIALIZATION_PENDING' \|\| blocked\)/);
+    expect(order).toContain('blocked.allowedActions.length === 2');
+    expect(orderHook).toContain("import { resyncOrderPayment } from '@/app/actions/order';");
+    expect(orderHook).toContain('const result = await resyncOrderPayment(order.orderNumber);');
+    expect(orderSource).toContain("expect(orderDto).toContain('PAYMENT_INITIALIZATION_BLOCKED')");
+    expect(orderActions).toContain("allowedActions: ['RESYNC_PAYMENT']");
+    expect(orderActions).toMatch(/allowedActions:\s*\[[\s\S]*?'RESYNC_PAYMENT',[\s\S]*?'CANCEL_ORDER'[\s\S]*?\]/);
+    expect(orderRecovery).toContain('does not create after W and suppresses stale actions when lookup fails');
+
+    expect(buildBlockedPaymentInitializationDto(42)).toEqual({
+      status: 'PAYMENT_INITIALIZATION_BLOCKED',
+      orderNumber: 42,
+      heading: 'Платёж требует проверки',
+      message: blockedMessage,
+      continuePaymentUrl: null,
+      canRetryCreate: false,
+      allowedActions: ['OPEN_ORDER'],
+    });
+    expect(buildBlockedOrderPaymentInitialization(42, false)).toMatchObject({
+      status: 'PAYMENT_INITIALIZATION_BLOCKED',
+      orderNumber: 42,
+      message: blockedMessage,
+      continuePaymentUrl: null,
+      canRetryCreate: false,
+      allowedActions: ['RESYNC_PAYMENT'],
+    });
+    expect(buildBlockedOrderPaymentInitialization(42, true)).toMatchObject({
+      allowedActions: ['RESYNC_PAYMENT', 'CANCEL_ORDER'],
+    });
+
+    expect(yookassaE2e).toContain("dbGuarded('blocked payment shows lookup-only state without provider substitute'");
+    expect(yookassaE2e).toContain(
+      '`Заказ №${fixture.orderNumber} сохранён. Повторное создание платежа отключено; статус проверяется.`',
+    );
+    expect(yookassaE2e).toContain("page.getByText('Продолжить оплату')).toHaveCount(0)");
+    expect(yookassaE2e).toContain("page.getByText('Повторить создание платежа')).toHaveCount(0)");
+    expect(yookassaE2e).toContain("page.getByRole('button', { name: 'Отменить заказ' })).toHaveCount(0)");
+  });
+
+  it('executes sanitized Prisma migration wrapper and exact namespace cart ownership boundaries', async () => {
+    vi.useRealTimers();
+    const wrapper = read('scripts/e2e-prisma-migrate.ts');
+    const phase4Database = read('e2e/phase4-database.ts');
+    const checkoutE2e = read('e2e/checkout.spec.ts');
+    const orderE2e = read('e2e/order.spec.ts');
+    expect(wrapper).toContain("import { resolveE2eDatabaseEnvironment } from '@/e2e/database-guard';");
+    expect(wrapper).toContain("import { runPhase4DatabaseReadiness } from '@/e2e/database-readiness';");
+    expect(wrapper).toContain("stdio: ['pipe', 'pipe', 'pipe']");
+    expect(wrapper).toContain('stdout = Buffer.alloc(0);');
+    expect(wrapper).toContain('stderr = Buffer.alloc(0);');
+    expect(wrapper).toContain('write(JSON.stringify(result))');
+
+    expect(phase4Database).toMatch(
+      /export async function seedOwnedCartLine\(email: string, skuId: string, quantity = 1\): Promise<void>/,
+    );
+    expect(phase4Database).toContain('const namespace = namespaceFromEmail(email);');
+    expect(phase4Database).toContain(
+      "if (!user?.emailVerified) throw new Error('Phase 4 cart owner must be verified');",
+    );
+    expect(phase4Database).toContain('if (!sku || sku.product.slug !== `${namespace}-fixture-product`)');
+    expect(phase4Database).toContain('where: { userId: user.id }');
+    expect(phase4Database).toContain('data: { cartId: cart.id, skuId, quantity }');
+    expect(checkoutE2e).toContain('await seedOwnedCartLine(fixture.email, fixture.skuId);');
+    expect(orderE2e).toContain('await seedOwnedCartLine(fixture.email, fixture.skuId);');
+    expect(checkoutE2e).not.toMatch(/page\.goto\([^\n]*fixture-product/);
+    expect(orderE2e).not.toMatch(/page\.goto\([^\n]*fixture-product/);
+    expect(checkoutE2e).not.toContain('SHOWCASE_PRODUCT_SLUG');
+    expect(orderE2e).not.toContain('SHOWCASE_PRODUCT_SLUG');
+
+    const rawIdentity = 'postgresql://username:password@host.example/database?query=secret';
+    let spawnOptions: { env?: NodeJS.ProcessEnv; stdio?: unknown } | undefined;
+    const report = await runPrismaMigrationDeploy(
+      {
+        E2E_DATABASE_URL: rawIdentity,
+        E2E_DATABASE_ALLOW_WRITES: '1',
+        E2E_DATABASE_TARGET_FINGERPRINT: 'a'.repeat(64),
+      },
+      {
+        resolveEnvironment: () => ({
+          POSTGRES_URL: rawIdentity,
+          POSTGRES_URL_NON_POOLING: rawIdentity,
+          RESEND_API_KEY: '',
+        }),
+        readiness: async () =>
+          ({
+            ok: true,
+            exitCode: 0,
+            errorCategory: 'NONE',
+            targetFingerprint: 'a'.repeat(64),
+            checks: { currentDatabaseMatches: true },
+            migrationNames: [],
+            migrationCount: 0,
+            noPendingMigrations: false,
+          }) as never,
+        migrations: () => ['20260817_phase4_payment_claim'],
+        spawnProcess: ((_command: string, _args: readonly string[], options: typeof spawnOptions) => {
+          const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter };
+          child.stdout = new EventEmitter();
+          child.stderr = new EventEmitter();
+          spawnOptions = options;
+          queueMicrotask(() => {
+            child.stdout.emit('data', Buffer.from(`${rawIdentity}\n20260817_phase4_payment_claim`));
+            child.stderr.emit('data', Buffer.from(rawIdentity));
+            child.emit('close', 0);
+          });
+          return child;
+        }) as never,
+      },
+    );
+    expect(report).toMatchObject({ ok: true, migrationNames: ['20260817_phase4_payment_claim'] });
+    expect(spawnOptions?.stdio).toEqual(['pipe', 'pipe', 'pipe']);
+    expect(spawnOptions?.env?.DATABASE_URL).toBeUndefined();
+    expect(JSON.stringify(report)).not.toContain(rawIdentity);
+  });
+
+  it('binds completed brainstorming and Task 6 first canonical submitter evidence', () => {
+    const plan = read('docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md');
+    const taskBrief = read('.superpowers/sdd/task-9-brief.md');
+    const checkoutBoundary = read('tests/checkout-form-boundary.test.ts');
+    const checkoutHook = read('components/evironn/checkout/use-checkout-variant-a.ts');
+    expect(plan).toContain(
+      'The coordinator completed the required focused `superpowers:brainstorming` checkpoint before Task 1 dispatch.',
+    );
+    expect(plan).toContain('Task 6 owns the first enabled canonical `PlaceOrderInput` submitter.');
+    expect(taskBrief).toContain('completed focused brainstorming plus unambiguous ADR-015/ADR-016 numbering');
+    expect(taskBrief).toContain('Task 6 owns the first canonical production submitter');
+    expect(checkoutBoundary).toContain('components/evironn/checkout/use-checkout-variant-a.ts');
+    expect(checkoutBoundary).toContain('placeOrder(payload)');
+    expect(checkoutHook).toContain('const payload: PlaceOrderInput = {');
+    expect(checkoutHook).toContain('const result = await placeOrder(payload);');
   });
 
   it('locks exact ADR-015/016/017/018 facts and citations', () => {

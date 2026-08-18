@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "baseSha": "868310f",
   "fileCount": 107,
-  "totalBytes": 1003944,
+  "totalBytes": 1017909,
   "entries": [
     {
       "path": ".env.example",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".superpowers/sdd/phase-4-delivery-report.md",
-      "sha256": "4cf49a531f20896e06e731d96efc2d660fab51ae0774c4ba309bc58abcf3c018",
-      "bytes": 6114
+      "sha256": "06d0e78ee710ffbe47c4e731a551e38661c01c12086d815cc3c9818ffe932316",
+      "bytes": 7682
     },
     {
       "path": ".superpowers/sdd/phase-4-plan-review.md",
@@ -496,8 +496,8 @@
     },
     {
       "path": "tests/phase-4-integration-contract.test.ts",
-      "sha256": "46cbbd3292e4262a5852754a01e3c2e1c233df0c910363cb2904874217de26c6",
-      "bytes": 57157
+      "sha256": "2ae1baa9ccf091613e3ddf0de6626243d5fcadf6c14d1f82418c49476bd8c98e",
+      "bytes": 69554
     },
     {
       "path": "tests/phase-4-migration-status.test.ts",

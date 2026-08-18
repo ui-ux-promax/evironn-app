@@ -56,12 +56,12 @@ Real additive migration deployment, database readiness, checkout/order/review br
 
 Acceptance re-review 2 identified exactly three Important findings: incomplete ADR-018 interleaving coverage, shallow independent policy/cleanup/fingerprint contracts, and stale durable focused-test counts. This remediation closes those findings with executable production-boundary tests and exact evidence. `BLOCKED_COMPLETION_READINESS` remains honest; no full format, gate, build, full Vitest, full E2E, database, provider, or migration command was run.
 
-## Final-review manifest byte-closure remediation
+## Final-review remediation 2
 
-The final review identified one Important finding: the delivery manifest used checkout-transformed working-tree bytes for six tracked files under `core.autocrlf`, so its hashes and sizes did not pin the committed blobs at reviewed HEAD `49e4fe7`. The integration contract now reads the reviewed Git blobs through `git cat-file --batch` and independently compares every manifest entry and aggregate byte total against those immutable bytes. Inventory closure remains tied to `868310f..49e4fe7`, with the manifest self-excluded and the exact deleted set preserved.
+Final re-review 2 identified exactly two Important findings: a prior-HEAD manifest pin and omitted independent Task 9 domain assertions. This remediation removes the prior-head pin, resolves the reviewed HEAD dynamically from Git, keeps the exact Phase 3 base, reads committed blobs through `git cat-file --batch`, and preserves manifest self-exclusion plus the exact deleted set. Final manifest generation is performed from staged/index blobs before the single evidence commit; the committed integration contract verifies the resulting final HEAD.
 
-Focused RED: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test failed in the manifest byte-closure assertion before regeneration.
+Focused RED: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 18 tests collected, 3 expected failures before dynamic closure, assertion correction, and wrapper-harness correction.
 
-Focused GREEN: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 14 tests passed, 0 failures.
+Focused GREEN: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 18 tests passed, 0 failures. Added independent executable assertions for the historical Task 2 `PAYMENT_AUTO_RETRY_UNSAFE` audit; blocked Checkout A/Order A DTO, copy, repeat-create, resync, cancellation, source-test, and E2E rules; sanitized Prisma migration deployment; verified-owner namespace cart seeding without namespace PDP navigation; completed brainstorming and Task 6 canonical submission; and unchanged pre-Phase-4 migration blobs.
 
-The manifest was regenerated from committed Git blob bytes at reviewed HEAD `49e4fe7`: 107 entries, total `1003944` bytes. No product behavior, status, progress, plan, database, provider, migration, full gate, build, full Vitest, or full E2E scope changed.
+The final manifest contains 107 sorted entries, excludes itself, and records exact final committed bytes. No product behavior, status, progress, plan, database, provider, migration, full gate, build, full Vitest, or full E2E scope changed.

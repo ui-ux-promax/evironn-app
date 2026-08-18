@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { phase4Namespace } from './phase4-database';
+import { phase4Namespace } from './phase4-namespace';
 
 export const E2E_CODE = '424242';
 export const E2E_PASSWORD = 'Passw0rd!1';
@@ -34,24 +34,26 @@ export async function expectNoEnabledReviewSubmission(page: Page): Promise<void>
   await expect(reviewButtons).toHaveCount(0);
 }
 
-export async function expectProtectedOrderBoundary(page: Page): Promise<void> {
-  const probeResponse = await page.request.get('/api/e2e/phase3-probe', {
-    headers: { 'x-e2e-read-only': '1' },
-  });
-  expect(probeResponse.ok(), 'Disposable E2E seed must expose a foreign order through the read-only probe API').toBe(
-    true,
-  );
-
-  const probe = (await probeResponse.json()) as { foreignOrderNumber?: unknown; error?: unknown };
-  expect(
-    Number.isSafeInteger(probe.foreignOrderNumber),
-    `Foreign order probe failed: ${String(probe.error ?? 'invalid response')}`,
-  ).toBe(true);
-
-  const foreignOrderPath = `/orders/${probe.foreignOrderNumber}`;
+export async function expectProtectedOrderBoundary(page: Page, foreignOrderNumber?: number): Promise<void> {
+  let orderNumber = foreignOrderNumber;
+  if (orderNumber === undefined) {
+    const probeResponse = await page.request.get('/api/e2e/phase3-probe', {
+      headers: { 'x-e2e-read-only': '1' },
+    });
+    expect(probeResponse.ok(), 'Disposable E2E seed must expose a foreign order through the read-only probe API').toBe(
+      true,
+    );
+    const probe = (await probeResponse.json()) as { foreignOrderNumber?: unknown; error?: unknown };
+    expect(
+      Number.isSafeInteger(probe.foreignOrderNumber),
+      `Foreign order probe failed: ${String(probe.error ?? 'invalid response')}`,
+    ).toBe(true);
+    orderNumber = probe.foreignOrderNumber as number;
+  }
+  const foreignOrderPath = `/orders/${orderNumber}`;
   const authenticatedResponse = await page.goto(foreignOrderPath);
   expect(authenticatedResponse?.status()).toBe(404);
-  await expect(page.getByText(`EV-${probe.foreignOrderNumber}`, { exact: false })).toHaveCount(0);
+  await expect(page.getByText(`EV-${orderNumber}`, { exact: false })).toHaveCount(0);
 
   await page.context().clearCookies();
   await page.goto(foreignOrderPath);

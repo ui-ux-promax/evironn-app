@@ -4,7 +4,13 @@ import { Pool } from '@neondatabase/serverless';
 
 import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from './database-command-report';
 import { resolveE2eDatabaseEnvironment, type E2eDatabaseEnvironment } from './database-guard';
-import { isDatabaseFingerprint, normalizeDatabaseTarget } from './database-target';
+import {
+  fingerprintDatabaseUrl,
+  isDatabaseFingerprint,
+  normalizeDatabaseTarget,
+  TRACKED_TARGET_POLICY,
+  type DatabaseTargetPolicy,
+} from './database-target';
 
 export const EXPECTED_DELIVERY_MIGRATION_NAME = '20260816_phase4_delivery_snapshots';
 export const EXPECTED_DELIVERY_MIGRATION_CHECKSUM = 'E8972D3AB2A83A5DC19854C7F6EE575F2C4F34665A4EDC67670A061A8D61209A';
@@ -244,7 +250,38 @@ type ReadinessMigrationRow = DeliveryMigrationRow & { migration_name: string };
 type ReadinessDependencies = {
   resolveEnvironment?: (env: Record<string, string | undefined>) => E2eDatabaseEnvironment;
   query?: (databaseUrl: string) => Promise<{ databaseName: string; migrations: readonly ReadinessMigrationRow[] }>;
+  targetPolicy?: DatabaseTargetPolicy;
 };
+
+function probeFingerprint(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    return fingerprintDatabaseUrl(value);
+  } catch {
+    return null;
+  }
+}
+
+function forbiddenTargetsAbsent(
+  env: Record<string, string | undefined>,
+  targetFingerprint: string | null,
+  policy: DatabaseTargetPolicy,
+): boolean {
+  if (!targetFingerprint || !policy.forbiddenFingerprints.every(isDatabaseFingerprint)) return false;
+  const probeNames = [
+    'E2E_DATABASE_URL',
+    'E2E_DATABASE_URL_UNPOOLED',
+    'POSTGRES_URL',
+    'POSTGRES_URL_NON_POOLING',
+    'DATABASE_URL',
+    'DATABASE_URL_UNPOOLED',
+  ];
+  const probes = probeNames.map((name) => ({ name, fingerprint: probeFingerprint(env[name]) }));
+  if (probes.some(({ name, fingerprint }) => Boolean(env[name]) && fingerprint === null)) return false;
+  return [targetFingerprint, ...probes.flatMap(({ fingerprint }) => (fingerprint ? [fingerprint] : []))].every(
+    (fingerprint) => !policy.forbiddenFingerprints.includes(fingerprint),
+  );
+}
 
 function readinessReport(
   values: Partial<DatabaseCommandReport> & Pick<DatabaseCommandReport, 'ok' | 'exitCode' | 'errorCategory'>,
@@ -324,6 +361,7 @@ export async function runPhase4DatabaseReadiness(
   mode: 'migration' | 'completion' = 'migration',
   dependencies: ReadinessDependencies = {},
 ): Promise<DatabaseCommandReport> {
+  const targetPolicy = dependencies.targetPolicy ?? TRACKED_TARGET_POLICY;
   let environment: E2eDatabaseEnvironment;
   try {
     environment = (dependencies.resolveEnvironment ?? resolveE2eDatabaseEnvironment)(env);
@@ -341,7 +379,7 @@ export async function runPhase4DatabaseReadiness(
     explicitE2eUrl: Boolean(env.E2E_DATABASE_URL),
     writeOptIn: env.E2E_DATABASE_ALLOW_WRITES === '1',
     targetFingerprintMatches: targetFingerprint !== null,
-    forbiddenTargetsAbsent: true,
+    forbiddenTargetsAbsent: forbiddenTargetsAbsent(env, targetFingerprint, targetPolicy),
     readOnlyConnectivity: false,
     currentDatabaseMatches: false,
     allPhase4MigrationsApplied: false,
@@ -361,7 +399,17 @@ export async function runPhase4DatabaseReadiness(
       currentDatabaseMatches: Boolean(result.databaseName) && result.databaseName === expectedDatabase,
       allPhase4MigrationsApplied: migrationState.allApplied,
     });
-    const ready = mode === 'migration' || (Object.values(checks).every(Boolean) && migrationState.allApplied);
+    const identityAndConnectivityReady = [
+      checks.explicitE2eUrl,
+      checks.writeOptIn,
+      checks.targetFingerprintMatches,
+      checks.forbiddenTargetsAbsent,
+      checks.readOnlyConnectivity,
+      checks.currentDatabaseMatches,
+    ].every(Boolean);
+    const ready =
+      identityAndConnectivityReady &&
+      (mode === 'migration' || (Object.values(checks).every(Boolean) && migrationState.allApplied));
     return readinessReport({
       ok: ready,
       exitCode: ready ? 0 : 1,

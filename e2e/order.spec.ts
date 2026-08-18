@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import {
   cleanupPhase4Namespace,
@@ -37,8 +37,26 @@ async function placeCodOrder(page: Page, namespace: string) {
   return { fixture, orderNumber: Number(new URL(page.url()).pathname.split('/').pop()) };
 }
 
-guarded('foreign order returns 404 and signed-out order redirects safely', async ({ page }) => {
-  await expectProtectedOrderBoundary(page);
+guarded('foreign order returns 404 and signed-out order redirects safely', async ({ page }, testInfo) => {
+  const namespace = phase4Namespace(testInfo.title);
+  const foreignNamespace = phase4Namespace(`${testInfo.title}-foreign`);
+  let foreignContext: BrowserContext | null = null;
+  try {
+    const fixture = await createPhase4CheckoutFixture(namespace);
+    await registerAndVerify(page, fixture.email);
+    const browser = page.context().browser();
+    expect(browser).not.toBeNull();
+    foreignContext = await browser!.newContext();
+    const foreignPage = await foreignContext.newPage();
+    const foreign = await placeCodOrder(foreignPage, foreignNamespace);
+    await foreignContext.close();
+    foreignContext = null;
+    await expectProtectedOrderBoundary(page, foreign.orderNumber);
+  } finally {
+    if (foreignContext) await foreignContext.close();
+    await cleanupPhase4Namespace(namespace);
+    await cleanupPhase4Namespace(foreignNamespace);
+  }
 });
 
 guarded('owned order renders new and legacy snapshots at desktop and mobile', async ({ page }, testInfo) => {
@@ -68,8 +86,12 @@ guarded('keyboard cancellation dialog and reduced motion remain accessible', asy
     const { fixture, orderNumber } = await placeCodOrder(page, namespace);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.getByRole('button', { name: 'Отменить заказ' }).focus();
-    page.once('dialog', (dialog) => dialog.accept());
     await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Отменить заказ?' })).toBeVisible();
+    await expect(dialog).toContainText('Это действие нельзя отменить');
+    await dialog.getByRole('button', { name: 'Отменить заказ' }).click();
     await expect(page.getByText('Отменён')).toBeVisible();
     expect((await readOwnedOrder(fixture.email, orderNumber)).status).toBe('CANCELLED');
   } finally {

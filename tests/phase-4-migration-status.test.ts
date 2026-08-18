@@ -6,10 +6,12 @@ import {
   EXPECTED_DELIVERY_MIGRATION_CHECKSUM,
   EXPECTED_DELIVERY_MIGRATION_NAME,
   classifyDeliveryMigration,
+  runPhase4DatabaseReadiness,
   runDeliveryMigrationStatus,
   runMigrationStatusCli,
   type DeliveryMigrationRow,
 } from '@/e2e/database-readiness';
+import { fingerprintDatabaseUrl } from '@/e2e/database-target';
 
 const appliedRow = (overrides: Partial<DeliveryMigrationRow> = {}): DeliveryMigrationRow => ({
   migration_name: EXPECTED_DELIVERY_MIGRATION_NAME,
@@ -20,6 +22,56 @@ const appliedRow = (overrides: Partial<DeliveryMigrationRow> = {}): DeliveryMigr
 });
 
 describe('Phase 4 migration status checkpoint', () => {
+  it('fails migration readiness when current database identity does not match', async () => {
+    const result = await runPhase4DatabaseReadiness(
+      {
+        E2E_DATABASE_URL: 'postgresql://approved.example/db',
+        E2E_DATABASE_ALLOW_WRITES: '1',
+        E2E_DATABASE_TARGET_FINGERPRINT: 'a'.repeat(64),
+        AUTH_SECRET: 'present',
+        AUTH_TRUST_HOST: 'true',
+      },
+      'migration',
+      {
+        resolveEnvironment: () => ({
+          POSTGRES_URL: 'postgresql://approved.example/db',
+          POSTGRES_URL_NON_POOLING: 'postgresql://approved.example/db',
+          RESEND_API_KEY: '',
+        }),
+        query: async () => ({ databaseName: 'wrong-database', migrations: [] }),
+      },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.checks.currentDatabaseMatches).toBe(false);
+  });
+
+  it('fails closed when tracked or ambient forbidden identity matches a migration target', async () => {
+    const targetUrl = 'postgresql://approved.example/db';
+    const targetFingerprint = fingerprintDatabaseUrl(targetUrl);
+    const result = await runPhase4DatabaseReadiness(
+      {
+        E2E_DATABASE_URL: targetUrl,
+        E2E_DATABASE_ALLOW_WRITES: '1',
+        E2E_DATABASE_TARGET_FINGERPRINT: targetFingerprint,
+        DATABASE_URL: targetUrl,
+        AUTH_SECRET: 'present',
+        AUTH_TRUST_HOST: 'true',
+      },
+      'migration',
+      {
+        targetPolicy: { approvedDevFingerprint: targetFingerprint, forbiddenFingerprints: [targetFingerprint] },
+        resolveEnvironment: () => ({
+          POSTGRES_URL: targetUrl,
+          POSTGRES_URL_NON_POOLING: targetUrl,
+          RESEND_API_KEY: '',
+        }),
+        query: async () => ({ databaseName: 'db', migrations: [] }),
+      },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.checks.forbiddenTargetsAbsent).toBe(false);
+  });
+
   it('reports exactly UNAPPLIED for a successful empty result', () => {
     const result = classifyDeliveryMigration([]);
     expect(result.status).toBe('UNAPPLIED');

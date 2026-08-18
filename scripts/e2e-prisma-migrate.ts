@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from '@/e2e/database-command-report';
 import { resolveE2eDatabaseEnvironment } from '@/e2e/database-guard';
+import { runPhase4DatabaseReadiness } from '@/e2e/database-readiness';
 import { isDatabaseFingerprint } from '@/e2e/database-target';
 
 const migrationNamesOnDisk = (): string[] => {
@@ -41,8 +42,18 @@ function parseMigrationNames(output: Buffer, knownNames: readonly string[]): str
   return knownNames.filter((name) => text.includes(name));
 }
 
+function childEnvironmentWithoutAmbientDatabaseUrls(): NodeJS.ProcessEnv {
+  const environment = { ...process.env };
+  delete environment.DATABASE_URL;
+  delete environment.DATABASE_URL_UNPOOLED;
+  delete environment.POSTGRES_URL;
+  delete environment.POSTGRES_URL_NON_POOLING;
+  return environment;
+}
+
 export type MigrationDeployDependencies = {
   resolveEnvironment?: typeof resolveE2eDatabaseEnvironment;
+  readiness?: () => Promise<DatabaseCommandReport>;
   spawnProcess?: typeof spawn;
   migrations?: () => string[];
 };
@@ -60,6 +71,15 @@ export async function runPrismaMigrationDeploy(
   const targetFingerprint = isDatabaseFingerprint(env.E2E_DATABASE_TARGET_FINGERPRINT)
     ? env.E2E_DATABASE_TARGET_FINGERPRINT
     : null;
+
+  const readiness = await (
+    dependencies.readiness ??
+    (() =>
+      runPhase4DatabaseReadiness(env, 'migration', {
+        resolveEnvironment: dependencies.resolveEnvironment ?? resolveE2eDatabaseEnvironment,
+      }))
+  )();
+  if (!readiness.ok) return readiness;
 
   const command = dependencies.spawnProcess ?? spawn;
   const knownNames = dependencies.migrations?.() ?? migrationNamesOnDisk();
@@ -80,7 +100,7 @@ export async function runPrismaMigrationDeploy(
       const child = command('npx', ['prisma', 'migrate', 'deploy'], {
         cwd: process.cwd(),
         env: {
-          ...process.env,
+          ...childEnvironmentWithoutAmbientDatabaseUrls(),
           POSTGRES_URL: databaseEnvironment.POSTGRES_URL,
           POSTGRES_URL_NON_POOLING: databaseEnvironment.POSTGRES_URL_NON_POOLING,
         },

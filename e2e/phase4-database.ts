@@ -1,18 +1,22 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { CHECKOUT_POLICY } from '@/constants/config';
 import { hashPassword } from '@/lib/password';
 import { resolveE2eDatabaseEnvironment } from './database-guard';
+export { phase4Namespace } from './phase4-namespace';
 
 const E2E_PASSWORD = 'Passw0rd!1';
 const E2E_EMAIL_DOMAIN = 'phase4-e2e.invalid';
-const RETRY_WINDOW_MS = 23 * 60 * 60 * 1000;
-const PROVIDER_TERMINAL_PAYMENT_STATUSES = new Set(['succeeded', 'canceled']);
+let database: PrismaClient | null = null;
 
-const databaseEnvironment = resolveE2eDatabaseEnvironment(process.env);
-const database = new PrismaClient({ datasources: { db: { url: databaseEnvironment.POSTGRES_URL } } });
+function getPhase4Database(): PrismaClient {
+  if (database) return database;
+  const databaseEnvironment = resolveE2eDatabaseEnvironment(process.env);
+  database = new PrismaClient({ datasources: { db: { url: databaseEnvironment.POSTGRES_URL } } });
+  return database;
+}
 
 export type Phase4CheckoutFixture = {
   namespace: string;
@@ -21,6 +25,7 @@ export type Phase4CheckoutFixture = {
   productSlug: string;
   skuId: string;
   articleNumber: string;
+  unitPrice: number;
   couponCode: string;
 };
 
@@ -30,6 +35,28 @@ export type Phase4OrderProbe = {
   status: string;
   paymentMethod: string;
   totalAmount: number;
+  itemsTotal: number;
+  discountAmount: number;
+  shippingAmount: number;
+  couponCode: string | null;
+  shippingMethod: string;
+  deliveryZone: string | null;
+  deliveryDate: string | null;
+  deliveryWindow: string | null;
+  pickupPointId: string | null;
+  pickupPointName: string | null;
+  pickupPointAddress: string | null;
+  floor: number | null;
+  liftType: string | null;
+  intercom: string | null;
+  serviceDetails: unknown;
+  serviceAmount: number;
+  paymentInitializationState: string | null;
+  paymentInitializationClaimedAt: string | null;
+  paymentEverDispatchedAt: string | null;
+  paymentId: string | null;
+  paymentStatus: string | null;
+  createdAt: string;
   stock: number;
   skuId: string;
 };
@@ -50,6 +77,42 @@ export type Phase4NeverAttemptedProviderProof = {
 export type Phase4CleanupResult =
   | { ok: true; namespace: string; deleted: boolean; orderNumbers: readonly number[] }
   | { ok: false; namespace: string; reason: 'PROVIDER_STATE_INDETERMINATE'; orderNumbers: readonly number[] };
+
+type CleanupOrder = {
+  id: string;
+  orderNumber: number;
+  status: string;
+  paymentMethod: string;
+  totalAmount: number;
+  paymentReturnUrl: string | null;
+  paymentInitializationState: string | null;
+  paymentInitializationClaimedAt: Date | null;
+  paymentEverDispatchedAt: Date | null;
+  payment: { id: string; status: string; amount: number } | null;
+  items: Array<{ skuId: string | null; quantity: number; productSlug: string | null }>;
+};
+
+type ProviderReconciliationBoundary = {
+  getPaymentDetails: (paymentId: string) => Promise<{
+    id: string;
+    status: 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
+    amountRub: number;
+    orderNumber: string;
+  } | null>;
+  reconcilePaymentStatus: (input: {
+    paymentId: string;
+    remoteStatus: string;
+    source: 'webhook';
+  }) => Promise<{ kind: string; transition?: string }>;
+};
+
+async function providerReconciliation(): Promise<ProviderReconciliationBoundary> {
+  const [{ getPaymentDetails }, { reconcilePaymentStatus }] = await Promise.all([
+    import('@/lib/yookassa'),
+    import('@/lib/payment-sync'),
+  ]);
+  return { getPaymentDetails, reconcilePaymentStatus };
+}
 
 function assertNamespace(namespace: string): void {
   if (!/^phase4-e2e-[a-z0-9-]{8,80}$/.test(namespace)) throw new Error('Invalid Phase 4 E2E namespace');
@@ -81,19 +144,11 @@ function safePart(value: string): string {
   );
 }
 
-export function phase4Namespace(testInfoTitle: string): string {
-  const runId = createHash('sha256')
-    .update(`${testInfoTitle}:${Date.now()}:${randomUUID()}`)
-    .digest('hex')
-    .slice(0, 20);
-  return `phase4-e2e-${safePart(testInfoTitle)}-${runId}`.slice(0, 80);
-}
-
 async function canonicalTemplate() {
-  const template = await database.product.findFirst({
+  const template = await getPhase4Database().product.findFirst({
     where: { active: true, skus: { some: { active: true } } },
     include: {
-      skus: { where: { active: true }, orderBy: { sortOrder: 'asc' }, take: 1 },
+      skus: { where: { active: true }, orderBy: { id: 'asc' }, take: 1 },
       rooms: { take: 1 },
       optionGroups: { include: { values: { include: { optionValue: true }, take: 1 } }, take: 1 },
       media: { where: { kind: 'IMAGE' }, take: 1 },
@@ -114,7 +169,7 @@ export async function createPhase4CheckoutFixture(namespace: string): Promise<Ph
   const couponCode = namespaceCouponCode(namespace);
   const email = namespaceEmail(namespace);
 
-  const fixture = await database.$transaction(
+  const fixture = await getPhase4Database().$transaction(
     async (transaction) => {
       const product = await transaction.product.create({
         data: {
@@ -185,6 +240,7 @@ export async function createPhase4CheckoutFixture(namespace: string): Promise<Ph
     productSlug,
     skuId: fixture.sku.id,
     articleNumber: fixture.sku.articleNumber,
+    unitPrice: fixture.sku.price,
     couponCode: fixture.coupon.code,
   };
 }
@@ -192,7 +248,7 @@ export async function createPhase4CheckoutFixture(namespace: string): Promise<Ph
 export async function seedOwnedCartLine(email: string, skuId: string, quantity = 1): Promise<void> {
   const namespace = namespaceFromEmail(email);
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new Error('Invalid Phase 4 cart quantity');
-  await database.$transaction(
+  await getPhase4Database().$transaction(
     async (transaction) => {
       const user = await transaction.user.findUnique({ where: { email } });
       if (!user?.emailVerified) throw new Error('Phase 4 cart owner must be verified');
@@ -223,7 +279,7 @@ export async function seedOwnedCartLine(email: string, skuId: string, quantity =
 
 async function findOwnedOrder(email: string, orderNumber: number) {
   const namespace = namespaceFromEmail(email);
-  return database.order.findFirst({
+  return getPhase4Database().order.findFirst({
     where: {
       orderNumber,
       user: { email },
@@ -236,13 +292,16 @@ async function findOwnedOrder(email: string, orderNumber: number) {
 export async function markOwnedOrderDelivered(email: string, orderNumber: number): Promise<void> {
   const order = await findOwnedOrder(email, orderNumber);
   if (!order) throw new Error('Owned Phase 4 order not found');
-  await database.order.updateMany({ where: { id: order.id, user: { email } }, data: { status: 'DELIVERED' } });
+  await getPhase4Database().order.updateMany({
+    where: { id: order.id, user: { email } },
+    data: { status: 'DELIVERED' },
+  });
 }
 
 export async function markOwnedOrderAsLegacySnapshot(email: string, orderNumber: number): Promise<void> {
   const order = await findOwnedOrder(email, orderNumber);
   if (!order) throw new Error('Owned Phase 4 order not found');
-  await database.order.updateMany({
+  await getPhase4Database().order.updateMany({
     where: { id: order.id, user: { email } },
     data: {
       deliveryZone: null,
@@ -254,7 +313,7 @@ export async function markOwnedOrderAsLegacySnapshot(email: string, orderNumber:
       floor: null,
       liftType: null,
       intercom: null,
-      serviceDetails: null,
+      serviceDetails: Prisma.DbNull,
       serviceAmount: 0,
     },
   });
@@ -264,7 +323,10 @@ export async function readOwnedOrder(email: string, orderNumber: number): Promis
   const order = await findOwnedOrder(email, orderNumber);
   const item = order?.items[0];
   if (!order || !item?.canonicalSku) throw new Error('Owned Phase 4 order probe not found');
-  const sku = await database.sku.findUnique({ where: { id: item.canonicalSku.id }, select: { stock: true } });
+  const sku = await getPhase4Database().sku.findUnique({
+    where: { id: item.canonicalSku.id },
+    select: { stock: true },
+  });
   if (!sku) throw new Error('Owned Phase 4 SKU probe not found');
   return {
     id: order.id,
@@ -272,9 +334,45 @@ export async function readOwnedOrder(email: string, orderNumber: number): Promis
     status: order.status,
     paymentMethod: order.paymentMethod,
     totalAmount: order.totalAmount,
+    itemsTotal: order.itemsTotal,
+    discountAmount: order.discountAmount,
+    shippingAmount: order.shippingAmount,
+    couponCode: order.couponCode,
+    shippingMethod: order.shippingMethod,
+    deliveryZone: order.deliveryZone,
+    deliveryDate: order.deliveryDate?.toISOString() ?? null,
+    deliveryWindow: order.deliveryWindow,
+    pickupPointId: order.pickupPointId,
+    pickupPointName: order.pickupPointName,
+    pickupPointAddress: order.pickupPointAddress,
+    floor: order.floor,
+    liftType: order.liftType,
+    intercom: order.intercom,
+    serviceDetails: order.serviceDetails,
+    serviceAmount: order.serviceAmount,
+    paymentInitializationState: order.paymentInitializationState,
+    paymentInitializationClaimedAt: order.paymentInitializationClaimedAt?.toISOString() ?? null,
+    paymentEverDispatchedAt: order.paymentEverDispatchedAt?.toISOString() ?? null,
+    paymentId: order.payment?.id ?? null,
+    paymentStatus: order.payment?.status ?? null,
+    createdAt: order.createdAt.toISOString(),
     stock: sku.stock,
     skuId: item.canonicalSku.id,
   };
+}
+
+export async function readLatestOwnedOrder(email: string): Promise<Phase4OrderProbe> {
+  const namespace = namespaceFromEmail(email);
+  const latest = await getPhase4Database().order.findFirst({
+    where: {
+      user: { email },
+      items: { some: { canonicalSku: { product: { slug: `${namespace}-fixture-product` } } } },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { orderNumber: true },
+  });
+  if (!latest) throw new Error('Latest owned Phase 4 order not found');
+  return readOwnedOrder(email, latest.orderNumber);
 }
 
 export async function createPhase4BlockedPaymentFixture(namespace: string): Promise<Phase4BlockedPaymentFixture> {
@@ -282,7 +380,7 @@ export async function createPhase4BlockedPaymentFixture(namespace: string): Prom
   const passwordHash = await hashPassword(E2E_PASSWORD);
   const createdAt = new Date(Date.now() - 23 * 60 * 60 * 1000 - 30 * 60 * 1000);
   const email = fixture.email;
-  const order = await database.$transaction(
+  const order = await getPhase4Database().$transaction(
     async (transaction) => {
       const user = await transaction.user.create({
         data: { email, passwordHash, emailVerified: new Date(), name: `Phase 4 ${namespace}` },
@@ -310,7 +408,7 @@ export async function createPhase4BlockedPaymentFixture(namespace: string): Prom
               skuArticleNumber: sku.articleNumber,
               skuCombinationKey: sku.combinationKey,
               productName: `Phase 4 fixture ${namespace}`,
-              productSlug: null,
+              productSlug: `${namespace}-fixture-product`,
               configuration: { namespace },
               imageUrl: null,
               unitPrice: sku.price,
@@ -334,19 +432,21 @@ export async function createPhase4BlockedPaymentFixture(namespace: string): Prom
   };
 }
 
-function isNeverAttemptedProof(
-  order: {
-    id: string;
-    paymentMethod: string;
-    paymentInitializationState: string | null;
-    paymentInitializationClaimedAt: Date | null;
-    paymentEverDispatchedAt: Date | null;
-    payment: unknown;
-  },
+export function validatePhase4NeverAttemptedProof(
+  order: CleanupOrder,
+  namespace: string,
   proofs: readonly Phase4NeverAttemptedProviderProof[],
 ): boolean {
   return (
-    proofs.some((proof) => proof.orderId === order.id) &&
+    proofs.some(
+      (proof) =>
+        proof.kind === 'NOT_CREATED_BY_CONSTRUCTION' &&
+        proof.providerRequestIssued === false &&
+        proof.orderId === order.id,
+    ) &&
+    order.paymentReturnUrl === `/orders/phase4-${namespace}` &&
+    order.items.length > 0 &&
+    order.items.every((item) => item.productSlug === `${namespace}-fixture-product`) &&
     order.paymentMethod === 'online' &&
     order.paymentInitializationState === 'READY' &&
     order.paymentInitializationClaimedAt === null &&
@@ -355,13 +455,49 @@ function isNeverAttemptedProof(
   );
 }
 
+async function reconcileAttemptedOnlinePayment(order: CleanupOrder): Promise<boolean> {
+  if (!order.payment) return false;
+  try {
+    const boundary = await providerReconciliation();
+    const remote = await boundary.getPaymentDetails(order.payment.id);
+    if (
+      !remote ||
+      remote.id !== order.payment.id ||
+      remote.amountRub !== order.totalAmount ||
+      remote.orderNumber !== String(order.orderNumber) ||
+      (remote.status !== 'succeeded' && remote.status !== 'canceled')
+    ) {
+      return false;
+    }
+    const reconciliation = await boundary.reconcilePaymentStatus({
+      paymentId: order.payment.id,
+      remoteStatus: remote.status,
+      source: 'webhook',
+    });
+    if (reconciliation.kind === 'missing') return false;
+    const local = await getPhase4Database().order.findUnique({
+      where: { id: order.id },
+      select: {
+        status: true,
+        payment: { select: { id: true, status: true, amount: true } },
+      },
+    });
+    if (!local?.payment || local.payment.id !== remote.id || local.payment.amount !== remote.amountRub) return false;
+    return remote.status === 'canceled'
+      ? local.payment.status === 'canceled' && local.status === 'CANCELLED'
+      : local.payment.status === 'succeeded' && ['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(local.status);
+  } catch {
+    return false;
+  }
+}
+
 export async function cleanupPhase4Namespace(
   namespace: string,
   neverAttemptedProofs: readonly Phase4NeverAttemptedProviderProof[] = [],
 ): Promise<Phase4CleanupResult> {
   assertNamespace(namespace);
   const email = namespaceEmail(namespace);
-  const roots = await database.user.findMany({
+  const roots = await getPhase4Database().user.findMany({
     where: { email },
     select: {
       id: true,
@@ -377,33 +513,51 @@ export async function cleanupPhase4Namespace(
           paymentInitializationState: true,
           paymentInitializationClaimedAt: true,
           paymentEverDispatchedAt: true,
-          payment: { select: { status: true } },
-          items: { select: { skuId: true, quantity: true } },
+          totalAmount: true,
+          paymentReturnUrl: true,
+          payment: { select: { id: true, status: true, amount: true } },
+          items: {
+            select: {
+              skuId: true,
+              quantity: true,
+              canonicalSku: { select: { product: { select: { slug: true } } } },
+            },
+          },
         },
       },
       addresses: { select: { id: true } },
       accounts: { select: { id: true } },
     },
   });
-  const products = await database.product.findMany({
+  const products = await getPhase4Database().product.findMany({
     where: { slug: `${namespace}-fixture-product` },
     select: { id: true, skus: { select: { id: true } } },
   });
-  const coupons = await database.coupon.findMany({
+  const coupons = await getPhase4Database().coupon.findMany({
     where: { code: namespaceCouponCode(namespace) },
     select: { id: true },
   });
   const orderNumbers = roots.flatMap((user) => user.orders.map((order) => order.orderNumber));
-  const indeterminate = roots.flatMap((user) =>
-    user.orders
-      .filter(
-        (order) =>
-          order.paymentMethod === 'online' &&
-          !isNeverAttemptedProof(order, neverAttemptedProofs) &&
-          (!order.payment || !PROVIDER_TERMINAL_PAYMENT_STATUSES.has(order.payment.status)),
-      )
-      .map((order) => order.orderNumber),
-  );
+  const indeterminate: number[] = [];
+  for (const user of roots) {
+    for (const order of user.orders) {
+      const cleanupOrder: CleanupOrder = {
+        ...order,
+        items: order.items.map((item) => ({
+          skuId: item.skuId,
+          quantity: item.quantity,
+          productSlug: item.canonicalSku?.product.slug ?? null,
+        })),
+      };
+      if (
+        order.paymentMethod === 'online' &&
+        !validatePhase4NeverAttemptedProof(cleanupOrder, namespace, neverAttemptedProofs) &&
+        !(await reconcileAttemptedOnlinePayment(cleanupOrder))
+      ) {
+        indeterminate.push(order.orderNumber);
+      }
+    }
+  }
   if (indeterminate.length)
     return { ok: false, namespace, reason: 'PROVIDER_STATE_INDETERMINATE', orderNumbers: indeterminate };
 
@@ -420,7 +574,7 @@ export async function cleanupPhase4Namespace(
   if (!userIds.length && !productIds.length && !couponIds.length)
     return { ok: true, namespace, deleted: false, orderNumbers };
 
-  await database.$transaction(
+  await getPhase4Database().$transaction(
     async (transaction) => {
       for (const user of roots) {
         for (const order of user.orders) {
@@ -467,7 +621,11 @@ export async function cleanupPhase4Namespace(
 }
 
 export async function disconnectPhase4Database(): Promise<void> {
+  if (!database) return;
   await database.$disconnect();
+  database = null;
 }
 
-export const phase4DatabaseForTests = database;
+export function getPhase4DatabaseForTests(): PrismaClient {
+  return getPhase4Database();
+}

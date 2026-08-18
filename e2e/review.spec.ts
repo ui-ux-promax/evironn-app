@@ -55,10 +55,16 @@ guarded('verified purchase can submit and persist one product review', async ({ 
   }
 });
 
-guarded('verified user without qualifying purchase has no review submission path', async ({ page }) => {
-  await registerAndVerify(page);
-  await page.goto('/product/noma-woven-lounge');
-  await expectNoEnabledReviewSubmission(page);
+guarded('verified user without qualifying purchase has no review submission path', async ({ page }, testInfo) => {
+  const namespace = phase4Namespace(testInfo.title);
+  try {
+    const fixture = await createPhase4CheckoutFixture(namespace);
+    await registerAndVerify(page, fixture.email);
+    await page.goto('/profile');
+    await expectNoEnabledReviewSubmission(page);
+  } finally {
+    await cleanupPhase4Namespace(namespace);
+  }
 });
 
 test.afterAll(async () => {

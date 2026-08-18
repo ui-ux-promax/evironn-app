@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 import { runPrismaMigrationDeploy } from '@/scripts/e2e-prisma-migrate';
+import { validatePhase4NeverAttemptedProof } from '@/e2e/phase4-database';
 
 const root = process.cwd();
 const read = (path: string) => readFileSync(`${root}/${path}`, 'utf8');
@@ -41,6 +42,17 @@ describe('Phase 4 E2E safety contract', () => {
     const baseDependencies = {
       resolveEnvironment: () => guardedEnvironment,
       migrations: () => ['20260817_phase4_payment_claim'],
+      readiness: async () =>
+        ({
+          ok: true,
+          exitCode: 0,
+          errorCategory: 'NONE',
+          targetFingerprint: 'a'.repeat(64),
+          checks: { currentDatabaseMatches: true },
+          migrationNames: [],
+          migrationCount: 0,
+          noPendingMigrations: false,
+        }) as never,
     };
     const success = await runPrismaMigrationDeploy(env, {
       ...baseDependencies,
@@ -64,6 +76,17 @@ describe('Phase 4 E2E safety contract', () => {
           POSTGRES_URL_NON_POOLING: 'postgresql://safe.example/db',
           RESEND_API_KEY: '',
         }),
+        readiness: async () =>
+          ({
+            ok: true,
+            exitCode: 0,
+            errorCategory: 'NONE',
+            targetFingerprint: 'a'.repeat(64),
+            checks: {},
+            migrationNames: [],
+            migrationCount: 0,
+            noPendingMigrations: false,
+          }) as never,
         spawnProcess: (() => {
           throw new Error('raw URL and stack must not escape');
         }) as never,
@@ -73,11 +96,56 @@ describe('Phase 4 E2E safety contract', () => {
     expect(JSON.stringify(report)).not.toContain('raw URL');
   });
 
+  it('never invokes Prisma deploy when readiness is not successful', async () => {
+    let spawned = false;
+    const report = await runPrismaMigrationDeploy(
+      {
+        E2E_DATABASE_URL: 'postgresql://approved.example/db',
+        E2E_DATABASE_ALLOW_WRITES: '1',
+        E2E_DATABASE_TARGET_FINGERPRINT: 'a'.repeat(64),
+      },
+      {
+        resolveEnvironment: () => ({
+          POSTGRES_URL: 'postgresql://approved.example/db',
+          POSTGRES_URL_NON_POOLING: 'postgresql://approved.example/db',
+          RESEND_API_KEY: '',
+        }),
+        readiness: async () =>
+          ({
+            ok: false,
+            exitCode: 1,
+            errorCategory: 'IDENTITY_MISMATCH',
+            targetFingerprint: null,
+            checks: { currentDatabaseMatches: false },
+            migrationNames: [],
+            migrationCount: 0,
+            noPendingMigrations: false,
+          }) as never,
+        spawnProcess: (() => {
+          spawned = true;
+          throw new Error('deploy must remain gated');
+        }) as never,
+      } as never,
+    );
+    expect(spawned).toBe(false);
+    expect(report.errorCategory).toBe('IDENTITY_MISMATCH');
+  });
+
   it('ships guarded namespace fixture and migration wrapper files', () => {
     expect(existsSync(`${root}/e2e/phase4-database.ts`)).toBe(true);
     expect(existsSync(`${root}/scripts/e2e-prisma-migrate.ts`)).toBe(true);
     expect(read('e2e/phase4-database.ts')).toContain('resolveE2eDatabaseEnvironment(process.env)');
     expect(read('scripts/e2e-prisma-migrate.ts')).toContain("stdio: ['pipe', 'pipe', 'pipe']");
+  });
+
+  it('keeps namespace helpers database-free and initializes guarded Prisma lazily', () => {
+    const database = read('e2e/phase4-database.ts');
+    const helpers = read('e2e/helpers.ts');
+    expect(existsSync(`${root}/e2e/phase4-namespace.ts`)).toBe(true);
+    expect(helpers).toContain("from './phase4-namespace'");
+    expect(database).toMatch(/function getPhase4Database\(/);
+    expect(database).toContain('resolveE2eDatabaseEnvironment(process.env)');
+    expect(database).not.toMatch(/^const databaseEnvironment\s*=\s*resolveE2eDatabaseEnvironment/m);
   });
 
   it('keeps every Phase 4 generated identity inside a unique namespace', () => {
@@ -121,12 +189,49 @@ describe('Phase 4 E2E safety contract', () => {
       'serviceAmount: 0',
       'paymentEverDispatchedAt',
       'NOT_CREATED_BY_CONSTRUCTION',
+      'getPaymentDetails',
+      'reconcilePaymentStatus',
+      'providerReconciliation',
+      "proof.kind === 'NOT_CREATED_BY_CONSTRUCTION'",
+      'proof.providerRequestIssued === false',
     ]) {
       expect(source).toContain(token);
     }
     expect(source).toMatch(/where:\s*\{[^}]*id:\s*\{\s*in:/s);
     expect(source).toMatch(/orderItem\.deleteMany\(\{\s*where:/s);
     expect(source).toMatch(/cartItem\.deleteMany\(\{\s*where:/s);
+  });
+
+  it('rejects incomplete never-attempted proofs even when order id matches', () => {
+    const namespace = 'phase4-e2e-proof-test-12345678';
+    const order = {
+      id: 'order-1',
+      orderNumber: 1,
+      status: 'PENDING',
+      paymentMethod: 'online',
+      totalAmount: 100,
+      paymentReturnUrl: `/orders/phase4-${namespace}`,
+      paymentInitializationState: 'READY',
+      paymentInitializationClaimedAt: null,
+      paymentEverDispatchedAt: null,
+      payment: null,
+      items: [{ skuId: 'sku-1', quantity: 1, productSlug: `${namespace}-fixture-product` }],
+    };
+    expect(
+      validatePhase4NeverAttemptedProof(order, namespace, [
+        { orderId: 'order-1', kind: 'NOT_CREATED_BY_CONSTRUCTION', providerRequestIssued: false },
+      ]),
+    ).toBe(true);
+    expect(
+      validatePhase4NeverAttemptedProof(order, namespace, [
+        { orderId: 'order-1', kind: 'NOT_CREATED_BY_CONSTRUCTION', providerRequestIssued: true as never },
+      ]),
+    ).toBe(false);
+    expect(
+      validatePhase4NeverAttemptedProof(order, namespace, [
+        { orderId: 'order-1', kind: 'PROVIDER_NOT_CREATED' as never, providerRequestIssued: false },
+      ]),
+    ).toBe(false);
   });
 
   it('preserves ADR-013 showcase routing and canonical furniture ownership', () => {
@@ -148,10 +253,19 @@ describe('Phase 4 E2E safety contract', () => {
     expect(checkout).toMatch(/showroom COD/i);
     expect(checkout).toMatch(/pickup-point COD/i);
     expect(checkout).toMatch(/moscow-region/);
+    expect(checkout).toContain('fixture.couponCode');
+    expect(checkout).toMatch(/discountAmount|shippingAmount|serviceAmount/);
+    expect(checkout).toContain('pickupPointAddress');
     expect(order).toContain('width: 390');
     expect(order).toContain('width: 1440');
+    expect(order).toContain('registerAndVerify');
+    expect(order).toContain("getByRole('dialog')");
     expect(review).toContain('markOwnedOrderDelivered');
+    expect(review).toMatch(/const namespace = phase4Namespace[\s\S]*cleanupPhase4Namespace/);
     expect(payment).toContain('YOOKASSA_MODE');
+    expect(payment).toMatch(/paymentInitializationState|durable claim/i);
+    expect(payment).toMatch(/reconcile|cancellation/i);
+    expect(payment).toContain('cleanupResult');
     expect(payment).toMatch(/COD/);
     expect(payment).not.toMatch(/test-only|fake|fabricat/i);
   });

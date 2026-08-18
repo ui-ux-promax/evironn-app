@@ -37,3 +37,17 @@ export function fingerprintDatabaseUrl(databaseUrl: string): string {
 export function isDatabaseFingerprint(value: string | undefined): value is string {
   return Boolean(value && SHA256_PATTERN.test(value));
 }
+
+export function hasCompleteForbiddenFingerprintPolicy(
+  policy: Partial<DatabaseTargetPolicy> | undefined,
+): policy is DatabaseTargetPolicy {
+  const forbiddenFingerprints = policy?.forbiddenFingerprints;
+  return Boolean(
+    Array.isArray(forbiddenFingerprints) &&
+    forbiddenFingerprints.length > 0 &&
+    forbiddenFingerprints.every(
+      (fingerprint): fingerprint is string => typeof fingerprint === 'string' && isDatabaseFingerprint(fingerprint),
+    ) &&
+    new Set(forbiddenFingerprints).size === forbiddenFingerprints.length,
+  );
+}

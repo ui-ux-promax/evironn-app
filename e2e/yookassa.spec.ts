@@ -3,18 +3,25 @@ import { promisify } from 'node:util';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { ensureOnlinePayment, PAYMENT_CREATE_RETRY_WINDOW_MS } from '@/lib/payment-initialization';
-import { cancelPayment, getPaymentDetails } from '@/lib/yookassa';
+import {
+  ensureOnlinePayment,
+  PAYMENT_CREATE_RETRY_WINDOW_MS,
+  type PaymentInitializationClient,
+} from '@/lib/payment-initialization';
+import { cancelPayment, createPaymentAttempt, getPaymentDetails } from '@/lib/yookassa';
 import { reconcilePaymentStatus } from '@/lib/payment-sync';
 
 import {
   cleanupPhase4Namespace,
   createPhase4BlockedPaymentFixture,
+  createPhase4ClaimablePaymentFixture,
   createPhase4CheckoutFixture,
   disconnectPhase4Database,
+  getPhase4DatabaseForTests,
   phase4Namespace,
-  readLatestOwnedOrder,
+  readOwnedOrder,
   seedOwnedCartLine,
+  validatePhase4ClaimablePaymentProbe,
 } from './phase4-database';
 import { registerAndVerify, signIn } from './helpers';
 
@@ -27,7 +34,9 @@ const hasSandboxCredentials = Boolean(
   process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY && process.env.YOOKASSA_MODE === 'sandbox',
 );
 const hasAuthPrerequisites = Boolean(process.env.AUTH_SECRET && process.env.AUTH_TRUST_HOST);
-const onlineGuarded = hasExplicitDatabase && hasSandboxCredentials && hasAuthPrerequisites ? test : test.skip;
+const hasSiteUrl = Boolean(process.env.NEXT_PUBLIC_SITE_URL);
+const onlineGuarded =
+  hasExplicitDatabase && hasSandboxCredentials && hasAuthPrerequisites && hasSiteUrl ? test : test.skip;
 const dbGuarded = hasExplicitDatabase ? test : test.skip;
 const execFileAsync = promisify(execFile);
 const AMBIENT_DATABASE_VARIABLES = new Set([
@@ -112,78 +121,99 @@ dbGuarded('COD regression remains real production payment method', async ({ page
 });
 
 onlineGuarded(
-  'real YooKassa sandbox payment proves claim, continuation, cancellation, and cleanup',
+  'real YooKassa sandbox payment proves claim race, continuation, cancellation, and cleanup',
   async ({ page }, testInfo) => {
     const namespace = phase4Namespace(testInfo.title);
     let cleanupAsserted = false;
     try {
       await assertRealPaymentReadiness();
-      const fixture = await createPhase4CheckoutFixture(namespace);
-      await registerAndVerify(page, fixture.email);
-      await seedOwnedCartLine(fixture.email, fixture.skuId);
-      await page.goto('/checkout');
-      await fillCheckout(page);
-      await page.getByRole('radio', { name: /Картой онлайн/ }).click();
-      await page
-        .getByRole('button', { name: /Оформить заказ/ })
-        .last()
-        .click();
-      await page.waitForURL(/yoo(money|kassa)\.ru|3ds|yookassa/i, { timeout: 30_000 });
-      await expect(page).not.toHaveURL(/\/checkout$/);
-      const created = await readLatestOwnedOrder(fixture.email);
-      expect(created.paymentInitializationState).toBe('CORRELATED');
-      expect(created.paymentInitializationClaimedAt).toBeNull();
-      expect(created.paymentEverDispatchedAt).not.toBeNull();
-      expect(created.paymentId).not.toBeNull();
-      expect(created.paymentStatus).toMatch(/pending|waiting_for_capture/);
-      const preWindowNow = new Date(Date.parse(created.createdAt) + PAYMENT_CREATE_RETRY_WINDOW_MS - 1_000);
-      expect(preWindowNow.getTime()).toBeLessThan(Date.parse(created.createdAt) + PAYMENT_CREATE_RETRY_WINDOW_MS);
-      const providerBefore = await getPaymentDetails(created.paymentId!);
-      expect(providerBefore).not.toBeNull();
-
-      const continuationResults = await Promise.all([
-        ensureOnlinePayment({ orderId: created.id, now: preWindowNow }),
-        ensureOnlinePayment({ orderId: created.id, now: preWindowNow }),
+      const fixture = await createPhase4ClaimablePaymentFixture(namespace);
+      const claimable = await readOwnedOrder(fixture.email, fixture.orderNumber);
+      expect(claimable.id).toBe(fixture.orderId);
+      expect(validatePhase4ClaimablePaymentProbe(claimable)).toBe(true);
+      expect(claimable.paymentId).toBeNull();
+      expect(claimable.paymentInitializationState).toBe('READY');
+      expect(claimable.paymentInitializationClaimedAt).toBeNull();
+      expect(claimable.paymentEverDispatchedAt).toBeNull();
+      const initialStock = claimable.stock;
+      const preWindowNow = new Date(Date.parse(claimable.createdAt) + PAYMENT_CREATE_RETRY_WINDOW_MS - 1_000);
+      expect(preWindowNow.getTime()).toBeLessThan(Date.parse(claimable.createdAt) + PAYMENT_CREATE_RETRY_WINDOW_MS);
+      const realProvider = { createPayment: createPaymentAttempt, getPaymentDetails };
+      const realClient = getPhase4DatabaseForTests() as unknown as PaymentInitializationClient;
+      const claimResults = await Promise.all([
+        ensureOnlinePayment({ orderId: claimable.id, now: preWindowNow, client: realClient, provider: realProvider }),
+        ensureOnlinePayment({ orderId: claimable.id, now: preWindowNow, client: realClient, provider: realProvider }),
       ]);
-      expect(continuationResults).toHaveLength(2);
-      for (const continuationResult of continuationResults) {
-        expect(continuationResult).toMatchObject({
-          outcome: 'CREATED',
-          confirmationUrl: providerBefore?.confirmationUrl,
-        });
-      }
-      const recovered = await readLatestOwnedOrder(fixture.email);
+      expect(claimResults).toHaveLength(2);
+      const winnerCount = claimResults.filter((result) => result.outcome === 'CREATED').length;
+      expect(winnerCount).toBe(1);
+      expect(claimResults.some((result) => result.outcome === 'INDETERMINATE')).toBe(true);
+
+      const correlated = await readOwnedOrder(fixture.email, fixture.orderNumber);
+      expect(correlated.paymentId).not.toBeNull();
+      expect(correlated.paymentInitializationState).toBe('CORRELATED');
+      expect(correlated.paymentInitializationClaimedAt).toBeNull();
+      expect(correlated.paymentEverDispatchedAt).not.toBeNull();
+      const providerBefore = await getPaymentDetails(correlated.paymentId!);
+      expect(providerBefore).not.toBeNull();
+      expect(providerBefore?.id).toBe(correlated.paymentId);
+      expect(providerBefore?.amountRub).toBe(correlated.totalAmount);
+      expect(providerBefore?.orderNumber).toBe(String(correlated.orderNumber));
+      const recovery = await ensureOnlinePayment({
+        orderId: correlated.id,
+        now: preWindowNow,
+        client: realClient,
+        provider: realProvider,
+      });
+      expect(recovery).toMatchObject({ outcome: 'CREATED', confirmationUrl: providerBefore?.confirmationUrl });
+      const recovered = await readOwnedOrder(fixture.email, fixture.orderNumber);
       expect(recovered).toMatchObject({
         paymentInitializationState: 'CORRELATED',
         paymentInitializationClaimedAt: null,
-        paymentEverDispatchedAt: created.paymentEverDispatchedAt,
-        paymentId: created.paymentId,
+        paymentEverDispatchedAt: correlated.paymentEverDispatchedAt,
+        paymentId: correlated.paymentId,
       });
+      expect(recovered.paymentEverDispatchedAt).toBe(correlated.paymentEverDispatchedAt);
+      expect(new Set([correlated.paymentId, recovered.paymentId])).toHaveSize(1);
+      const providerAfter = await getPaymentDetails(recovered.paymentId!);
+      expect(providerAfter?.id).toBe(providerBefore?.id);
+      expect(providerAfter?.orderNumber).toBe(providerBefore?.orderNumber);
 
-      await page.goto(`/orders/${created.orderNumber}`);
+      await signIn(page, fixture.email, fixture.password);
+      await page.goto(`/orders/${fixture.orderNumber}`);
       const continuation = page.getByRole('link', { name: 'Продолжить оплату' });
       await expect(continuation).toBeVisible();
       await continuation.click();
       await page.waitForURL(/yoo(money|kassa)\.ru|3ds|yookassa/i, { timeout: 30_000 });
 
-      await cancelPayment(created.paymentId!);
-      const canceled = await waitForProviderCancellation(created.paymentId!);
-      expect(canceled.id).toBe(created.paymentId);
-      expect(canceled.amountRub).toBe(created.totalAmount);
-      expect(canceled.orderNumber).toBe(String(created.orderNumber));
+      await cancelPayment(correlated.paymentId!);
+      const canceled = await waitForProviderCancellation(correlated.paymentId!);
+      expect(canceled.id).toBe(correlated.paymentId);
+      expect(canceled.amountRub).toBe(correlated.totalAmount);
+      expect(canceled.orderNumber).toBe(String(correlated.orderNumber));
       expect(canceled.status).toBe('canceled');
       const reconciliation = await reconcilePaymentStatus({
-        paymentId: created.paymentId!,
+        paymentId: correlated.paymentId!,
         remoteStatus: canceled.status,
         source: 'webhook',
       });
       expect(reconciliation.transition).toBe('canceled');
-      await page.goto(`/orders/${created.orderNumber}`);
+      await page.goto(`/orders/${correlated.orderNumber}`);
       await expect(page.getByText('Отменён')).toBeVisible();
-      const final = await readLatestOwnedOrder(fixture.email);
-      expect(final).toMatchObject({ status: 'CANCELLED', paymentStatus: 'canceled', stock: 20 });
+      const final = await readOwnedOrder(fixture.email, correlated.orderNumber);
+      expect(final).toMatchObject({
+        status: 'CANCELLED',
+        paymentStatus: 'canceled',
+        paymentId: correlated.paymentId,
+        stock: initialStock,
+      });
       const cleanupResult = await cleanupPhase4Namespace(namespace);
-      expect(cleanupResult).toMatchObject({ ok: true, namespace, deleted: true, orderNumbers: [created.orderNumber] });
+      expect(cleanupResult).toMatchObject({
+        ok: true,
+        namespace,
+        deleted: true,
+        orderNumbers: [correlated.orderNumber],
+      });
       cleanupAsserted = true;
     } finally {
       if (!cleanupAsserted) {

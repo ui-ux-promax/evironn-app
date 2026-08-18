@@ -4,6 +4,7 @@ import type { DatabaseCommandErrorCategory, DatabaseCommandReport } from './data
 import { resolveE2eDatabaseEnvironment, type E2eDatabaseEnvironment } from './database-guard';
 import {
   fingerprintDatabaseUrl,
+  hasCompleteForbiddenFingerprintPolicy,
   isDatabaseFingerprint,
   normalizeDatabaseTarget,
   TRACKED_TARGET_POLICY,
@@ -275,7 +276,8 @@ function forbiddenTargetsAbsent(
   targetFingerprint: string | null,
   policy: DatabaseTargetPolicy,
 ): boolean {
-  if (!targetFingerprint || !policy.forbiddenFingerprints.every(isDatabaseFingerprint)) return false;
+  if (!targetFingerprint || !hasCompleteForbiddenFingerprintPolicy(policy)) return false;
+  const { forbiddenFingerprints } = policy;
   const probeNames = [
     'E2E_DATABASE_URL',
     'E2E_DATABASE_URL_UNPOOLED',
@@ -287,7 +289,7 @@ function forbiddenTargetsAbsent(
   const probes = probeNames.map((name) => ({ name, fingerprint: probeFingerprint(env[name]) }));
   if (probes.some(({ name, fingerprint }) => Boolean(env[name]) && fingerprint === null)) return false;
   return [targetFingerprint, ...probes.flatMap(({ fingerprint }) => (fingerprint ? [fingerprint] : []))].every(
-    (fingerprint) => !policy.forbiddenFingerprints.includes(fingerprint),
+    (fingerprint) => !forbiddenFingerprints.includes(fingerprint),
   );
 }
 
@@ -395,6 +397,15 @@ export async function runPhase4DatabaseReadiness(
     codReadiness: true,
     uniqueFixtureCapability: true,
   };
+  if (!checks.forbiddenTargetsAbsent) {
+    return readinessReport({
+      ok: false,
+      exitCode: 1,
+      errorCategory: 'IDENTITY_MISMATCH',
+      targetFingerprint,
+      checks,
+    });
+  }
   try {
     const result = await (dependencies.query ?? queryReadinessDatabase)(environment.POSTGRES_URL_NON_POOLING);
     const expectedDatabase = normalizeDatabaseTarget(environment.POSTGRES_URL_NON_POOLING)

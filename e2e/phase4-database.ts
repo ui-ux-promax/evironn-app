@@ -68,6 +68,12 @@ export type Phase4BlockedPaymentFixture = Phase4CheckoutFixture & {
   neverAttemptedProof: Phase4NeverAttemptedProviderProof;
 };
 
+export type Phase4ClaimablePaymentFixture = Phase4CheckoutFixture & {
+  orderId: string;
+  orderNumber: number;
+  password: string;
+};
+
 export type Phase4NeverAttemptedProviderProof = {
   orderId: string;
   providerRequestIssued: false;
@@ -373,6 +379,81 @@ export async function readLatestOwnedOrder(email: string): Promise<Phase4OrderPr
   });
   if (!latest) throw new Error('Latest owned Phase 4 order not found');
   return readOwnedOrder(email, latest.orderNumber);
+}
+
+export function validatePhase4ClaimablePaymentProbe(
+  order: Pick<
+    Phase4OrderProbe,
+    | 'status'
+    | 'paymentMethod'
+    | 'paymentInitializationState'
+    | 'paymentInitializationClaimedAt'
+    | 'paymentEverDispatchedAt'
+    | 'paymentId'
+  >,
+): boolean {
+  return (
+    order.status === 'PENDING' &&
+    order.paymentMethod === 'online' &&
+    order.paymentInitializationState === 'READY' &&
+    order.paymentInitializationClaimedAt === null &&
+    order.paymentEverDispatchedAt === null &&
+    order.paymentId === null
+  );
+}
+
+export async function createPhase4ClaimablePaymentFixture(namespace: string): Promise<Phase4ClaimablePaymentFixture> {
+  const fixture = await createPhase4CheckoutFixture(namespace);
+  const passwordHash = await hashPassword(E2E_PASSWORD);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '');
+  if (!siteUrl) throw new Error('NEXT_PUBLIC_SITE_URL is required for a real Phase 4 payment fixture');
+  const email = fixture.email;
+  const order = await getPhase4Database().$transaction(
+    async (transaction) => {
+      const user = await transaction.user.create({
+        data: { email, passwordHash, emailVerified: new Date(), name: `Phase 4 ${namespace}` },
+      });
+      const sku = await transaction.sku.update({ where: { id: fixture.skuId }, data: { stock: { decrement: 1 } } });
+      const created = await transaction.order.create({
+        data: {
+          userId: user.id,
+          contactName: user.name ?? 'Phase 4 User',
+          contactPhone: '+79990000000',
+          contactEmail: email,
+          shippingMethod: 'courier',
+          city: 'Москва',
+          addressLine: 'Phase 4 fixture address',
+          shippingAmount: CHECKOUT_POLICY.courier.moscow,
+          itemsTotal: sku.price,
+          totalAmount: sku.price + CHECKOUT_POLICY.courier.moscow,
+          paymentMethod: 'online',
+          paymentReturnUrl: `${siteUrl}/orders/pending-${namespace}`,
+          paymentInitializationState: 'READY',
+          items: {
+            create: {
+              skuId: sku.id,
+              skuArticleNumber: sku.articleNumber,
+              skuCombinationKey: sku.combinationKey,
+              productName: `Phase 4 fixture ${namespace}`,
+              productSlug: `${namespace}-fixture-product`,
+              configuration: { namespace },
+              imageUrl: null,
+              unitPrice: sku.price,
+              oldUnitPrice: sku.oldPrice,
+              quantity: 1,
+              lineTotal: sku.price,
+            },
+          },
+        },
+      });
+      return transaction.order.update({
+        where: { id: created.id },
+        data: { paymentReturnUrl: `${siteUrl}/orders/${created.orderNumber}` },
+      });
+    },
+    { isolationLevel: 'Serializable' },
+  );
+  return { ...fixture, orderId: order.id, orderNumber: order.orderNumber, password: E2E_PASSWORD };
 }
 
 export async function createPhase4BlockedPaymentFixture(namespace: string): Promise<Phase4BlockedPaymentFixture> {

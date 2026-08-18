@@ -1,5 +1,6 @@
 import {
   fingerprintDatabaseUrl,
+  hasCompleteForbiddenFingerprintPolicy,
   isDatabaseFingerprint,
   TRACKED_TARGET_POLICY,
   type DatabaseTargetPolicy,
@@ -73,6 +74,9 @@ export function resolveE2eDatabaseEnvironment(
   env: Record<string, string | undefined>,
   targetPolicy: DatabaseTargetPolicy = TRACKED_TARGET_POLICY,
 ): E2eDatabaseEnvironment {
+  if (!hasCompleteForbiddenFingerprintPolicy(targetPolicy)) {
+    throw new Error('Tracked forbidden database policy is missing or malformed');
+  }
   if (env.E2E_DATABASE_ALLOW_WRITES !== '1') {
     throw new Error('E2E_DATABASE_ALLOW_WRITES=1 is required for approved E2E database access');
   }

@@ -275,13 +275,36 @@ describe('Phase 4 E2E safety contract', () => {
     expect(checkout).toContain('captureBrowserQuote');
     expect(checkout).toContain('fixture.couponCode');
     expect(checkout).toContain("getByLabel('Сборка на месте')");
-    expect(checkout).toContain('deliveryDate: selectedSlot.date');
-    expect(checkout).toContain('deliveryWindow: selectedSlot.windowId');
+    expect(checkout).toContain('deliveryDate: normalizeVisibleDeliveryDate(selectedSlot.date)');
+    expect(checkout).toContain('deliveryWindow: selectedSlot.windowLabel');
     expect(checkout).toContain("serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }]");
     expect(checkout).toContain('browserQuote.totalAmount');
     expect(checkout).not.toContain('expectQuoteAmount(page');
     expect(checkout).toContain('deliveryDate: showroomOrder.deliveryDate');
     expect(checkout).toContain('deliveryDate: pickupOrder.deliveryDate');
+  });
+
+  it('makes every checkout snapshot assertion executable against persisted probe data', () => {
+    const checkout = read('e2e/checkout.spec.ts');
+    expect(checkout).toContain('normalizeVisibleDeliveryDate');
+    expect(checkout).toContain('windowLabel');
+    for (const mode of ['courier', 'showroom', 'pickup']) {
+      expect(checkout).toContain(`${mode}Order.paymentMethod`);
+      expect(checkout).toContain(`${mode}Order.shippingMethod`);
+      expect(checkout).toContain(`${mode}Order.deliveryZone`);
+      expect(checkout).toContain(`${mode}Order.discountAmount`);
+      expect(checkout).toContain(`${mode}Order.shippingAmount`);
+      expect(checkout).toContain(`${mode}Order.serviceAmount`);
+      expect(checkout).toContain(`${mode}Order.totalAmount`);
+    }
+    expect(checkout).toContain('showroomOrder.pickupPointId');
+    expect(checkout).toContain('showroomOrder.pickupPointName');
+    expect(checkout).toContain('showroomOrder.pickupPointAddress');
+    expect(checkout).toContain('pickupOrder.pickupPointId');
+    expect(checkout).toContain('pickupOrder.pickupPointName');
+    expect(checkout).toContain('pickupOrder.pickupPointAddress');
+    expect(checkout).toContain('couponCode: showroomOrder.couponCode');
+    expect(checkout).toContain('couponCode: pickupOrder.couponCode');
   });
 
   it('replays supported cancellation server action and proves exactly-once restoration', () => {
@@ -304,6 +327,20 @@ describe('Phase 4 E2E safety contract', () => {
     expect(payment).toContain('Повторное создание платежа отключено; статус проверяется.');
     expect(payment).toContain('expect(cleanupResult).toMatchObject');
     expect(payment).toContain('deleted: true');
+  });
+
+  it('proves the YooKassa race starts claimable with no local Payment', () => {
+    const payment = read('e2e/yookassa.spec.ts');
+    const database = read('e2e/phase4-database.ts');
+    expect(payment).toContain('createPhase4ClaimablePaymentFixture');
+    expect(payment).toContain('validatePhase4ClaimablePaymentProbe');
+    expect(payment).toContain('claimable.paymentId).toBeNull()');
+    expect(payment).toContain("claimable.paymentInitializationState).toBe('READY')");
+    expect(payment).toContain('claimResults');
+    expect(payment).toContain('winnerCount');
+    expect(database).toContain('createPhase4ClaimablePaymentFixture');
+    expect(database).toContain('paymentId: order.payment?.id ?? null');
+    expect(database).toContain("paymentInitializationState: 'READY'");
   });
 
   it('keeps readiness import-safe during Playwright collection', () => {

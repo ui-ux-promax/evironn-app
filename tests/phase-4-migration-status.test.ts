@@ -11,7 +11,7 @@ import {
   runMigrationStatusCli,
   type DeliveryMigrationRow,
 } from '@/e2e/database-readiness';
-import { fingerprintDatabaseUrl } from '@/e2e/database-target';
+import { fingerprintDatabaseUrl, TRACKED_TARGET_POLICY } from '@/e2e/database-target';
 
 const appliedRow = (overrides: Partial<DeliveryMigrationRow> = {}): DeliveryMigrationRow => ({
   migration_name: EXPECTED_DELIVERY_MIGRATION_NAME,
@@ -22,6 +22,66 @@ const appliedRow = (overrides: Partial<DeliveryMigrationRow> = {}): DeliveryMigr
 });
 
 describe('Phase 4 migration status checkpoint', () => {
+  it.each(['migration', 'completion'] as const)(
+    'blocks %s readiness before query when tracked forbidden identity policy is empty',
+    async (mode) => {
+      const calls: string[] = [];
+      const result = await runPhase4DatabaseReadiness(
+        {
+          E2E_DATABASE_URL: 'postgresql://approved.example/db',
+          E2E_DATABASE_ALLOW_WRITES: '1',
+          E2E_DATABASE_TARGET_FINGERPRINT: TRACKED_TARGET_POLICY.approvedDevFingerprint,
+          AUTH_SECRET: 'present',
+          AUTH_TRUST_HOST: 'true',
+        },
+        mode,
+        {
+          resolveEnvironment: () => ({
+            POSTGRES_URL: 'postgresql://approved.example/db',
+            POSTGRES_URL_NON_POOLING: 'postgresql://approved.example/db',
+            RESEND_API_KEY: '',
+          }),
+          query: async () => {
+            calls.push(mode);
+            return { databaseName: 'db', migrations: [] };
+          },
+        },
+      );
+      expect(TRACKED_TARGET_POLICY.forbiddenFingerprints).toEqual([]);
+      expect(result.ok).toBe(false);
+      expect(result.checks.forbiddenTargetsAbsent).toBe(false);
+      expect(calls).toEqual([]);
+    },
+  );
+
+  it('blocks malformed tracked forbidden identity policy without inventing a fingerprint', async () => {
+    const calls: string[] = [];
+    const result = await runPhase4DatabaseReadiness(
+      {
+        E2E_DATABASE_URL: 'postgresql://approved.example/db',
+        E2E_DATABASE_ALLOW_WRITES: '1',
+        E2E_DATABASE_TARGET_FINGERPRINT: 'a'.repeat(64),
+      },
+      'migration',
+      {
+        targetPolicy: { approvedDevFingerprint: 'a'.repeat(64), forbiddenFingerprints: ['not-a-fingerprint'] },
+        resolveEnvironment: () => ({
+          POSTGRES_URL: 'postgresql://approved.example/db',
+          POSTGRES_URL_NON_POOLING: 'postgresql://approved.example/db',
+          RESEND_API_KEY: '',
+        }),
+        query: async () => {
+          calls.push('query');
+          return { databaseName: 'db', migrations: [] };
+        },
+      },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.checks.forbiddenTargetsAbsent).toBe(false);
+    expect(result.targetFingerprint).toBe('a'.repeat(64));
+    expect(calls).toEqual([]);
+  });
+
   it('fails migration readiness when current database identity does not match', async () => {
     const result = await runPhase4DatabaseReadiness(
       {

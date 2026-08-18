@@ -77,8 +77,14 @@ async function captureSelectedSlot(page: Page) {
     .getByRole('radiogroup', { name: 'Дата получения' })
     .locator('button[role="radio"][aria-checked="true"]');
   const [date, windowLabel] = (await selected.innerText()).split(/\r?\n/);
-  const [from, to] = windowLabel.split(' – ');
-  return { date, windowId: `${from.slice(0, 2)}-${to.slice(0, 2)}` };
+  return { date, windowLabel };
+}
+
+function normalizeVisibleDeliveryDate(date: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Unexpected visible delivery date');
+  const normalized = new Date(`${date}T00:00:00.000Z`);
+  if (Number.isNaN(normalized.getTime())) throw new Error('Unexpected visible delivery date');
+  return normalized.toISOString();
 }
 
 async function replaySupportedServerAction(page: Page, request: Request) {
@@ -122,9 +128,27 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
     await expect(page).toHaveURL(/\/orders\/\d+/);
     await expect(page.getByText('Московская область')).toBeVisible();
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
-    const probe = await readOwnedOrder(fixture.email, orderNumber);
+    const courierOrder = await readOwnedOrder(fixture.email, orderNumber);
     const discount = Math.floor(fixture.unitPrice * 0.1);
-    expect(probe).toMatchObject({
+    expect({
+      paymentMethod: courierOrder.paymentMethod,
+      skuId: courierOrder.skuId,
+      itemsTotal: courierOrder.itemsTotal,
+      discountAmount: courierOrder.discountAmount,
+      shippingAmount: courierOrder.shippingAmount,
+      totalAmount: courierOrder.totalAmount,
+      couponCode: courierOrder.couponCode,
+      shippingMethod: courierOrder.shippingMethod,
+      deliveryZone: courierOrder.deliveryZone,
+      pickupPointId: courierOrder.pickupPointId,
+      pickupPointName: courierOrder.pickupPointName,
+      pickupPointAddress: courierOrder.pickupPointAddress,
+      deliveryDate: courierOrder.deliveryDate,
+      deliveryWindow: courierOrder.deliveryWindow,
+      serviceAmount: courierOrder.serviceAmount,
+      serviceDetails: courierOrder.serviceDetails,
+    }).toEqual({
+      paymentMethod: 'cod',
       skuId: fixture.skuId,
       itemsTotal: fixture.unitPrice,
       discountAmount: discount,
@@ -136,8 +160,8 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
       pickupPointId: null,
       pickupPointName: null,
       pickupPointAddress: null,
-      deliveryDate: selectedSlot.date,
-      deliveryWindow: selectedSlot.windowId,
+      deliveryDate: normalizeVisibleDeliveryDate(selectedSlot.date),
+      deliveryWindow: selectedSlot.windowLabel,
       serviceAmount: browserQuote.serviceAmount,
       serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }],
     });
@@ -148,16 +172,16 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
       totalAmount: fixture.unitPrice - discount + 1900 + 3900,
     });
     expect({
-      deliveryDate: probe.deliveryDate,
-      deliveryWindow: probe.deliveryWindow,
-      serviceDetails: probe.serviceDetails,
-      discountAmount: probe.discountAmount,
-      shippingAmount: probe.shippingAmount,
-      serviceAmount: probe.serviceAmount,
-      totalAmount: probe.totalAmount,
+      deliveryDate: courierOrder.deliveryDate,
+      deliveryWindow: courierOrder.deliveryWindow,
+      serviceDetails: courierOrder.serviceDetails,
+      discountAmount: courierOrder.discountAmount,
+      shippingAmount: courierOrder.shippingAmount,
+      serviceAmount: courierOrder.serviceAmount,
+      totalAmount: courierOrder.totalAmount,
     }).toEqual({
-      deliveryDate: selectedSlot.date,
-      deliveryWindow: selectedSlot.windowId,
+      deliveryDate: normalizeVisibleDeliveryDate(selectedSlot.date),
+      deliveryWindow: selectedSlot.windowLabel,
       serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }],
       discountAmount: browserQuote.couponDiscount,
       shippingAmount: browserQuote.shippingAmount,
@@ -188,27 +212,33 @@ guarded('showroom COD persists approved showroom snapshot', async ({ page }, tes
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
     const showroomOrder = await readOwnedOrder(fixture.email, orderNumber);
     expect({
-      paymentMethod: 'cod',
-      shippingMethod: 'pickup',
-      deliveryZone: null,
+      paymentMethod: showroomOrder.paymentMethod,
+      itemsTotal: showroomOrder.itemsTotal,
+      shippingMethod: showroomOrder.shippingMethod,
+      deliveryZone: showroomOrder.deliveryZone,
       deliveryDate: showroomOrder.deliveryDate,
       deliveryWindow: showroomOrder.deliveryWindow,
-      pickupPointId: 'pt-dizavod',
-      pickupPointName: 'Шоурум Evironn',
-      pickupPointAddress: 'Большая Новодмитровская, 36',
-      shippingAmount: 0,
+      pickupPointId: showroomOrder.pickupPointId,
+      pickupPointName: showroomOrder.pickupPointName,
+      pickupPointAddress: showroomOrder.pickupPointAddress,
+      couponCode: showroomOrder.couponCode,
+      discountAmount: showroomOrder.discountAmount,
+      shippingAmount: showroomOrder.shippingAmount,
       serviceDetails: showroomOrder.serviceDetails,
-      serviceAmount: 0,
-      totalAmount: fixture.unitPrice,
+      serviceAmount: showroomOrder.serviceAmount,
+      totalAmount: showroomOrder.totalAmount,
     }).toEqual({
       paymentMethod: 'cod',
+      itemsTotal: fixture.unitPrice,
       shippingMethod: 'pickup',
       deliveryZone: null,
-      deliveryDate: showroomSlot.date,
-      deliveryWindow: showroomSlot.windowId,
+      deliveryDate: normalizeVisibleDeliveryDate(showroomSlot.date),
+      deliveryWindow: showroomSlot.windowLabel,
       pickupPointId: 'pt-dizavod',
       pickupPointName: 'Шоурум Evironn',
       pickupPointAddress: 'Большая Новодмитровская, 36',
+      couponCode: null,
+      discountAmount: 0,
       shippingAmount: 0,
       serviceDetails: [],
       serviceAmount: 0,
@@ -236,27 +266,33 @@ guarded('pickup-point COD uses server-owned pickup address', async ({ page }, te
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
     const pickupOrder = await readOwnedOrder(fixture.email, orderNumber);
     expect({
-      paymentMethod: 'cod',
-      shippingMethod: 'pickup',
-      deliveryZone: null,
+      paymentMethod: pickupOrder.paymentMethod,
+      itemsTotal: pickupOrder.itemsTotal,
+      shippingMethod: pickupOrder.shippingMethod,
+      deliveryZone: pickupOrder.deliveryZone,
       deliveryDate: pickupOrder.deliveryDate,
       deliveryWindow: pickupOrder.deliveryWindow,
-      pickupPointId: 'pt-danilov',
-      pickupPointName: 'Пункт «Даниловский»',
-      pickupPointAddress: 'Дубининская, 71',
-      shippingAmount: 0,
+      pickupPointId: pickupOrder.pickupPointId,
+      pickupPointName: pickupOrder.pickupPointName,
+      pickupPointAddress: pickupOrder.pickupPointAddress,
+      couponCode: pickupOrder.couponCode,
+      discountAmount: pickupOrder.discountAmount,
+      shippingAmount: pickupOrder.shippingAmount,
       serviceDetails: pickupOrder.serviceDetails,
-      serviceAmount: 0,
-      totalAmount: fixture.unitPrice,
+      serviceAmount: pickupOrder.serviceAmount,
+      totalAmount: pickupOrder.totalAmount,
     }).toEqual({
       paymentMethod: 'cod',
+      itemsTotal: fixture.unitPrice,
       shippingMethod: 'pickup',
       deliveryZone: null,
-      deliveryDate: pickupSlot.date,
-      deliveryWindow: pickupSlot.windowId,
+      deliveryDate: normalizeVisibleDeliveryDate(pickupSlot.date),
+      deliveryWindow: pickupSlot.windowLabel,
       pickupPointId: 'pt-danilov',
       pickupPointName: 'Пункт «Даниловский»',
       pickupPointAddress: 'Дубининская, 71',
+      couponCode: null,
+      discountAmount: 0,
       shippingAmount: 0,
       serviceDetails: [],
       serviceAmount: 0,

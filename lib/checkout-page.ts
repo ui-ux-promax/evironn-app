@@ -4,6 +4,7 @@ import { buildDeliverySlots, calculateCheckoutTotals, calculateServiceLines } fr
 import { buildOrderSnapshot, type OrderSnapshot } from '@/lib/order';
 import { buildCartDto, cartPresentationInclude } from '@/lib/cart-presentation';
 import { checkCoupon } from '@/lib/coupon';
+import { isCheckoutQuantityReady } from '@/lib/cart-quantity';
 import { prisma } from '@/lib/prisma-client';
 import { checkoutQuoteInputSchema, type CheckoutQuoteInput, type PlaceOrderInput } from '@/services/dto/checkout.dto';
 import { EMPTY_CART_DTO } from '@/services/dto/commerce-cart.dto';
@@ -161,7 +162,9 @@ function hasNonReadyLine(cart: {
 }): boolean {
   return (
     hasNonCanonicalLine(cart) ||
-    cart.items.some((item) => item.sku !== null && (item.sku.stock < 1 || item.quantity > item.sku.stock))
+    cart.items.some(
+      (item) => item.sku !== null && (item.sku.stock < 1 || !isCheckoutQuantityReady(item.quantity, item.sku.stock)),
+    )
   );
 }
 
@@ -260,7 +263,7 @@ export async function buildCheckoutQuote({
     ) {
       return quoteError('SKU_UNAVAILABLE', 'Товар больше недоступен');
     }
-    if (item.quantity > item.sku.stock) {
+    if (!isCheckoutQuantityReady(item.quantity, item.sku.stock)) {
       return quoteError('QUANTITY_EXCEEDS_STOCK', 'Недостаточно товара на складе', item.sku.stock);
     }
   }

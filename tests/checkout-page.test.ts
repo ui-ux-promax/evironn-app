@@ -178,6 +178,13 @@ describe('getCheckoutPageDto', () => {
     await expect(
       getCheckoutPageDto({ userId: 'user-1', cookieToken: undefined, now, client: client(outOfStock) }),
     ).resolves.toMatchObject({ status: 'NON_READY_CART' });
+
+    const overLimit = canonicalCart();
+    overLimit.items[0].quantity = 100;
+    overLimit.items[0].sku.stock = 120;
+    await expect(
+      getCheckoutPageDto({ userId: 'user-1', cookieToken: undefined, now, client: client(overLimit) }),
+    ).resolves.toMatchObject({ status: 'NON_READY_CART' });
   });
 });
 
@@ -247,6 +254,13 @@ describe('buildCheckoutQuote', () => {
     await expect(
       buildCheckoutQuote({ userId: 'user-1', raw: quoteRaw, now, client: client(overstock) }),
     ).resolves.toMatchObject({ ok: false, code: 'QUANTITY_EXCEEDS_STOCK', stock: 3 });
+
+    const overLimit = canonicalCart();
+    overLimit.items[0].quantity = 100;
+    overLimit.items[0].sku.stock = 120;
+    await expect(
+      buildCheckoutQuote({ userId: 'user-1', raw: quoteRaw, now, client: client(overLimit) }),
+    ).resolves.toMatchObject({ ok: false, code: 'QUANTITY_EXCEEDS_STOCK', stock: 120 });
   });
 
   it('rejects empty carts, invalid coupon, and forged input with typed errors', async () => {

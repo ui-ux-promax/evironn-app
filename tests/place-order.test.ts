@@ -170,6 +170,23 @@ describe('placeOrder transactional canonical placement', () => {
     expect(tx.cartItem.deleteMany).not.toHaveBeenCalled();
   });
 
+  it('rejects quantities above the canonical maximum before reservation', async () => {
+    const tx = transactionClient();
+    const overLimit = {
+      ...orderData,
+      snapshot: {
+        ...orderData.snapshot,
+        items: [{ ...orderData.snapshot.items[0], quantity: 100, lineTotal: 10_000_000 }],
+      },
+    };
+    mocks.buildCheckoutOrderData.mockResolvedValue(overLimit);
+    mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown) => operation(tx));
+
+    await expect(placeOrder(validForm)).resolves.toMatchObject({ ok: false, code: 'QUANTITY_EXCEEDS_STOCK' });
+    expect(tx.sku.updateMany).not.toHaveBeenCalled();
+    expect(tx.order.create).not.toHaveBeenCalled();
+  });
+
   it('rejects buy-now and client-owned money fields through the one strict schema', async () => {
     await expect(placeOrder({ ...validForm, buyNowVariantId: 'legacy', totalAmount: 1 })).resolves.toMatchObject({
       ok: false,

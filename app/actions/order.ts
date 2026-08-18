@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma-client';
 import { cartCookieName } from '@/lib/cart-cookie';
 import { resolveOwnerCart } from '@/lib/cart';
+import { isCanonicalCartQuantity } from '@/lib/cart-quantity';
 import { buildCheckoutOrderData } from '@/lib/checkout-page';
 import {
   OrderTransactionConflictError,
@@ -134,6 +135,11 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
       });
 
       for (const item of orderData.snapshot.items) {
+        if (!isCanonicalCartQuantity(item.quantity)) {
+          throw Object.assign(new Error('Cart line quantity cannot exceed 99.'), {
+            code: 'QUANTITY_EXCEEDS_STOCK',
+          });
+        }
         if (!item.skuId) throw Object.assign(new Error('Корзина содержит устаревший товар'), { code: 'SKU_UNAVAILABLE' });
         const reserved = await transaction.sku.updateMany({
           where: { id: item.skuId, active: true, stock: { gte: item.quantity } },

@@ -62,7 +62,11 @@ export function OrderVariantA({ order, placed = false }: { order: OrderPageDto; 
             <section className="ord-review" key={target.productId}>
               <div className="ord-rate ord-rate--light">
                 <p>
-                  <b>{target.name}</b>
+                  <b>
+                    <Link className="ord-review__product-link" href={target.href}>
+                      {target.name}
+                    </Link>
+                  </b>
                   {target.reviewed
                     ? 'Вы уже оставили отзыв.'
                     : target.eligible

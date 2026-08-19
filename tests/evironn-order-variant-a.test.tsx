@@ -28,4 +28,11 @@ describe('OrderVariantA', () => {
     expect(primitives).not.toContain('new Date(order.createdAt)');
     expect(variant).toContain('<CancelOrderButton');
   });
+
+  it('links each review target to its canonical product page', () => {
+    const variant = fs.readFileSync('components/evironn/order/order-variant-a.tsx', 'utf8');
+
+    expect(variant).toContain('<Link className="ord-review__product-link" href={target.href}>');
+    expect(variant).toContain('{target.name}');
+  });
 });

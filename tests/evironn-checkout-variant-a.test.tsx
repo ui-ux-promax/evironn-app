@@ -345,6 +345,7 @@ describe('Checkout Variant A', () => {
     fireEvent.change(address, { target: { value: 'Москва Тверская' } });
 
     const suggestion = await screen.findByRole('button', { name: 'г Москва, ул Тверская, д 10' });
+    expect(suggestion.closest('p')).toBeNull();
     fireEvent.click(suggestion);
 
     expect(address).toHaveValue('г Москва, ул Тверская, д 10');

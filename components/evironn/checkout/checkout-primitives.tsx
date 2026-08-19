@@ -52,7 +52,7 @@ export function Field({
   const id = useId();
   const noteId = `${id}-note`;
   return (
-    <p className={`chk-field chk-field--light${wide ? ' is-wide' : ''}${error ? ' is-bad' : ''}`}>
+    <div className={`chk-field chk-field--light${wide ? ' is-wide' : ''}${error ? ' is-bad' : ''}`}>
       <label htmlFor={id}>{label}</label>
       <span className="chk-field__control">
         <input
@@ -73,7 +73,7 @@ export function Field({
           {error}
         </span>
       )}
-    </p>
+    </div>
   );
 }
 

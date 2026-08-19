@@ -226,4 +226,12 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - The user approved proportional `fashion-shop`-style E2E: prioritize functional portfolio journeys over infrastructure-safety machinery.
 - The follow-up implementation should retire the mandatory `E2E_DATABASE_URL`/fingerprint/forbidden-target/readiness/manifest layer and use the selected non-production Neon `dev` target through the application-style connection convention.
 - Keep unique fixture identities and targeted cleanup; keep global reset, truncate, schema reset, and Production DB access forbidden. Real YooKassa sandbox creation/cancellation becomes optional manual smoke and must not block portfolio acceptance.
-- This is recorded as ADR-020. Current Phase 4 code still contains the earlier guard layer until a separate implementation task applies the decision.
+- This is recorded as ADR-020; implementation is tracked in the next section.
+
+## Phase 4 E2E simplification implementation — 2026-08-19
+
+- ADR-020 applied locally: Phase 4 fixtures use `POSTGRES_URL_NON_POOLING || POSTGRES_URL`; old `E2E_DATABASE_*` names remain compatibility inputs only.
+- Removed mandatory database fingerprint/forbidden-target/readiness/fingerprint CLI/migration-wrapper/Phase 4 delivery-manifest contract layers. Phase 3 historical compatibility paths remain intact.
+- Checkout, order, review, COD, and blocked-payment browser tests run directly. Real YooKassa sandbox test runs only with explicit `E2E_YOOKASSA_REAL=1` plus provider prerequisites; it is optional and not part of normal portfolio acceptance.
+- Targeted namespace cleanup remains. No truncate, schema reset, global delete/reset, Production DB, push, PR, merge, or branch deletion performed.
+- Focused validation after refactor: 4 test files / 19 tests passed; typecheck passed. Functional E2E rerun remains next.

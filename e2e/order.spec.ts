@@ -11,12 +11,7 @@ import {
 } from './phase4-database';
 import { expectProtectedOrderBoundary, registerAndVerify } from './helpers';
 
-const hasExplicitDatabase = Boolean(
-  process.env.E2E_DATABASE_URL &&
-  process.env.E2E_DATABASE_ALLOW_WRITES === '1' &&
-  process.env.E2E_DATABASE_TARGET_FINGERPRINT,
-);
-const guarded = hasExplicitDatabase ? test : test.skip;
+const guarded = test;
 
 async function placeCodOrder(page: Page, namespace: string) {
   const fixture = await createPhase4CheckoutFixture(namespace);
@@ -102,5 +97,5 @@ guarded('keyboard cancellation dialog and reduced motion remain accessible', asy
 });
 
 test.afterAll(async () => {
-  if (hasExplicitDatabase) await disconnectPhase4Database();
+  await disconnectPhase4Database();
 });

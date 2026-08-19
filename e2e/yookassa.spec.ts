@@ -1,6 +1,3 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
 import { expect, test, type Page } from '@playwright/test';
 
 import {
@@ -25,73 +22,15 @@ import {
 } from './phase4-database';
 import { registerAndVerify, signIn } from './helpers';
 
-const hasExplicitDatabase = Boolean(
-  process.env.E2E_DATABASE_URL &&
-  process.env.E2E_DATABASE_ALLOW_WRITES === '1' &&
-  process.env.E2E_DATABASE_TARGET_FINGERPRINT,
-);
 const hasSandboxCredentials = Boolean(
   process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY && process.env.YOOKASSA_MODE === 'sandbox',
 );
 const hasAuthPrerequisites = Boolean(process.env.AUTH_SECRET && process.env.AUTH_TRUST_HOST);
 const hasSiteUrl = Boolean(process.env.NEXT_PUBLIC_SITE_URL);
 const onlineGuarded =
-  hasExplicitDatabase && hasSandboxCredentials && hasAuthPrerequisites && hasSiteUrl ? test : test.skip;
-const dbGuarded = hasExplicitDatabase ? test : test.skip;
-const execFileAsync = promisify(execFile);
-const AMBIENT_DATABASE_VARIABLES = new Set([
-  'DATABASE_URL',
-  'DATABASE_URL_UNPOOLED',
-  'POSTGRES_URL',
-  'POSTGRES_URL_NON_POOLING',
-]);
-
-async function assertRealPaymentReadiness() {
-  const readinessEnvironment = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !AMBIENT_DATABASE_VARIABLES.has(name)),
-  );
-  let stdout = '';
-  try {
-    const result = await execFileAsync(
-      process.platform === 'win32' ? 'npx.cmd' : 'npx',
-      ['tsx', 'e2e/database-readiness.ts', '--mode=completion'],
-      {
-        env: readinessEnvironment,
-        windowsHide: true,
-        shell: process.platform === 'win32',
-        maxBuffer: 1024 * 1024,
-      },
-    );
-    stdout = result.stdout;
-  } catch (error) {
-    if (error && typeof error === 'object' && 'stdout' in error && typeof error.stdout === 'string') {
-      stdout = error.stdout;
-    }
-  }
-  let readiness: { ok: boolean; checks: Record<string, boolean> };
-  try {
-    readiness = JSON.parse(stdout.trim()) as { ok: boolean; checks: Record<string, boolean> };
-  } catch {
-    throw new Error('Real YooKassa readiness wrapper returned no sanitized report');
-  }
-  expect(readiness.ok, 'Real YooKassa flow requires completion readiness').toBe(true);
-  for (const migrationName of [
-    '20260816_phase4_delivery_snapshots',
-    '20260816_phase4_payment_replay',
-    '20260817_phase4_payment_claim',
-  ]) {
-    expect(readiness.checks[`${migrationName}Applied`], `${migrationName} must be applied`).toBe(true);
-  }
-}
-
-async function isSandboxProviderReachable(): Promise<boolean> {
-  try {
-    await getPaymentDetails('00000000-0000-0000-0000-000000000000');
-    return true;
-  } catch {
-    return false;
-  }
-}
+  process.env.E2E_YOOKASSA_REAL === '1' && hasSandboxCredentials && hasAuthPrerequisites && hasSiteUrl
+    ? test
+    : test.skip;
 
 async function fillCheckout(page: Page) {
   await page.getByLabel('Имя и фамилия').fill('Phase 4 Payment Customer');
@@ -110,7 +49,7 @@ async function waitForProviderCancellation(paymentId: string) {
   throw new Error('YooKassa sandbox cancellation did not reach terminal state');
 }
 
-dbGuarded('COD regression remains real production payment method', async ({ page }, testInfo) => {
+test('COD regression remains real production payment method', async ({ page }, testInfo) => {
   const namespace = phase4Namespace(testInfo.title);
   try {
     const fixture = await createPhase4CheckoutFixture(namespace);
@@ -137,11 +76,6 @@ onlineGuarded(
     let cleanupAsserted = false;
     let fixtureCreated = false;
     try {
-      if (!(await isSandboxProviderReachable())) {
-        test.skip(true, 'YooKassa sandbox credentials cannot access the provider');
-        return;
-      }
-      await assertRealPaymentReadiness();
       const fixture = await createPhase4ClaimablePaymentFixture(namespace);
       fixtureCreated = true;
       const claimable = await readOwnedOrder(fixture.email, fixture.orderNumber);
@@ -240,7 +174,7 @@ onlineGuarded(
   },
 );
 
-dbGuarded('blocked payment shows lookup-only state without provider substitute', async ({ page }, testInfo) => {
+test('blocked payment shows lookup-only state without provider substitute', async ({ page }, testInfo) => {
   const namespace = phase4Namespace(testInfo.title);
   let proof;
   let blockedOrderNumber: number | undefined;
@@ -276,5 +210,5 @@ dbGuarded('blocked payment shows lookup-only state without provider substitute',
 });
 
 test.afterAll(async () => {
-  if (hasExplicitDatabase) await disconnectPhase4Database();
+  await disconnectPhase4Database();
 });

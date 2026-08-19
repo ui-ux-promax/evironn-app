@@ -71,3 +71,7 @@ The final manifest contains 107 sorted entries, excludes itself, and records exa
 Sanitized completion readiness is green against the explicit approved shared Neon `dev` target: write opt-in, target identity, connectivity, Auth readiness, and all three Phase 4 migrations passed. Focused browser evidence passed for checkout (5), order (3), review (2), YooKassa COD, and blocked-payment lookup-only behavior. The fixture probe uses the explicit unpooled E2E URL and bounded polling for Neon read-after-write visibility.
 
 The real YooKassa sandbox smoke remains deferred. The configured provider account returns `Incorrect payment_id / access denied` for payment IDs created during the smoke, so provider ownership and cancellation cannot be proved. Targeted cleanup correctly refuses those two owned pending fixtures as `PROVIDER_STATE_INDETERMINATE`; no non-owned or production records were touched. Full acceptance remains blocked at this external-provider boundary.
+
+## ADR-020 implementation
+
+The earlier readiness, fingerprint, migration-wrapper, Phase 4 safety-contract, and delivery-manifest evidence is historical and superseded for portfolio acceptance. Phase 4 browser fixtures now use application-style `POSTGRES_URL_NON_POOLING || POSTGRES_URL`; legacy E2E URL names remain compatibility inputs only. Functional checkout, order, review, COD, and blocked-payment scenarios remain; real YooKassa requires explicit `E2E_YOOKASSA_REAL=1` and is optional manual smoke. Namespace-owned targeted cleanup remains required.

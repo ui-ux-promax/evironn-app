@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
+> Superseded on 2026-08-19 by ADR-020: Phase 4 now follows proportional `fashion-shop`-style functional E2E. Guard/readiness/fingerprint/manifest work below remains historical record, not active acceptance policy.
+
 **Goal:** Run Phase 4 readiness and real E2E against the user-authorized shared Neon `dev` branch without requiring a nonexistent Production fingerprint.
 
 **Architecture:** Keep explicit E2E URL, write opt-in, and approved-dev fingerprint checks. Make an empty forbidden-fingerprint list valid for this portfolio-only project, and load `.env.local` through one small Node `loadEnvFile` helper at every standalone E2E entry boundary.

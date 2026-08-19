@@ -4,7 +4,6 @@ import { Prisma, PrismaClient } from '@prisma/client';
 
 import { CHECKOUT_POLICY } from '@/constants/config';
 import { hashPassword } from '@/lib/password';
-import { resolveE2eDatabaseEnvironment } from './database-guard';
 import { loadE2eEnvironment } from './load-env';
 export { phase4Namespace } from './phase4-namespace';
 
@@ -16,8 +15,9 @@ let database: PrismaClient | null = null;
 
 function getPhase4Database(): PrismaClient {
   if (database) return database;
-  const databaseEnvironment = resolveE2eDatabaseEnvironment(process.env);
-  database = new PrismaClient({ datasources: { db: { url: databaseEnvironment.POSTGRES_URL_NON_POOLING } } });
+  const databaseUrl = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL;
+  if (!databaseUrl) throw new Error('POSTGRES_URL or POSTGRES_URL_NON_POOLING is required for E2E');
+  database = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
   return database;
 }
 

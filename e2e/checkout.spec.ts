@@ -10,12 +10,7 @@ import {
 } from './phase4-database';
 import { registerAndVerify } from './helpers';
 
-const hasExplicitDatabase = Boolean(
-  process.env.E2E_DATABASE_URL &&
-  process.env.E2E_DATABASE_ALLOW_WRITES === '1' &&
-  process.env.E2E_DATABASE_TARGET_FINGERPRINT,
-);
-const guarded = hasExplicitDatabase ? test : test.skip;
+const guarded = test;
 
 async function fillContact(page: Page, name = 'Phase 4 Customer') {
   await page.getByLabel('Имя и фамилия').fill(name);
@@ -354,5 +349,5 @@ guarded('COD cancellation restores owned stock exactly once', async ({ page }, t
 });
 
 test.afterAll(async () => {
-  if (hasExplicitDatabase) await disconnectPhase4Database();
+  await disconnectPhase4Database();
 });

@@ -351,3 +351,10 @@
 - User approved `fashion-shop`-style proportional E2E for this portfolio: functional browser journeys remain; mandatory target fingerprint, forbidden-fingerprint, standalone readiness, explicit E2E URL, and delivery-manifest machinery are to be retired in a follow-up implementation.
 - Keep unique test-owned identities and targeted cleanup. Do not use Production DB, truncate, schema reset, or global reset/delete. Real YooKassa provider smoke is optional manual evidence; COD and blocked-payment lookup-only coverage remain automated.
 - Decision recorded in `docs/roadmap/DECISIONS.md` as ADR-020 and in `docs/roadmap/STATUS.md`. Current code is unchanged by this documentation-only checkpoint.
+
+## Phase 4 E2E simplification implementation — 2026-08-19
+
+- Runtime E2E path now follows `fashion-shop`: `POSTGRES_URL_NON_POOLING || POSTGRES_URL`; no mandatory target fingerprint, forbidden policy, readiness CLI, or manifest.
+- Checkout/order/review/COD/blocked-payment specs no longer skip on `E2E_DATABASE_*`; they run against configured application DB and retain namespace-owned cleanup. Real YooKassa requires explicit `E2E_YOOKASSA_REAL=1` and remains optional manual smoke.
+- Removed obsolete Phase 4 readiness/fingerprint/migration/manifest contract files. Restored only thin Phase 3 compatibility resolver/test because historical Phase 3 manifest requires those paths.
+- Focused validation: 4 test files / 19 tests passed; typecheck passed. Next: run functional E2E, format/lint, inspect diff, commit. Do not run real YooKassa smoke.

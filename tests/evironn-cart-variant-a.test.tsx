@@ -352,7 +352,11 @@ describe('Cart Variant A', () => {
     mocks.getCart.mockReturnValue(new Promise((resolve) => (resolveCart = resolve)));
     render(<CartVariantA related={[]} initialWishlistedIds={[]} />);
     expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
-    expect(document.querySelector('.cart-a__checkout[disabled]')).toHaveTextContent('Дождитесь загрузки корзины.');
+    const loadingCheckout = document.querySelector<HTMLButtonElement>('.cart-a__checkout[disabled]');
+    expect(loadingCheckout).toBeDisabled();
+    expect(loadingCheckout).toHaveAttribute('aria-busy', 'true');
+    expect(loadingCheckout).toHaveTextContent('Дождитесь загрузки корзины.');
+    expect(loadingCheckout?.querySelector('.cart-a__checkout-spinner')).toBeInTheDocument();
     resolveCart(cart());
     await waitFor(() => expect(screen.getAllByRole('link', { name: 'Оформить заказ' })).toHaveLength(2));
     cleanup();

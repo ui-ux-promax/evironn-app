@@ -408,6 +408,29 @@
   transform: translateY(-1px);
 }
 
+.cart-a__checkout:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.cart-a__checkout:hover:disabled {
+  background: hsl(var(--ev-text));
+  transform: none;
+}
+
+.cart-a__checkout-spinner {
+  width: 17px;
+  height: 17px;
+  margin-right: 8px;
+  animation: cart-a-checkout-spin 800ms linear infinite;
+}
+
+@keyframes cart-a-checkout-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ---------- Cross-sell ---------- */
 
 .cart-a__also {

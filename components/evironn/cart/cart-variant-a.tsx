@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { FiHeart, FiTrash2 } from 'react-icons/fi';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
@@ -180,8 +181,10 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                   type="button"
                   disabled
                   aria-disabled="true"
+                  aria-busy={loading}
                   title={checkoutDisabledLabel}
                 >
+                  {loading && <Loader2 className="cart-a__checkout-spinner" aria-hidden="true" />}
                   {checkoutDisabledLabel}
                 </button>
               )}

@@ -33,6 +33,7 @@ export function Field({
   type = 'text',
   wide = false,
   disabled = false,
+  error,
 }: {
   label: string;
   value: string;
@@ -40,10 +41,12 @@ export function Field({
   type?: string;
   wide?: boolean;
   disabled?: boolean;
+  error?: string;
 }) {
   const id = useId();
+  const noteId = `${id}-note`;
   return (
-    <p className={`chk-field chk-field--light${wide ? ' is-wide' : ''}`}>
+    <p className={`chk-field chk-field--light${wide ? ' is-wide' : ''}${error ? ' is-bad' : ''}`}>
       <label htmlFor={id}>{label}</label>
       <span className="chk-field__control">
         <input
@@ -51,15 +54,32 @@ export function Field({
           type={type}
           value={value}
           disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? noteId : undefined}
           onChange={(event) => onChange(event.target.value)}
         />
       </span>
+      {error && (
+        <span className="chk-field__note" id={noteId} role="alert">
+          <FiAlertCircle aria-hidden="true" />
+          {error}
+        </span>
+      )}
     </p>
   );
 }
 
+function FieldError({ error }: { error?: string }) {
+  return error ? (
+    <span className="chk-field__note" role="alert">
+      <FiAlertCircle aria-hidden="true" />
+      {error}
+    </span>
+  ) : null;
+}
+
 export function ContactFields({ controller }: { controller: Controller }) {
-  const { form, actions } = controller;
+  const { form, actions, fieldErrors } = controller;
   return (
     <div className="chk-grid">
       <Field
@@ -67,6 +87,7 @@ export function ContactFields({ controller }: { controller: Controller }) {
         value={form.contactName}
         onChange={actions.setContactName}
         disabled={controller.interactionsLocked}
+        error={fieldErrors.contactName}
       />
       <Field
         label="Телефон"
@@ -74,6 +95,7 @@ export function ContactFields({ controller }: { controller: Controller }) {
         onChange={actions.setContactPhone}
         type="tel"
         disabled={controller.interactionsLocked}
+        error={fieldErrors.contactPhone}
       />
       <Field
         label="E-mail"
@@ -82,6 +104,7 @@ export function ContactFields({ controller }: { controller: Controller }) {
         type="email"
         wide
         disabled={controller.interactionsLocked}
+        error={fieldErrors.contactEmail}
       />
     </div>
   );
@@ -154,7 +177,7 @@ export function AddressBook({ controller }: { controller: Controller }) {
 }
 
 export function AddressFields({ controller }: { controller: Controller }) {
-  const { form, actions } = controller;
+  const { form, actions, fieldErrors } = controller;
   return (
     <div className="chk-grid chk-grid--address">
       <Field
@@ -163,12 +186,14 @@ export function AddressFields({ controller }: { controller: Controller }) {
         onChange={(value) => actions.setAddress({ ...form.address, addressLine: value })}
         wide
         disabled={controller.interactionsLocked}
+        error={fieldErrors.addressLine}
       />
       <Field
         label="Город"
         value={form.address.city}
         onChange={(value) => actions.setAddress({ ...form.address, city: value })}
         disabled={controller.interactionsLocked}
+        error={fieldErrors.city}
       />
       <Field
         label="Этаж"
@@ -176,6 +201,7 @@ export function AddressFields({ controller }: { controller: Controller }) {
         onChange={(value) => actions.setAddress({ ...form.address, floor: value ? Number(value) : undefined })}
         type="number"
         disabled={controller.interactionsLocked}
+        error={fieldErrors.floor}
       />
       <Field
         label="Домофон"
@@ -214,13 +240,14 @@ export function AddressFields({ controller }: { controller: Controller }) {
             </button>
           ))}
         </span>
+        <FieldError error={fieldErrors.liftType} />
       </p>
     </div>
   );
 }
 
 export function PointPicker({ controller }: { controller: Controller }) {
-  const { form, options, actions } = controller;
+  const { form, options, actions, fieldErrors } = controller;
   const points = options.pickupPoints.filter((point) => point.kind === form.deliveryMethod);
   return (
     <div className="chk-points chk-points--light">
@@ -245,12 +272,13 @@ export function PointPicker({ controller }: { controller: Controller }) {
           </button>
         ))}
       </div>
+      <FieldError error={fieldErrors.pickupPointId} />
     </div>
   );
 }
 
 export function SlotPicker({ controller }: { controller: Controller }) {
-  const { form, options, actions } = controller;
+  const { form, options, actions, fieldErrors } = controller;
   return (
     <div className="chk-slots chk-slots--light">
       <p className="chk-label">Дата и окно</p>
@@ -270,6 +298,7 @@ export function SlotPicker({ controller }: { controller: Controller }) {
           </button>
         ))}
       </div>
+      <FieldError error={fieldErrors.deliverySlotId} />
     </div>
   );
 }

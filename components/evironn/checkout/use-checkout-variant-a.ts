@@ -6,7 +6,7 @@ import { getCheckoutQuote } from '@/app/actions/checkout';
 import { placeOrder } from '@/app/actions/order';
 import { useCartStore } from '@/store/cart';
 import { EMPTY_CART_DTO } from '@/services/dto/commerce-cart.dto';
-import type { CheckoutQuoteInput, PlaceOrderInput } from '@/services/dto/checkout.dto';
+import { placeOrderSchema, type CheckoutQuoteInput, type PlaceOrderInput } from '@/services/dto/checkout.dto';
 import type {
   BlockedPaymentInitializationDto,
   CheckoutPageDto,
@@ -22,6 +22,74 @@ type CompletedOrder = {
   message: string;
   paymentUrl: string | null;
 };
+
+export type CheckoutFieldErrorKey =
+  | 'contactName'
+  | 'contactPhone'
+  | 'contactEmail'
+  | 'deliveryZone'
+  | 'deliverySlotId'
+  | 'pickupPointId'
+  | 'addressLine'
+  | 'city'
+  | 'floor'
+  | 'liftType'
+  | 'services';
+export type CheckoutFieldErrors = Partial<Record<CheckoutFieldErrorKey, string>>;
+
+const checkoutFieldLabels: Record<CheckoutFieldErrorKey, string> = {
+  contactName: 'Имя и фамилия',
+  contactPhone: 'Телефон',
+  contactEmail: 'E-mail',
+  deliveryZone: 'Зона доставки',
+  deliverySlotId: 'Дата и окно',
+  pickupPointId: 'Пункт получения',
+  addressLine: 'Адрес',
+  city: 'Город',
+  floor: 'Этаж',
+  liftType: 'Лифт',
+  services: 'Дополнительные услуги',
+};
+
+const checkoutFieldMessages: Record<CheckoutFieldErrorKey, string> = {
+  contactName: 'Укажите имя и фамилию',
+  contactPhone: 'Укажите корректный телефон',
+  contactEmail: 'Укажите корректный e-mail',
+  deliveryZone: 'Выберите зону доставки',
+  deliverySlotId: 'Выберите дату и окно',
+  pickupPointId: 'Выберите пункт получения',
+  addressLine: 'Укажите адрес доставки',
+  city: 'Укажите город',
+  floor: 'Укажите этаж',
+  liftType: 'Выберите тип лифта',
+  services: 'Проверьте дополнительные услуги',
+};
+
+function checkoutFieldKey(path: readonly (string | number)[]): CheckoutFieldErrorKey | null {
+  const [root, nested] = path.map(String);
+  if (root === 'address') {
+    if (nested === 'addressLine' || nested === 'city' || nested === 'floor' || nested === 'liftType') return nested;
+    return 'addressLine';
+  }
+  return root in checkoutFieldLabels ? (root as CheckoutFieldErrorKey) : null;
+}
+
+function getCheckoutFieldErrors(payload: PlaceOrderInput): CheckoutFieldErrors {
+  const parsed = placeOrderSchema.safeParse(payload);
+  if (parsed.success) return {};
+  return parsed.error.issues.reduce<CheckoutFieldErrors>((errors, issue) => {
+    const key = checkoutFieldKey(issue.path);
+    if (key && !errors[key]) errors[key] = checkoutFieldMessages[key];
+    return errors;
+  }, {});
+}
+
+function checkoutValidationMessage(errors: CheckoutFieldErrors): string {
+  const labels = Object.keys(errors)
+    .map((key) => checkoutFieldLabels[key as CheckoutFieldErrorKey])
+    .filter(Boolean);
+  return labels.length ? `Проверьте поля: ${labels.join(', ')}` : 'Проверьте поля формы';
+}
 
 function messageOf(error: unknown): string {
   return error instanceof Error && error.message ? error.message : 'Не удалось обновить оформление заказа';
@@ -83,6 +151,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [submitPending, setSubmitPending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [submitLocked, setSubmitLocked] = useState(false);
   const [blocked, setBlocked] = useState<BlockedPaymentInitializationDto | null>(null);
   const [completedOrder, setCompletedOrder] = useState<CompletedOrder | null>(null);
@@ -283,6 +352,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     submitPendingRef.current = true;
     setSubmitPending(true);
     setSubmitError(null);
+    setFieldErrors({});
     const finalizeCommittedOrder = (completion: CompletedOrder) => {
       ++quoteRevisionRef.current;
       submitLockedRef.current = true;
@@ -301,6 +371,12 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
         contactEmail,
         paymentMethod,
       };
+      const validationErrors = getCheckoutFieldErrors(payload);
+      if (Object.keys(validationErrors).length > 0) {
+        setFieldErrors(validationErrors);
+        setSubmitError(checkoutValidationMessage(validationErrors));
+        return;
+      }
       const result = await placeOrder(payload);
       if (result.ok && result.code === 'PAYMENT_REDIRECT_READY') {
         finalizeCommittedOrder({
@@ -403,6 +479,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     mutationError,
     submitPending,
     submitError,
+    fieldErrors,
     submitLocked,
     blocked,
     completedOrder,

@@ -292,6 +292,19 @@ describe('Checkout Variant A', () => {
     expect(document.querySelector('.chk-bar__details > summary > span > b')).toHaveTextContent('Стоимость недоступна');
   });
 
+  it('identifies invalid contact fields before placing the order', async () => {
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Телефон' }), { target: { value: '53453345334' } });
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    expect(await screen.findByText('Проверьте поля: Телефон')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Телефон' })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('textbox', { name: 'Телефон' }).closest('.chk-field')).toHaveClass('is-bad');
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+  });
+
   it('clears saved address details when switching to a new manual address and re-quotes', async () => {
     render(<CheckoutVariantA initialData={initialData} />);
     await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));

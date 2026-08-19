@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   FiCheck,
+  FiChevronDown,
   FiHeart,
   FiHome,
   FiLogOut,
@@ -281,14 +282,17 @@ function Orders({ orders }: { orders: ProfileOrderDto[] }) {
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
-        <select aria-label="Статус заказа" value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="all">Все статусы</option>
-          <option value="PENDING">Оформлен</option>
-          <option value="PROCESSING">Собираем</option>
-          <option value="SHIPPED">В пути</option>
-          <option value="DELIVERED">Доставлен</option>
-          <option value="CANCELLED">Отменён</option>
-        </select>
+        <span className="prf__order-select">
+          <select aria-label="Статус заказа" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="all">Все статусы</option>
+            <option value="PENDING">Оформлен</option>
+            <option value="PROCESSING">Собираем</option>
+            <option value="SHIPPED">В пути</option>
+            <option value="DELIVERED">Доставлен</option>
+            <option value="CANCELLED">Отменён</option>
+          </select>
+          <FiChevronDown aria-hidden="true" />
+        </span>
       </div>
       <div className="prf__orders">
         {visibleOrders.map((order) => (

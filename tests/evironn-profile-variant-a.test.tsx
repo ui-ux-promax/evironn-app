@@ -120,6 +120,7 @@ const dto: ProfilePageDto = {
       status: 'DELIVERED',
       createdAt: '2026-08-01T10:00:00.000Z',
       shippingMethod: 'courier',
+      paymentMethod: 'online',
       city: 'Москва',
       addressLine: 'ул. Ленина, 1',
       itemsTotal: 89000,
@@ -207,15 +208,31 @@ describe('Profile Variant A', () => {
     expect(screen.getByText('К заказу')).toBeInTheDocument();
   });
 
-  it('renders orders as read-only snapshots with no order mutations', () => {
+  it('matches the reference order tools and read-only order snapshot', () => {
     render(<ProfileVariantA dto={dto} />);
     openSection('Заказы');
 
+    expect(screen.getByPlaceholderText('Номер заказа')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toHaveValue('all');
     expect(screen.getByText(/Noma snapshot/)).toBeInTheDocument();
+    expect(screen.getByText('Картой онлайн')).toBeInTheDocument();
+    expect(screen.getByText('Срок')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Подробнее' })).toHaveAttribute('href', '/orders/42');
     expect(
       screen.queryByRole('button', { name: /Отменить|Повторить|Скачать чек|Оплатить|Трекинг/i }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Подробнее|К заказу/i })).not.toBeInTheDocument();
+  });
+
+  it('filters orders by number and status without mutating the snapshot', () => {
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Заказы');
+
+    fireEvent.change(screen.getByPlaceholderText('Номер заказа'), { target: { value: '999' } });
+    expect(screen.queryByText('Noma snapshot')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText('Номер заказа'), { target: { value: '' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'PROCESSING' } });
+    expect(screen.queryByText('Noma snapshot')).not.toBeInTheDocument();
   });
 
   it('uses controlled CatalogCard favorites and canonical SKU cart add', async () => {

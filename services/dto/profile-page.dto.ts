@@ -28,6 +28,7 @@ export interface ProfileOrderDto {
   status: OrderStatus;
   createdAt: string;
   shippingMethod: string;
+  paymentMethod: string;
   city: string;
   addressLine: string;
   deliveryDate?: string | null;

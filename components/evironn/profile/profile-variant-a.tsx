@@ -10,6 +10,7 @@ import {
   FiMapPin,
   FiPackage,
   FiPlus,
+  FiSearch,
   FiShoppingBag,
   FiTrash2,
   FiTruck,
@@ -259,11 +260,38 @@ function ProfileTracking({ order }: { order: ProfileOrderDto }) {
 
 function Orders({ orders }: { orders: ProfileOrderDto[] }) {
   const [open, setOpen] = useState<string | null>(orders[0]?.id ?? null);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
+  const visibleOrders = orders.filter((order) => {
+    const matchesQuery = String(order.orderNumber).includes(query.trim());
+    const matchesStatus = status === 'all' || order.status === status;
+    return matchesQuery && matchesStatus;
+  });
+
   return (
     <>
-      <SectionHeading title="Заказы" copy="История покупок и сохранённые снимки заказа." />
+      <SectionHeading title="Заказы" copy="История покупок, документы и статусы доставки." />
+      <div className="prf__order-tools">
+        <label>
+          <FiSearch aria-hidden="true" />
+          <input
+            aria-label="Номер заказа"
+            placeholder="Номер заказа"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <select aria-label="Статус заказа" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="all">Все статусы</option>
+          <option value="PENDING">Оформлен</option>
+          <option value="PROCESSING">Собираем</option>
+          <option value="SHIPPED">В пути</option>
+          <option value="DELIVERED">Доставлен</option>
+          <option value="CANCELLED">Отменён</option>
+        </select>
+      </div>
       <div className="prf__orders">
-        {orders.map((order) => (
+        {visibleOrders.map((order) => (
           <article className="prf__order" key={order.id}>
             <button
               className="prf__order-top"
@@ -297,22 +325,34 @@ function Orders({ orders }: { orders: ProfileOrderDto[] }) {
                     </dd>
                   </div>
                   <div>
-                    <dt>Состав</dt>
-                    <dd>{order.itemsTotal ? formatPrice(order.itemsTotal) : '—'}</dd>
+                    <dt>Оплата</dt>
+                    <dd>{order.paymentMethod === 'online' ? 'Картой онлайн' : 'При получении'}</dd>
                   </div>
                   <div>
-                    <dt>Дата</dt>
-                    <dd>{dateLabel(order.createdAt)}</dd>
+                    <dt>Срок</dt>
+                    <dd>{deliveryLabel(order)}</dd>
                   </div>
                 </dl>
+                <div className="prf__actions">
+                  <Link className="prf__action-link" href={`/orders/${order.orderNumber}`}>
+                    Подробнее
+                  </Link>
+                </div>
               </div>
             )}
           </article>
         ))}
       </div>
       {orders.length === 0 && <Empty icon={<FiPackage />} text="Заказов пока нет" />}
+      {orders.length > 0 && visibleOrders.length === 0 && <Empty icon={<FiPackage />} text="Заказов не найдено" />}
     </>
   );
+}
+
+function deliveryLabel(order: ProfileOrderDto): string {
+  if (!order.deliveryDate) return order.deliveryWindow ?? 'Срок уточняется';
+  const date = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(new Date(order.deliveryDate));
+  return order.deliveryWindow ? `${date}, ${order.deliveryWindow}` : date;
 }
 
 function Favorites({ profile }: { profile: ReturnType<typeof useProfileVariantA> }) {

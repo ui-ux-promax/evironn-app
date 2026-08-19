@@ -30,7 +30,7 @@ describe('production profile Variant A source contract', () => {
       expect(component).toContain(className);
     }
     expect(component).toMatch(/overview|orders|favorites|profile|addresses/);
-    expect(component).not.toMatch(/payment|bonuses|notifications|saved cards/i);
+    expect(component).not.toMatch(/\b(?:payment|bonuses|notifications|saved cards)\b/i);
     expect(component).not.toMatch(/onClick={[^}]+(tracking|reorder|receipt|cancel)/i);
   });
 

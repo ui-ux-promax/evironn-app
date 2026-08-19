@@ -55,6 +55,12 @@ describe('order page DTO', () => {
     expect(formatOrderDateOnly('2026-08-18')).toBe('18 августа 2026 г.');
   });
 
+  it('marks a pending online order as awaiting payment', () => {
+    const dto = buildOrderPageDto(onlineOrder(), { now });
+    expect(dto.statusLabel).toBe('Ожидает оплаты');
+    expect(dto.payment).toMatchObject({ kind: 'online', status: 'pending', label: 'Ожидает оплаты' });
+  });
+
   it.each([
     {
       createdAt: new Date('2026-08-17T20:59:59.999Z'),

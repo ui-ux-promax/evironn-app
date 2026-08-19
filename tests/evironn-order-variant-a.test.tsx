@@ -10,6 +10,7 @@ describe('OrderVariantA', () => {
   it('preserves supported clone hierarchy and accessible tracking state', () => {
     const variant = fs.readFileSync('components/evironn/order/order-variant-a.tsx', 'utf8');
     const primitives = fs.readFileSync('components/evironn/order/order-primitives.tsx', 'utf8');
+    const styles = fs.readFileSync('styles/evironn/OrderPrimitives.css', 'utf8');
     expect(variant).toContain('<OrderMeta');
     expect(variant).toContain('<PlacedBanner');
     expect(variant).toContain('<strong>{formatPrice(order.totals.total)}</strong>');
@@ -20,6 +21,9 @@ describe('OrderVariantA', () => {
     expect(primitives).toMatch(/<header>\s*<h2>\{title\}<\/h2>\s*\{note && <p>\{note\}<\/p>\}\s*<\/header>/);
     expect(primitives).not.toContain('ord-panel__head');
     expect(primitives).toContain('aria-label={`Открыть ${line.name}`}');
+    expect(primitives).toContain('is-payment-pending');
+    expect(primitives).toContain('{order.payment.label}');
+    expect(styles).toContain('.ord-chip.is-payment-pending');
     expect(primitives).not.toContain('new Date(order.createdAt)');
     expect(variant).toContain('<CancelOrderButton');
   });

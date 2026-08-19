@@ -18,7 +18,12 @@ export function Crumbs({ number }: { number: number }) {
   );
 }
 export function StatusChip({ order }: { order: OrderPageDto }) {
-  return <span className={`ord-chip ord-chip--light is-${order.stage}`}>{order.statusLabel}</span>;
+  const paymentPending = order.payment.kind === 'online' && order.payment.status === 'pending';
+  return (
+    <span className={`ord-chip ord-chip--light is-${order.stage}${paymentPending ? ' is-payment-pending' : ''}`}>
+      {order.statusLabel}
+    </span>
+  );
 }
 export function OrderMeta({ order }: { order: OrderPageDto }) {
   const count = order.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -127,6 +132,12 @@ export function MoneyRows({ order }: { order: OrderPageDto }) {
           <dd>{formatPrice(line.amount)}</dd>
         </div>
       ))}
+      <div
+        className={order.payment.kind === 'online' && order.payment.status === 'pending' ? 'is-payment-pending' : ''}
+      >
+        <dt>Оплата</dt>
+        <dd>{order.payment.label}</dd>
+      </div>
       <div className="is-total">
         <dt>Итого</dt>
         <dd>{formatPrice(t.total)}</dd>

@@ -34,7 +34,7 @@ export function formatOrderCreatedAt(value: Date): string {
   }).format(value);
 }
 
-export function mapOrderStatus(status: string): { stage: OrderStage; label: string } {
+export function mapOrderStatus(status: string, paymentStatus?: string | null): { stage: OrderStage; label: string } {
   const map: Record<string, { stage: OrderStage; label: string }> = {
     PENDING: { stage: 'placed', label: 'Оформлен' },
     PROCESSING: { stage: 'collecting', label: 'Собирается' },
@@ -42,7 +42,8 @@ export function mapOrderStatus(status: string): { stage: OrderStage; label: stri
     DELIVERED: { stage: 'delivered', label: 'Доставлен' },
     CANCELLED: { stage: 'cancelled', label: 'Отменён' },
   };
-  return map[status] ?? map.PENDING;
+  const mapped = map[status] ?? map.PENDING;
+  return status === 'PENDING' && paymentStatus === 'pending' ? { ...mapped, label: 'Ожидает оплаты' } : mapped;
 }
 
 type OrderInput = {
@@ -110,7 +111,7 @@ export function buildOrderPageDto(
   order: OrderInput,
   { now, providerProof = false, paymentInitializationOutcome }: BuildContext = { now: new Date() },
 ): OrderPageDto {
-  const mapped = mapOrderStatus(order.status);
+  const mapped = mapOrderStatus(order.status, order.payment?.status);
   const date = order.deliveryDate ? fromDeliveryDateSentinel(order.deliveryDate) : null;
   const validServiceDetails =
     Array.isArray(order.serviceDetails) &&

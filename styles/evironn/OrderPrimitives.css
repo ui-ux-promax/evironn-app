@@ -79,10 +79,6 @@
   background: rgb(26 28 24 / 0.1);
   color: var(--ev-ink-60);
 }
-.ord-chip.is-payment-pending {
-  background: color-mix(in srgb, var(--ev-warm-accent) 16%, white);
-  color: var(--ev-warm-accent);
-}
 .ord-chip--dark {
   background: rgb(255 255 255 / 0.14);
   color: rgb(255 255 255 / 0.74);
@@ -538,10 +534,6 @@
 }
 .ord-sum .is-save dd {
   color: var(--ev-accent);
-}
-.ord-sum .is-payment-pending dd {
-  color: var(--ev-warm-accent);
-  font-weight: 600;
 }
 .ord-sum .is-total {
   margin-top: 6px;

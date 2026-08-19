@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Check, Package, Truck } from 'lucide-react';
+import { Check, MapPin, Package, Truck } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import type { OrderPageDto } from '@/services/dto/order-page.dto';
 
@@ -8,6 +8,14 @@ export function Crumbs({ number }: { number: number }) {
   return (
     <nav className="ord-crumbs ord-crumbs--light" aria-label="Хлебные крошки">
       <span>
+        <Link href="/">Главная</Link>
+      </span>
+      <span>
+        <i>/</i>
+        <Link href="/profile">Кабинет</Link>
+      </span>
+      <span>
+        <i>/</i>
         <Link href="/profile#orders">Заказы</Link>
       </span>
       <span>
@@ -29,9 +37,22 @@ export function OrderMeta({ order }: { order: OrderPageDto }) {
   const count = order.items.reduce((sum, item) => sum + item.quantity, 0);
   return (
     <p className="ord-meta">
-      {order.createdAtLabel} · {count} поз.
+      <Package aria-hidden="true" />
+      {orderCountLabel(count)}
+      <i aria-hidden="true">·</i>
+      оформлен {order.createdAtLabel}
+      <i aria-hidden="true">·</i>
+      {order.payment.label}
     </p>
   );
+}
+
+export function orderCountLabel(count: number): string {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  const word =
+    mod100 >= 11 && mod100 <= 14 ? 'товаров' : mod10 === 1 ? 'товар' : mod10 >= 2 && mod10 <= 4 ? 'товара' : 'товаров';
+  return `${count} ${word}`;
 }
 export function PlacedBanner({ order }: { order: OrderPageDto }) {
   const paid = order.payment.kind === 'online' && order.payment.status === 'succeeded';
@@ -56,7 +77,12 @@ export function PlacedBanner({ order }: { order: OrderPageDto }) {
   );
 }
 export function Tracking({ order }: { order: OrderPageDto }) {
-  const steps = ['Оформлен', 'Собирается', 'В пути', 'Доставлен'];
+  const steps = [
+    { label: 'Оформлен', note: 'Приняли заказ и подтвердили состав' },
+    { label: 'Собирается', note: 'Комплектуем на складе, проверяем ткань' },
+    { label: 'В пути', note: 'Курьер везёт заказ по адресу' },
+    { label: 'Доставлен', note: 'Заказ передан получателю' },
+  ];
   const current = ['placed', 'collecting', 'on-way', 'delivered'].indexOf(order.stage);
   if (order.stage === 'cancelled')
     return (
@@ -66,15 +92,15 @@ export function Tracking({ order }: { order: OrderPageDto }) {
     );
   return (
     <ol className="ord-track ord-track--light ord-track--row" aria-label="Статус заказа">
-      {steps.map((label, index) => (
+      {steps.map((step, index) => (
         <li
-          key={label}
+          key={step.label}
           className={index < current ? 'is-done' : index === current ? 'is-current' : ''}
           aria-current={index === current ? 'step' : undefined}
         >
           <span className="ord-track__dot">{index < current ? <Check /> : index + 1}</span>
-          <b>{label}</b>
-          <span className="ord-track__note">{index <= current ? 'Статус подтверждён' : 'Ожидается'}</span>
+          <b>{step.label}</b>
+          <span className="ord-track__note">{step.note}</span>
         </li>
       ))}
       <li className="ord-track__eta">
@@ -82,7 +108,9 @@ export function Tracking({ order }: { order: OrderPageDto }) {
           <Truck />
         </span>
         <b>{order.delivery.dateLabel ?? order.delivery.window}</b>
-        <span className="ord-track__note">{order.delivery.window}</span>
+        <span className="ord-track__note">
+          {order.delivery.method === 'Курьер' ? 'Окно доставки' : 'Пункт получения'}
+        </span>
       </li>
     </ol>
   );
@@ -185,9 +213,9 @@ export function DeliveryFacts({ order }: { order: OrderPageDto }) {
 }
 export function AddressLine({ order }: { order: OrderPageDto }) {
   return (
-    <p className="ord-address">
-      <span>{order.delivery.method}</span>
-      <b>{order.delivery.address}</b>
+    <p className="ord-address ord-address--light">
+      <MapPin aria-hidden="true" />
+      {order.delivery.address}
     </p>
   );
 }

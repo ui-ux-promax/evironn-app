@@ -5,6 +5,8 @@
   padding: calc(85px + clamp(2rem, 5vw, 4rem)) 0 clamp(4rem, 9vw, 8rem);
   background: var(--ev-bg);
   color: hsl(var(--ev-text));
+  font-family: var(--ev-font-body);
+  line-height: normal;
 }
 .ord-a > :not(.ord-toast) {
   width: min(100%, calc(var(--ev-container-width) + (var(--ev-page-gutter) * 2)));

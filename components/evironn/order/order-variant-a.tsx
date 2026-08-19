@@ -12,6 +12,7 @@ import {
   Lines,
   MoneyRows,
   OrderMeta,
+  orderCountLabel,
   Panel,
   PlacedBanner,
   StatusChip,
@@ -48,7 +49,10 @@ export function OrderVariantA({ order, placed = false }: { order: OrderPageDto; 
           <Panel title="Доставка" note={`${order.delivery.method} · ${order.delivery.address}`}>
             <Tracking order={order} />
           </Panel>
-          <Panel title="Состав заказа" note="Цены зафиксированы в момент оформления">
+          <Panel
+            title="Состав заказа"
+            note={`${orderCountLabel(order.items.reduce((sum, item) => sum + item.quantity, 0))}, цены на день оформления`}
+          >
             <Lines order={order} />
           </Panel>
           <Panel title="Получение" note="Адрес и получатель">

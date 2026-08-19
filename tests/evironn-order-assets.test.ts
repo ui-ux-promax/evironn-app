@@ -6,7 +6,7 @@ const sha = (file: string) => createHash('sha256').update(fs.readFileSync(file))
 describe('order assets', () => {
   it('keeps exact clone CSS', () => {
     expect(sha('styles/evironn/OrderVariantA.css')).toBe(
-      '43BF4A4887E384FF0AF2D262FC4DC2426C86392FAA415D563C56A44BFACFC82E',
+      '6C6F1F075ABC4442A94508A61E79F56405392DBEE46FC50430DA79F04D6F5B9B',
     );
     expect(sha('styles/evironn/OrderPrimitives.css')).toBe(
       '2B9B742C16BE4F51E57D823132AAC14D27E1FD2DCCDAED7D1586F4BC807209A1',

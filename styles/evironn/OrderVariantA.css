@@ -77,6 +77,86 @@
   display: grid;
   gap: 8px;
 }
+.ord-loading__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ord-loading__crumbs .skel {
+  flex: none;
+}
+.ord-loading .ord-a__title {
+  margin-top: 22px;
+}
+.ord-loading .ord-a__grid {
+  margin-top: clamp(24px, 4vw, 42px);
+}
+.ord-loading__track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.ord-loading__track-item {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+.ord-loading__track-item:not(:last-child)::after {
+  position: absolute;
+  top: 14px;
+  left: 34px;
+  width: calc(100% - 40px);
+  height: 1px;
+  background: var(--ev-border-subtle);
+  content: '';
+}
+.ord-loading__track-item .skel {
+  position: relative;
+  z-index: 1;
+}
+.ord-loading__lines {
+  display: grid;
+  gap: 18px;
+}
+.ord-loading__line {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ev-border-subtle);
+}
+.ord-loading__line:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.ord-loading__line-copy {
+  display: grid;
+  gap: 8px;
+}
+.ord-loading__summary-rows,
+.ord-loading__facts {
+  display: grid;
+  gap: 12px;
+}
+.ord-loading__summary-rows {
+  padding-top: 15px;
+  border-top: 1px solid var(--ev-border-subtle);
+}
+.ord-loading__summary-rows > div,
+.ord-loading__facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ord-loading__address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ord-loading__review {
+  min-height: 110px;
+}
 .ord-a .ord-also {
   margin-top: clamp(52px, 8vw, 96px);
 }
@@ -99,6 +179,28 @@
   }
   .ord-a__title h1 {
     font-size: 2.2rem;
+  }
+  .ord-loading__track {
+    grid-template-columns: 1fr;
+  }
+  .ord-loading__track-item {
+    grid-template-columns: 28px 1fr;
+    align-items: center;
+  }
+  .ord-loading__track-item .skel:nth-child(3) {
+    grid-column: 2;
+  }
+  .ord-loading__track-item:not(:last-child)::after {
+    top: 34px;
+    left: 13px;
+    width: 1px;
+    height: calc(100% + 8px);
+  }
+  .ord-loading__line {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .ord-loading__line > .skel:last-child {
+    grid-column: 2;
   }
 }
 

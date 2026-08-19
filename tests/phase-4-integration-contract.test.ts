@@ -135,6 +135,7 @@ const committedBlobOutput = execFileSync('git', ['cat-file', '--batch'], {
   cwd: root,
   input: Buffer.from(`${phase4Files.map((path) => `${reviewedHead}:${path}`).join('\n')}\n`),
   encoding: null,
+  maxBuffer: 16 * 1024 * 1024,
 });
 let committedBlobOffset = 0;
 for (const path of phase4Files) {

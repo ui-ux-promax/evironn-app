@@ -345,3 +345,9 @@
 - Current E2E evidence: checkout `5 passed`; order `3 passed`; review `2 passed`; YooKassa DB-only scenarios passed (COD + blocked-payment). E2E probes use the explicit unpooled URL and poll only for observed Neon read-after-write lag; targeted cleanup remains namespace-scoped.
 - External YooKassa sandbox smoke is blocked: the configured account returns `Incorrect payment_id / access denied` for the payment IDs created by the smoke, so the provider cannot prove ownership/cancel state. Two owned pending sandbox fixtures remain intentionally undeleted because cleanup refuses indeterminate provider state. No production or non-owned records were touched.
 - Current worktree has intentional uncommitted Phase 4 changes in the manifest, two Markdown plans, E2E specs/helpers, `lib/payment-initialization.ts`, and contract tests. Do not reset or clean them. Next: run focused policy/type/format checks, regenerate the manifest from final committed blobs after staging, commit, and request fresh final diff review; do not claim full acceptance while YooKassa ownership remains blocked.
+
+## Phase 4 E2E simplification decision — 2026-08-19
+
+- User approved `fashion-shop`-style proportional E2E for this portfolio: functional browser journeys remain; mandatory target fingerprint, forbidden-fingerprint, standalone readiness, explicit E2E URL, and delivery-manifest machinery are to be retired in a follow-up implementation.
+- Keep unique test-owned identities and targeted cleanup. Do not use Production DB, truncate, schema reset, or global reset/delete. Real YooKassa provider smoke is optional manual evidence; COD and blocked-payment lookup-only coverage remain automated.
+- Decision recorded in `docs/roadmap/DECISIONS.md` as ADR-020 and in `docs/roadmap/STATUS.md`. Current code is unchanged by this documentation-only checkpoint.

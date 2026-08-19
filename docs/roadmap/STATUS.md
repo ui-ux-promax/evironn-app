@@ -220,3 +220,10 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - Focused browser evidence: checkout `5 passed`; order `3 passed`; review `2 passed`; YooKassa COD and blocked-payment lookup-only scenarios passed. E2E database probes use the explicit unpooled target and bounded polling for Neon read-after-write visibility; cleanup remains targeted by Phase 4 namespace.
 - Real YooKassa sandbox smoke is deferred: the configured provider account returns `Incorrect payment_id / access denied` for payment IDs created by the smoke, so provider ownership/cancellation cannot be proved. Two owned pending sandbox fixtures remain protected by the cleanup guard as indeterminate; no non-owned or production records were touched.
 - Full Phase 4 acceptance, push, pull request, merge, branch deletion, and Preview remain pending. Do not treat provider smoke as passed until valid sandbox account ownership is supplied.
+
+## Phase 4 E2E scope decision — 2026-08-19
+
+- The user approved proportional `fashion-shop`-style E2E: prioritize functional portfolio journeys over infrastructure-safety machinery.
+- The follow-up implementation should retire the mandatory `E2E_DATABASE_URL`/fingerprint/forbidden-target/readiness/manifest layer and use the selected non-production Neon `dev` target through the application-style connection convention.
+- Keep unique fixture identities and targeted cleanup; keep global reset, truncate, schema reset, and Production DB access forbidden. Real YooKassa sandbox creation/cancellation becomes optional manual smoke and must not block portfolio acceptance.
+- This is recorded as ADR-020. Current Phase 4 code still contains the earlier guard layer until a separate implementation task applies the decision.

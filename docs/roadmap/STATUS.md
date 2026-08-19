@@ -213,3 +213,10 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - `fe16df8` adds a scoped 16px top margin above the profile password submit button; focused profile source-contract and component tests pass 17/17.
 - No schema, migration, environment, server-action, or dependency changes were made.
 - The phase branch is authorized for push and pull-request creation. Merge and final Phase 3 visual acceptance remain separate gates.
+
+## Phase 4 portfolio E2E continuation — 2026-08-19
+
+- Sanitized completion readiness passed against the explicit approved shared Neon `dev` target: write opt-in, target identity, connectivity, Auth readiness, and all three Phase 4 migrations are green. Empty forbidden-fingerprint policy remains valid under ADR-019; no raw URL, credential, or provider secret was recorded.
+- Focused browser evidence: checkout `5 passed`; order `3 passed`; review `2 passed`; YooKassa COD and blocked-payment lookup-only scenarios passed. E2E database probes use the explicit unpooled target and bounded polling for Neon read-after-write visibility; cleanup remains targeted by Phase 4 namespace.
+- Real YooKassa sandbox smoke is deferred: the configured provider account returns `Incorrect payment_id / access denied` for payment IDs created by the smoke, so provider ownership/cancellation cannot be proved. Two owned pending sandbox fixtures remain protected by the cleanup guard as indeterminate; no non-owned or production records were touched.
+- Full Phase 4 acceptance, push, pull request, merge, branch deletion, and Preview remain pending. Do not treat provider smoke as passed until valid sandbox account ownership is supplied.

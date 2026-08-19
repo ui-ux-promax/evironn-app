@@ -65,3 +65,9 @@ Focused RED: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 t
 Focused GREEN: `npx vitest run tests/phase-4-integration-contract.test.ts` — 1 test file, 18 tests passed, 0 failures. Added independent executable assertions for the historical Task 2 `PAYMENT_AUTO_RETRY_UNSAFE` audit; blocked Checkout A/Order A DTO, copy, repeat-create, resync, cancellation, source-test, and E2E rules; sanitized Prisma migration deployment; verified-owner namespace cart seeding without namespace PDP navigation; completed brainstorming and Task 6 canonical submission; and unchanged pre-Phase-4 migration blobs.
 
 The final manifest contains 107 sorted entries, excludes itself, and records exact final committed bytes. No product behavior, status, progress, plan, database, provider, migration, full gate, build, full Vitest, or full E2E scope changed.
+
+## Portfolio E2E continuation
+
+Sanitized completion readiness is green against the explicit approved shared Neon `dev` target: write opt-in, target identity, connectivity, Auth readiness, and all three Phase 4 migrations passed. Focused browser evidence passed for checkout (5), order (3), review (2), YooKassa COD, and blocked-payment lookup-only behavior. The fixture probe uses the explicit unpooled E2E URL and bounded polling for Neon read-after-write visibility.
+
+The real YooKassa sandbox smoke remains deferred. The configured provider account returns `Incorrect payment_id / access denied` for payment IDs created during the smoke, so provider ownership and cancellation cannot be proved. Targeted cleanup correctly refuses those two owned pending fixtures as `PROVIDER_STATE_INDETERMINATE`; no non-owned or production records were touched. Full acceptance remains blocked at this external-provider boundary.

@@ -17,7 +17,7 @@ let database: PrismaClient | null = null;
 function getPhase4Database(): PrismaClient {
   if (database) return database;
   const databaseEnvironment = resolveE2eDatabaseEnvironment(process.env);
-  database = new PrismaClient({ datasources: { db: { url: databaseEnvironment.POSTGRES_URL } } });
+  database = new PrismaClient({ datasources: { db: { url: databaseEnvironment.POSTGRES_URL_NON_POOLING } } });
   return database;
 }
 
@@ -157,9 +157,9 @@ function namespaceEmail(namespace: string): string {
   return `${namespace}@${E2E_EMAIL_DOMAIN}`;
 }
 
-function namespaceCouponCode(namespace: string): string {
+export function namespaceCouponCode(namespace: string): string {
   const suffix = createHash('sha256').update(namespace).digest('hex').slice(0, 12);
-  return `PHASE4-${safePart(namespace).slice(0, 20)}-${suffix}`.slice(0, 40);
+  return `PHASE4-${safePart(namespace).slice(0, 20)}-${suffix}`.slice(0, 40).toUpperCase();
 }
 
 function namespaceFromEmail(email: string): string {
@@ -357,11 +357,6 @@ export async function readOwnedOrder(email: string, orderNumber: number): Promis
   const order = await findOwnedOrder(email, orderNumber);
   const item = order?.items[0];
   if (!order || !item?.canonicalSku) throw new Error('Owned Phase 4 order probe not found');
-  const sku = await getPhase4Database().sku.findUnique({
-    where: { id: item.canonicalSku.id },
-    select: { stock: true },
-  });
-  if (!sku) throw new Error('Owned Phase 4 SKU probe not found');
   return {
     id: order.id,
     orderNumber: order.orderNumber,
@@ -390,7 +385,7 @@ export async function readOwnedOrder(email: string, orderNumber: number): Promis
     paymentId: order.payment?.id ?? null,
     paymentStatus: order.payment?.status ?? null,
     createdAt: order.createdAt.toISOString(),
-    stock: sku.stock,
+    stock: item.canonicalSku.stock,
     skuId: item.canonicalSku.id,
   };
 }

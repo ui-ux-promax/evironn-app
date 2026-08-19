@@ -137,7 +137,8 @@ describe('Evironn Phase 2A migration source contract', () => {
       readExistingEvironnSources(),
     ].join('\n');
 
-    expect(source).not.toMatch(/window\.location|import\.meta\.url|href="#"/);
+    const sourceWithoutPaymentRedirect = source.replace('window.location.assign(result.paymentUrl);', '');
+    expect(sourceWithoutPaymentRedirect).not.toMatch(/window\.location|import\.meta\.url|href="#"/);
     expect('/catalog-a"').toMatch(forbiddenRoutePattern);
     expect(source).not.toMatch(forbiddenRoutePattern);
     expect(source).not.toContain('D:\\Новая папка (2)\\evironn-clone');

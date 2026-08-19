@@ -25,8 +25,8 @@ async function placeCodOrder(page: Page, namespace: string) {
   await page.goto('/checkout');
   await page.getByLabel('Имя и фамилия').fill('Phase 4 Order Customer');
   await page.getByLabel('Телефон').fill('+79990000000');
-  await page.getByLabel('Адрес').fill('Москва, улица Фазовая, 1');
-  await page.getByLabel('Город').fill('Москва');
+  await page.getByRole('textbox', { name: 'Адрес', exact: true }).fill('Москва, улица Фазовая, 1');
+  await page.getByRole('textbox', { name: 'Город', exact: true }).fill('Москва');
   await page.getByRole('radiogroup', { name: 'Дата получения' }).getByRole('radio').first().click();
   await page.getByRole('radio', { name: /При получении/ }).click();
   await page
@@ -64,7 +64,7 @@ guarded('owned order renders new and legacy snapshots at desktop and mobile', as
   try {
     const { fixture, orderNumber } = await placeCodOrder(page, namespace);
     await expect(page.getByText('Доставка')).toBeVisible();
-    await expect(page.getByText('Москва')).toBeVisible();
+    await expect(page.getByRole('definition').filter({ hasText: 'Москва, Москва, улица Фазовая, 1' })).toBeVisible();
     await markOwnedOrderAsLegacySnapshot(fixture.email, orderNumber);
     await page.reload();
     await expect(page.getByText('Самовывоз')).toHaveCount(0);
@@ -92,8 +92,10 @@ guarded('keyboard cancellation dialog and reduced motion remain accessible', asy
     await expect(dialog.getByRole('heading', { name: 'Отменить заказ?' })).toBeVisible();
     await expect(dialog).toContainText('Это действие нельзя отменить');
     await dialog.getByRole('button', { name: 'Отменить заказ' }).click();
-    await expect(page.getByText('Отменён')).toBeVisible();
-    expect((await readOwnedOrder(fixture.email, orderNumber)).status).toBe('CANCELLED');
+    await expect(page.getByText('Отменён', { exact: true })).toBeVisible();
+    await expect
+      .poll(async () => (await readOwnedOrder(fixture.email, orderNumber)).status, { timeout: 10_000 })
+      .toBe('CANCELLED');
   } finally {
     await cleanupPhase4Namespace(namespace);
   }

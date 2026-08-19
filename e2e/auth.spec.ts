@@ -21,7 +21,7 @@ test('credentials login accepts verified account', async ({ page }) => {
   await page.getByRole('button', { name: 'Выйти' }).click();
   await expect(page.getByRole('button', { name: 'Google' })).toBeVisible();
   await page.getByLabel('E-mail').fill(email);
-  await page.getByLabel('Пароль').fill(E2E_PASSWORD);
+  await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill(E2E_PASSWORD);
   await page.getByRole('button', { name: 'Войти' }).click();
   await expect(page).toHaveURL(/\/profile/);
 });

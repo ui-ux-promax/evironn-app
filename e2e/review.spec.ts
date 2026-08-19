@@ -24,8 +24,8 @@ async function placeReviewOrder(page: Page, namespace: string) {
   await page.goto('/checkout');
   await page.getByLabel('Имя и фамилия').fill('Phase 4 Review Customer');
   await page.getByLabel('Телефон').fill('+79990000000');
-  await page.getByLabel('Адрес').fill('Москва, улица Фазовая, 1');
-  await page.getByLabel('Город').fill('Москва');
+  await page.getByRole('textbox', { name: 'Адрес', exact: true }).fill('Москва, улица Фазовая, 1');
+  await page.getByRole('textbox', { name: 'Город', exact: true }).fill('Москва');
   await page.getByRole('radiogroup', { name: 'Дата получения' }).getByRole('radio').first().click();
   await page.getByRole('radio', { name: /При получении/ }).click();
   await page
@@ -42,7 +42,7 @@ guarded('verified purchase can submit and persist one product review', async ({ 
     const { fixture, orderNumber } = await placeReviewOrder(page, namespace);
     await markOwnedOrderDelivered(fixture.email, orderNumber);
     await page.reload();
-    await expect(page.getByRole('button', { name: '5 из 5' })).toBeVisible();
+    await expect(page.getByRole('radio', { name: '5 из 5' })).toBeVisible();
     await page.getByRole('radio', { name: '5 из 5' }).click();
     await page.getByPlaceholder('Поделитесь впечатлением (необязательно)').fill('Хорошая мебель.');
     await page.getByRole('button', { name: 'Оставить отзыв' }).click();

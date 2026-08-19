@@ -128,7 +128,7 @@ describe('Phase 3 producer/consumer integration boundary', () => {
     expect(read('app/(shop)/profile/page.tsx')).toContain("if (!session?.user?.id) redirect('/login')");
     const orderRoute = read('app/(shop)/orders/[number]/page.tsx');
     expect(orderRoute).toContain("if (!session?.user?.id) redirect('/login')");
-    expect(orderRoute).toContain('order.userId !== session.user.id');
+    expect(orderRoute).toContain('userId: session.user.id');
     expect(read('app/actions/review.ts')).toContain("import { canReview, isValidRating } from '@/lib/review'");
     expect(read('app/actions/review.ts')).toContain('canReview(userId, productId)');
     expect(read('lib/review.ts')).toContain('purchasedOrderWhere');

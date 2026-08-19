@@ -21,6 +21,7 @@
 ### Task 1: Align the database policy with portfolio-only E2E
 
 **Files:**
+
 - Modify: `e2e/database-target.ts`
 - Test: `tests/e2e-database-guard.test.ts`
 - Test: `tests/phase-4-migration-status.test.ts`
@@ -29,6 +30,7 @@
 - Modify: `.superpowers/sdd/phase-4-delivery-report.md`
 
 **Interfaces:**
+
 - Preserve `DatabaseTargetPolicy`, `TRACKED_TARGET_POLICY`, `hasCompleteForbiddenFingerprintPolicy`, and `resolveE2eDatabaseEnvironment` exports.
 - `hasCompleteForbiddenFingerprintPolicy` returns true for a valid empty array and for a nonempty array of unique SHA-256 fingerprints; malformed entries and duplicates remain false.
 
@@ -64,6 +66,7 @@ git commit -m "fix: allow portfolio e2e without production policy"
 ### Task 2: Load `.env.local` at standalone E2E boundaries
 
 **Files:**
+
 - Create: `e2e/load-env.ts`
 - Test: `tests/phase-4-load-env.test.ts`
 - Modify: `e2e/database-readiness.ts`
@@ -73,6 +76,7 @@ git commit -m "fix: allow portfolio e2e without production policy"
 - Test: `tests/phase-4-integration-contract.test.ts`
 
 **Interfaces:**
+
 - Create `loadE2eEnvironment(envPath = '.env.local'): void` in `e2e/load-env.ts`.
 - The helper uses Node `loadEnvFile`, ignores only a missing file, and rethrows malformed/unreadable env-file errors.
 - Readiness CLI, migration CLI, Playwright config, and DB fixture entry load the helper before resolving `process.env`.
@@ -122,24 +126,25 @@ git commit -m "fix: load local e2e environment"
 ### Task 3: Reconcile Phase 4 evidence and stop at real readiness boundary
 
 **Files:**
+
 - Modify: `.superpowers/sdd/phase-4-delivery-report.md`
 - Modify: `docs/roadmap/STATUS.md`
 - Modify: `.superpowers/sdd/progress.md`
 - Modify: `docs/superpowers/manifests/phase-4-delivery-manifest.json`
 
-- [ ] **Step 1: Refresh sanitized evidence**
+- [x] **Step 1: Refresh sanitized evidence**
 
 Record that `.env.local` was loaded for readiness, the approved-dev fingerprint and explicit write opt-in were present, empty forbidden policy was accepted under ADR-019, and any remaining blocker is the actual database/migration/provider readiness state. Never record URL, hostname, database name, credential, or provider secret.
 
-- [ ] **Step 2: Refresh manifest and verify exact current HEAD**
+- [x] **Step 2: Refresh manifest and verify exact current HEAD**
 
 Regenerate the existing Phase 4 manifest using committed blob bytes, excluding only the manifest itself and retaining the exact deleted path. Verify entry count, byte total, SHA-256 values, sorted order, and aggregate hash against current HEAD.
 
-- [ ] **Step 3: Run focused final verification**
+- [x] **Step 3: Run focused final verification**
 
 Run the focused policy/loader/integration tests, `npx tsc --noEmit`, targeted Prettier check, and `git diff --check`. Do not run the full completion gate until readiness returns `ok: true` and all mandatory external credentials are present.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```text
 git add .superpowers/sdd/phase-4-delivery-report.md docs/roadmap/STATUS.md .superpowers/sdd/progress.md docs/superpowers/manifests/phase-4-delivery-manifest.json

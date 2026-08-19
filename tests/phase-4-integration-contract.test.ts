@@ -75,7 +75,7 @@ import { fingerprintDatabaseUrl, hasCompleteForbiddenFingerprintPolicy } from '@
 import { resolveE2eDatabaseEnvironment } from '@/e2e/database-guard';
 import { phase4Namespace } from '@/e2e/phase4-namespace';
 import { validatePhase4NeverAttemptedProof } from '@/e2e/phase4-database';
-import { decidePhase4Cleanup } from '@/e2e/phase4-database';
+import { decidePhase4Cleanup, namespaceCouponCode } from '@/e2e/phase4-database';
 import { EXPECTED_PHASE4_MIGRATIONS, runPhase4DatabaseReadiness } from '@/e2e/database-readiness';
 import { acquireDatabaseFingerprints } from '@/scripts/e2e-database-fingerprint';
 import { prismaCliExecutable, runPrismaMigrationDeploy } from '@/scripts/e2e-prisma-migrate';
@@ -1371,6 +1371,9 @@ ADD COLUMN "paymentEverDispatchedAt" TIMESTAMP(3);`,
     expect(read('app/(shop)/product/[slug]/page.tsx')).toContain('SHOWCASE_PRODUCT_SLUG');
     const namespace = phase4Namespace('integration contract');
     expect(namespace).toMatch(/^phase4-e2e-integration-contract-[a-f0-9]{20}$/);
+    const couponCode = namespaceCouponCode(namespace);
+    expect(couponCode).toBe(couponCode.toUpperCase());
+    expect(couponCode).toMatch(/^PHASE4-[A-Z0-9-]+$/);
     const proofOrder = {
       id: 'order-1',
       orderNumber: 1042,

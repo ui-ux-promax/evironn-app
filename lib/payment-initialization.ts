@@ -105,7 +105,7 @@ export async function ensureOnlinePayment({
   clock?: () => Date;
 }): Promise<PaymentInitializationResult> {
   try {
-    let order = await client.order.findUnique({ where: { id: orderId }, include });
+    const order = await client.order.findUnique({ where: { id: orderId }, include });
     if (!order || order.paymentMethod !== 'online' || order.status !== 'PENDING')
       return indeterminate('payment_initialization_invalid_order');
     if (order.payment) {

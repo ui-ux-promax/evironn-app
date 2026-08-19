@@ -60,7 +60,7 @@ test('edits profile, changes password, and signs in again', async ({ page }) => 
   await page.getByRole('button', { name: 'Выйти' }).click();
   await page.getByRole('link', { name: 'Войти' }).click();
   await page.getByLabel('E-mail').fill(email);
-  await page.getByLabel('Пароль').fill('NewPassw0rd!2');
+  await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill('NewPassw0rd!2');
   await page.getByRole('button', { name: 'Войти' }).click();
   await expect(page).toHaveURL(/\/profile/);
 });

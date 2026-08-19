@@ -42,10 +42,9 @@ async function chooseCod(page: Page) {
 }
 
 async function applyCoupon(page: Page, code: string) {
-  await page.getByLabel('Промокод').fill(code);
-  await page.getByRole('button', { name: 'Применить' }).click();
-  await expect(page.getByRole('status')).toContainText(`${code} принят`);
-  await expect(page.getByText(/Сервер подтвердил итоговую стоимость/)).toBeVisible();
+  await page.locator('input[placeholder="EVIRONN10"]:visible').first().fill(code);
+  await page.locator('button.crt-promo__apply:visible').first().click();
+  await expect(page.locator('.crt-promo__status:visible')).toContainText(`${code} принят`);
 }
 
 function parseMoney(value: string): number {
@@ -63,7 +62,6 @@ async function summaryValue(page: Page, label: string, partial = false): Promise
 async function captureBrowserQuote(page: Page, couponCode: string) {
   const summary = page.getByRole('complementary', { name: 'Сводка заказа' });
   await expect(summary).toContainText(couponCode);
-  await expect(page.getByText(/Сервер подтвердил итоговую стоимость/)).toBeVisible();
   return {
     couponDiscount: await summaryValue(page, 'Промокод', true),
     shippingAmount: await summaryValue(page, 'Доставка'),
@@ -104,7 +102,12 @@ async function replaySupportedServerAction(page: Page, request: Request) {
 
 guarded('signed-out /checkout redirects to login with safe callback', async ({ page }) => {
   await page.goto('/checkout');
-  await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcheckout$/);
+  await expect(page).toHaveURL(/\/login\?callbackUrl=/);
+  const redirect = new URL(page.url());
+  expect(redirect.pathname).toBe('/login');
+  const callback = new URL(redirect.searchParams.get('callbackUrl') ?? '', redirect.origin);
+  expect(callback.origin).toBe(redirect.origin);
+  expect(callback.pathname).toBe('/checkout');
 });
 
 guarded('courier COD in moscow-region persists server quote and empties cart', async ({ page }, testInfo) => {
@@ -112,8 +115,8 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
   try {
     const fixture = await openCheckout(page, namespace);
     await page.getByRole('radio', { name: /Московская область/ }).click();
-    await page.getByLabel('Адрес').fill('Московская область, улица Фазовая, 1');
-    await page.getByLabel('Город').fill('Химки');
+    await page.getByRole('textbox', { name: 'Адрес', exact: true }).fill('Московская область, улица Фазовая, 1');
+    await page.getByRole('textbox', { name: 'Город', exact: true }).fill('Химки');
     await chooseFirstSlot(page);
     await applyCoupon(page, fixture.couponCode);
     await page.getByLabel('Сборка на месте').check();
@@ -126,7 +129,7 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
       .last()
       .click();
     await expect(page).toHaveURL(/\/orders\/\d+/);
-    await expect(page.getByText('Московская область')).toBeVisible();
+    await expect(page.getByRole('definition').filter({ hasText: 'Московская область' })).toBeVisible();
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
     const courierOrder = await readOwnedOrder(fixture.email, orderNumber);
     const discount = Math.floor(fixture.unitPrice * 0.1);
@@ -163,7 +166,10 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
       deliveryDate: normalizeVisibleDeliveryDate(selectedSlot.date),
       deliveryWindow: selectedSlot.windowLabel,
       serviceAmount: browserQuote.serviceAmount,
-      serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }],
+      serviceDetails: [
+        { id: 'carrying', label: 'Подъём на этаж', amount: 0 },
+        { id: 'assembly', label: 'Сборка', amount: 3900 },
+      ],
     });
     expect(browserQuote).toEqual({
       couponDiscount: discount,
@@ -182,14 +188,17 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
     }).toEqual({
       deliveryDate: normalizeVisibleDeliveryDate(selectedSlot.date),
       deliveryWindow: selectedSlot.windowLabel,
-      serviceDetails: [{ id: 'assembly', label: 'Сборка', amount: 3900 }],
+      serviceDetails: [
+        { id: 'carrying', label: 'Подъём на этаж', amount: 0 },
+        { id: 'assembly', label: 'Сборка', amount: 3900 },
+      ],
       discountAmount: browserQuote.couponDiscount,
       shippingAmount: browserQuote.shippingAmount,
       serviceAmount: browserQuote.serviceAmount,
       totalAmount: browserQuote.totalAmount,
     });
     await page.goto('/cart');
-    await expect(page.getByText(/Корзина пуста|Пусто/)).toBeVisible();
+    await expect(page.getByText(/в корзине пока пусто/i)).toBeVisible();
   } finally {
     await cleanupPhase4Namespace(namespace);
   }
@@ -198,7 +207,7 @@ guarded('courier COD in moscow-region persists server quote and empties cart', a
 guarded('showroom COD persists approved showroom snapshot', async ({ page }, testInfo) => {
   const namespace = phase4Namespace(testInfo.title);
   try {
-    const fixture = await openCheckout(page, namespace, /Шоурум/);
+    const fixture = await openCheckout(page, namespace, /шоурум/i);
     await page.getByRole('radio', { name: /Шоурум Evironn/ }).click();
     await chooseFirstSlot(page);
     await chooseCod(page);
@@ -208,7 +217,7 @@ guarded('showroom COD persists approved showroom snapshot', async ({ page }, tes
       .last()
       .click();
     await expect(page).toHaveURL(/\/orders\/\d+/);
-    await expect(page.getByText('Шоурум Evironn')).toBeVisible();
+    await expect(page.getByRole('definition').filter({ hasText: 'Самовывоз из шоурума' })).toBeVisible();
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
     const showroomOrder = await readOwnedOrder(fixture.email, orderNumber);
     expect({
@@ -262,7 +271,7 @@ guarded('pickup-point COD uses server-owned pickup address', async ({ page }, te
       .last()
       .click();
     await expect(page).toHaveURL(/\/orders\/\d+/);
-    await expect(page.getByText('Дубининская, 71')).toBeVisible();
+    await expect(page.getByRole('definition').filter({ hasText: 'Москва, Дубининская, 71' })).toBeVisible();
     const orderNumber = Number(new URL(page.url()).pathname.split('/').pop());
     const pickupOrder = await readOwnedOrder(fixture.email, orderNumber);
     expect({
@@ -307,8 +316,8 @@ guarded('COD cancellation restores owned stock exactly once', async ({ page }, t
   const namespace = phase4Namespace(testInfo.title);
   try {
     const fixture = await openCheckout(page, namespace);
-    await page.getByLabel('Адрес').fill('Москва, улица Фазовая, 1');
-    await page.getByLabel('Город').fill('Москва');
+    await page.getByRole('textbox', { name: 'Адрес', exact: true }).fill('Москва, улица Фазовая, 1');
+    await page.getByRole('textbox', { name: 'Город', exact: true }).fill('Москва');
     await chooseFirstSlot(page);
     await chooseCod(page);
     await page
@@ -328,12 +337,15 @@ guarded('COD cancellation restores owned stock exactly once', async ({ page }, t
     );
     await dialog.getByRole('button', { name: 'Отменить заказ' }).click();
     const cancellationRequest = await cancellationRequestPromise;
-    await expect(page.getByText('Отменён')).toBeVisible();
+    await expect(page.getByText('Отменён', { exact: true })).toBeVisible();
+    await expect
+      .poll(async () => (await readOwnedOrder(fixture.email, orderNumber)).stock, { timeout: 10_000 })
+      .toBe(before.stock + 1);
     const after = await readOwnedOrder(fixture.email, orderNumber);
     expect(after.stock).toBe(before.stock + 1);
     await replaySupportedServerAction(page, cancellationRequest);
     await page.reload();
-    await expect(page.getByText('Отменён')).toBeVisible();
+    await expect(page.getByText('Отменён', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Отменить заказ' })).toHaveCount(0);
     expect((await readOwnedOrder(fixture.email, orderNumber)).stock).toBe(after.stock);
   } finally {

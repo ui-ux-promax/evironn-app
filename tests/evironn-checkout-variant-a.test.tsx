@@ -320,6 +320,38 @@ describe('Checkout Variant A', () => {
     expect(mocks.placeOrder).toHaveBeenCalledWith(expect.objectContaining({ contactPhone: '79231445566' }));
   });
 
+  it('shows DaData address suggestions and selects a Moscow address', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            suggestions: [
+              {
+                value: 'г Москва, ул Тверская, д 10',
+                city: 'Москва',
+                region: 'г Москва',
+                street: 'Тверская ул',
+                house: '10',
+              },
+            ],
+          }),
+      }),
+    );
+    render(<CheckoutVariantA initialData={initialData} />);
+
+    const address = screen.getByRole('textbox', { name: 'Адрес' });
+    fireEvent.focus(address);
+    fireEvent.change(address, { target: { value: 'Москва Тверская' } });
+
+    const suggestion = await screen.findByRole('button', { name: 'г Москва, ул Тверская, д 10' });
+    fireEvent.click(suggestion);
+
+    expect(address).toHaveValue('г Москва, ул Тверская, д 10');
+    expect(screen.getByRole('textbox', { name: 'Город' })).toHaveValue('Москва');
+    expect(screen.getByRole('radio', { name: 'Москва' })).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('clears saved address details when switching to a new manual address and re-quotes', async () => {
     render(<CheckoutVariantA initialData={initialData} />);
     await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));

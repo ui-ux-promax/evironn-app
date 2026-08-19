@@ -21,6 +21,7 @@ import {
 } from './checkout-primitives';
 import { useCheckoutVariantA } from './use-checkout-variant-a';
 import '../../../styles/evironn/CheckoutVariantA.css';
+import '../../../styles/evironn/CheckoutAddressSuggest.css';
 
 export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto }) {
   const controller = useCheckoutVariantA(initialData);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import {
   FiAlertCircle,
   FiCheck,
@@ -19,6 +19,7 @@ import { countLabel, QtyStepper } from '@/components/evironn/cart/cart-primitive
 import { formatPrice } from '@/lib/format';
 import { formatRuPhone } from '@/lib/phone';
 import '../../../styles/evironn/CheckoutPrimitives.css';
+import { AddressSuggest, type CheckoutAddressSuggestion } from './address-suggest';
 
 type Controller = CheckoutVariantAController;
 const icons: Record<DeliveryMethod, ReactNode> = {
@@ -35,6 +36,8 @@ export function Field({
   wide = false,
   disabled = false,
   error,
+  accessory,
+  onFocus,
 }: {
   label: string;
   value: string;
@@ -43,6 +46,8 @@ export function Field({
   wide?: boolean;
   disabled?: boolean;
   error?: string;
+  accessory?: ReactNode;
+  onFocus?: () => void;
 }) {
   const id = useId();
   const noteId = `${id}-note`;
@@ -55,10 +60,12 @@ export function Field({
           type={type}
           value={value}
           disabled={disabled}
+          onFocus={onFocus}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? noteId : undefined}
           onChange={(event) => onChange(event.target.value)}
         />
+        {accessory}
       </span>
       {error && (
         <span className="chk-field__note" id={noteId} role="alert">
@@ -179,6 +186,18 @@ export function AddressBook({ controller }: { controller: Controller }) {
 
 export function AddressFields({ controller }: { controller: Controller }) {
   const { form, actions, fieldErrors } = controller;
+  const [addressSuggestActive, setAddressSuggestActive] = useState(false);
+
+  const selectAddress = (suggestion: CheckoutAddressSuggestion) => {
+    actions.setAddress({
+      ...form.address,
+      addressLine: suggestion.value,
+      city: suggestion.city ?? form.address.city,
+    });
+    actions.setDeliveryZone(suggestion.region?.toLowerCase().includes('московская') ? 'moscow-region' : 'moscow');
+    setAddressSuggestActive(false);
+  };
+
   return (
     <div className="chk-grid chk-grid--address">
       <Field
@@ -188,6 +207,15 @@ export function AddressFields({ controller }: { controller: Controller }) {
         wide
         disabled={controller.interactionsLocked}
         error={fieldErrors.addressLine}
+        onFocus={() => setAddressSuggestActive(true)}
+        accessory={
+          <AddressSuggest
+            query={form.address.addressLine}
+            active={addressSuggestActive}
+            disabled={controller.interactionsLocked}
+            onSelect={selectAddress}
+          />
+        }
       />
       <Field
         label="Город"

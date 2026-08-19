@@ -9,6 +9,16 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+function isAllowedRegion(data: Record<string, unknown>): boolean {
+  const regions = [data.region_with_type, data.region]
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => value.trim().toLowerCase());
+
+  return regions.some(
+    (region) => /^(?:г\.?\s*)?москва$/.test(region) || /^московская(?:\s+обл(?:асть)?|\s+область)?$/.test(region),
+  );
+}
+
 function narrowSuggestions(payload: unknown) {
   if (!payload || typeof payload !== 'object' || !('suggestions' in payload) || !Array.isArray(payload.suggestions)) {
     return [];
@@ -23,6 +33,7 @@ function narrowSuggestions(payload: unknown) {
       return [];
     }
     const data = 'data' in suggestion && suggestion.data && typeof suggestion.data === 'object' ? suggestion.data : {};
+    if (!isAllowedRegion(data)) return [];
     return [
       {
         value: suggestion.value,
@@ -55,7 +66,12 @@ export async function POST(req: Request) {
     const res = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
       method: 'POST',
       headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: normalizedQuery, count: 5, language: 'ru' }),
+      body: JSON.stringify({
+        query: normalizedQuery,
+        count: 5,
+        language: 'ru',
+        locations: [{ region: 'Москва' }, { region: 'Московская область' }],
+      }),
     });
     if (!res.ok) {
       logger.error('dadata_suggest_upstream_failed', new Error(`status ${res.status}`));

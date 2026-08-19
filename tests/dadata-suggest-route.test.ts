@@ -54,7 +54,12 @@ describe('POST /api/dadata/suggest', () => {
     expect(fetch).toHaveBeenCalledWith(
       'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address',
       expect.objectContaining({
-        body: JSON.stringify({ query: 'Москва', count: 5, language: 'ru' }),
+        body: JSON.stringify({
+          query: 'Москва',
+          count: 5,
+          language: 'ru',
+          locations: [{ region: 'Москва' }, { region: 'Московская область' }],
+        }),
       }),
     );
   });
@@ -75,6 +80,10 @@ describe('POST /api/dadata/suggest', () => {
                 postal_code: '125009',
                 secret: 'must-not-cross',
               },
+            },
+            {
+              value: 'Санкт-Петербург, Невский проспект, 1',
+              data: { city: 'Санкт-Петербург', region_with_type: 'г Санкт-Петербург' },
             },
           ],
           rawMeta: 'must-not-cross',

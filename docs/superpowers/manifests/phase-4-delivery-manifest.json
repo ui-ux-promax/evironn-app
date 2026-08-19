@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "baseSha": "868310f",
-  "fileCount": 107,
-  "totalBytes": 1017842,
+  "fileCount": 116,
+  "totalBytes": 1069917,
   "entries": [
     {
       "path": ".env.example",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".superpowers/sdd/phase-4-delivery-report.md",
-      "sha256": "2f3bc9a153ac5a4e19de00179227923c2861573b8b290dae38342be2d2856cf3",
-      "bytes": 7648
+      "sha256": "a00aca13f65a536ee4bb5529414df92c9ea7a5f2f90c3a7c6eeb0454402b0fe2",
+      "bytes": 8874
     },
     {
       "path": ".superpowers/sdd/phase-4-plan-review.md",
@@ -61,8 +61,8 @@
     },
     {
       "path": ".superpowers/sdd/progress.md",
-      "sha256": "234a327c350c17477cb0b29407121cb533bfe91003e8e4375a931090074e9cbf",
-      "bytes": 51284
+      "sha256": "fef34139f75ba64580299527f1da08e5f4c5d953cef4e242c346a897568aa789",
+      "bytes": 54526
     },
     {
       "path": "app/(shop)/checkout/loading.tsx",
@@ -156,13 +156,18 @@
     },
     {
       "path": "docs/roadmap/DECISIONS.md",
-      "sha256": "92e14562fd830bcb29274a4fcb43227e967928b078ba74c80031e0205c293780",
-      "bytes": 12686
+      "sha256": "a89ea08b2fffc2aab7c93e1c12b321673ccffe87f8080e4942280cebc9ce4c01",
+      "bytes": 13471
     },
     {
       "path": "docs/roadmap/STATUS.md",
-      "sha256": "3f25802a077d4ba3ef2ef0722b70d7c6d6d494d68837e3646dacdafbf74b8c7e",
-      "bytes": 28400
+      "sha256": "484b35f7936c9d61fc3adb67f26bdf292b68a9b388d243a2c498bf3ae7979fe2",
+      "bytes": 30130
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-15-cart-loading-viewport.md",
+      "sha256": "39e5726e9ea74ba83472954d265d95b2654741a78e03bc56d7ab409e5be1901d",
+      "bytes": 5215
     },
     {
       "path": "docs/superpowers/plans/2026-08-16-phase-4-checkout-orders.md",
@@ -170,14 +175,29 @@
       "bytes": 152940
     },
     {
+      "path": "docs/superpowers/plans/2026-08-18-portfolio-e2e-policy-implementation.md",
+      "sha256": "2f8fa664fb73c5a9a10e02ef10bcfdb10b61a73e0ad6328d9e5459b84aac4139",
+      "bytes": 8488
+    },
+    {
       "path": "docs/superpowers/specs/2026-08-17-phase-4-durable-payment-claim-design.md",
       "sha256": "9fcc314d6773c10d452aceffbdcb9edceeb1c6cff1d7808b1278c2c43753ab3e",
       "bytes": 7267
     },
     {
+      "path": "docs/superpowers/specs/2026-08-18-phase-4-portfolio-e2e-policy-design.md",
+      "sha256": "71a8deb57276355debb4931e42c339f1cec3749e8acce565387de4f71ecc0466",
+      "bytes": 1801
+    },
+    {
+      "path": "e2e/auth.spec.ts",
+      "sha256": "f2ca54f1db45ed1acbb90d04cec98099e8b8b379a0a59caddadbfd68ac96dbca",
+      "bytes": 2923
+    },
+    {
       "path": "e2e/checkout.spec.ts",
-      "sha256": "fa126fa5a118c809dea243c343c1403909054ec818846588195eb69a0db5a1cd",
-      "bytes": 14891
+      "sha256": "8b3ad354f112684d9c940f8ce4f5f5d982d248c34ba566435c88de8ae8a087f3",
+      "bytes": 15598
     },
     {
       "path": "e2e/database-command-report.ts",
@@ -191,28 +211,33 @@
     },
     {
       "path": "e2e/database-readiness.ts",
-      "sha256": "04d7ba60297f51dee81322c3ca3f4cc21c57da391b9131e8e67d1a7676ab5018",
-      "bytes": 16471
+      "sha256": "9bb73cf91ae6c1bd3fba944def843daa93f1f6d126e6ceaa3eddcdb9dbaa2dc6",
+      "bytes": 16594
     },
     {
       "path": "e2e/database-target.ts",
-      "sha256": "344733ca87bfbf04c66acb560abf3cd3405d97b483a29946bc72aa68c69cf2f0",
-      "bytes": 1893
+      "sha256": "478b8945fc8e81fc64bbb0d2be91caafe5326e57115ae0a3848f3b167e16755e",
+      "bytes": 1853
     },
     {
       "path": "e2e/helpers.ts",
-      "sha256": "5ad7dac9d14e563b43c0b457ae45c8ddefc3184ecc26b1dffa267fe8adf8fd4b",
-      "bytes": 3008
+      "sha256": "186f283b5cb375276413c7377905e5308ec039426ece7b0de1ef298cb2f10631",
+      "bytes": 3166
+    },
+    {
+      "path": "e2e/load-env.ts",
+      "sha256": "96234ecde90d41e0d0e17069a5bf12d57c880ff4e432799619031b9fec0c45d2",
+      "bytes": 354
     },
     {
       "path": "e2e/order.spec.ts",
-      "sha256": "4f83e58276d904671f575866ca5ce77acd83a19b2553eac145801c7141377dd2",
-      "bytes": 4685
+      "sha256": "b0afba242ed1bb59072f9486527bb1e7cad42f84480f1ed6028c9685e830ee8f",
+      "bytes": 4904
     },
     {
       "path": "e2e/phase4-database.ts",
-      "sha256": "65ff71712f10f91eb87c8ba48a9e9ac8362e51343a5f35eeda01f8b6ed75b37b",
-      "bytes": 27702
+      "sha256": "bbadff2a2556aeba3668fc8f83ec01840bc25650634e7c74af49f439ab94cb65",
+      "bytes": 27622
     },
     {
       "path": "e2e/phase4-namespace.ts",
@@ -220,14 +245,19 @@
       "bytes": 520
     },
     {
+      "path": "e2e/profile.spec.ts",
+      "sha256": "4ac64bc68f77e796087c4798eb46cbd2733288bfaf892c1822316130aaa389e3",
+      "bytes": 6774
+    },
+    {
       "path": "e2e/review.spec.ts",
-      "sha256": "3f8a285456fe788f599f56485ec4e3f2bd3e3563adc2da2fe7eae592319c894d",
-      "bytes": 3186
+      "sha256": "b47c02c46b1967e7df70e84f396242c07922c63a214c0c211b133509f72badb9",
+      "bytes": 3251
     },
     {
       "path": "e2e/yookassa.spec.ts",
-      "sha256": "1581de73574e1d0de5104eae3c46a9c412d7899e58099b7385234d37387c6ea8",
-      "bytes": 11751
+      "sha256": "1933e7ad67e7a3a61cb44c56d84733ec111c9c08da43e1e2b64699ed5e7de90f",
+      "bytes": 12325
     },
     {
       "path": "lib/cart-quantity.ts",
@@ -261,8 +291,8 @@
     },
     {
       "path": "lib/payment-initialization.ts",
-      "sha256": "268569b9f1802d5bb491444feb9fe3c65b7f36bc05bfa7c992fe85f9e2290b57",
-      "bytes": 15953
+      "sha256": "7d06b2a6b1cebf21ed3a104b27f7ad0a1b5ad1e9086dbe4684d0a15c5e3cafab",
+      "bytes": 15955
     },
     {
       "path": "lib/payment-sync.ts",
@@ -276,8 +306,8 @@
     },
     {
       "path": "playwright.config.ts",
-      "sha256": "e751c3a40b455bc4142ee8f0a5bb58a5ff12ccacb31002218386f3f0ed6ea7a9",
-      "bytes": 2577
+      "sha256": "afa263972b1012e6f2b444c1427a1b773c47e1aa84feacb9b3ab34c0823d664b",
+      "bytes": 2653
     },
     {
       "path": "prisma/migrations/20260816_phase4_delivery_snapshots/migration.sql",
@@ -306,8 +336,8 @@
     },
     {
       "path": "scripts/e2e-prisma-migrate.ts",
-      "sha256": "3de41588790e50c1cbf00a414a4eb3a8dea669390a58fcd251aece6970700edf",
-      "bytes": 5787
+      "sha256": "6d48f3667dcb2285cc0265ce6067d3f529339065ab6313d9fa77532c2de30791",
+      "bytes": 6081
     },
     {
       "path": "services/dto/checkout-page.dto.ts",
@@ -401,12 +431,12 @@
     },
     {
       "path": "tests/e2e-database-guard.test.ts",
-      "sha256": "44ea2993affee62de98f30bba41ff3b5dc663a9d871f22bbe9334b0c5935316e",
-      "bytes": 8331
+      "sha256": "0f3eaeaf9880606e06422080d414fa0d2c5b947392faa4cf7f4c620a35530544",
+      "bytes": 8375
     },
     {
       "path": "tests/evironn-cart-source-contract.test.ts",
-      "sha256": "707f7147ceca80cd8aa4dc8029783dfd1f261e0132fae3f691c349a4d04edfcf",
+      "sha256": "bf62d97087d1c9e17831714b7b8f2c058f12540288c0a0042f600067cf335195",
       "bytes": 6245
     },
     {
@@ -443,6 +473,11 @@
       "path": "tests/evironn-order-variant-a.test.tsx",
       "sha256": "fbb05d1deb028126e7d9faf526a9274b0c3c6ddf85c690230c35966588aa4860",
       "bytes": 1376
+    },
+    {
+      "path": "tests/evironn-phase-2a-source-contract.test.ts",
+      "sha256": "4168364a8828d9ade017d8efd1f57b872b0b6f2b07e7b1c67e29b7b36b0e38a3",
+      "bytes": 5608
     },
     {
       "path": "tests/order-coupon.test.ts",
@@ -490,19 +525,29 @@
       "bytes": 24086
     },
     {
+      "path": "tests/phase-3-integration-contract.test.ts",
+      "sha256": "27c8b947c1b368dc5952110cafd7453d2a97bbc5b1cee0952cd72340d3ab1f54",
+      "bytes": 9868
+    },
+    {
       "path": "tests/phase-4-e2e-safety-contract.test.ts",
       "sha256": "bd57a010817e0e8458846ae70ffe382f3288734f7cc455298ea2b4aa63637d99",
       "bytes": 15977
     },
     {
       "path": "tests/phase-4-integration-contract.test.ts",
-      "sha256": "2ae1baa9ccf091613e3ddf0de6626243d5fcadf6c14d1f82418c49476bd8c98e",
-      "bytes": 69554
+      "sha256": "d99ca8070f1ff363e0eabdfb9d093efd6800e221facc4d10edfe73619add2e09",
+      "bytes": 70369
+    },
+    {
+      "path": "tests/phase-4-load-env.test.ts",
+      "sha256": "ab302047f0a01d60273713a7b48c2f3fe007c3304b81b7f9e64d167d585c818d",
+      "bytes": 1090
     },
     {
       "path": "tests/phase-4-migration-status.test.ts",
-      "sha256": "0b53e2dd5b136ea1aed5bdf72fbbba1c1a6675c6d42f4432d960d58e6ce69285",
-      "bytes": 13157
+      "sha256": "675d3da9ffed3f974116b1f626dad1fc87356abf62b22adfc68e2c7ba63b0977",
+      "bytes": 13171
     },
     {
       "path": "tests/phase-4-schema-contract.test.ts",

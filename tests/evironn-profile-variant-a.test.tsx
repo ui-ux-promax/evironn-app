@@ -179,13 +179,32 @@ describe('Profile Variant A', () => {
     expect(screen.queryByText('Уведомления')).not.toBeInTheDocument();
   });
 
-  it('shows real overview counts and latest snapshot without invented loyalty state', () => {
+  it('shows the reference loyalty block, real overview counts, and latest snapshot', () => {
     render(<ProfileVariantA dto={dto} />);
 
     expect(screen.getByText('42')).toBeInTheDocument();
     expect(screen.getByText(/Noma snapshot/)).toBeInTheDocument();
+    expect(screen.getByText('Evironn круг')).toBeInTheDocument();
+    expect(screen.getByText('Тёплый дом')).toBeInTheDocument();
+    expect(screen.getAllByText('4 460')).not.toHaveLength(0);
+    expect(screen.getAllByText('бонусов')).not.toHaveLength(0);
     expect([...document.querySelectorAll('.prf__quick b')].map((node) => node.textContent)).toContain('2');
-    expect(screen.queryByText(/бонус|круг|уровня/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the active-order tracker with the production status', () => {
+    render(
+      <ProfileVariantA
+        dto={{
+          ...dto,
+          orders: [{ ...dto.orders[0], status: 'PROCESSING' }],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Активный заказ')).toBeInTheDocument();
+    expect(screen.getAllByText('Собираем')).not.toHaveLength(0);
+    expect(screen.getByRole('list', { name: 'Статус заказа' })).toBeInTheDocument();
+    expect(screen.getByText('К заказу')).toBeInTheDocument();
   });
 
   it('renders orders as read-only snapshots with no order mutations', () => {

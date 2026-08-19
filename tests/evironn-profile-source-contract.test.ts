@@ -17,8 +17,10 @@ describe('production profile Variant A source contract', () => {
       'prf__nav',
       'prf__nav-indicator',
       'prf__content',
+      'prf__loyalty',
       'prf__active-order',
       'prf__quick',
+      'ord-track',
       'prf__orders',
       'prf__favorites',
       'prf__form-grid',
@@ -28,7 +30,7 @@ describe('production profile Variant A source contract', () => {
       expect(component).toContain(className);
     }
     expect(component).toMatch(/overview|orders|favorites|profile|addresses/);
-    expect(component).not.toMatch(/payment|bonuses|notifications|loyalty|bonus|saved cards/i);
+    expect(component).not.toMatch(/payment|bonuses|notifications|saved cards/i);
     expect(component).not.toMatch(/onClick={[^}]+(tracking|reorder|receipt|cancel)/i);
   });
 

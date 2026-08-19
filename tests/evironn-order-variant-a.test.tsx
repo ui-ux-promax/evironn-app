@@ -35,4 +35,12 @@ describe('OrderVariantA', () => {
     expect(variant).toContain('<Link className="ord-review__product-link" href={target.href}>');
     expect(variant).toContain('{target.name}');
   });
+
+  it('keeps the placed banner inside the order content container', () => {
+    const styles = fs.readFileSync('styles/evironn/OrderVariantA.css', 'utf8');
+
+    expect(styles).toMatch(
+      /\.ord-a\s*>\s*\.ord-placed\s*\{[\s\S]*width:\s*min\(100%,\s*var\(--ev-container-width\)\);/,
+    );
+  });
 });

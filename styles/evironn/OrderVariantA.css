@@ -28,6 +28,7 @@
   line-height: 0.94;
 }
 .ord-a > .ord-placed {
+  width: min(100%, var(--ev-container-width));
   margin-top: clamp(22px, 3vw, 32px);
 }
 .ord-a__grid {

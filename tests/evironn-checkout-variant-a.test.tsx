@@ -305,6 +305,21 @@ describe('Checkout Variant A', () => {
     expect(mocks.placeOrder).not.toHaveBeenCalled();
   });
 
+  it('masks Russian phone input and submits its normalized value', async () => {
+    mocks.placeOrder.mockResolvedValue({ ok: false, code: 'ORDER_FAILED', error: 'Stop after payload assertion' });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    const phone = screen.getByRole('textbox', { name: 'Телефон' });
+    expect(phone).toHaveValue('+7 (999) 123-45-67');
+    fireEvent.change(phone, { target: { value: '8 (923) 144-55-66' } });
+    expect(phone).toHaveValue('+7 (923) 144-55-66');
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+
+    await waitFor(() => expect(mocks.placeOrder).toHaveBeenCalledTimes(1));
+    expect(mocks.placeOrder).toHaveBeenCalledWith(expect.objectContaining({ contactPhone: '79231445566' }));
+  });
+
   it('clears saved address details when switching to a new manual address and re-quotes', async () => {
     render(<CheckoutVariantA initialData={initialData} />);
     await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(1));

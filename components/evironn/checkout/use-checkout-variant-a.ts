@@ -7,6 +7,7 @@ import { placeOrder } from '@/app/actions/order';
 import { useCartStore } from '@/store/cart';
 import { EMPTY_CART_DTO } from '@/services/dto/commerce-cart.dto';
 import { placeOrderSchema, type CheckoutQuoteInput, type PlaceOrderInput } from '@/services/dto/checkout.dto';
+import { normalizeRuPhone } from '@/lib/phone';
 import type {
   BlockedPaymentInitializationDto,
   CheckoutPageDto,
@@ -367,7 +368,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       const payload: PlaceOrderInput = {
         ...quoteInput,
         contactName,
-        contactPhone,
+        contactPhone: normalizeRuPhone(contactPhone),
         contactEmail,
         paymentMethod,
       };

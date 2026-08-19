@@ -17,6 +17,7 @@ import type { CheckoutQuoteDto, DeliveryMethod } from '@/services/dto/checkout-p
 import type { CheckoutVariantAController } from './use-checkout-variant-a';
 import { countLabel, QtyStepper } from '@/components/evironn/cart/cart-primitives';
 import { formatPrice } from '@/lib/format';
+import { formatRuPhone } from '@/lib/phone';
 import '../../../styles/evironn/CheckoutPrimitives.css';
 
 type Controller = CheckoutVariantAController;
@@ -91,8 +92,8 @@ export function ContactFields({ controller }: { controller: Controller }) {
       />
       <Field
         label="Телефон"
-        value={form.contactPhone}
-        onChange={actions.setContactPhone}
+        value={formatRuPhone(form.contactPhone)}
+        onChange={(value) => actions.setContactPhone(formatRuPhone(value))}
         type="tel"
         disabled={controller.interactionsLocked}
         error={fieldErrors.contactPhone}

@@ -1,0 +1,15 @@
+/* Evironn-specific order states layered over the preserved clone primitives. */
+
+.ord-chip.is-payment-pending {
+  background: color-mix(in srgb, var(--ev-warm-accent) 16%, white);
+  color: var(--ev-warm-accent);
+}
+
+.ord-sum .is-payment-pending dd {
+  color: var(--ev-warm-accent);
+  font-weight: 600;
+}
+
+.ord-review > form {
+  margin-top: 16px;
+}

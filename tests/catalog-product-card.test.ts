@@ -1,13 +1,9 @@
-/**
- * @vitest-environment jsdom
- */
+/** @vitest-environment jsdom */
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CatalogProductCard } from '@/components/shared/catalog/catalog-product-card';
-import type { ProductCardData } from '@/lib/product-summary';
-
-const addCartItem = vi.hoisted(() => vi.fn());
+import type { FurnitureProductCardData } from '@/lib/furniture-product-summary';
 
 vi.mock('next/image', () => ({
   default: ({ src, alt }: { src: string; alt: string }) => React.createElement('img', { src, alt }),
@@ -19,93 +15,63 @@ vi.mock('next/link', () => ({
 }));
 
 vi.mock('@/store', () => ({
-  useCartStore: (selector: (state: { addCartItem: typeof addCartItem }) => unknown) => selector({ addCartItem }),
+  useCartStore: (selector: (state: { addCartItem: () => Promise<void> }) => unknown) =>
+    selector({ addCartItem: async () => undefined }),
 }));
 
 vi.mock('@/components/shared/wishlist/wishlist-heart', () => ({
   WishlistHeart: () => React.createElement('button', { type: 'button' }, 'wishlist'),
 }));
 
-afterEach(() => {
-  cleanup();
-  addCartItem.mockClear();
-});
+vi.mock('@/components/shared/product/size-guide-dialog', () => ({
+  SizeGuideDialog: () => React.createElement('button', { type: 'button' }, 'size guide'),
+}));
 
-const data: ProductCardData = {
-  id: 'product-1',
-  slug: 'cables-cardigan',
-  name: 'CABLES',
-  brand: 'RITM',
-  categoryName: 'Knitwear',
-  imageUrl: '/images/graphite.jpg',
-  imageAlt: 'CABLES cardigan',
-  minPrice: 5500,
-  minCompareAtPrice: 6000,
+afterEach(() => cleanup());
+
+const data: FurnitureProductCardData = {
+  id: 'product-noma',
+  slug: 'noma-woven-lounge',
+  name: 'Noma Woven Lounge',
+  brand: 'Evironn',
+  categoryName: 'Lounge chairs',
+  imageUrl: '/assets/products/noma-woven-lounge.webp',
+  imageAlt: 'Noma Woven Lounge',
+  primarySkuId: 'sku-noma-oak',
+  minPrice: 89000,
+  minOldPrice: 109000,
   badges: [],
   soldOut: false,
-  colorways: [
-    {
-      id: 'cw-graphite',
-      name: 'Graphite',
-      swatchHex: '#4b5563',
-      imageUrl: '/images/graphite.jpg',
-      variants: [{ size: 'S', sizeOrder: 2, inStock: true, variantId: 'variant-graphite-s' }],
-    },
-    {
-      id: 'cw-terracotta',
-      name: 'Terracotta',
-      swatchHex: '#b9654b',
-      imageUrl: '/images/terracotta.jpg',
-      variants: [{ size: 'S', sizeOrder: 2, inStock: true, variantId: 'variant-terracotta-s' }],
-    },
+  optionSwatches: [
+    { groupSlug: 'finish', valueSlug: 'oak', label: 'Oak', swatchHex: '#c89b6d' },
+    { groupSlug: 'finish', valueSlug: 'walnut', label: 'Walnut', swatchHex: '#6b4226' },
   ],
-  sizes: [{ size: 'S', sizeOrder: 2, inStock: true, variantId: 'variant-graphite-s' }],
 };
 
 describe('CatalogProductCard', () => {
-  it('shows the previous price when the product is discounted', () => {
+  it('renders canonical furniture navigation, pricing, category, availability, and swatches', () => {
     render(React.createElement(CatalogProductCard, { data }));
 
-    expect(screen.getByText(/6[\s\u00a0]000 ₽/).className).toContain('self-end');
-  });
-
-  it('changes the product image when a colorway is selected', async () => {
-    render(React.createElement(CatalogProductCard, { data }));
-
-    expect(screen.getByAltText('CABLES cardigan').getAttribute('src')).toBe('/images/graphite.jpg');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Terracotta' }));
-
-    expect(screen.getByAltText('CABLES cardigan').getAttribute('src')).toBe('/images/terracotta.jpg');
-  });
-
-  it('disables the add-to-cart button and shows its loading label while the request is pending', () => {
-    let resolveAdd!: () => void;
-    addCartItem.mockReturnValueOnce(
-      new Promise<void>((resolve) => {
-        resolveAdd = resolve;
-      }),
+    const article = screen.getByTestId('catalog-product-card');
+    expect(article.textContent).toContain('Noma Woven Lounge');
+    expect(article.textContent).toContain('Lounge chairs');
+    expect(article.textContent).toContain('89');
+    expect(article.textContent).toContain('109');
+    expect(article.textContent).toContain('В наличии');
+    expect(screen.getAllByRole('link', { name: 'Noma Woven Lounge' })[0].getAttribute('href')).toBe(
+      '/product/noma-woven-lounge',
     );
-    render(React.createElement(CatalogProductCard, { data }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'S' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить в корзину' }));
-
-    const button = screen.getByRole('button', { name: 'Добавляем' });
-    expect(button).toHaveProperty('disabled', true);
-    expect(button.getAttribute('aria-busy')).toBe('true');
-    expect(button.querySelector('svg.animate-spin')).not.toBeNull();
-    resolveAdd();
+    expect(screen.getByLabelText('Oak')).toBeTruthy();
+    expect(screen.getByLabelText('Walnut')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /корзин/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /wishlist|избран/i })).toBeNull();
+    expect(screen.queryByText(/размер|size guide/i)).toBeNull();
   });
 
-  it('adds the variant for the selected colorway and size', () => {
-    addCartItem.mockResolvedValue(undefined);
-    render(React.createElement(CatalogProductCard, { data }));
+  it('renders sold-out furniture without a commerce action', () => {
+    render(React.createElement(CatalogProductCard, { data: { ...data, soldOut: true } }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Terracotta' }));
-    fireEvent.click(screen.getByRole('button', { name: 'S' }));
-    fireEvent.click(screen.getAllByRole('button').find((button) => button.textContent?.includes('Добавить'))!);
-
-    expect(addCartItem).toHaveBeenCalledWith({ productVariantId: 'variant-terracotta-s' });
+    expect(screen.getByTestId('catalog-product-card').textContent).toContain('Нет в наличии');
+    expect(screen.queryByRole('button', { name: /корзин/i })).toBeNull();
   });
 });

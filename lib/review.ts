@@ -7,23 +7,34 @@ export function isValidRating(r: number): boolean {
 
 export type ReviewEligibility = 'eligible' | 'not-purchased' | 'already-reviewed';
 
-// «Покупка», дающая право на отзыв: заказ с этим товаром, не отменённый, И либо COD
-// (оплата при получении), либо онлайн с прошедшей оплатой. Неоплаченный онлайн-заказ
-// («Ожидает оплаты» — ушёл с ЮKassa, не заплатил) покупкой НЕ считается.
-function purchasedOrderWhere(userId: string, productId: string): Prisma.OrderWhereInput {
+// Единственный серверный предикат qualifying purchase для owner/product. Линия заказа
+// может быть канонической SKU или legacy ProductVariant; COD считается покупкой только
+// после доставки, online — только при успешной оплате, и отменённые заказы исключаются.
+export function purchasedOrderWhere(userId: string, productId: string): Prisma.OrderWhereInput {
   return {
     userId,
     status: { not: 'CANCELLED' },
-    items: { some: { productVariant: { colorway: { productId } } } },
-    OR: [{ paymentMethod: 'cod' }, { payment: { is: { status: 'succeeded' } } }],
+    items: {
+      some: {
+        OR: [{ canonicalSku: { productId } }, { productVariant: { colorway: { productId } } }],
+      },
+    },
+    OR: [
+      { paymentMethod: 'cod', status: 'DELIVERED' },
+      { paymentMethod: 'online', payment: { is: { status: 'succeeded' } } },
+    ],
   };
+}
+
+export async function hasQualifyingPurchase(userId: string, productId: string): Promise<boolean> {
+  const order = await prisma.order.findFirst({ where: purchasedOrderWhere(userId, productId), select: { id: true } });
+  return Boolean(order);
 }
 
 // Состояние права на отзыв: есть ли покупка и не оставлял ли уже отзыв.
 // Разводит «не покупал» и «уже оставил» — UI показывает разные сообщения.
 export async function getReviewEligibility(userId: string, productId: string): Promise<ReviewEligibility> {
-  const order = await prisma.order.findFirst({ where: purchasedOrderWhere(userId, productId), select: { id: true } });
-  if (!order) return 'not-purchased';
+  if (!(await hasQualifyingPurchase(userId, productId))) return 'not-purchased';
   const existing = await prisma.review.findUnique({
     where: { productId_userId: { productId, userId } },
     select: { id: true },
@@ -41,11 +52,7 @@ export async function canReview(userId: string, productId: string): Promise<bool
 // заказ на тот же товар — отзыв сохраняется.
 export async function pruneReviewsAfterCancel(userId: string, productIds: string[]): Promise<void> {
   for (const productId of productIds) {
-    const stillPurchased = await prisma.order.findFirst({
-      where: purchasedOrderWhere(userId, productId),
-      select: { id: true },
-    });
-    if (!stillPurchased) {
+    if (!(await hasQualifyingPurchase(userId, productId))) {
       await prisma.review.deleteMany({ where: { userId, productId } });
     }
   }

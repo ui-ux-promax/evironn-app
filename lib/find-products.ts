@@ -1,82 +1,116 @@
-import { prisma } from '@/lib/prisma-client';
+import { NEW_PRODUCT_WINDOW_DAYS, LOW_STOCK_THRESHOLD } from '@/constants/config';
 import {
-  buildProductWhere,
   buildOrderBy,
   buildPagination,
-  parseCatalogParams,
+  buildProductWhere,
   PAGE_SIZE,
+  parseCatalogParams,
+  type CatalogParams,
   type RawSearchParams,
 } from '@/lib/catalog-filters';
-import { productCardInclude, buildProductCardData, type ProductCardData } from '@/lib/product-summary';
-import { NEW_PRODUCT_WINDOW_DAYS, LOW_STOCK_THRESHOLD, GENDER_OPTIONS } from '@/constants/config';
+import {
+  buildFurnitureProductCardData,
+  furnitureProductCardInclude,
+  type FurnitureProductCardData,
+} from '@/lib/furniture-product-summary';
+import { prisma } from '@/lib/prisma-client';
 
 export interface Facet {
   value: string;
   label: string;
   count: number;
 }
+
+export interface OptionFacet {
+  slug: string;
+  name: string;
+  values: Array<{ value: string; label: string; swatchHex: string | null; count: number }>;
+}
+
 export interface CatalogResult {
-  products: ProductCardData[];
+  products: FurnitureProductCardData[];
   total: number;
   page: number;
   totalPages: number;
   facets: {
     categories: Facet[];
-    brands: Facet[];
-    genders: Facet[];
-    colors: { slug: string; name: string; swatchHex: string | null }[];
+    rooms: Facet[];
+    options: OptionFacet[];
     price: { min: number; max: number };
   };
 }
 
-// Сортировка/пагинация на уровне БД: orderBy по денормализованным колонкам (см. buildOrderBy)
-// + skip/take + count. minPrice/discountPct/createdAt/salesCount — колонки Product, поэтому
-// порядок и срез страницы делает Postgres, а не память (тянем только PAGE_SIZE карточек).
+const withoutCategories = (params: CatalogParams, category: string): CatalogParams => ({
+  ...params,
+  categories: [category],
+});
+
+const withoutRooms = (params: CatalogParams, room: string): CatalogParams => ({
+  ...params,
+  rooms: [room],
+});
+
+const withOptionValue = (params: CatalogParams, group: string, value: string): CatalogParams => ({
+  ...params,
+  options: { ...params.options, [group]: [value] },
+});
+
 export async function findProducts(sp: RawSearchParams): Promise<CatalogResult> {
   const params = parseCatalogParams(sp);
   const where = buildProductWhere(params);
   const now = new Date();
   const cfg = { newWindowDays: NEW_PRODUCT_WINDOW_DAYS, lowStock: LOW_STOCK_THRESHOLD };
 
-  // total + фасеты не зависят от страницы — считаем параллельно, ПОТОМ клампим page и тянем срез
-  // (skip от валидной страницы → нет промаха в пустую выборку при page вне диапазона).
-  const [total, categories, catCounts, brandCounts, genderCounts, colorRows, priceAgg] = await Promise.all([
-    prisma.product.count({ where }),
-    prisma.category.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.product.groupBy({ by: ['categoryId'], where, _count: { _all: true } }),
-    prisma.product.groupBy({ by: ['brand'], where, _count: { _all: true } }),
-    prisma.product.groupBy({ by: ['gender'], where, _count: { _all: true } }),
-    prisma.productColorway.findMany({
-      where: { product: { active: true } },
-      distinct: ['slug'],
-      select: { slug: true, name: true, swatchHex: true },
-      orderBy: { sortOrder: 'asc' },
-    }),
-    // Границы цены для слайдера: весь активный каталог (mirror active-scoping расцветок выше),
-    // не сужаем текущими фильтрами — ручки всегда показывают полный диапазон БД.
-    prisma.productVariant.aggregate({
-      where: { active: true, colorway: { product: { active: true } } },
-      _min: { price: true },
-      _max: { price: true },
-    }),
+  const totalPromise = prisma.product.count({ where });
+  const categoriesPromise = prisma.category.findMany({ orderBy: { sortOrder: 'asc' } });
+  const roomsPromise = prisma.room.findMany({ orderBy: { sortOrder: 'asc' } });
+  const optionGroupsPromise = prisma.optionGroup.findMany({
+    include: { values: { orderBy: { sortOrder: 'asc' } } },
+    orderBy: { sortOrder: 'asc' },
+  });
+  const pricePromise = prisma.sku.aggregate({
+    where: { active: true, product: { active: true } },
+    _min: { price: true },
+    _max: { price: true },
+  });
+
+  const [total, categories, rooms, optionGroups, priceBounds] = await Promise.all([
+    totalPromise,
+    categoriesPromise,
+    roomsPromise,
+    optionGroupsPromise,
+    pricePromise,
+  ]);
+
+  const [categoryCounts, roomCounts, optionCounts] = await Promise.all([
+    Promise.all(
+      categories.map((category) =>
+        prisma.product.count({ where: buildProductWhere(withoutCategories(params, category.slug)) }),
+      ),
+    ),
+    Promise.all(
+      rooms.map((room) => prisma.product.count({ where: buildProductWhere(withoutRooms(params, room.slug)) })),
+    ),
+    Promise.all(
+      optionGroups.map((group) =>
+        Promise.all(
+          group.values.map((value) =>
+            prisma.product.count({ where: buildProductWhere(withOptionValue(params, group.slug, value.slug)) }),
+          ),
+        ),
+      ),
+    ),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(params.page, totalPages);
   const raw = await prisma.product.findMany({
     where,
-    include: productCardInclude,
+    include: furnitureProductCardInclude,
     orderBy: buildOrderBy(params.sort),
     ...buildPagination(page),
   });
-  const products = raw.map((p) => buildProductCardData(p, now, cfg));
-
-  const catCountMap = new Map(catCounts.map((c) => [c.categoryId, c._count._all]));
-  const genderCountMap = new Map(genderCounts.map((g) => [g.gender, g._count._all]));
-
-  // Пустой каталог → min/max null; отдаём 0..0, слайдер в этом случае не рендерится (min>=max).
-  const priceMin = priceAgg._min.price ?? 0;
-  const priceMax = priceAgg._max.price ?? 0;
+  const products = raw.map((product) => buildFurnitureProductCardData(product, now, cfg));
 
   return {
     products,
@@ -84,17 +118,30 @@ export async function findProducts(sp: RawSearchParams): Promise<CatalogResult> 
     page,
     totalPages,
     facets: {
-      categories: categories.map((c) => ({ value: c.slug, label: c.name, count: catCountMap.get(c.id) ?? 0 })),
-      brands: brandCounts
-        .map((b) => ({ value: b.brand, label: b.brand, count: b._count._all }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-      genders: GENDER_OPTIONS.map((g) => ({
-        value: g.value,
-        label: g.label,
-        count: genderCountMap.get(g.value) ?? 0,
-      })).filter((g) => g.count > 0),
-      colors: colorRows,
-      price: { min: priceMin, max: priceMax },
+      categories: categories.map((category, index) => ({
+        value: category.slug,
+        label: category.name,
+        count: categoryCounts[index] ?? 0,
+      })),
+      rooms: rooms.map((room, index) => ({
+        value: room.slug,
+        label: room.name,
+        count: roomCounts[index] ?? 0,
+      })),
+      options: optionGroups.map((group, groupIndex) => ({
+        slug: group.slug,
+        name: group.name,
+        values: group.values.map((value, valueIndex) => ({
+          value: value.slug,
+          label: value.name,
+          swatchHex: value.swatchHex,
+          count: optionCounts[groupIndex]?.[valueIndex] ?? 0,
+        })),
+      })),
+      price: {
+        min: priceBounds._min.price ?? 0,
+        max: priceBounds._max.price ?? 0,
+      },
     },
   };
 }

@@ -1,0 +1,114 @@
+# Phase 4 Task 2 Report
+
+## Scope
+
+Implemented the additive delivery snapshot schema and migration, ADR-016 policy, strict cart-only checkout DTOs, and pure checkout domain calculations. No database connection, migration application, server action, UI, webhook, payment creation, or order-flow implementation was performed.
+
+## Reader and writer audit
+
+Audit command:
+
+```powershell
+rg -n "prisma\.(order|payment|coupon)|tx\.(order|payment|coupon)|OrderGetPayload|shippingMethod|shippingAmount|serviceAmount|deliveryWindow|pickupPointId|createPayment|payment-\$\{input\.orderId\}|metadata.*orderNumber|Coupon" app lib services components prisma tests
+```
+
+Production readers:
+
+- `app/(shop)/orders/[number]/page.tsx:59,71,154,269` reads the owned order, items, payment, `shippingMethod`, and `shippingAmount` for the customer order page.
+- `lib/profile-page.ts:23-28,141-147` selects profile order totals, status, items, and current shipping fields.
+- `components/shared/profile/profile-view.tsx:43-46,794` consumes the profile order shipping fields.
+- `app/(admin)/admin/orders/[id]/page.tsx:20,103,128` reads order, payment, and current shipping fields for the admin detail page.
+- `app/(admin)/admin/orders/page.tsx:47-68` reads order/payment list data.
+- `app/(admin)/admin/page.tsx:40` reads dashboard order/payment aggregates.
+- `app/(admin)/admin/customers/[id]/page.tsx:35-41` reads customer order history.
+- `lib/admin/analytics.ts:402-424` reads order/payment aggregates.
+- `lib/review.ts:30` reads qualifying delivered orders for purchase-gated reviews.
+- `lib/payment-sync.ts:186` reads the local payment and order for reconciliation.
+- `lib/coupon.ts:20-32` reads one coupon by normalized code.
+- `app/(admin)/admin/marketing/page.tsx:28-39` reads coupon definitions for administration.
+- `app/(admin)/admin/marketing/[id]/edit/page.tsx:12` reads one coupon definition for editing.
+
+Production writers:
+
+- `app/actions/order.ts:133-227,272-291` creates/deletes orders and order items, creates the local Payment row, and performs guarded cancellation updates.
+- `lib/payment-sync.ts:74-82,124-160` updates payment/order final states and restores cancellation side effects.
+- `app/actions/admin/orders.ts:26-80` updates order/payment status.
+- `app/actions/admin/coupons.ts:37-120` performs coupon definition CRUD only. Coupon usage remains stateless; this writer does not reserve, consume, or compensate coupon usage.
+
+Non-production fixture and probe paths:
+
+- `app/api/e2e/phase3-probe/route.ts:17` is an environment-gated, read-only E2E order probe.
+- `lib/demo-data/reset.ts:42-44` deletes visitor Payment, OrderItem, and Order rows as demo reset fixture cleanup.
+- `lib/demo-data/reset.ts:69` upserts canonical coupon definitions during the guarded demo reset.
+- `prisma/seed-orders.ts:58` deletes only order fixtures identified by the test email domain before reseeding.
+- `prisma/seed-orders.ts:85-130` writes legacy order/payment fixture data.
+- `prisma/seed.ts:187` upserts seed coupon definitions during explicit database seeding.
+- `prisma/gen-seed-sql.ts:100` generates fixture SQL that inserts or updates coupon definitions.
+
+Fixture caveat: `prisma/seed-orders.ts:85-130` writes legacy `shippingMethod`, `shippingAmount`, totals, and payment fixture values. It omits the new nullable snapshots and relies on the `serviceAmount` default of zero. This is compatibility fixture data, not a new production contract.
+
+Demo/seed classification: `app/api/cron/reset-demo/route.ts:21` invokes `resetDemoData` under the Vercel cron route and lock; `vercel.json:3` schedules that route daily. The reset cleanup, order seeding, coupon upserts, generated fixture SQL, and E2E probe are non-production fixture/probe paths, not Phase 4 runtime order/payment writers. `prisma/gen-seed-sql.ts:100` generates SQL but does not execute it. None is a checkout redemption writer. Coupon usage remains stateless because no usage relation, redemption counter, limit, reservation, or compensation writer exists.
+
+No existing field stores immutable delivery date, delivery window, delivery zone, pickup identity, floor, lift, intercom, service lines, or service total. Existing readers remain compatible because all new snapshot fields are nullable and `serviceAmount` defaults to zero. Existing writers may omit every new field. Rollback is application-first while retaining the additive migration; destructive contraction is not authorized.
+
+`Order.shippingMethod` remains `courier` or `pickup`. New showroom and pickup-point orders persist `pickup` plus their server-owned snapshot. A legacy `pickup` with no `pickupPointId` resolves to `legacy-pickup`, never showroom.
+
+## Payment provider audit
+
+Durable evidence present:
+
+- `Order.orderNumber` is unique.
+- `Payment.id` is the provider payment id and `Payment.orderId` is unique.
+- `lib/yookassa.ts` sends deterministic idempotency key `payment-<orderId>` and metadata `{ orderNumber }`.
+- Webhooks carry provider payment id and verify it with `payments.load(id)` before local reconciliation.
+
+Evidence not established:
+
+- Installed `@webzaytsev/yookassa-ts-sdk` documents same-key retry and contains an application example storing a key for 86,400 seconds, but it does not prove YooKassa's provider-side bounded idempotency retention window `T`.
+- The installed payment list filter has no metadata field, and the payment API surface loads by provider id; no audited payment lookup by order metadata was found.
+- Current webhook and order-page resync require an existing local `Payment.id`; they cannot recover a provider object after a successful provider create followed by a failed local Payment write.
+- Current create errors do not prove the required total `NOT_CREATED`, `CREATED`, and `INDETERMINATE` outcome taxonomy.
+
+Decision: committed stop marker `PAYMENT_AUTO_RETRY_SAFETY = 'PAYMENT_AUTO_RETRY_UNSAFE'`. Contract tests assert the marker, the SDK same-key statement, its application-side Redis `EX 86400` example, absence of metadata from `GetPaymentListFilter`, and absence of provider retention/expiry/TTL proof. No automatic late retry, stock release, provider-dependent cleanup, or provider-dependent assumption is authorized by Task 2. Provider work must stop until an approved ADR-010 decision supplies a bounded `T` and unambiguous recovery/proof contract.
+
+## Coupon audit
+
+`Coupon` has only identity, code, percent, active, expiry, and created-at fields. `lib/coupon.ts:20-32` performs a stateless checkout read. `app/actions/admin/coupons.ts:37-120` changes definitions through admin CRUD. `prisma/seed.ts:187` upserts definitions during explicit seeding. `lib/demo-data/reset.ts:69` restores canonical definitions when `app/api/cron/reset-demo/route.ts:21` runs, including the daily schedule declared at `vercel.json:3`. `prisma/gen-seed-sql.ts:100` emits fixture SQL for coupon insert/upsert; it does not execute at runtime or record usage/reservation state. None of these paths records coupon usage. There is no usage relation, redemption counter, limit, reservation, or checkout compensation writer. No coupon usage migration is required.
+
+## TDD evidence
+
+RED:
+
+```powershell
+npx vitest run tests/phase-4-schema-contract.test.ts tests/checkout-domain.test.ts tests/checkout-dto.test.ts tests/yookassa-provider-contract.test.ts
+```
+
+Observed expected failures: missing migration SQL, missing checkout domain module, missing checkout DTO module, and missing provider unsafe evidence. One deterministic-correlation assertion already passed.
+
+GREEN:
+
+```powershell
+npx vitest run tests/phase-4-schema-contract.test.ts tests/checkout-domain.test.ts tests/checkout-dto.test.ts tests/yookassa-provider-contract.test.ts tests/order-snapshot.test.ts tests/order-shipping.test.ts
+```
+
+Result: 6 files passed, 34 tests passed.
+
+## Migration safety
+
+Forward path: deploy nullable snapshot columns plus `serviceAmount INTEGER NOT NULL DEFAULT 0`, generate Prisma Client, then let later Phase 4 tasks adopt new readers and writers.
+
+Rollback path: roll application code back while leaving additive columns in place. Old code ignores them. No backfill, removal, rename, retype, reset, delete, truncate, or database command was executed.
+
+## Verification
+
+- `npx prisma validate`: passed using non-secret local placeholder URL variables; no database connection.
+- `npm run prisma:generate`: passed.
+- `npm run typecheck`: passed.
+- Focused Vitest: 6 files passed, 34 tests passed.
+- Protected plans remain untracked and byte-identical:
+  - `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9`
+  - `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`
+
+## Deviations
+
+The requested Prettier command cannot infer a parser for `prisma/schema.prisma`. Prisma formatting was checked with `prisma format`; TypeScript files were formatted with Prettier. Migration SQL is intentionally simple additive PostgreSQL and is covered by the schema contract test and `git diff --check`.

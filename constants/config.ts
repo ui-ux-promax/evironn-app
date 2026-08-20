@@ -5,7 +5,7 @@ export const SHIPPING_FLAT = 500; // ₽, курьер ниже порога б�
 export const NEW_PRODUCT_WINDOW_DAYS = 30; // окно бейджа «Новинка» по createdAt
 export const LOW_STOCK_THRESHOLD = 3; // «Осталось N пар»
 
-export const CATALOG_PAGE_SIZE = 12;
+export const CATALOG_PAGE_SIZE = 8;
 
 export const CART_COOKIE_NAME = 'cartToken';
 export const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 дней
@@ -35,6 +35,50 @@ export const SORT_OPTIONS = [
 
 export type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 export const DEFAULT_SORT: SortValue = 'new';
+
+// ADR-016: evironn-clone/src/cart/cartState.ts:77-117 and src/checkout/checkoutState.ts:25-86,144-166.
+export const CHECKOUT_POLICY = {
+  timezone: 'Europe/Moscow',
+  courier: { moscow: 1900, 'moscow-region': 1900, freeFrom: 150000, leadDays: 2 },
+  services: { carryingPerFloor: 350, assembly: 3900, removal: 2400 },
+  horizonDays: 4,
+  windows: [
+    { id: '10-14', label: '10:00 – 14:00' },
+    { id: '14-18', label: '14:00 – 18:00' },
+    { id: '18-22', label: '18:00 – 22:00' },
+  ],
+  pickupPoints: [
+    {
+      id: 'pt-dizavod',
+      kind: 'showroom',
+      name: 'Шоурум Evironn',
+      address: 'Большая Новодмитровская, 36',
+      hours: '11:00 – 21:00',
+      metro: 'Дмитровская',
+      leadDays: 1,
+    },
+    {
+      id: 'pt-danilov',
+      kind: 'pickup-point',
+      name: 'Пункт «Даниловский»',
+      address: 'Дубининская, 71',
+      hours: '10:00 – 22:00',
+      metro: 'Тульская',
+      leadDays: 2,
+    },
+    {
+      id: 'pt-vdnh',
+      kind: 'pickup-point',
+      name: 'Пункт «ВДНХ»',
+      address: 'Проспект Мира, 119',
+      hours: '09:00 – 21:00',
+      metro: 'ВДНХ',
+      leadDays: 2,
+    },
+  ],
+} as const;
+
+export const PAYMENT_AUTO_RETRY_SAFETY = 'PAYMENT_AUTO_RETRY_UNSAFE' as const;
 
 export const GENDER_OPTIONS = [
   { value: 'MEN', label: 'Мужские' },

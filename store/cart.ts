@@ -1,21 +1,44 @@
 import { create } from 'zustand';
 import { Api } from '@/services/api-client';
-import { getCartDetails } from '@/lib/cart-details';
-import type { CartStateItem, CreateCartItemValues } from '@/services/dto/cart.dto';
+import type { CreateCartItemValues } from '@/services/dto/cart.dto';
+import type { CartDto, CartLineDto, CartTotalsDto } from '@/services/dto/commerce-cart.dto';
+import { useCouponStore } from './coupon';
 
 export interface CartState {
   loading: boolean;
   error: boolean;
   totalAmount: number;
-  items: CartStateItem[];
-  fetchCartItems: () => Promise<void>;
-  addCartItem: (values: CreateCartItemValues) => Promise<void>;
-  updateItemQuantity: (id: string, quantity: number) => Promise<void>;
-  removeCartItem: (id: string) => Promise<void>;
+  items: CartLineDto[];
+  totals: CartTotalsDto;
+  fetchCartItems: () => Promise<CartDto>;
+  addCartItem: (values: CreateCartItemValues) => Promise<CartDto>;
+  updateItemQuantity: (id: string, quantity: number) => Promise<CartDto>;
+  removeCartItem: (id: string) => Promise<CartDto>;
+  clearCart: () => Promise<CartDto>;
 }
 
-export const useCartStore = create<CartState>((set) => ({
+const emptyTotals: CartTotalsDto = {
+  subtotal: 0,
+  compareAtSubtotal: 0,
+  saleDiscount: 0,
+  couponDiscount: 0,
+  total: 0,
+  itemCount: 0,
+  lineCount: 0,
+};
+
+function setSnapshot(data: CartDto): Pick<CartState, 'items' | 'totals' | 'totalAmount'> {
+  return { items: data.items, totals: data.totals, totalAmount: data.totals.subtotal };
+}
+
+function setMutationSnapshot(data: CartDto): Pick<CartState, 'items' | 'totals' | 'totalAmount'> {
+  useCouponStore.getState().clearCoupon();
+  return setSnapshot(data);
+}
+
+export const useCartStore = create<CartState>((set, get) => ({
   items: [],
+  totals: emptyTotals,
   error: false,
   loading: true,
   totalAmount: 0,
@@ -24,10 +47,12 @@ export const useCartStore = create<CartState>((set) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.getCart();
-      set(getCartDetails(data));
-    } catch (e) {
-      console.error(e);
+      set(setSnapshot(data));
+      return data;
+    } catch (error) {
+      console.error(error);
       set({ error: true });
+      return { items: get().items, totals: get().totals };
     } finally {
       set({ loading: false });
     }
@@ -37,11 +62,12 @@ export const useCartStore = create<CartState>((set) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.addCartItem(values);
-      set(getCartDetails(data));
-    } catch (e) {
-      console.error(e);
+      set(setMutationSnapshot(data));
+      return data;
+    } catch (error) {
+      console.error(error);
       set({ error: true });
-      throw e;
+      throw error;
     } finally {
       set({ loading: false });
     }
@@ -51,10 +77,12 @@ export const useCartStore = create<CartState>((set) => ({
     try {
       set({ loading: true, error: false });
       const data = await Api.cart.updateItemQuantity(id, quantity);
-      set(getCartDetails(data));
-    } catch (e) {
-      console.error(e);
+      set(setMutationSnapshot(data));
+      return data;
+    } catch (error) {
+      console.error(error);
       set({ error: true });
+      throw error;
     } finally {
       set({ loading: false });
     }
@@ -62,18 +90,31 @@ export const useCartStore = create<CartState>((set) => ({
 
   removeCartItem: async (id) => {
     try {
-      set((state) => ({
-        loading: true,
-        error: false,
-        items: state.items.map((i) => (i.id === id ? { ...i, disabled: true } : i)),
-      }));
+      set({ loading: true, error: false });
       const data = await Api.cart.removeCartItem(id);
-      set(getCartDetails(data));
-    } catch (e) {
-      console.error(e);
+      set(setMutationSnapshot(data));
+      return data;
+    } catch (error) {
+      console.error(error);
       set({ error: true });
+      throw error;
     } finally {
-      set((state) => ({ loading: false, items: state.items.map((i) => ({ ...i, disabled: false })) }));
+      set({ loading: false });
+    }
+  },
+
+  clearCart: async () => {
+    try {
+      set({ loading: true, error: false });
+      const data = await Api.cart.clearCart();
+      set(setMutationSnapshot(data));
+      return data;
+    } catch (error) {
+      console.error(error);
+      set({ error: true });
+      throw error;
+    } finally {
+      set({ loading: false });
     }
   },
 }));

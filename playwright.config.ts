@@ -1,6 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
 
+import { loadE2eEnvironment } from './e2e/load-env';
+
+loadE2eEnvironment();
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -24,13 +28,17 @@ export default defineConfig({
     // dev-сервер: NODE_ENV=development → cookie cartToken без secure → сохраняется по http
     // (в prod-сборке secure:true и cookie не персистится по http в e2e). Прогрев маршрутов — в globalSetup.
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    // Server readiness must not depend on database/auth availability. Individual
+    // scenarios and global setup own those checks; a static asset only proves Next is listening.
+    url: 'http://localhost:3000/assets/products/01-bar-stool-idle.webp',
     reuseExistingServer: false,
     timeout: 180_000,
     // E2E-фикс код верификации: generateCode вернёт его вместо случайного (только не-prod),
     // чтобы хелпер registerAndVerify прошёл gate-модалку. Прод этой ветки не касается.
     env: {
       E2E_TEST_CODE: '424242',
+      AUTH_TRUST_HOST: 'true',
+      AUTH_SECRET: process.env.AUTH_SECRET ?? 'e2e-local-auth-secret',
       NEXT_FONT_GOOGLE_MOCKED_RESPONSES: path.join(__dirname, 'e2e', 'next-font-google-mocks.cjs'),
     },
   },

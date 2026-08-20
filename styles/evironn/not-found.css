@@ -1,0 +1,96 @@
+.not-found-page {
+  min-height: 72vh;
+  padding: calc(85px + clamp(2.5rem, 7vw, 6rem)) var(--ev-page-gutter) clamp(4rem, 8vw, 7rem);
+  background: var(--ev-bg);
+}
+
+.not-found-page__shell {
+  display: grid;
+  gap: 1rem;
+  max-width: min(100%, 720px);
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vw, 3rem);
+  border: 1px solid var(--ev-border-subtle);
+  border-radius: var(--ev-radius-lg);
+  background: var(--ev-surface);
+  box-shadow: var(--ev-shadow-sm);
+}
+
+.not-found-page__eyebrow {
+  color: var(--ev-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.not-found-page__shell h1 {
+  max-width: 11ch;
+  font-size: clamp(2.2rem, 5vw, 4.4rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+
+.not-found-page__copy {
+  max-width: 40ch;
+  color: var(--ev-ink-60);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.not-found-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 0.5rem;
+}
+
+.not-found-page__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid hsl(var(--ev-text) / 0.12);
+  border-radius: var(--ev-radius-pill);
+  color: hsl(var(--ev-text));
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform 180ms var(--ev-ease),
+    border-color 180ms var(--ev-ease),
+    background-color 180ms var(--ev-ease),
+    color 180ms var(--ev-ease);
+}
+
+.not-found-page__action:hover {
+  border-color: hsl(var(--ev-text) / 0.3);
+  transform: translateY(-1px);
+}
+
+.not-found-page__action--primary {
+  border-color: transparent;
+  background: hsl(var(--ev-text));
+  color: var(--ev-surface);
+}
+
+.not-found-page__action--primary:hover {
+  border-color: transparent;
+  background: hsl(30 6% 26%);
+}
+
+@media (max-width: 540px) {
+  .not-found-page {
+    padding-inline: 20px;
+  }
+
+  .not-found-page__actions {
+    flex-direction: column;
+  }
+
+  .not-found-page__action {
+    width: 100%;
+  }
+}

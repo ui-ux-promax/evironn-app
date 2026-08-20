@@ -58,12 +58,20 @@ describe('getReviewEligibility', () => {
     orderFindFirst.mockResolvedValue({ id: 'o1' });
     reviewFindUnique.mockResolvedValue(null);
     expect(await getReviewEligibility('u1', 'p1')).toBe('eligible');
-    // «Покупка» = не-CANCELLED И (COD ИЛИ онлайн-оплата прошла) — неоплаченный онлайн не считается.
+    // COD qualifies only after delivery; online only after successful payment.
     expect(orderFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           status: { not: 'CANCELLED' },
-          OR: [{ paymentMethod: 'cod' }, { payment: { is: { status: 'succeeded' } } }],
+          items: {
+            some: {
+              OR: [{ canonicalSku: { productId: 'p1' } }, { productVariant: { colorway: { productId: 'p1' } } }],
+            },
+          },
+          OR: [
+            { paymentMethod: 'cod', status: 'DELIVERED' },
+            { paymentMethod: 'online', payment: { is: { status: 'succeeded' } } },
+          ],
         }),
       }),
     );
@@ -72,6 +80,88 @@ describe('getReviewEligibility', () => {
     orderFindFirst.mockResolvedValue({ id: 'o1' });
     reviewFindUnique.mockResolvedValue({ id: 'r1' });
     expect(await getReviewEligibility('u1', 'p1')).toBe('already-reviewed');
+  });
+
+  it('canonical SKU purchase is qualifying', async () => {
+    orderFindFirst.mockResolvedValue({ id: 'canonical-order' });
+    reviewFindUnique.mockResolvedValue(null);
+
+    expect(await getReviewEligibility('u1', 'p1')).toBe('eligible');
+    expect(orderFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          items: {
+            some: {
+              OR: [{ canonicalSku: { productId: 'p1' } }, { productVariant: { colorway: { productId: 'p1' } } }],
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('legacy ProductVariant purchase remains a read-compatible fallback', async () => {
+    orderFindFirst.mockResolvedValue({ id: 'legacy-order' });
+    reviewFindUnique.mockResolvedValue(null);
+
+    expect(await getReviewEligibility('u1', 'p1')).toBe('eligible');
+    const where = orderFindFirst.mock.calls[0][0].where;
+    expect(where.items.some.OR).toEqual([
+      { canonicalSku: { productId: 'p1' } },
+      { productVariant: { colorway: { productId: 'p1' } } },
+    ]);
+  });
+
+  it('unrelated product is not represented by the purchase predicate', async () => {
+    orderFindFirst.mockImplementation(async ({ where }: { where: { items: { some: { OR: unknown[] } } } }) => {
+      return where.items.some.OR.some((entry) => JSON.stringify(entry).includes('p1')) ? { id: 'matching' } : null;
+    });
+
+    expect(await getReviewEligibility('u1', 'p2')).toBe('not-purchased');
+    expect(reviewFindUnique).not.toHaveBeenCalled();
+  });
+
+  it('excludes cancelled orders', async () => {
+    orderFindFirst.mockResolvedValue(null);
+    expect(await getReviewEligibility('u1', 'p1')).toBe('not-purchased');
+    expect(reviewFindUnique).not.toHaveBeenCalled();
+    expect(orderFindFirst.mock.calls[0][0].where.status).toEqual({ not: 'CANCELLED' });
+  });
+
+  it.each(['PENDING', 'PROCESSING'])('%s COD order cannot qualify before delivery', async () => {
+    orderFindFirst.mockResolvedValue(null);
+    expect(await getReviewEligibility('u1', 'p1')).toBe('not-purchased');
+    expect(reviewFindUnique).not.toHaveBeenCalled();
+    expect(orderFindFirst.mock.calls[0][0].where.OR).toEqual([
+      { paymentMethod: 'cod', status: 'DELIVERED' },
+      { paymentMethod: 'online', payment: { is: { status: 'succeeded' } } },
+    ]);
+  });
+
+  it('requires succeeded online payment and delivered COD state', async () => {
+    orderFindFirst.mockResolvedValue({ id: 'o1' });
+    reviewFindUnique.mockResolvedValue(null);
+    await getReviewEligibility('u1', 'p1');
+
+    expect(orderFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { not: 'CANCELLED' },
+          OR: [
+            { paymentMethod: 'cod', status: 'DELIVERED' },
+            { paymentMethod: 'online', payment: { is: { status: 'succeeded' } } },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it.each(['pending', 'failed'])('%s online payment cannot qualify', async (paymentStatus) => {
+    orderFindFirst.mockResolvedValue(null);
+    expect(await getReviewEligibility('u1', 'p1')).toBe('not-purchased');
+    const onlineBranch = orderFindFirst.mock.calls[0][0].where.OR[1];
+    expect(onlineBranch).toEqual({ paymentMethod: 'online', payment: { is: { status: 'succeeded' } } });
+    expect(JSON.stringify(onlineBranch)).not.toContain(paymentStatus);
   });
 });
 
@@ -91,5 +181,16 @@ describe('pruneReviewsAfterCancel', () => {
     await pruneReviewsAfterCancel('u1', ['p1', 'p2']);
     expect(reviewDeleteMany).toHaveBeenCalledTimes(1);
     expect(reviewDeleteMany).toHaveBeenCalledWith({ where: { userId: 'u1', productId: 'p1' } });
+  });
+
+  it('prunes only after the last qualifying purchase disappears', async () => {
+    orderFindFirst.mockResolvedValueOnce({ id: 'still-delivered-cod' }).mockResolvedValueOnce(null);
+
+    await pruneReviewsAfterCancel('u1', ['p1', 'p2']);
+
+    expect(reviewDeleteMany).toHaveBeenCalledTimes(1);
+    expect(reviewDeleteMany).toHaveBeenCalledWith({ where: { userId: 'u1', productId: 'p2' } });
+    expect(orderFindFirst.mock.calls[0][0].where.status).toEqual(orderFindFirst.mock.calls[1][0].where.status);
+    expect(orderFindFirst.mock.calls[0][0].where.OR).toEqual(orderFindFirst.mock.calls[1][0].where.OR);
   });
 });

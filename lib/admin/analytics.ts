@@ -265,10 +265,9 @@ export async function getBestSellers(db: Db = defaultPrisma, range: ResolvedPeri
            SUM(oi."lineTotal")::int AS revenue
     FROM "OrderItem" oi
     JOIN "Order" o ON o.id = oi."orderId"
-    LEFT JOIN "Sku" s ON s.id = oi."skuId"
-    LEFT JOIN "ProductVariant" pv ON pv.id = oi."productVariantId"
-    LEFT JOIN "ProductColorway" pc ON pc.id = pv."colorwayId"
-    JOIN "Product" p ON p.id = COALESCE(s."productId", pc."productId")
+    JOIN "ProductVariant" pv ON pv.id = oi."productVariantId"
+    JOIN "ProductColorway" pc ON pc.id = pv."colorwayId"
+    JOIN "Product" p ON p.id = pc."productId"
     WHERE o.status::text <> 'CANCELLED'
       AND o."createdAt" >= ${range.current.gte} AND o."createdAt" < ${range.current.lt}
     GROUP BY p.id, p.name, p.brand
@@ -283,12 +282,6 @@ export async function getBestSellers(db: Db = defaultPrisma, range: ResolvedPeri
     where: { id: { in: rows.map((r) => r.product_id) } },
     select: {
       id: true,
-      media: {
-        where: { kind: 'IMAGE' },
-        take: 1,
-        orderBy: { sortOrder: 'asc' },
-        select: { url: true },
-      },
       colorways: {
         where: { isDefault: true },
         take: 1,
@@ -298,7 +291,7 @@ export async function getBestSellers(db: Db = defaultPrisma, range: ResolvedPeri
   });
   const imageByProduct = new Map<string, string | null>();
   for (const prod of products) {
-    imageByProduct.set(prod.id, prod.media[0]?.url ?? prod.colorways[0]?.images[0]?.url ?? null);
+    imageByProduct.set(prod.id, prod.colorways[0]?.images[0]?.url ?? null);
   }
 
   return rows.map((r) => ({
@@ -324,62 +317,27 @@ export type LowStockRow = {
 };
 
 export async function getLowStock(db: Db = defaultPrisma): Promise<LowStockRow[]> {
-  const [skus, variants] = await Promise.all([
-    db.sku.findMany({
-      where: { active: true, product: { active: true }, stock: { gt: 0, lte: 10 } },
-      orderBy: { stock: 'asc' },
-      take: 12,
-      select: {
-        id: true,
-        stock: true,
-        articleNumber: true,
-        product: { select: { name: true } },
-        selections: {
-          orderBy: { optionGroup: { sortOrder: 'asc' } },
-          select: { optionGroup: { select: { name: true } }, optionValue: { select: { name: true } } },
-        },
-      },
-    }),
-    db.productVariant.findMany({
-      where: { active: true, stock: { gt: 0, lte: 10 } },
-      orderBy: { stock: 'asc' },
-      take: 12,
-      select: {
-        id: true,
-        stock: true,
-        sku: true,
-        size: true,
-        colorway: { select: { name: true, product: { select: { name: true } } } },
-      },
-    }),
-  ]);
-
-  const canonicalRows = skus.map((sku) => {
-    const labels = sku.selections.map((selection) => `${selection.optionGroup.name}: ${selection.optionValue.name}`);
-    return {
-      id: sku.id,
-      productName: sku.product.name,
-      colorwayName: labels[0] ?? 'Configuration',
-      size: labels.slice(1).join(' · ') || '—',
-      sku: sku.articleNumber,
-      stock: sku.stock,
-      tier: classifyStockTier(sku.stock),
-    } satisfies LowStockRow;
+  const variants = await db.productVariant.findMany({
+    where: { active: true, stock: { gt: 0, lte: 10 } },
+    orderBy: { stock: 'asc' },
+    take: 12,
+    select: {
+      id: true,
+      stock: true,
+      sku: true,
+      size: true,
+      colorway: { select: { name: true, product: { select: { name: true } } } },
+    },
   });
-  const legacyRows = variants.map(
-    (variant) =>
-      ({
-        id: variant.id,
-        productName: variant.colorway.product.name,
-        colorwayName: variant.colorway.name,
-        size: variant.size,
-        sku: variant.sku,
-        stock: variant.stock,
-        tier: classifyStockTier(variant.stock),
-      }) satisfies LowStockRow,
-  );
-
-  return [...canonicalRows, ...legacyRows].sort((a, b) => a.stock - b.stock).slice(0, 12);
+  return variants.map((v) => ({
+    id: v.id,
+    productName: v.colorway.product.name,
+    colorwayName: v.colorway.name,
+    size: v.size,
+    sku: v.sku,
+    stock: v.stock,
+    tier: classifyStockTier(v.stock),
+  }));
 }
 
 // ── Recent orders (current state) ──

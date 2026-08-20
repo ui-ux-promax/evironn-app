@@ -31,10 +31,6 @@ describe('categorySchema', () => {
     expect(categorySchema.safeParse({ ...valid, slug: 'running-shoes' }).success).toBe(true);
   });
 
-  it('accepts optional furniture turntable product slug', () => {
-    expect(categorySchema.safeParse({ ...valid, turntableProductSlug: 'noma-woven-lounge' }).success).toBe(true);
-  });
-
   it('rejects name longer than 100 chars', () => {
     expect(categorySchema.safeParse({ ...valid, name: 'a'.repeat(101) }).success).toBe(false);
   });

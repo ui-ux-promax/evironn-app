@@ -1,32 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('@/lib/prisma-client', () => ({
-  prisma: { coupon: { findUnique: vi.fn(), update: vi.fn(), create: vi.fn() }, cart: { findFirst: vi.fn() } },
+  prisma: { coupon: { findUnique: vi.fn() } },
 }));
-
-const { authMock, cookiesMock, resolveOwnerCartMock, buildCartDtoMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  cookiesMock: vi.fn(),
-  resolveOwnerCartMock: vi.fn(),
-  buildCartDtoMock: vi.fn(),
-}));
-
-vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('next/headers', () => ({ cookies: cookiesMock }));
-vi.mock('@/lib/cart', () => ({ resolveOwnerCart: resolveOwnerCartMock }));
-vi.mock('@/lib/cart-presentation', () => ({ buildCartDto: buildCartDtoMock, cartPresentationInclude: {} }));
 
 import { normalizeCouponCode, calcCouponDiscount, checkCoupon } from '@/lib/coupon';
-import { validateCoupon } from '@/app/actions/coupon';
 import { prisma } from '@/lib/prisma-client';
 
 const findUnique = prisma.coupon.findUnique as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  authMock.mockResolvedValue(null);
-  cookiesMock.mockResolvedValue({ get: vi.fn(() => ({ value: 'cart-token' })) });
-  resolveOwnerCartMock.mockResolvedValue({ id: 'cart-1' });
 });
 
 describe('normalizeCouponCode', () => {
@@ -85,44 +69,5 @@ describe('checkCoupon', () => {
   it('пустой код → отказ без запроса к БД', async () => {
     expect((await checkCoupon('   ')).ok).toBe(false);
     expect(findUnique).not.toHaveBeenCalled();
-  });
-});
-
-describe('validateCoupon server totals', () => {
-  it('returns complete current server totals, floors discount, and never persists coupon', async () => {
-    const cart = { id: 'cart-1', items: [{ id: 'line-1' }] };
-    const serverTotals = {
-      subtotal: 101,
-      compareAtSubtotal: 151,
-      saleDiscount: 50,
-      couponDiscount: 0,
-      total: 101,
-      itemCount: 1,
-      lineCount: 1,
-    };
-    (prisma.cart.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(cart);
-    buildCartDtoMock.mockReturnValue({ items: [{ id: 'line-1' }], totals: serverTotals });
-    findUnique.mockResolvedValue({ code: 'RITM10', percent: 33, active: true, expiresAt: null });
-
-    const result = await validateCoupon('RITM10');
-
-    expect(result).toEqual({
-      ok: true,
-      code: 'RITM10',
-      percent: 33,
-      discount: 33,
-      totals: { ...serverTotals, couponDiscount: 33, total: 68 },
-    });
-    expect(buildCartDtoMock).toHaveBeenCalledWith(cart);
-    expect(prisma.coupon.update as unknown as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
-    expect(prisma.coupon.create as unknown as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
-  });
-
-  it('rejects empty carts before calculating or persisting coupon', async () => {
-    (prisma.cart.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'cart-1', items: [] });
-    findUnique.mockResolvedValue({ code: 'RITM10', percent: 10, active: true, expiresAt: null });
-
-    await expect(validateCoupon('RITM10')).resolves.toEqual({ ok: false, error: 'Корзина пуста' });
-    expect(buildCartDtoMock).not.toHaveBeenCalled();
   });
 });

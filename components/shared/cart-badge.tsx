@@ -6,16 +6,14 @@ import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/store';
 import { cn } from '@/lib/utils';
 
-export function CartBadge({ initialCount = 0 }: { initialCount?: number }) {
+export function CartBadge() {
   const pathname = usePathname();
-  const totals = useCartStore((s) => s.totals);
-  const loading = useCartStore((s) => s.loading);
-  const error = useCartStore((s) => s.error);
+  const items = useCartStore((s) => s.items);
   const fetchCartItems = useCartStore((s) => s.fetchCartItems);
   useEffect(() => {
     fetchCartItems();
   }, [fetchCartItems]);
-  const count = loading || error ? initialCount : totals.itemCount;
+  const count = items.length;
   const active = pathname === '/cart';
 
   return (

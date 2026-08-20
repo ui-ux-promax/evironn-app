@@ -79,13 +79,12 @@ describe('getCartDetails', () => {
 
 describe('zod-схемы корзины', () => {
   it('createCartItemSchema принимает валидный ввод', () => {
-    expect(createCartItemSchema.parse({ skuId: 'sku-1' }).skuId).toBe('sku-1');
-    expect(createCartItemSchema.parse({ skuId: 'sku-1', quantity: 3 }).quantity).toBe(3);
+    expect(createCartItemSchema.parse({ productVariantId: 'v1' }).productVariantId).toBe('v1');
+    expect(createCartItemSchema.parse({ productVariantId: 'v1', quantity: 3 }).quantity).toBe(3);
   });
   it('createCartItemSchema отклоняет пустой id и quantity<=0', () => {
-    expect(createCartItemSchema.safeParse({ skuId: '' }).success).toBe(false);
-    expect(createCartItemSchema.safeParse({ skuId: 'sku-1', quantity: 0 }).success).toBe(false);
-    expect(createCartItemSchema.safeParse({ productVariantId: 'v1' }).success).toBe(false);
+    expect(createCartItemSchema.safeParse({ productVariantId: '' }).success).toBe(false);
+    expect(createCartItemSchema.safeParse({ productVariantId: 'v', quantity: 0 }).success).toBe(false);
   });
   it('updateQuantitySchema требует quantity>=1', () => {
     expect(updateQuantitySchema.safeParse({ quantity: 0 }).success).toBe(false);

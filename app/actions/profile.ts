@@ -30,18 +30,15 @@ export async function updateProfile(raw: unknown): Promise<ProfileResult> {
   return { ok: true };
 }
 
-export async function updatePassword(raw: unknown): Promise<PasswordResult> {
+export async function updatePassword(raw: {
+  currentPassword: string;
+  newPassword: string;
+  repeatPassword: string;
+}): Promise<PasswordResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: 'Не авторизован' };
 
-  if (!raw || typeof raw !== 'object') return { ok: false, error: 'Проверьте поля' };
-  const input = raw as Record<string, unknown>;
-  const currentPassword = input.currentPassword;
-  const newPassword = input.newPassword;
-  const repeatPassword = input.repeatPassword;
-  if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || typeof repeatPassword !== 'string') {
-    return { ok: false, error: 'Проверьте поля' };
-  }
+  const { currentPassword, newPassword, repeatPassword } = raw;
 
   if (!currentPassword) return { ok: false, error: 'Введите текущий пароль' };
   if (newPassword.length < 8) return { ok: false, error: 'Новый пароль должен быть не короче 8 символов' };

@@ -1,10 +1,13 @@
 import { CheckboxFacet } from './checkbox-facet';
-import { OptionFacet } from './option-facet';
+import { SizeFilter } from './size-filter';
+import { ColorFilter } from './color-filter';
 import { PriceFilter } from './price-filter';
 import { InStockToggle } from './in-stock-toggle';
 import { ResetButton } from './active-filter-chips';
 import type { CatalogResult } from '@/lib/find-products';
 
+// Общий список фасетов: инлайн-сайдбар (md+) и мобильный drawer (<md) рендерят одно и то же.
+// showHeading=false в drawer — там свой заголовок «Фильтры» + крестик в шапке панели.
 export function FilterControls({
   facets,
   showHeading = true,
@@ -21,11 +24,11 @@ export function FilterControls({
         </div>
       )}
       <CheckboxFacet title="Категория" paramKey="category" options={facets.categories} />
-      <CheckboxFacet title="Комната" paramKey="room" options={facets.rooms} />
-      {facets.options.map((group) => (
-        <OptionFacet key={group.slug} group={group} paramKey="option" />
-      ))}
+      <CheckboxFacet title="Бренд" paramKey="brand" options={facets.brands} />
+      <CheckboxFacet title="Пол" paramKey="gender" options={facets.genders} />
+      <SizeFilter />
       <PriceFilter min={facets.price.min} max={facets.price.max} />
+      <ColorFilter colors={facets.colors} />
       <InStockToggle />
     </div>
   );

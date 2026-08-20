@@ -15,10 +15,9 @@ jobs:
     env:
       POSTGRES_URL: postgresql://user:pass@localhost:5432/ritm_build
       POSTGRES_URL_NON_POOLING: postgresql://user:pass@localhost:5432/ritm_build
+      NEXT_PUBLIC_SITE_URL: https://ritm-app-eight.vercel.app
     steps:
       - uses: actions/checkout@v6
-        with:
-          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22

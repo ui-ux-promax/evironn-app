@@ -7,10 +7,9 @@ vi.mock('@/lib/prisma-client', () => ({
   },
 }));
 
-import { resolveOwnerWishlist, getWishlistProductIds, getWishlistCount, getWishlistItems } from '@/lib/wishlist';
+import { resolveOwnerWishlist, getWishlistProductIds, getWishlistCount } from '@/lib/wishlist';
 import { mergeGuestWishlist } from '@/lib/wishlist-merge';
 import { prisma } from '@/lib/prisma-client';
-import { furnitureProductCardInclude } from '@/lib/furniture-product-summary';
 
 const wlFindFirst = prisma.wishlist.findFirst as unknown as ReturnType<typeof vi.fn>;
 const wlCreate = prisma.wishlist.create as unknown as ReturnType<typeof vi.fn>;
@@ -67,21 +66,6 @@ describe('getWishlistProductIds', () => {
     itemFindMany.mockResolvedValue([{ productId: 'p1' }, { productId: 'p2' }]);
     const ids = await getWishlistProductIds({ user: { id: 'u1' } } as never, 't');
     expect([...ids].sort()).toEqual(['p1', 'p2']);
-  });
-});
-
-describe('getWishlistItems', () => {
-  it('uses the canonical furniture projection and filters inactive products', async () => {
-    wlFindFirst.mockResolvedValue({ id: 'w1', userId: 'u1', token: 't' });
-    itemFindMany.mockResolvedValue([]);
-
-    expect(await getWishlistItems({ user: { id: 'u1' } } as never, 't')).toEqual([]);
-    expect(itemFindMany).toHaveBeenCalledWith({
-      where: { wishlistId: 'w1', product: { active: true } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      include: { product: { include: furnitureProductCardInclude } },
-    });
   });
 });
 

@@ -1,8 +1,6 @@
 'use client';
-
 import { X } from 'lucide-react';
 import { useCatalogUrl } from '@/hooks/use-catalog-url';
-import { isInStockParam } from '@/lib/catalog-filters';
 import type { CatalogResult } from '@/lib/find-products';
 
 export function ResetButton({ className }: { className?: string }) {
@@ -15,40 +13,34 @@ export function ResetButton({ className }: { className?: string }) {
 }
 
 export function ActiveFilterChips({ facets }: { facets: CatalogResult['facets'] }) {
-  const { getList, toggleInList, get, setParam, reset } = useCatalogUrl();
+  const { sp, getList, toggleInList, get, setParam, reset } = useCatalogUrl();
   const chips: { key: string; value: string; label: string }[] = [];
   const labelFor = (key: string, value: string) => {
-    if (key === 'category') return facets.categories.find((facet) => facet.value === value)?.label ?? value;
-    if (key === 'room') return facets.rooms.find((facet) => facet.value === value)?.label ?? value;
-    if (key === 'option') {
-      const [groupSlug, valueSlug] = value.split(':');
-      return (
-        facets.options.find((group) => group.slug === groupSlug)?.values.find((option) => option.value === valueSlug)
-          ?.label ?? value
-      );
-    }
+    if (key === 'category') return facets.categories.find((c) => c.value === value)?.label ?? value;
+    if (key === 'brand') return value;
+    if (key === 'gender') return facets.genders.find((g) => g.value === value)?.label ?? value;
+    if (key === 'color') return facets.colors.find((c) => c.slug === value)?.name ?? value;
+    if (key === 'size') return `Размер ${value}`;
     return value;
   };
-
-  ['category', 'room', 'option'].forEach((key) =>
-    getList(key).forEach((value) => chips.push({ key, value, label: labelFor(key, value) })),
+  ['category', 'brand', 'gender', 'color', 'size'].forEach((key) =>
+    getList(key).forEach((v) => chips.push({ key, value: v, label: labelFor(key, v) })),
   );
-  if (isInStockParam(get('inStock'))) chips.push({ key: 'inStock', value: '1', label: 'Только в наличии' });
+  if (get('inStock') === '1') chips.push({ key: 'inStock', value: '1', label: 'Только в наличии' });
   if (!chips.length) return null;
-
   return (
     <div className="flex flex-wrap items-center gap-2 mb-5">
-      {chips.map((chip) => (
+      {chips.map((c) => (
         <span
-          key={`${chip.key}:${chip.value}`}
+          key={`${c.key}:${c.value}`}
           className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full bg-surface-soft border border-line"
         >
-          {chip.label}
+          {c.label}
           <button
             type="button"
-            aria-label={`Убрать фильтр ${chip.label}`}
+            aria-label={`Убрать фильтр ${c.label}`}
             className="text-ink-muted hover:text-danger"
-            onClick={() => (chip.key === 'inStock' ? setParam('inStock', null) : toggleInList(chip.key, chip.value))}
+            onClick={() => (c.key === 'inStock' ? setParam('inStock', null) : toggleInList(c.key, c.value))}
           >
             <X className="w-3.5 h-3.5" />
           </button>

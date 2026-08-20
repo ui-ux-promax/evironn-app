@@ -1,64 +1,72 @@
 import { test, expect, type Page } from '@playwright/test';
-import { E2E_PASSWORD, registerAndVerify, uniqueEmail } from './helpers';
+import { registerAndVerify, uniqueEmail, E2E_PASSWORD } from './helpers';
 
-const expectSignedIn = (page: Page) => expect(page.getByRole('link', { name: 'Аккаунт' })).toBeVisible();
+async function register(page: Page, email: string) {
+  await registerAndVerify(page, email);
+}
 
-test('registration verifies inline and protects profile', async ({ page }) => {
-  const email = await registerAndVerify(page);
-  await expectSignedIn(page);
+// РџРѕСЃР»Рµ СѓСЃРїРµС€РЅРѕРіРѕ РІС…РѕРґР°/СЂРµРіРёСЃС‚СЂР°С†РёРё РІ С…РµРґРµСЂРµ РїРѕСЏРІР»СЏРµС‚СЃСЏ РєРЅРѕРїРєР° РІС‹С…РѕРґР° (server-side AuthNav).
+const expectSignedIn = (page: Page) => expect(page.getByRole('button', { name: 'Р’С‹Р№С‚Рё' })).toBeVisible();
+
+test('СЂРµРіРёСЃС‚СЂР°С†РёСЏ в†’ Р°РІС‚РѕР»РѕРіРёРЅ в†’ РїСЂРѕС„РёР»СЊ СЃ РґР°РЅРЅС‹РјРё; РїРѕСЃР»Рµ РІС‹С…РѕРґР° /profile РїРѕРґ Р·Р°С‰РёС‚РѕР№', async ({
+  page,
+}) => {
+  const email = uniqueEmail();
+  await register(page, email);
+  await expectSignedIn(page); // С„РѕСЂРјР° СЂРµРґРёСЂРµРєС‚РёС‚ РЅР° '/', СЃРµСЃСЃРёСЏ Р°РєС‚РёРІРЅР°
+
   await page.goto('/profile');
-  await expect(page.getByRole('heading', { name: 'Профиль' })).toBeVisible();
-  await expect(page.getByLabel('Email')).toHaveValue(email);
+  await expect(page.getByRole('heading', { name: 'РџСЂРѕС„РёР»СЊ' })).toBeVisible();
+  await expect(page.getByLabel('Email')).toHaveValue(email); // email вЂ” value disabled-РёРЅРїСѓС‚Р°
+
+  await Promise.all([
+    page.waitForURL('/', { waitUntil: 'networkidle' }),
+    page.getByRole('button', { name: 'Р’С‹Р№С‚Рё' }).click(),
+  ]);
+  // Р”РѕР¶РґР°С‚СЊСЃСЏ Р·Р°РІРµСЂС€РµРЅРёСЏ Р»РѕРіР°СѓС‚Р° РїРѕ redirect РЅР° '/', РёРЅР°С‡Рµ goto РЅРёР¶Рµ РјРѕР¶РµС‚ РіРѕРЅРєРѕР№ РѕРїРµСЂРµРґРёС‚СЊ Set-Cookie СѓРґР°Р»РµРЅРёСЏ СЃРµСЃСЃРёРё.
+  await expect(page.getByRole('button', { name: 'Р’С‹Р№С‚Рё' })).toHaveCount(0);
+  await page.goto('/profile');
+  await expect(page).toHaveURL(/\/login/); // middleware Р·Р°С‰РёС‰Р°РµС‚ /profile
 });
 
-test('profile redirects unauthenticated visitor to login', async ({ page }) => {
+test('Р·Р°С‰РёС‚Р° /profile Р±РµР· РІС…РѕРґР° в†’ СЂРµРґРёСЂРµРєС‚ РЅР° /login', async ({ page }) => {
   await page.goto('/profile');
   await expect(page).toHaveURL(/\/login/);
 });
 
-test('credentials login accepts verified account', async ({ page }) => {
-  const email = await registerAndVerify(page, uniqueEmail());
-  await page.getByRole('button', { name: 'Выйти' }).click();
-  await expect(page.getByRole('button', { name: 'Google' })).toBeVisible();
-  await page.getByLabel('E-mail').fill(email);
-  await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole('button', { name: 'Войти' }).click();
-  await expect(page).toHaveURL(/\/profile/);
+test('РІС…РѕРґ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ email/РїР°СЂРѕР»СЋ', async ({ page }) => {
+  const email = uniqueEmail();
+  await register(page, email);
+  await expectSignedIn(page);
+  await page.getByRole('button', { name: 'Р’С‹Р№С‚Рё' }).click();
+  // Р”РѕР¶РґР°С‚СЊСЃСЏ РІС‹С…РѕРґР° РґРѕ РїРµСЂРµС…РѕРґР° РЅР° /login: Р·Р°Р»РѕРіРёРЅРµРЅРЅРѕРіРѕ middleware СЂРµРґРёСЂРµРєС‚РёС‚ /loginв†’/profile,
+  // РїРѕСЌС‚РѕРјСѓ goto('/login') РґРѕ Р·Р°РІРµСЂС€РµРЅРёСЏ Р»РѕРіР°СѓС‚Р° РїРѕРїР°Р» Р±С‹ РЅР° /profile (disabled #p-email). (#leak-redirect)
+  await expect(page.getByRole('button', { name: 'Р’С‹Р№С‚Рё' })).toHaveCount(0);
+
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('РџР°СЂРѕР»СЊ', { exact: true }).fill(E2E_PASSWORD);
+  await page.getByRole('button', { name: 'Р’РѕР№С‚Рё', exact: true }).click();
+  await expectSignedIn(page);
+
+  await page.goto('/profile');
+  await expect(page.getByRole('heading', { name: 'РџСЂРѕС„РёР»СЊ' })).toBeVisible();
 });
 
-test('Google control exists and external callback is reduced to local path', async ({ page }) => {
-  let localSignInUrl = '';
-  let callbackUrl = '';
-  let externalGoogleUrl = '';
-  page.on('request', (request) => {
-    if (/^https?:\/\/(?:accounts\.google\.com|(?:[^/]+\.)?google\.com)\//i.test(request.url())) {
-      externalGoogleUrl = request.url();
-    }
-  });
-  await page.route('**/api/auth/signin/google**', async (route) => {
-    const request = route.request();
-    const requestUrl = new URL(request.url());
-    localSignInUrl = request.url();
-    callbackUrl =
-      requestUrl.searchParams.get('callbackUrl') ??
-      new URLSearchParams(request.postData() ?? '').get('callbackUrl') ??
-      '';
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ url: `${requestUrl.origin}/login?callbackUrl=%2F` }),
-    });
-  });
-  await page.goto('/login?callbackUrl=https%3A%2F%2Fevil.example%2Fphish');
-  await expect(page.getByRole('button', { name: 'Google' })).toBeVisible();
-  await expect(page.locator('main.auth-page--b')).toBeVisible();
-  await page.getByRole('button', { name: 'Google' }).click();
-  await expect(page).toHaveURL(/\/login\?callbackUrl=%2F/);
-  expect(localSignInUrl).toMatch(/\/api\/auth\/signin\/google(?:\?|$)/);
-  expect(new URL(localSignInUrl).origin).toBe(new URL(page.url()).origin);
-  expect(new URL(localSignInUrl).pathname).toBe('/api/auth/signin/google');
-  expect(callbackUrl).toBe('/');
-  expect(externalGoogleUrl).toBe('');
-  expect(page.url()).not.toContain('/phish');
-  expect(page.url()).not.toMatch(/accounts\.google|google\.com/i);
+test('СЃР»РёСЏРЅРёРµ РіРѕСЃС‚РµРІРѕР№ РєРѕСЂР·РёРЅС‹: РіРѕСЃС‚СЊ РґРѕР±Р°РІРёР» С‚РѕРІР°СЂ в†’ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°Р»СЃСЏ в†’ С‚РѕРІР°СЂ РІ РєРѕСЂР·РёРЅРµ', async ({
+  page,
+}) => {
+  await page.goto('/product/ritm-white-tee-oversize');
+  await page.getByRole('button', { name: 'L', exact: true }).click();
+  await page.getByRole('button', { name: /Р’ РєРѕСЂР·РёРЅСѓ/ }).click();
+  await expect(page.getByRole('button', { name: /Р”РѕР±Р°РІР»РµРЅРѕ/ })).toBeVisible();
+
+  await register(page, uniqueEmail());
+  await expectSignedIn(page);
+
+  await page.goto('/cart');
+  await expect(page.getByRole('heading', { name: 'РљРѕСЂР·РёРЅР°' })).toBeVisible();
+  // РљРѕСЂР·РёРЅР° РЅРµ РїСѓСЃС‚Р°СЏ в†’ РµСЃС‚СЊ СЃС‚РµРїРїРµСЂ РєРѕР»РёС‡РµСЃС‚РІР°; РіРѕСЃС‚РµРІР°СЏ РєРѕСЂР·РёРЅР° РїРµСЂРµР¶РёР»Р° РІС…РѕРґ.
+  await expect(page.getByText('РљРѕСЂР·РёРЅР° РїСѓСЃС‚Р°СЏ')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'РЈРІРµР»РёС‡РёС‚СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ' })).toBeVisible();
 });

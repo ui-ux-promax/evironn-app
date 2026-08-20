@@ -4,23 +4,14 @@ import { assertPortfolioPaymentMode } from './payment-environment';
 
 let _sdk: ReturnType<typeof YooKassa> | null = null;
 
-function yooKassaCredentials(): { shop_id: string; secret_key: string } {
+export function getYooKassa() {
+  assertPortfolioPaymentMode(process.env);
+  if (_sdk) return _sdk;
   const shop_id = process.env.YOOKASSA_SHOP_ID;
   const secret_key = process.env.YOOKASSA_SECRET_KEY;
   if (!shop_id || !secret_key) throw new Error('YooKassa not configured (YOOKASSA_SHOP_ID / YOOKASSA_SECRET_KEY)');
-  return { shop_id, secret_key };
-}
-
-export function getYooKassa() {
-  assertPortfolioPaymentMode(process.env);
-  const credentials = yooKassaCredentials();
-  if (_sdk) return _sdk;
-  _sdk = YooKassa(credentials);
+  _sdk = YooKassa({ shop_id, secret_key });
   return _sdk;
-}
-
-export function validateYooKassaConfiguration(): void {
-  getYooKassa();
 }
 
 export function siteUrl(): string {
@@ -55,91 +46,6 @@ export interface CreatePaymentResult {
   confirmationUrl: string;
 }
 
-export interface PaymentProviderDetails {
-  id: string;
-  status: PaymentProviderStatus;
-  amountRub: number;
-  orderNumber: string;
-  confirmationUrl: string | null;
-}
-
-export type PaymentProviderStatus = 'pending' | 'waiting_for_capture' | 'succeeded' | 'canceled';
-
-export function isPaymentProviderStatus(status: unknown): status is PaymentProviderStatus {
-  return status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled';
-}
-
-export type PaymentProviderAttempt =
-  | { outcome: 'NOT_CREATED'; dispatched: false }
-  | { outcome: 'CREATED'; payment: PaymentProviderDetails }
-  | { outcome: 'INDETERMINATE'; dispatched: true; reason: string };
-
-export interface DurableCreatePaymentInput {
-  amountRub: number;
-  capture: true;
-  description: string;
-  idempotencyKey: string;
-  locale: 'ru_RU';
-  metadata: { orderNumber: string };
-  returnUrl: string;
-}
-
-function paymentDetails(value: unknown): PaymentProviderDetails | null {
-  if (!value || typeof value !== 'object') return null;
-  const payment = value as {
-    id?: unknown;
-    status?: unknown;
-    amount?: { value?: unknown; currency?: unknown };
-    metadata?: { orderNumber?: unknown };
-    confirmation?: { confirmation_url?: unknown };
-  };
-  const amountRub = typeof payment.amount?.value === 'string' ? Number(payment.amount.value) : Number.NaN;
-  if (
-    typeof payment.id !== 'string' ||
-    !isPaymentProviderStatus(payment.status) ||
-    payment.amount?.currency !== 'RUB' ||
-    !Number.isFinite(amountRub) ||
-    typeof payment.metadata?.orderNumber !== 'string'
-  ) {
-    return null;
-  }
-  return {
-    id: payment.id,
-    status: payment.status,
-    amountRub,
-    orderNumber: payment.metadata.orderNumber,
-    confirmationUrl:
-      typeof payment.confirmation?.confirmation_url === 'string' ? payment.confirmation.confirmation_url : null,
-  };
-}
-
-export async function createPaymentAttempt(input: DurableCreatePaymentInput): Promise<PaymentProviderAttempt> {
-  let sdk: ReturnType<typeof YooKassa>;
-  try {
-    sdk = getYooKassa();
-  } catch {
-    return { outcome: 'NOT_CREATED', dispatched: false };
-  }
-  try {
-    const payment = await sdk.payments.create(
-      {
-        amount: { value: input.amountRub.toFixed(2), currency: CurrencyEnum.RUB },
-        confirmation: { type: 'redirect', return_url: input.returnUrl, locale: LocaleEnum.ru_RU },
-        capture: input.capture,
-        description: input.description,
-        metadata: input.metadata,
-      },
-      input.idempotencyKey,
-    );
-    const details = paymentDetails(payment);
-    return details
-      ? { outcome: 'CREATED', payment: details }
-      : { outcome: 'INDETERMINATE', dispatched: true, reason: 'malformed-response' };
-  } catch {
-    return { outcome: 'INDETERMINATE', dispatched: true, reason: 'provider-error' };
-  }
-}
-
 export async function createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
   const sdk = getYooKassa();
   const base = toOrigin(input.baseUrl || siteUrl());
@@ -163,52 +69,10 @@ export async function cancelPayment(paymentId: string): Promise<void> {
   await sdk.payments.cancel(paymentId);
 }
 
-export async function refundPayment(paymentId: string, amountRub: number): Promise<void> {
-  const sdk = getYooKassa();
-  await sdk.refunds.create(
-    {
-      payment_id: paymentId,
-      amount: { value: amountRub.toFixed(2), currency: CurrencyEnum.RUB },
-    },
-    `refund-canceled-order-${paymentId}`,
-  );
-}
-
 // Запрос актуального статуса платежа у ЮKassa (источник правды).
 // Используется страницей заказа, чтобы подтвердить оплату без зависимости от вебхука.
-export async function getPaymentStatus(paymentId: string): Promise<PaymentProviderStatus> {
+export async function getPaymentStatus(paymentId: string): Promise<string> {
   const sdk = getYooKassa();
-  const payment = (await sdk.payments.load(paymentId)) as { status?: unknown } | null;
-  if (!payment || !isPaymentProviderStatus(payment.status)) {
-    throw new Error('Malformed YooKassa payment status response');
-  }
+  const payment = await sdk.payments.load(paymentId);
   return payment.status;
-}
-
-export async function getPaymentDetails(paymentId: string): Promise<PaymentProviderDetails | null> {
-  const sdk = getYooKassa();
-  try {
-    const details = paymentDetails(await sdk.payments.load(paymentId));
-    if (!details) throw new Error('Malformed YooKassa payment response');
-    return details;
-  } catch (error) {
-    const providerError = error as {
-      name?: unknown;
-      status?: unknown;
-      statusCode?: unknown;
-      response?: { status?: unknown };
-      code?: unknown;
-    };
-    if (
-      providerError.status === 404 ||
-      providerError.statusCode === 404 ||
-      providerError.response?.status === 404 ||
-      providerError.code === 'not_found' ||
-      providerError.name === 'not_found' ||
-      providerError.name === 'HTTP_404'
-    ) {
-      return null;
-    }
-    throw error;
-  }
 }

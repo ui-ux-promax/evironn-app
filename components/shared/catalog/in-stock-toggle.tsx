@@ -1,10 +1,9 @@
 'use client';
 import { useCatalogUrl } from '@/hooks/use-catalog-url';
-import { isInStockParam } from '@/lib/catalog-filters';
 
 export function InStockToggle() {
   const { get, setParam } = useCatalogUrl();
-  const on = isInStockParam(get('inStock'));
+  const on = get('inStock') === '1';
   return (
     <div className="border-t border-line pt-4">
       <p className="font-semibold text-sm mb-2">Наличие</p>

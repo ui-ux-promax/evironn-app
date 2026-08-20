@@ -21,15 +21,11 @@ it('smoke script checks public and protected routes', () => {
 it('runs smoke after a successful deployment', () => {
   const yaml = readFileSync('.github/workflows/deployment-smoke.yml', 'utf8');
   expect(yaml).toContain('deployment_status:');
-  expect(yaml).toContain('SMOKE_BASE_URL: https://evironn-app.vercel.app');
-  expect(yaml).toContain('DEPLOYMENT_STATE: ${{ github.event.deployment_status.state }}');
-  expect(yaml).toContain('Deployment status is');
+  expect(yaml).toContain('github.event.deployment_status.target_url');
   expect(yaml).toContain('npm run smoke:production');
 });
 
-it('does not allow a skipped required smoke job', () => {
+it('runs production smoke only for production deployments', () => {
   const yaml = readFileSync('.github/workflows/deployment-smoke.yml', 'utf8');
-  expect(yaml).not.toContain('if: github.event.deployment_status');
-  expect(yaml).toContain('DEPLOYMENT_STATE');
-  expect(yaml).toContain('exit 1');
+  expect(yaml).toContain("github.event.deployment.environment == 'Production'");
 });

@@ -16,7 +16,6 @@ export const categorySchema = z
     tagline: z.string().trim().max(200, 'Подпись до 200 символов').optional(),
     coverImage: z.string().url('Некорректный URL обложки').optional(),
     coverImagePublicId: z.string().optional(),
-    turntableProductSlug: z.string().trim().regex(SLUG_RE).optional(),
   })
   .superRefine((category, ctx) => {
     if (category.coverImage && !isAllowedCloudinaryImageUrl(category.coverImage, category.coverImagePublicId)) {

@@ -304,6 +304,11 @@ const cancellationPendingSync = (): CancelOrderResult => ({
   error: 'Статус отмены платежа проверяется. Обновите заказ и повторите попытку позже.',
 });
 
+const cancellationAwaitingPayment = (): CancelOrderResult => ({
+  ok: false,
+  error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
+});
+
 const canceledOrderProducts = (order: {
   items: Array<{
     quantity: number;
@@ -375,34 +380,55 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
         !correlated ||
         correlated.paymentInitializationState !== 'CORRELATED' ||
         !correlated.payment ||
-        correlated.payment.status !== 'pending' ||
+        !['pending', 'waiting_for_capture'].includes(correlated.payment.status) ||
         correlated.payment.amount !== correlated.totalAmount
       ) {
         return cancellationPendingSync();
       }
 
       const paymentId = correlated.payment.id;
-      try {
-        await cancelPayment(paymentId);
-      } catch (error) {
-        logger.error('cancel_payment_failed', error, { orderId, paymentId });
-      }
       let details;
       try {
         details = await getPaymentDetails(paymentId);
       } catch (error) {
-        logger.error('cancel_payment_reload_failed', error, { orderId, paymentId });
+        logger.error('cancel_payment_lookup_failed', error, { orderId, paymentId });
         return cancellationPendingSync();
       }
       if (
         !details ||
         details.id !== paymentId ||
-        details.status !== 'canceled' ||
         details.amountRub !== correlated.totalAmount ||
         details.orderNumber !== String(correlated.orderNumber)
       ) {
         return cancellationPendingSync();
       }
+      if (details.status === 'pending') return cancellationAwaitingPayment();
+      if (details.status === 'succeeded') {
+        return { ok: false, error: 'Оплата уже прошла. Для отмены потребуется оформить возврат.' };
+      }
+      if (details.status === 'waiting_for_capture') {
+        try {
+          await cancelPayment(paymentId);
+        } catch (error) {
+          logger.error('cancel_payment_failed', error, { orderId, paymentId });
+        }
+        try {
+          details = await getPaymentDetails(paymentId);
+        } catch (error) {
+          logger.error('cancel_payment_reload_failed', error, { orderId, paymentId });
+          return cancellationPendingSync();
+        }
+        if (
+          !details ||
+          details.id !== paymentId ||
+          details.status !== 'canceled' ||
+          details.amountRub !== correlated.totalAmount ||
+          details.orderNumber !== String(correlated.orderNumber)
+        ) {
+          return cancellationPendingSync();
+        }
+      }
+      if (details.status !== 'canceled') return cancellationPendingSync();
       try {
         const result = await reconcilePaymentStatus({ paymentId, remoteStatus: 'canceled', source: 'order-page' });
         if ((result.kind !== 'applied' && result.kind !== 'repaired') || result.transition !== 'canceled') {

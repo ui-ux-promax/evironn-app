@@ -126,12 +126,37 @@ describe('cancelOrder', () => {
       payment: { id: 'pay-1', status: 'pending', amount: 159900 },
     });
     findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
+    detailsMock
+      .mockResolvedValueOnce({ id: 'pay-1', status: 'waiting_for_capture', amountRub: 159900, orderNumber: '1025', confirmationUrl: null })
+      .mockResolvedValueOnce({ id: 'pay-1', status: 'canceled', amountRub: 159900, orderNumber: '1025', confirmationUrl: null });
     await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
     expect(cancelMock).toHaveBeenCalledWith('pay-1');
     expect(detailsMock).toHaveBeenCalledWith('pay-1');
     expect(reconcileMock).toHaveBeenCalledWith({ paymentId: 'pay-1', remoteStatus: 'canceled', source: 'order-page' });
     expect(transaction).not.toHaveBeenCalled();
     expect(pruneMock).not.toHaveBeenCalled();
+  });
+
+  it('does not call provider cancel for a pending payment', async () => {
+    const correlated = order({
+      paymentMethod: 'online',
+      paymentInitializationState: 'CORRELATED',
+      payment: { id: 'pay-1', status: 'pending', amount: 159900 },
+    });
+    findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
+    detailsMock.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      amountRub: 159900,
+      orderNumber: '1025',
+      confirmationUrl: null,
+    });
+    await expect(cancelOrder('o1')).resolves.toEqual({
+      ok: false,
+      error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
+    });
+    expect(cancelMock).not.toHaveBeenCalled();
+    expect(reconcileMock).not.toHaveBeenCalled();
   });
 
   it('uses newly persisted payment only after fresh owner-scoped reread', async () => {
@@ -142,7 +167,9 @@ describe('cancelOrder', () => {
         paymentInitializationState: 'CORRELATED',
         payment: { id: 'pay-new', status: 'pending', amount: 159900 },
       }));
-    detailsMock.mockResolvedValue({ id: 'pay-new', status: 'canceled', amountRub: 159900, orderNumber: '1025', confirmationUrl: null });
+    detailsMock
+      .mockResolvedValueOnce({ id: 'pay-new', status: 'waiting_for_capture', amountRub: 159900, orderNumber: '1025', confirmationUrl: null })
+      .mockResolvedValueOnce({ id: 'pay-new', status: 'canceled', amountRub: 159900, orderNumber: '1025', confirmationUrl: null });
     await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
     expect(ensureMock).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'o1' }));
     expect(cancelMock).toHaveBeenCalledWith('pay-new');
@@ -159,10 +186,9 @@ describe('cancelOrder', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it('preserves local state when provider cancellation fails or is non-final', async () => {
+  it('preserves local state when provider payment is still pending', async () => {
     const correlated = order({ paymentMethod: 'online', paymentInitializationState: 'CORRELATED', payment: { id: 'pay-1', status: 'pending', amount: 159900 } });
     findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
-    cancelMock.mockRejectedValue(new Error('timeout'));
     detailsMock.mockResolvedValue({
       id: 'pay-1',
       status: 'pending',
@@ -170,7 +196,11 @@ describe('cancelOrder', () => {
       orderNumber: '1025',
       confirmationUrl: null,
     });
-    await expect(cancelOrder('o1')).resolves.toMatchObject({ ok: false, code: 'CANCELLATION_PENDING_SYNC' });
+    await expect(cancelOrder('o1')).resolves.toEqual({
+      ok: false,
+      error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
+    });
+    expect(cancelMock).not.toHaveBeenCalled();
     expect(reconcileMock).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });
@@ -214,7 +244,10 @@ describe('cancelOrder', () => {
       orderNumber: '1025',
       confirmationUrl: null,
     });
-    await expect(cancelOrder('o1')).resolves.toMatchObject({ ok: false, code: 'CANCELLATION_PENDING_SYNC' });
+    await expect(cancelOrder('o1')).resolves.toEqual({
+      ok: false,
+      error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
+    });
     expect(reconcileMock).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });
@@ -226,6 +259,9 @@ describe('cancelOrder', () => {
       payment: { id: 'pay-1', status: 'pending', amount: 159900 },
     });
     findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
+    detailsMock
+      .mockResolvedValueOnce({ id: 'pay-1', status: 'waiting_for_capture', amountRub: 159900, orderNumber: '1025', confirmationUrl: null })
+      .mockResolvedValueOnce({ id: 'pay-1', status: 'canceled', amountRub: 159900, orderNumber: '1025', confirmationUrl: null });
     reconcileMock.mockRejectedValue(new Error('serializable transaction failed'));
     await expect(cancelOrder('o1')).resolves.toMatchObject({ ok: false, code: 'CANCELLATION_PENDING_SYNC' });
     expect(cancelMock).toHaveBeenCalledWith('pay-1');

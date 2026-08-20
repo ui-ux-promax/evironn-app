@@ -95,6 +95,7 @@ type OrderInput = {
 type BuildContext = {
   now: Date;
   providerProof?: boolean;
+  providerCancelProof?: boolean;
   paymentInitializationOutcome?: PaymentInitializationResult['outcome'];
 };
 
@@ -109,7 +110,9 @@ function pickupMethod(order: OrderInput): string {
 
 export function buildOrderPageDto(
   order: OrderInput,
-  { now, providerProof = false, paymentInitializationOutcome }: BuildContext = { now: new Date() },
+  { now, providerProof = false, providerCancelProof = false, paymentInitializationOutcome }: BuildContext = {
+    now: new Date(),
+  },
 ): OrderPageDto {
   const mapped = mapOrderStatus(order.status, order.payment?.status);
   const date = order.deliveryDate ? fromDeliveryDateSentinel(order.deliveryDate) : null;
@@ -154,7 +157,7 @@ export function buildOrderPageDto(
           initialization: !pendingOnline
             ? null
             : retryWindowClosed
-              ? buildBlockedOrderPaymentInitialization(order.orderNumber, safelyCorrelated)
+              ? buildBlockedOrderPaymentInitialization(order.orderNumber, providerCancelProof)
               : safelyCorrelated && order.payment?.confirmationUrl
                 ? {
                     status: 'PAYMENT_INITIALIZATION_READY' as const,
@@ -217,7 +220,7 @@ export function buildOrderPageDto(
       eligible: target.eligible,
       reviewed: target.reviewed,
     })),
-    canCancel: order.status === 'PENDING' && (order.paymentMethod === 'cod' || safelyCorrelated),
+    canCancel: order.status === 'PENDING' && (order.paymentMethod === 'cod' || providerCancelProof === true),
   };
 }
 
@@ -247,6 +250,7 @@ export async function getOrderPageDto({
   let order = await prisma.order.findFirst({ where: { userId, orderNumber }, include: orderInclude });
   if (!order) return null;
   let providerProof = false;
+  let providerCancelProof = false;
   let paymentInitializationOutcome: PaymentInitializationResult['outcome'] | undefined;
   if (
     order.status === 'PENDING' &&
@@ -279,6 +283,7 @@ export async function getOrderPageDto({
         details.orderNumber === String(order.orderNumber)
       ) {
         providerProof = details.status === 'pending';
+        providerCancelProof = details.status === 'waiting_for_capture';
         const result = await reconcilePaymentStatus({
           paymentId: order.payment.id,
           remoteStatus: details.status,
@@ -321,7 +326,7 @@ export async function getOrderPageDto({
       })),
       reviewTargets: reviewTargets.filter(Boolean) as OrderInput['reviewTargets'],
     },
-    { now, providerProof, paymentInitializationOutcome },
+    { now, providerProof, providerCancelProof, paymentInitializationOutcome },
   );
 }
 

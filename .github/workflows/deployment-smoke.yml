@@ -5,10 +5,11 @@ permissions:
   contents: read
 jobs:
   smoke:
-    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
+      # This job intentionally has no job-level condition: GitHub treats a
+      # skipped required job as successful and may allow a merge.
       # Vercel's unique deployment URLs are protected by Deployment Protection
       # and redirect anonymous requests to Vercel SSO. Smoke the public production
       # alias instead so the check validates the deployed production application.
@@ -20,4 +21,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Require completed deployment
+        env:
+          DEPLOYMENT_STATE: ${{ github.event.deployment_status.state }}
+        run: |
+          if [ "$DEPLOYMENT_STATE" != "success" ]; then
+            echo "Deployment status is '$DEPLOYMENT_STATE'; smoke is not allowed to pass."
+            exit 1
+          fi
       - run: npm run smoke:production

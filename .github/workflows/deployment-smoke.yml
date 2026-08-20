@@ -9,7 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SMOKE_BASE_URL: ${{ github.event.deployment_status.target_url }}
+      # Vercel's unique deployment URLs are protected by Deployment Protection
+      # and redirect anonymous requests to Vercel SSO. Smoke the public production
+      # alias instead so the check validates the deployed production application.
+      SMOKE_BASE_URL: https://evironn-app.vercel.app
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4

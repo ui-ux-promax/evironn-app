@@ -1,0 +1,1289 @@
+/* ---------- Labels and errors ---------- */
+
+.chk-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--ev-ink-60);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.chk-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  color: #b4402c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.chk-error svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---------- Field ---------- */
+
+.chk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.chk-grid--address {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.chk-grid--address .chk-field.is-wide {
+  grid-column: 1 / -1;
+}
+.chk-grid--card {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.chk-grid--card .chk-field.is-wide {
+  grid-column: 1 / -1;
+}
+.chk-grid .chk-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.chk-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.chk-field__control {
+  position: relative;
+  display: block;
+}
+.chk-field__control.has-accessory input {
+  padding-right: 46px;
+}
+.chk-field__control.has-accessory > button {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+}
+
+.chk-field > label {
+  color: var(--ev-ink-60);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.chk-field input,
+.chk-field textarea {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid rgb(26 28 24 / 0.12);
+  border-radius: 14px;
+  background: var(--ev-surface);
+  color: hsl(var(--ev-text));
+  font-family: var(--ev-font-body);
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color 200ms var(--ev-ease),
+    box-shadow 200ms var(--ev-ease);
+}
+
+.chk-field textarea {
+  height: auto;
+  min-height: 82px;
+  padding: 14px 16px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.chk-field input::placeholder,
+.chk-field textarea::placeholder {
+  color: rgb(26 28 24 / 0.32);
+}
+
+.chk-field input:focus,
+.chk-field textarea:focus {
+  border-color: rgb(26 28 24 / 0.4);
+  box-shadow: 0 0 0 3px rgb(26 28 24 / 0.06);
+}
+
+.chk-field__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--ev-ink-60);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.chk-field__note svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.chk-field.is-bad input,
+.chk-field.is-bad textarea {
+  border-color: #b4402c;
+}
+.chk-field.is-bad .chk-field__note {
+  color: #b4402c;
+}
+
+.chk-field--dark > label {
+  color: rgb(255 255 255 / 0.5);
+}
+
+.chk-field--dark input,
+.chk-field--dark textarea {
+  border-color: rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.06);
+  color: #f6f2ea;
+}
+
+.chk-field--dark input::placeholder,
+.chk-field--dark textarea::placeholder {
+  color: rgb(255 255 255 / 0.3);
+}
+.chk-field--dark input:focus,
+.chk-field--dark textarea:focus {
+  border-color: rgb(255 255 255 / 0.44);
+  box-shadow: none;
+}
+.chk-field--dark .chk-field__note {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-field--dark.is-bad input,
+.chk-field--dark.is-bad textarea {
+  border-color: #e39b86;
+}
+.chk-field--dark.is-bad .chk-field__note {
+  color: #e39b86;
+}
+
+/* ---------- Receiving and payment cards ---------- */
+
+.chk-receive,
+.chk-pay {
+  display: grid;
+  gap: 8px;
+}
+
+.chk-receive > button,
+.chk-pay > button {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 18px;
+  border-radius: 18px;
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.1);
+  text-align: left;
+  transition:
+    box-shadow 220ms var(--ev-ease),
+    background-color 220ms var(--ev-ease);
+}
+
+.chk-receive > button:hover,
+.chk-pay > button:hover {
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.28);
+}
+.chk-receive > button.is-on,
+.chk-pay > button.is-on {
+  box-shadow: inset 0 0 0 2px hsl(var(--ev-text));
+}
+
+.chk-receive__mark {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgb(26 28 24 / 0.28);
+}
+
+.chk-receive__mark::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: hsl(var(--ev-text));
+  transform: scale(0);
+  transition: transform 220ms var(--ev-ease);
+}
+
+button.is-on .chk-receive__mark {
+  box-shadow: inset 0 0 0 1.5px hsl(var(--ev-text));
+}
+button.is-on .chk-receive__mark::after {
+  transform: scale(1);
+}
+
+.chk-receive__body,
+.chk-pay__body {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chk-receive__top,
+.chk-pay__top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.chk-receive__top svg {
+  width: 16px;
+  height: 16px;
+}
+.chk-receive__note,
+.chk-pay__note {
+  color: var(--ev-ink-60);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.chk-receive > button em {
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chk-pay__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--ev-accent);
+  color: #fff;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chk-receive--dark > button,
+.chk-pay--dark > button {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+  color: #f6f2ea;
+}
+
+.chk-receive--dark > button:hover,
+.chk-pay--dark > button:hover {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3);
+}
+.chk-receive--dark > button.is-on,
+.chk-pay--dark > button.is-on {
+  box-shadow: inset 0 0 0 2px #f6f2ea;
+}
+.chk-receive--dark .chk-receive__mark,
+.chk-pay--dark .chk-receive__mark {
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.34);
+}
+.chk-receive--dark button.is-on .chk-receive__mark,
+.chk-pay--dark button.is-on .chk-receive__mark {
+  box-shadow: inset 0 0 0 1.5px #f6f2ea;
+}
+.chk-receive--dark .chk-receive__mark::after,
+.chk-pay--dark .chk-receive__mark::after {
+  background: #f6f2ea;
+}
+.chk-receive--dark .chk-receive__note,
+.chk-pay--dark .chk-pay__note {
+  color: rgb(255 255 255 / 0.56);
+}
+
+/* ---------- Pickup points ---------- */
+
+.chk-points > div {
+  display: grid;
+  gap: 8px;
+}
+
+.chk-points button {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 16px;
+  border-radius: 16px;
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.1);
+  text-align: left;
+  transition: box-shadow 220ms var(--ev-ease);
+}
+
+.chk-points button svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--ev-ink-60);
+}
+.chk-points button span {
+  display: grid;
+  gap: 2px;
+  color: var(--ev-ink-60);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.chk-points button b {
+  color: hsl(var(--ev-text));
+  font-size: 14px;
+  font-weight: 600;
+}
+.chk-points button em {
+  font-size: 11.5px;
+  font-style: normal;
+}
+.chk-points button:hover {
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.28);
+}
+.chk-points button.is-on {
+  box-shadow: inset 0 0 0 2px hsl(var(--ev-text));
+}
+.chk-points button.is-on svg {
+  color: hsl(var(--ev-text));
+}
+
+.chk-points--dark .chk-label {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-points--dark button {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+.chk-points--dark button span {
+  color: rgb(255 255 255 / 0.56);
+}
+.chk-points--dark button b,
+.chk-points--dark button.is-on svg {
+  color: #f6f2ea;
+}
+.chk-points--dark button.is-on {
+  box-shadow: inset 0 0 0 2px #f6f2ea;
+}
+
+/* ---------- Slots ---------- */
+
+.chk-slots > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.chk-slots button {
+  display: grid;
+  gap: 2px;
+  padding: 13px 12px;
+  border-radius: 16px;
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.1);
+  color: var(--ev-ink-60);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: left;
+  transition: box-shadow 220ms var(--ev-ease);
+}
+
+.chk-slots button b {
+  color: hsl(var(--ev-text));
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.chk-slots button:hover {
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.28);
+}
+.chk-slots button.is-on {
+  box-shadow: inset 0 0 0 2px hsl(var(--ev-text));
+}
+
+.chk-slots--dark .chk-label {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-slots--dark button {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+  color: rgb(255 255 255 / 0.56);
+}
+.chk-slots--dark button b {
+  color: #f6f2ea;
+}
+.chk-slots--dark button.is-on {
+  box-shadow: inset 0 0 0 2px #f6f2ea;
+}
+
+/* ---------- Address book ---------- */
+
+.chk-book {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chk-book button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.1);
+  text-align: left;
+  transition: box-shadow 220ms var(--ev-ease);
+}
+
+.chk-book button svg {
+  width: 15px;
+  height: 15px;
+  color: var(--ev-ink-60);
+}
+.chk-book button span {
+  display: grid;
+  gap: 1px;
+  color: var(--ev-ink-60);
+  font-size: 11.5px;
+}
+.chk-book button b {
+  color: hsl(var(--ev-text));
+  font-size: 13px;
+  font-weight: 600;
+}
+.chk-book button:hover {
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.28);
+}
+.chk-book button.is-on {
+  box-shadow: inset 0 0 0 2px hsl(var(--ev-text));
+}
+.chk-book button.is-on svg {
+  color: hsl(var(--ev-text));
+}
+
+.chk-book--dark button {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+.chk-book--dark button span {
+  color: rgb(255 255 255 / 0.56);
+}
+.chk-book--dark button b,
+.chk-book--dark button.is-on svg {
+  color: #f6f2ea;
+}
+.chk-book--dark button.is-on {
+  box-shadow: inset 0 0 0 2px #f6f2ea;
+}
+
+/* ---------- Lift ---------- */
+
+.chk-lift {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+.chk-lift > span:last-child {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chk-lift button {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.12);
+  font-family: var(--ev-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    box-shadow 220ms var(--ev-ease),
+    background-color 220ms var(--ev-ease);
+}
+
+.chk-lift button:hover {
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.3);
+}
+.chk-lift button.is-on {
+  background: hsl(var(--ev-text));
+  box-shadow: none;
+  color: #fff;
+}
+
+.chk-lift--dark .chk-label {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-lift--dark button {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
+  color: #f6f2ea;
+}
+.chk-lift--dark button.is-on {
+  background: #f6f2ea;
+  box-shadow: none;
+  color: #221f1b;
+}
+
+/* ---------- Checkboxes: services and consents ---------- */
+
+.chk-services,
+.chk-consents {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.chk-services label,
+.chk-consents label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.chk-services label {
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.1);
+}
+.chk-services input,
+.chk-consents input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.chk-check {
+  display: grid;
+  width: var(--ev-checkbox-size);
+  height: var(--ev-checkbox-size);
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: var(--ev-checkbox-radius);
+  background: var(--ev-surface);
+  box-shadow: inset 0 0 0 1.5px rgb(26 28 24 / 0.26);
+  color: transparent;
+  transition:
+    background-color 200ms var(--ev-ease),
+    box-shadow 200ms var(--ev-ease),
+    color 200ms var(--ev-ease);
+}
+
+.chk-check svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 3.2;
+}
+input:checked + .chk-check {
+  background: hsl(var(--ev-text));
+  box-shadow: none;
+  color: #fff;
+}
+input:focus-visible + .chk-check {
+  outline: none;
+  box-shadow: var(--ev-focus-ring);
+}
+
+.chk-services__body {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  color: var(--ev-ink-60);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.chk-services__body b {
+  color: hsl(var(--ev-text));
+  font-size: 14px;
+  font-weight: 600;
+}
+.chk-services label em {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chk-consents li {
+  padding: 2px 0;
+}
+.chk-consents label > span:last-child {
+  color: var(--ev-ink-60);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.chk-consents a {
+  color: hsl(var(--ev-text));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.chk-consents li.is-bad .chk-check {
+  box-shadow: inset 0 0 0 1.5px #b4402c;
+}
+
+.chk-services--dark label {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+  color: #f6f2ea;
+}
+.chk-services--dark .chk-services__body {
+  color: rgb(255 255 255 / 0.56);
+}
+.chk-services--dark .chk-services__body b {
+  color: #f6f2ea;
+}
+.chk-services--dark .chk-check,
+.chk-consents--dark .chk-check {
+  background: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.3);
+}
+.chk-services--dark input:checked + .chk-check,
+.chk-consents--dark input:checked + .chk-check {
+  background: #f6f2ea;
+  box-shadow: none;
+  color: #221f1b;
+}
+.chk-consents--dark label > span:last-child {
+  color: rgb(255 255 255 / 0.56);
+}
+.chk-consents--dark a {
+  color: #f6f2ea;
+}
+.chk-consents--dark .chk-error,
+.chk-points--dark .chk-error,
+.chk-slots--dark .chk-error {
+  color: #e39b86;
+}
+
+/* ---------- Card form ---------- */
+
+.chk-card {
+  margin-top: 12px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--ev-surface-soft);
+}
+
+.chk-card__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chk-card__head > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chk-card__head em {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: hsl(var(--ev-text));
+  color: #fff;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.chk-card__head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--ev-ink-60);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.chk-card__head > span svg {
+  width: 12px;
+  height: 12px;
+}
+.chk-card .chk-field input {
+  background: var(--ev-surface);
+}
+
+.chk-card--dark {
+  background: rgb(255 255 255 / 0.05);
+  color: #f6f2ea;
+}
+.chk-card--dark .chk-card__head em {
+  background: #f6f2ea;
+  color: #221f1b;
+}
+.chk-card--dark .chk-card__head > span {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-card--dark .chk-field input {
+  background: rgb(255 255 255 / 0.06);
+}
+
+/* ---------- Payment failure ---------- */
+
+.chk-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgb(180 64 44 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(180 64 44 / 0.28);
+}
+
+.chk-alert > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #b4402c;
+}
+.chk-alert > span {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 190px;
+  color: var(--ev-ink-60);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.chk-alert b {
+  color: #b4402c;
+  font-size: 14px;
+}
+
+.chk-alert button {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #b4402c;
+  color: #fff;
+  font-family: var(--ev-font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background-color 220ms var(--ev-ease);
+}
+
+.chk-alert button:hover {
+  background: #93321f;
+}
+
+.chk-alert--dark {
+  background: rgb(227 155 134 / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(227 155 134 / 0.34);
+}
+.chk-alert--dark > svg,
+.chk-alert--dark b {
+  color: #e39b86;
+}
+.chk-alert--dark > span {
+  color: rgb(255 255 255 / 0.6);
+}
+.chk-alert--dark button {
+  background: #e39b86;
+  color: #221f1b;
+}
+.chk-alert--dark button:hover {
+  background: #f0b39f;
+}
+
+/* ---------- Submit ---------- */
+
+.chk-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--ev-control-height-lg);
+  padding: 0 26px;
+  border-radius: var(--ev-control-radius);
+  background: hsl(var(--ev-text));
+  color: #fff;
+  font-family: var(--ev-font-body);
+  font-size: 14.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 240ms var(--ev-ease),
+    transform 240ms var(--ev-ease),
+    opacity 240ms var(--ev-ease);
+}
+
+.chk-submit:hover:not(:disabled) {
+  background: var(--ev-footer);
+  transform: translateY(-1px);
+}
+.chk-submit:disabled {
+  opacity: var(--ev-control-disabled-opacity);
+  cursor: not-allowed;
+}
+.chk-submit.is-sending {
+  opacity: 1;
+  cursor: progress;
+}
+
+.chk-submit__spin {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(255 255 255 / 0.34);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: chk-spin 760ms linear infinite;
+}
+
+@keyframes chk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chk-submit--dark {
+  background: #f6f2ea;
+  color: #221f1b;
+}
+.chk-submit--dark:hover:not(:disabled) {
+  background: #fff;
+}
+.chk-submit--dark .chk-submit__spin {
+  border-color: rgb(34 31 27 / 0.3);
+  border-top-color: #221f1b;
+}
+
+/* ---------- Order lines ---------- */
+
+.chk-lines {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+
+.chk-lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.chk-lines__thumb {
+  display: block;
+  overflow: hidden;
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: var(--ev-surface-soft);
+}
+
+.chk-lines__thumb img {
+  width: 100%;
+  height: 100%;
+  padding: 7%;
+  object-fit: contain;
+}
+.chk-lines__body {
+  display: grid;
+  flex: 1;
+  gap: 5px;
+  min-width: 0;
+  justify-items: start;
+}
+.chk-lines__body b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.chk-lines__body em {
+  color: var(--ev-ink-60);
+  font-size: 11.5px;
+  font-style: normal;
+}
+
+.chk-lines__money {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chk-lines__money button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ev-ink-60);
+  transition:
+    background-color 200ms var(--ev-ease),
+    color 200ms var(--ev-ease);
+}
+
+.chk-lines__money button svg {
+  width: 14px;
+  height: 14px;
+}
+.chk-lines__money button:hover {
+  background: rgb(180 64 44 / 0.1);
+  color: #b4402c;
+}
+
+.chk-lines--dark .chk-lines__thumb {
+  background: rgb(255 255 255 / 0.07);
+}
+.chk-lines--dark .chk-lines__body em {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-lines--dark .chk-lines__money button {
+  color: rgb(255 255 255 / 0.5);
+}
+.chk-lines--dark .chk-lines__money button:hover {
+  background: rgb(255 255 255 / 0.12);
+  color: #f6f2ea;
+}
+
+/* ---------- Sticky mobile bar ---------- */
+
+.chk-bar {
+  display: none;
+}
+
+/* ---------- Confirmation ---------- */
+
+.chk-done {
+  display: grid;
+  justify-items: center;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: clamp(2.4rem, 6vw, 4rem) clamp(1.2rem, 4vw, 2.6rem);
+  border-radius: var(--ev-radius-lg);
+  background: var(--ev-surface);
+  box-shadow: var(--ev-shadow-sm);
+  text-align: center;
+}
+
+.chk-done__mark {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ev-accent);
+  color: #fff;
+}
+
+.chk-done__mark svg {
+  width: 26px;
+  height: 26px;
+  stroke-width: 3;
+}
+
+.chk-done__eyebrow {
+  margin-top: 1.2rem;
+  color: var(--ev-ink-60);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.chk-done h1 {
+  margin-top: 0.5rem;
+  font-family: var(--ev-font-display);
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.chk-done__lede {
+  max-width: 44ch;
+  margin-top: 0.8rem;
+  color: var(--ev-ink-60);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.chk-done__rows {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 1.8rem;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: var(--ev-surface-soft);
+  text-align: left;
+}
+
+.chk-done__rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ev-ink-60);
+  font-size: 13px;
+}
+
+.chk-done__rows dd {
+  color: hsl(var(--ev-text));
+  font-weight: 500;
+  text-align: right;
+}
+
+.chk-done__rows > div.is-total {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(26 28 24 / 0.12);
+  font-weight: 600;
+}
+
+.chk-done__rows > div.is-total dd {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chk-done__next {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 1.6rem;
+  padding-left: 1.2rem;
+  color: var(--ev-ink-60);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.chk-done__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.8rem;
+}
+
+.chk-done__primary,
+.chk-done__ghost {
+  display: inline-flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 240ms var(--ev-ease),
+    box-shadow 240ms var(--ev-ease),
+    transform 240ms var(--ev-ease);
+}
+
+.chk-done__primary {
+  background: hsl(var(--ev-text));
+  color: #fff;
+}
+.chk-done__primary:hover {
+  background: var(--ev-footer);
+  transform: translateY(-1px);
+}
+.chk-done__ghost {
+  color: hsl(var(--ev-text));
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.16);
+}
+.chk-done__ghost:hover {
+  box-shadow: inset 0 0 0 1px rgb(26 28 24 / 0.4);
+}
+
+.chk-done--dark {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  color: #f6f2ea;
+}
+
+.chk-done--dark .chk-done__eyebrow,
+.chk-done--dark .chk-done__lede,
+.chk-done--dark .chk-done__next {
+  color: rgb(255 255 255 / 0.58);
+}
+.chk-done--dark .chk-done__rows {
+  background: rgb(255 255 255 / 0.06);
+}
+.chk-done--dark .chk-done__rows > div {
+  color: rgb(255 255 255 / 0.58);
+}
+.chk-done--dark .chk-done__rows dd {
+  color: #f6f2ea;
+}
+.chk-done--dark .chk-done__rows > div.is-total {
+  border-top-color: rgb(255 255 255 / 0.16);
+}
+.chk-done--dark .chk-done__primary {
+  background: #f6f2ea;
+  color: #221f1b;
+}
+.chk-done--dark .chk-done__ghost {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.24);
+  color: #f6f2ea;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .chk-grid--address,
+  .chk-grid--card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chk-slots > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .chk-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 240;
+    display: grid;
+    gap: 10px;
+    padding: 12px clamp(14px, 4vw, 24px) calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgb(26 28 24 / 0.08);
+    background: #ffffffec;
+    box-shadow: 0 -10px 34px rgb(46 38 30 / 0.1);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  }
+
+  .chk-bar__details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .chk-bar__details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .chk-bar__details > summary > span {
+    display: grid;
+    gap: 1px;
+    color: var(--ev-ink-60);
+    font-size: 11.5px;
+  }
+  .chk-bar__details > summary b {
+    color: hsl(var(--ev-text));
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chk-bar__details > summary em {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  .chk-bar__details > summary em svg {
+    width: 15px;
+    height: 15px;
+    transition: transform 240ms var(--ev-ease);
+  }
+  .chk-bar__details[open] > summary em svg {
+    transform: rotate(180deg);
+  }
+
+  .chk-bar__sheet {
+    max-height: 52vh;
+    margin-top: 12px;
+    overflow-y: auto;
+    padding-top: 12px;
+    border-top: 1px solid rgb(26 28 24 / 0.1);
+  }
+
+  .chk-bar--dark {
+    border-top-color: rgb(255 255 255 / 0.12);
+    background: #221f1bf2;
+    color: #f6f2ea;
+  }
+
+  .chk-bar--dark .chk-bar__details > summary > span {
+    color: rgb(255 255 255 / 0.56);
+  }
+  .chk-bar--dark .chk-bar__details > summary b {
+    color: #f6f2ea;
+  }
+  .chk-bar--dark .chk-bar__sheet {
+    border-top-color: rgb(255 255 255 / 0.14);
+  }
+}
+
+@media (max-width: 560px) {
+  .chk-grid,
+  .chk-grid--address,
+  .chk-grid--card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chk-grid--card .chk-field:nth-child(2),
+  .chk-grid--card .chk-field:nth-child(3) {
+    grid-column: auto;
+  }
+  .chk-services label {
+    padding: 13px 15px;
+  }
+  .chk-alert button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .chk-slots > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chk-book button {
+    width: 100%;
+  }
+  .chk-lift button {
+    flex: 1;
+    padding: 0 12px;
+  }
+  .chk-lines__thumb {
+    width: 56px;
+    height: 56px;
+  }
+}

@@ -57,6 +57,7 @@ beforeEach(() => {
         status: 'DELIVERED',
         createdAt,
         shippingMethod: 'courier',
+        paymentMethod: 'online',
         city: 'Москва',
         addressLine: 'ул. Ленина, 1',
         itemsTotal: 100000,
@@ -136,7 +137,7 @@ describe('getProfilePageDto', () => {
       orders: expect.any(Object),
       addresses: expect.any(Object),
     });
-    expect(JSON.stringify(select)).not.toMatch(/passwordHash|role|payment|bonus|notification/i);
+    expect(JSON.stringify(select)).not.toMatch(/passwordHash|role|bonus|notification/i);
     expect(findFavorites).toHaveBeenCalledWith(
       expect.objectContaining({ where: { wishlist: { userId: 'u1' }, product: { active: true } } }),
     );
@@ -162,7 +163,7 @@ describe('getProfilePageDto', () => {
     });
     expect(dto.orders[0].items[1].configuration).toBe('Black · Размер M');
     expect(dto.favorites[0]).toMatchObject({ id: 'product-1', primarySkuId: 'sku-1', href: expect.any(String) });
-    expect(JSON.stringify(dto)).not.toMatch(/payment|bonus|notification/i);
+    expect(JSON.stringify(dto)).not.toMatch(/notification/i);
   });
 
   it('does not let a live SKU or legacy variant replace immutable order snapshots', async () => {

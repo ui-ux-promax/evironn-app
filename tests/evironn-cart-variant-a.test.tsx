@@ -219,11 +219,9 @@ describe('Cart Variant A', () => {
     await waitFor(() => expect(screen.getByText(/Промокод EVIRONN10 принят/)).toBeInTheDocument());
     expect(screen.getAllByText(/80/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Доставка/)).not.toBeInTheDocument();
-    const checkoutControls = screen.getAllByRole('button', {
-      name: 'Оформление заказа будет доступно на следующем этапе.',
-    });
-    expect(checkoutControls[0]).toBeDisabled();
-    expect(checkoutControls[1]).toHaveAttribute('aria-disabled', 'true');
+    const checkoutControls = screen.getAllByRole('link', { name: 'Оформить заказ' });
+    expect(checkoutControls).toHaveLength(2);
+    for (const control of checkoutControls) expect(control).toHaveAttribute('href', '/checkout');
   });
 
   it('discards stale coupon validation after a cart mutation', async () => {
@@ -340,12 +338,75 @@ describe('Cart Variant A', () => {
     expect(await screen.findByText('В корзине пока пусто')).toBeInTheDocument();
   });
 
-  it('shows server mutation errors and mobile summary remains disabled', async () => {
+  it('shows server mutation errors and mobile summary remains available', async () => {
     renderCart();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
     mocks.removeCartItem.mockRejectedValue(new Error('Недостаточно на складе'));
     fireEvent.click(screen.getByRole('button', { name: 'Удалить Noma Woven Lounge' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Недостаточно на складе');
     expect(document.querySelector('.cart-a__mobile-bar')).toBeInTheDocument();
+  });
+
+  it('explains loading, unavailable, and failed cart checkout blockers', async () => {
+    let resolveCart!: (value: CartDto) => void;
+    mocks.getCart.mockReturnValue(new Promise((resolve) => (resolveCart = resolve)));
+    render(<CartVariantA related={[]} initialWishlistedIds={[]} />);
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    const loadingCheckout = document.querySelector<HTMLButtonElement>('.cart-a__checkout[disabled]');
+    expect(loadingCheckout).toBeDisabled();
+    expect(loadingCheckout).toHaveAttribute('aria-busy', 'true');
+    expect(loadingCheckout).toHaveTextContent('Дождитесь загрузки корзины.');
+    expect(loadingCheckout?.querySelector('.cart-a__checkout-spinner')).toBeInTheDocument();
+    resolveCart(cart());
+    await waitFor(() => expect(screen.getAllByRole('link', { name: 'Оформить заказ' })).toHaveLength(2));
+    cleanup();
+
+    renderCart(cart([{ ...line, available: false }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__checkout[disabled]')).toHaveTextContent(
+      'В корзине есть товары, которых нет в наличии.',
+    );
+    cleanup();
+
+    mocks.getCart.mockRejectedValue(new Error('Cart failed'));
+    useCartStore.setState({ ...cart(), loading: false, error: false, totalAmount: 100000 });
+    render(<CartVariantA related={[]} initialWishlistedIds={[]} />);
+    await waitFor(() => expect(useCartStore.getState().error).toBe(true));
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveTextContent('Недоступно');
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'Не удалось загрузить корзину. Обновите страницу.',
+    );
+  });
+
+  it('explains legacy non-canonical checkout blockers', async () => {
+    renderCart(cart([{ ...line, isLegacy: true, available: true }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'В корзине есть устаревшие позиции. Добавьте их заново.',
+    );
+  });
+
+  it('blocks checkout when a concurrent stock drop leaves quantity above stock', async () => {
+    renderCart(cart([{ ...line, quantity: 2, stock: 1, available: true }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'Количество некоторых товаров превышает доступный остаток.',
+    );
+  });
+
+  it('blocks checkout when a canonical line exceeds the quantity limit of 99', async () => {
+    renderCart(cart([{ ...line, quantity: 100, stock: 120, available: true }]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    expect(screen.queryByRole('link', { name: 'Оформить заказ' })).not.toBeInTheDocument();
+    expect(document.querySelector('.cart-a__mobile-bar [aria-disabled="true"]')).toHaveAccessibleName(
+      'Количество товара в одной позиции не может превышать 99.',
+    );
   });
 });

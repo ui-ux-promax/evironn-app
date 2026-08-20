@@ -100,6 +100,33 @@ describe('buildOrderSnapshot', () => {
       lineTotal: 124000,
     });
   });
+
+  it('falls back to product media when the SKU has no image', () => {
+    const cart = {
+      items: [
+        {
+          id: 'ci3',
+          quantity: 1,
+          sku: {
+            id: 'sku3',
+            articleNumber: 'EV-NWL-WALNUT',
+            combinationKey: 'finish=walnut',
+            price: 125000,
+            oldPrice: null,
+            product: {
+              name: 'Noma Woven Lounge',
+              slug: 'noma-woven-lounge',
+              media: [{ url: '/assets/noma-product.webp' }],
+            },
+            media: [],
+            selections: [],
+          },
+        },
+      ],
+    } as unknown as CartWithItems;
+
+    expect(buildOrderSnapshot(cart).items[0].imageUrl).toBe('/assets/noma-product.webp');
+  });
 });
 
 describe('formatOrderItemConfiguration', () => {

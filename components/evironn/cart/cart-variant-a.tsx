@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { FiHeart, FiTrash2 } from 'react-icons/fi';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
@@ -12,12 +13,35 @@ export interface CartVariantAProps {
   initialWishlistedIds: string[];
 }
 
-const CHECKOUT_DISABLED_LABEL = 'Оформление заказа будет доступно на следующем этапе.';
+const CHECKOUT_DISABLED_LABELS = {
+  loading: 'Дождитесь загрузки корзины.',
+  error: 'Не удалось загрузить корзину. Обновите страницу.',
+  unavailable: 'В корзине есть товары, которых нет в наличии.',
+  legacy: 'В корзине есть устаревшие позиции. Добавьте их заново.',
+  stock: 'Количество некоторых товаров превышает доступный остаток.',
+  limit: 'Количество товара в одной позиции не может превышать 99.',
+} as const;
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
   const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
     useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
+  const canCheckout =
+    !loading &&
+    !error &&
+    items.length > 0 &&
+    items.every((item) => item.available && !item.isLegacy && item.quantity <= item.stock && item.quantity <= 99);
+  const checkoutDisabledLabel = loading
+    ? CHECKOUT_DISABLED_LABELS.loading
+    : error
+      ? CHECKOUT_DISABLED_LABELS.error
+      : items.some((item) => !item.available)
+        ? CHECKOUT_DISABLED_LABELS.unavailable
+        : items.some((item) => item.isLegacy)
+          ? CHECKOUT_DISABLED_LABELS.legacy
+          : items.some((item) => item.quantity > 99)
+            ? CHECKOUT_DISABLED_LABELS.limit
+            : CHECKOUT_DISABLED_LABELS.stock;
 
   return (
     <main className="cart-a" id="main-content">
@@ -147,15 +171,23 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                 onClear={actions.clearCoupon}
               />
               <SummaryRows totals={totals} percent={promo.percent} />
-              <button
-                className="cart-a__checkout"
-                type="button"
-                disabled
-                aria-disabled="true"
-                title={CHECKOUT_DISABLED_LABEL}
-              >
-                {CHECKOUT_DISABLED_LABEL}
-              </button>
+              {canCheckout ? (
+                <a className="cart-a__checkout" href="/checkout">
+                  Оформить заказ
+                </a>
+              ) : (
+                <button
+                  className="cart-a__checkout"
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  aria-busy={loading}
+                  title={checkoutDisabledLabel}
+                >
+                  {loading && <Loader2 className="cart-a__checkout-spinner" aria-hidden="true" />}
+                  {checkoutDisabledLabel}
+                </button>
+              )}
             </div>
           </aside>
         </div>
@@ -203,15 +235,20 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
             <b>{totals.total.toLocaleString('ru-RU')} ₽</b>
             {totals.itemCount} товаров
           </span>
-          <a
-            role="button"
-            aria-disabled="true"
-            tabIndex={-1}
-            title={CHECKOUT_DISABLED_LABEL}
-            onClick={(event) => event.preventDefault()}
-          >
-            {CHECKOUT_DISABLED_LABEL}
-          </a>
+          {canCheckout ? (
+            <a href="/checkout">Оформить заказ</a>
+          ) : (
+            <a
+              role="button"
+              aria-disabled="true"
+              tabIndex={-1}
+              title={checkoutDisabledLabel}
+              aria-label={checkoutDisabledLabel}
+              onClick={(event) => event.preventDefault()}
+            >
+              Недоступно
+            </a>
+          )}
         </div>
       )}
 

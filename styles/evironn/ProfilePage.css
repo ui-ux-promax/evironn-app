@@ -3,6 +3,8 @@
   padding: calc(85px + clamp(2rem, 5vw, 4rem)) 0 clamp(4rem, 9vw, 8rem);
   background: var(--ev-bg);
   color: hsl(var(--ev-text));
+  font-family: var(--ev-font-body);
+  line-height: normal;
 }
 .prf__head,
 .prf__shell {
@@ -389,12 +391,28 @@
   font: inherit;
   font-size: 13px;
 }
-.prf__order-tools select {
+.prf__order-select {
+  position: relative;
   width: 150px;
+}
+.prf__order-tools select {
+  width: 100%;
+  height: 43px;
   padding: 0 10px;
   border: 1px solid var(--ev-border-subtle);
   border-radius: 999px;
   background: var(--ev-surface);
+  appearance: none;
+  padding-right: 32px;
+}
+.prf__order-select svg {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 .prf__orders {
   display: grid;
@@ -1096,6 +1114,9 @@
   .prf__order-tools select {
     width: 100%;
     min-height: 43px;
+  }
+  .prf__order-select {
+    width: 100%;
   }
   .prf__order-top {
     grid-template-columns: 1fr auto;

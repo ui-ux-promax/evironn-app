@@ -3,6 +3,9 @@ import { StorefrontFooter } from '@/components/evironn/storefront-footer';
 import { StorefrontHeader } from '@/components/evironn/storefront-header';
 import { buildStorefrontJsonLd } from '@/lib/seo';
 import { getInitialCartCount } from '@/lib/storefront-cart-count';
+import '@/styles/evironn/OrderVariantA.css';
+import '@/styles/evironn/OrderPrimitives.css';
+import '@/styles/evironn/OrderEnhancements.css';
 
 // Storefront chrome. Вынесено из root layout, чтобы admin route-group
 // (app/(admin)) рендерился БЕЗ шапки/футера/promo. URL не меняются —

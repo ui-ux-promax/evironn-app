@@ -21,12 +21,14 @@
 ### Task 1: Reserve the cart loading viewport
 
 **Files:**
+
 - Modify: `app/(shop)/cart/loading.tsx`
 - Create: `styles/evironn/CartLoading.css`
 - Modify: `app/layout.tsx`
 - Modify: `tests/evironn-cart-source-contract.test.ts`
 
 **Interfaces:**
+
 - Consumes: the existing cart loading wrapper and the root layout's global stylesheet imports.
 - Produces: a `cart-loading` class contract with a minimum height of `100svh` and a dynamic `100dvh` override.
 

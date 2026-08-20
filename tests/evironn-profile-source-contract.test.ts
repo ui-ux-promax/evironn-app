@@ -17,8 +17,10 @@ describe('production profile Variant A source contract', () => {
       'prf__nav',
       'prf__nav-indicator',
       'prf__content',
+      'prf__loyalty',
       'prf__active-order',
       'prf__quick',
+      'ord-track',
       'prf__orders',
       'prf__favorites',
       'prf__form-grid',
@@ -28,7 +30,7 @@ describe('production profile Variant A source contract', () => {
       expect(component).toContain(className);
     }
     expect(component).toMatch(/overview|orders|favorites|profile|addresses/);
-    expect(component).not.toMatch(/payment|bonuses|notifications|loyalty|bonus|saved cards/i);
+    expect(component).not.toMatch(/\b(?:payment|bonuses|notifications|saved cards)\b/i);
     expect(component).not.toMatch(/onClick={[^}]+(tracking|reorder|receipt|cancel)/i);
   });
 
@@ -60,7 +62,7 @@ describe('production profile Variant A source contract', () => {
     expect(css).toMatch(/@media \(max-width: 580px\)/);
     expect(css).toMatch(/\.prf__favorites[\s\S]*grid-template-columns/);
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      '47fa4a0e6fb846e9ff5cc70f9e6bda443ebe40dea54b2c83f017aab43ab98e08',
+      '3c506c471ced075908c7103af5b56d9e9266d4afbc72dffc213caed960a84460',
     );
   });
 

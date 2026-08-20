@@ -36,13 +36,14 @@ describe('Evironn Cart Variant A source boundary', () => {
       /DeliveryPicker|PaymentRow|FREE_\w*SHIPPING|SHIP_COST|DELIVERY_OPTIONS|PAYMENT_METHODS/,
     );
     expect(production).not.toContain('productVariantId');
-    expect(production).not.toMatch(/href\s*=\s*["']\/checkout|href=\{[^}]*checkout/);
+    expect(production).toContain('href="/checkout"');
     expect(production).not.toMatch(/Math\.(round|floor|ceil)\([^)]*percent|shipping|deliveryCost/);
   });
 
   it('exposes canonical props/actions and server snapshot summary fields', () => {
     const variant = source('components/evironn/cart/cart-variant-a.tsx');
     const hook = source('components/evironn/cart/use-cart-variant-a.ts');
+    const css = source('styles/evironn/CartVariantA.css');
     expect(variant).toContain('related: CatalogBCard[]');
     expect(variant).toContain('initialWishlistedIds: string[]');
     for (const method of [
@@ -59,10 +60,20 @@ describe('Evironn Cart Variant A source boundary', () => {
     const presentation = `${variant}\n${source(paths[0])}`;
     for (const field of ['compareAtSubtotal', 'saleDiscount', 'couponDiscount', 'total'])
       expect(presentation).toContain(field);
-    expect(variant).toContain('aria-disabled');
-    expect(variant).toContain('Оформление заказа будет доступно на следующем этапе.');
+    expect(variant).toContain('canCheckout');
+    expect(variant).toContain('href="/checkout"');
+    for (const label of [
+      'Дождитесь загрузки корзины.',
+      'Не удалось загрузить корзину. Обновите страницу.',
+      'В корзине есть товары, которых нет в наличии.',
+      'В корзине есть устаревшие позиции. Добавьте их заново.',
+      'Количество некоторых товаров превышает доступный остаток.',
+      'Количество товара в одной позиции не может превышать 99.',
+    ])
+      expect(variant).toContain(label);
     expect(variant).not.toContain('role="radiogroup"');
     expect(variant).toContain('aria-label={`Добавить ${product.name} в корзину`}');
+    expect(css).toMatch(/\.cart-a__checkout\s*\{[\s\S]*width:\s*100%;/);
     const page = readFileSync('app/(shop)/cart/page.tsx', 'utf8');
     expect(`${variant}\n${page}`).toContain('relatedProductHref');
     expect(page).toContain('relatedProductHref(card)');
@@ -82,7 +93,7 @@ describe('Evironn Cart Variant A source boundary', () => {
     );
   });
 
-  it('keeps display-only swatches and disabled checkout controls clone-styled', () => {
+  it('keeps display-only swatches and checkout controls clone-styled', () => {
     const variant = source('components/evironn/cart/cart-variant-a.tsx');
     const css = source('styles/evironn/CartVariantA.css');
 
@@ -93,7 +104,7 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(css).not.toContain('.cart-a__swatches span');
     expect(css).not.toContain('.cart-a__mobile-bar button');
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      '8a83377e890a60e31079bda43eef5ba32cabfc853904731042258308e746c0db',
+      '50b7a852a230998c9bb04fd35e362dcae1a0f64e43f75fa39c0b1d68b916d51f',
     );
   });
 

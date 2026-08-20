@@ -28,8 +28,11 @@ export interface ProfileOrderDto {
   status: OrderStatus;
   createdAt: string;
   shippingMethod: string;
+  paymentMethod: string;
   city: string;
   addressLine: string;
+  deliveryDate?: string | null;
+  deliveryWindow?: string | null;
   itemsTotal: number;
   discountAmount: number;
   shippingAmount: number;
@@ -47,6 +50,7 @@ export interface ProfilePageDto {
     initials: string;
   };
   stats: { orders: number; favorites: number; addresses: number };
+  loyalty?: { balance: number; nextLevel: number };
   orders: ProfileOrderDto[];
   favorites: CatalogBCard[];
   addresses: ProfileAddressDto[];

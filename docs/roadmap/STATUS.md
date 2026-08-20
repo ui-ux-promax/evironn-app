@@ -3,12 +3,32 @@
 ## Current state
 
 - Bootstrap: complete in the repository root commit `init`.
-- Active phase: Phase 3 — commerce and authentication.
+- Active phase: Phase 4 — checkout, payments, and orders.
 - Integration branch: `dev`.
-- Current branch: `phase/03-commerce-auth` from updated `origin/dev`.
-- Phase state: Phase 1 and Phase 2 accepted and merged; Phase 3 implementation and automated completion review complete; visual acceptance pending.
-- Current delivery: Phase 3 — Auth Variant B, Cart Variant A, Profile Variant A, canonical commerce boundaries, and review readiness; awaiting desktop/mobile visual acceptance.
-- Previous delivery: Phase 2C — exact showcase PDP, visually accepted.
+- Current branch: `phase/04-checkout-orders` from `origin/dev` merge `868310f`.
+- Phase state: Phase 1, Phase 2, and Phase 3 accepted and merged; Phase 4 authorized; Tasks 1–8 are implemented and focused-reviewed locally; Task 9 is at provisional contract/closeout stage.
+- Current delivery: Phase 4 checkout, payment, order, review, guarded E2E safety, and migration-readiness contracts are implemented. Portfolio E2E configuration is loaded from `.env.local`; guarded readiness passed against shared Neon `dev`, and all three Phase 4 migrations are applied. Full Phase 4 gate and browser E2E remain pending.
+- Previous delivery: Phase 3 — commerce and authentication, visually accepted and merged.
+
+Phase 3 pull request #3 merged with merge commit `868310f`; final Phase 3 branch commit is `f3d8a93`. Auth Variant B, Cart Variant A, and Profile Variant A desktop/mobile visual acceptance is complete. Phase 3 completion evidence remains `format`, `gate` (170 files / 930 tests), and `build` passed. Phase 3 E2E was invoked but stopped before Playwright because explicit E2E database variables were absent; no ambient database was used. Google OAuth and other external smoke not proved by that local gate remain unproved.
+
+## Phase 4 Task 9 provisional closeout
+
+Tasks 7 and 8 remain accepted on their focused evidence: Task 7 review `6373dac..f303387` approved with Critical 0 / Important 0 / Minor 0; its focused Vitest evidence was 9 files / 115 tests plus typecheck, Prettier, and diff-check. Task 8 review `f303387..015018e` approved with Critical 0 / Important 0 / Minor 0; its focused safety/migration/guard evidence was 3 files / 77 tests plus typecheck, Prettier, and diff-check. Task 8 browser collection stopped at the explicit guard; no database or provider call occurred and no E2E pass is claimed.
+
+Task 9 RED was observed: the initial contract run failed 9 expected assertions before the manifest and closeout records existed. Acceptance-review remediation added a fresh RED run of 1 file / 14 tests / 4 expected failures before exact closeout regeneration. The current manifest is exact for `868310f..HEAD` but is not completion-gate evidence. Initial review ran without loading `.env.local`; current local presence-only inspection confirms all recorded E2E, Auth.js, transactional-email, YooKassa, DaData, and site URL names are present in `.env.local`. ADR-019 intentionally permits the empty forbidden-fingerprint policy for this portfolio-only dev target. Guarded readiness then passed with `explicitE2eUrl`, `writeOptIn`, `targetFingerprintMatches`, `forbiddenTargetsAbsent`, `readOnlyConnectivity`, `currentDatabaseMatches`, and all three Phase 4 migrations true. No raw identity, URL, secret, or provider value was inspected or recorded.
+
+Portfolio E2E readiness update: `npx tsx e2e/database-readiness.ts --mode=completion` returned `ok: true`, `migrationCount: 3`, and `noPendingMigrations: true`. Guarded `npx tsx scripts/e2e-prisma-migrate.ts deploy` applied the three additive Phase 4 migrations successfully on shared Neon `dev`; no reset, truncate, global delete, or schema reset was used. Full completion gate and browser E2E remain unrun.
+
+Task 9 focused GREEN at current HEAD: `npx vitest run tests/phase-4-integration-contract.test.ts` passed 1 test file / 18 tests; the documented combined command passed 3 test files / 45 tests. This is task-level evidence only, not completion-gate evidence.
+
+### Task 9 acceptance-review remediation
+
+Acceptance re-review 2 found three Important contract gaps. Remediation is limited to Task 9 evidence plus testability boundaries in `lib/payment-sync.ts`, `e2e/phase4-database.ts`, and `scripts/e2e-database-fingerprint.ts`; accepted Task 7/8 source, reports, progress history, and protected untracked Phase 2 plans remain preserved. Fresh RED after adding independent assertions was 1 file / 14 tests collected / 4 expected failures before boundary implementation and closeout inventory regeneration. The remediation commit subject is `test: complete phase 4 delivery contracts`; the authoritative reviewed range is `868310f..HEAD`.
+
+The final contract derives its manifest boundary from the actual base-to-HEAD name-status diff, force-tracks `.superpowers/sdd/phase-4-delivery-report.md`, and asserts exact deletion of `components/shared/checkout/checkout-form.tsx`. It retains `BLOCKED_COMPLETION_READINESS`; no database, migration deploy, provider, full gate, build, or full Phase 4 E2E claim is introduced by this remediation.
+
+The Phase 4 completion gate (`npm run format`, `npm run gate`, `npm run build`, and critical Phase 4 E2E) has not run in Task 9. Readiness, real migration deployment, shared non-production database writes, checkout/order/review browser flows, and YooKassa sandbox smoke remain deferred or blocked until the approved explicit environment is supplied. No push, Preview, pull request, merge, branch deletion, or Phase 5 work is authorized.
 
 ## Bootstrap contents
 
@@ -193,3 +213,25 @@ The branch history was subsequently migrated to Git LFS and pushed at rewritten 
 - `fe16df8` adds a scoped 16px top margin above the profile password submit button; focused profile source-contract and component tests pass 17/17.
 - No schema, migration, environment, server-action, or dependency changes were made.
 - The phase branch is authorized for push and pull-request creation. Merge and final Phase 3 visual acceptance remain separate gates.
+
+## Phase 4 portfolio E2E continuation — 2026-08-19
+
+- Sanitized completion readiness passed against the explicit approved shared Neon `dev` target: write opt-in, target identity, connectivity, Auth readiness, and all three Phase 4 migrations are green. Empty forbidden-fingerprint policy remains valid under ADR-019; no raw URL, credential, or provider secret was recorded.
+- Focused browser evidence: checkout `5 passed`; order `3 passed`; review `2 passed`; YooKassa COD and blocked-payment lookup-only scenarios passed. E2E database probes use the explicit unpooled target and bounded polling for Neon read-after-write visibility; cleanup remains targeted by Phase 4 namespace.
+- Real YooKassa sandbox smoke is deferred: the configured provider account returns `Incorrect payment_id / access denied` for payment IDs created by the smoke, so provider ownership/cancellation cannot be proved. Two owned pending sandbox fixtures remain protected by the cleanup guard as indeterminate; no non-owned or production records were touched.
+- Full Phase 4 acceptance, push, pull request, merge, branch deletion, and Preview remain pending. Do not treat provider smoke as passed until valid sandbox account ownership is supplied.
+
+## Phase 4 E2E scope decision — 2026-08-19
+
+- The user approved proportional `fashion-shop`-style E2E: prioritize functional portfolio journeys over infrastructure-safety machinery.
+- The follow-up implementation should retire the mandatory `E2E_DATABASE_URL`/fingerprint/forbidden-target/readiness/manifest layer and use the selected non-production Neon `dev` target through the application-style connection convention.
+- Keep unique fixture identities and targeted cleanup; keep global reset, truncate, schema reset, and Production DB access forbidden. Real YooKassa sandbox creation/cancellation becomes optional manual smoke and must not block portfolio acceptance.
+- This is recorded as ADR-020; implementation is tracked in the next section.
+
+## Phase 4 E2E simplification implementation — 2026-08-19
+
+- ADR-020 applied locally: Phase 4 fixtures use `POSTGRES_URL_NON_POOLING || POSTGRES_URL`; old `E2E_DATABASE_*` names remain compatibility inputs only.
+- Removed mandatory database fingerprint/forbidden-target/readiness/fingerprint CLI/migration-wrapper/Phase 4 delivery-manifest contract layers. Phase 3 historical compatibility paths remain intact.
+- Checkout, order, review, COD, and blocked-payment browser tests run directly. Real YooKassa sandbox test runs only with explicit `E2E_YOOKASSA_REAL=1` plus provider prerequisites; it is optional and not part of normal portfolio acceptance.
+- Targeted namespace cleanup remains. No truncate, schema reset, global delete/reset, Production DB, push, PR, merge, or branch deletion performed.
+- Focused validation after refactor: 4 test files / 19 tests passed; typecheck passed. Functional E2E rerun remains next.

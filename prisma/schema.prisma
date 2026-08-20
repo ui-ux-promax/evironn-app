@@ -35,6 +35,14 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentInitializationState {
+  READY
+  CLAIMED
+  DISPATCHED
+  CORRELATED
+  NOT_CREATED
+}
+
 model Category {
   id                 String    @id @default(cuid())
   name               String
@@ -347,7 +355,7 @@ model CartItem {
   cartId           String
   cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
   skuId            String?
-  sku              Sku?           @relation(fields: [skuId], references: [id], onDelete: Restrict)
+  sku              Sku?            @relation(fields: [skuId], references: [id], onDelete: Restrict)
   productVariantId String?
   productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
   quantity         Int            @default(1)
@@ -358,28 +366,43 @@ model CartItem {
 }
 
 model Order {
-  id             String      @id @default(cuid())
-  orderNumber    Int         @unique @default(autoincrement())
-  userId         String
-  user           User        @relation(fields: [userId], references: [id])
-  status         OrderStatus @default(PENDING)
-  contactName    String
-  contactPhone   String
-  contactEmail   String
-  shippingMethod String
-  city           String
-  addressLine    String
-  addressComment String?
-  itemsTotal     Int
-  discountAmount Int         @default(0)
-  shippingAmount Int
-  totalAmount    Int
-  couponCode     String?
-  paymentMethod  String
-  items          OrderItem[]
-  payment        Payment?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  orderNumber        Int         @unique @default(autoincrement())
+  userId             String
+  user               User        @relation(fields: [userId], references: [id])
+  status             OrderStatus @default(PENDING)
+  contactName        String
+  contactPhone       String
+  contactEmail       String
+  shippingMethod     String
+  city               String
+  addressLine        String
+  addressComment     String?
+  itemsTotal         Int
+  discountAmount     Int         @default(0)
+  shippingAmount     Int
+  totalAmount        Int
+  couponCode         String?
+  paymentMethod      String
+  paymentReturnUrl   String?
+  paymentInitializationState     PaymentInitializationState?
+  paymentInitializationClaimedAt DateTime?
+  paymentEverDispatchedAt        DateTime?
+  deliveryZone       String?
+  deliveryDate       DateTime?
+  deliveryWindow     String?
+  pickupPointId      String?
+  pickupPointName    String?
+  pickupPointAddress String?
+  floor              Int?
+  liftType           String?
+  intercom           String?
+  serviceDetails     Json?
+  serviceAmount      Int         @default(0)
+  items              OrderItem[]
+  payment            Payment?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   @@index([userId, createdAt])
   @@index([status])

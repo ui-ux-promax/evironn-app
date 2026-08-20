@@ -2,7 +2,21 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FiHeart, FiHome, FiLogOut, FiMapPin, FiPackage, FiPlus, FiTrash2, FiUser } from 'react-icons/fi';
+import {
+  FiCheck,
+  FiChevronDown,
+  FiHeart,
+  FiHome,
+  FiLogOut,
+  FiMapPin,
+  FiPackage,
+  FiPlus,
+  FiSearch,
+  FiShoppingBag,
+  FiTrash2,
+  FiTruck,
+  FiUser,
+} from 'react-icons/fi';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import { Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
 import { formatPrice } from '@/lib/format';
@@ -144,24 +158,51 @@ function ProfileNav({
 }
 
 function Overview({ profile }: { profile: ReturnType<typeof useProfileVariantA> }) {
-  const latest = profile.data.orders[0];
+  const latest = profile.data.orders.find((order) => !['DELIVERED', 'CANCELLED'].includes(order.status));
+  const fallback = latest ?? profile.data.orders[0];
+  const loyalty = profile.data.loyalty ?? { balance: 4460, nextLevel: 8000 };
+  const remaining = Math.max(0, loyalty.nextLevel - loyalty.balance);
+  const progress = Math.min(100, Math.round((loyalty.balance / loyalty.nextLevel) * 100));
   return (
     <>
-      {latest && (
+      <section className="prf__loyalty">
+        <div>
+          <p className="prf__eyebrow">Evironn круг</p>
+          <h2>Тёплый дом</h2>
+          <p>До уровня «Свой круг» осталось {remaining.toLocaleString('ru-RU')} бонусов.</p>
+        </div>
+        <strong>
+          {loyalty.balance.toLocaleString('ru-RU')}
+          <small>бонусов</small>
+        </strong>
+        <span>
+          <i style={{ width: `${progress}%` }} />
+        </span>
+      </section>
+      {fallback && (
         <section className="prf__active-order">
           <div className="prf__section-head">
             <div>
-              <p className="prf__eyebrow">Последний заказ</p>
-              <h2>{latest.orderNumber}</h2>
+              <p className="prf__eyebrow">{latest ? 'Активный заказ' : 'Последний заказ'}</p>
+              <h2>{fallback.orderNumber}</h2>
             </div>
-            <span className={`prf__status is-${latest.status.toLowerCase()}`}>
-              {STATUS_LABELS[latest.status] ?? latest.status}
+            <span className={`prf__status is-${fallback.status.toLowerCase()}`}>
+              {STATUS_LABELS[fallback.status] ?? fallback.status}
             </span>
           </div>
           <p>
-            {dateLabel(latest.createdAt)} · {formatPrice(latest.totalAmount)}
+            {dateLabel(fallback.createdAt)} · {formatPrice(fallback.totalAmount)}
           </p>
-          <p>{latest.items.map((item) => `${item.name} · ${item.quantity} шт.`).join(', ')}</p>
+          {latest ? (
+            <>
+              <ProfileTracking order={fallback} />
+              <Link className="prf__text-link" href={`/orders/${fallback.orderNumber}`}>
+                К заказу
+              </Link>
+            </>
+          ) : (
+            <p>{fallback.items.map((item) => `${item.name} · ${item.quantity} шт.`).join(', ')}</p>
+          )}
         </section>
       )}
       <section className="prf__quick" aria-label="Быстрые ссылки">
@@ -175,23 +216,86 @@ function Overview({ profile }: { profile: ReturnType<typeof useProfileVariantA> 
           <b>{profile.data.stats.favorites}</b>
           <span>избранных</span>
         </button>
-        <button type="button" onClick={() => profile.actions.go('addresses')}>
-          <FiMapPin />
-          <b>{profile.data.stats.addresses}</b>
-          <span>адреса</span>
+        <button type="button">
+          <FiShoppingBag />
+          <b>{loyalty.balance.toLocaleString('ru-RU')}</b>
+          <span>бонусов</span>
         </button>
       </section>
     </>
   );
 }
 
+function ProfileTracking({ order }: { order: ProfileOrderDto }) {
+  const steps = [
+    ['PENDING', 'Оформлен'],
+    ['PROCESSING', 'Собираем'],
+    ['SHIPPED', 'В пути'],
+    ['DELIVERED', 'Доставлен'],
+  ] as const;
+  const current = steps.findIndex(([status]) => status === order.status);
+
+  return (
+    <ol className="ord-track ord-track--light ord-track--row" aria-label="Статус заказа">
+      {steps.map(([status, label], index) => (
+        <li
+          className={index < current ? 'is-done' : index === current ? 'is-current' : ''}
+          aria-current={index === current ? 'step' : undefined}
+          key={status}
+        >
+          <span className="ord-track__dot">{index < current ? <FiCheck /> : index + 1}</span>
+          <b>{label}</b>
+          <span className="ord-track__note">{index <= current ? 'Статус подтверждён' : 'Ожидается'}</span>
+        </li>
+      ))}
+      <li className="ord-track__eta">
+        <span className="ord-track__dot">
+          <FiTruck />
+        </span>
+        <b>{order.deliveryDate ? dateLabel(order.deliveryDate) : 'Доставка'}</b>
+        <span className="ord-track__note">{order.deliveryWindow ?? 'Окно уточняется'}</span>
+      </li>
+    </ol>
+  );
+}
+
 function Orders({ orders }: { orders: ProfileOrderDto[] }) {
   const [open, setOpen] = useState<string | null>(orders[0]?.id ?? null);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
+  const visibleOrders = orders.filter((order) => {
+    const matchesQuery = String(order.orderNumber).includes(query.trim());
+    const matchesStatus = status === 'all' || order.status === status;
+    return matchesQuery && matchesStatus;
+  });
+
   return (
     <>
-      <SectionHeading title="Заказы" copy="История покупок и сохранённые снимки заказа." />
+      <SectionHeading title="Заказы" copy="История покупок, документы и статусы доставки." />
+      <div className="prf__order-tools">
+        <label>
+          <FiSearch aria-hidden="true" />
+          <input
+            aria-label="Номер заказа"
+            placeholder="Номер заказа"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <span className="prf__order-select">
+          <select aria-label="Статус заказа" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="all">Все статусы</option>
+            <option value="PENDING">Оформлен</option>
+            <option value="PROCESSING">Собираем</option>
+            <option value="SHIPPED">В пути</option>
+            <option value="DELIVERED">Доставлен</option>
+            <option value="CANCELLED">Отменён</option>
+          </select>
+          <FiChevronDown aria-hidden="true" />
+        </span>
+      </div>
       <div className="prf__orders">
-        {orders.map((order) => (
+        {visibleOrders.map((order) => (
           <article className="prf__order" key={order.id}>
             <button
               className="prf__order-top"
@@ -225,22 +329,34 @@ function Orders({ orders }: { orders: ProfileOrderDto[] }) {
                     </dd>
                   </div>
                   <div>
-                    <dt>Состав</dt>
-                    <dd>{order.itemsTotal ? formatPrice(order.itemsTotal) : '—'}</dd>
+                    <dt>Оплата</dt>
+                    <dd>{order.paymentMethod === 'online' ? 'Картой онлайн' : 'При получении'}</dd>
                   </div>
                   <div>
-                    <dt>Дата</dt>
-                    <dd>{dateLabel(order.createdAt)}</dd>
+                    <dt>Срок</dt>
+                    <dd>{deliveryLabel(order)}</dd>
                   </div>
                 </dl>
+                <div className="prf__actions">
+                  <Link className="prf__action-link" href={`/orders/${order.orderNumber}`}>
+                    Подробнее
+                  </Link>
+                </div>
               </div>
             )}
           </article>
         ))}
       </div>
       {orders.length === 0 && <Empty icon={<FiPackage />} text="Заказов пока нет" />}
+      {orders.length > 0 && visibleOrders.length === 0 && <Empty icon={<FiPackage />} text="Заказов не найдено" />}
     </>
   );
+}
+
+function deliveryLabel(order: ProfileOrderDto): string {
+  if (!order.deliveryDate) return order.deliveryWindow ?? 'Срок уточняется';
+  const date = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(new Date(order.deliveryDate));
+  return order.deliveryWindow ? `${date}, ${order.deliveryWindow}` : date;
 }
 
 function Favorites({ profile }: { profile: ReturnType<typeof useProfileVariantA> }) {

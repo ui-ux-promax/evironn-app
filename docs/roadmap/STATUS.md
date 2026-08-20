@@ -3,14 +3,22 @@
 ## Current state
 
 - Bootstrap: complete in the repository root commit `init`.
-- Active phase: Phase 4 — checkout, payments, and orders.
+- Active phase: No active delivery; Phase 4 is merged and Phase 5 is not authorized.
 - Integration branch: `dev`.
-- Current branch: `phase/04-checkout-orders` from `origin/dev` merge `868310f`.
-- Phase state: Phase 1, Phase 2, and Phase 3 accepted and merged; Phase 4 authorized; Tasks 1–8 are implemented and focused-reviewed locally; Task 9 is at provisional contract/closeout stage.
-- Current delivery: Phase 4 checkout, payment, order, review, guarded E2E safety, and migration-readiness contracts are implemented. Portfolio E2E configuration is loaded from `.env.local`; guarded readiness passed against shared Neon `dev`, and all three Phase 4 migrations are applied. Full Phase 4 gate and browser E2E remain pending.
+- Current branch: `dev` at merge commit `f10ceb9`.
+- Phase state: Phase 1, Phase 2, Phase 3, and Phase 4 are merged. Phase 5 remains unauthorized.
+- Current delivery: Phase 4 checkout, payment, order, review, guarded E2E safety, and migration-readiness contracts are merged. The Phase 4 closeout evidence and deferred external-smoke notes remain below; no Phase 5 work has started.
 - Previous delivery: Phase 3 — commerce and authentication, visually accepted and merged.
 
 Phase 3 pull request #3 merged with merge commit `868310f`; final Phase 3 branch commit is `f3d8a93`. Auth Variant B, Cart Variant A, and Profile Variant A desktop/mobile visual acceptance is complete. Phase 3 completion evidence remains `format`, `gate` (170 files / 930 tests), and `build` passed. Phase 3 E2E was invoked but stopped before Playwright because explicit E2E database variables were absent; no ambient database was used. Google OAuth and other external smoke not proved by that local gate remain unproved.
+
+## Phase 4 merge and CI closeout — 2026-08-20
+
+- Phase 4 pull request #4 was merged into `dev` with merge commit `9bbb70f`.
+- Follow-up pull request #5 fixed the deployment smoke workflow and its contract test; it was merged into `dev` with merge commit `f10ceb9`.
+- Deployment smoke now uses the public production alias instead of Vercel's protected unique deployment URL, and the workflow no longer silently marks the required job as `skipped`.
+- Post-fix validation: `npm run test` passed with 193 test files / 1,173 tests; production smoke against `https://evironn-app.vercel.app` passed all 8 route checks locally; touched workflow/test formatting and `git diff --check` passed.
+- No database, schema, migration, or application-environment changes were made by the CI follow-up. The merged Phase 4 delivery retains the deferred real YooKassa sandbox ownership smoke and the previously recorded Phase 4 completion-gate limitations; no new pass claim is introduced here.
 
 ## Phase 4 Task 9 provisional closeout
 

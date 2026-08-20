@@ -16,13 +16,13 @@ export function PromoCodeField() {
     setError(null);
     setPending(true);
     try {
-      const result = await validateCoupon(input.trim());
+      const result = await validateCoupon(input);
       if (!result.ok) {
         clearCoupon();
         setError(result.error);
         return;
       }
-      setCoupon({ code: result.code, percent: result.percent, discount: result.discount, totals: result.totals });
+      setCoupon({ code: result.code, percent: result.percent });
     } finally {
       setPending(false);
     }

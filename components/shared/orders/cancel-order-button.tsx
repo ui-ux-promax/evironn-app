@@ -6,15 +6,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui';
 import { cancelOrder } from '@/app/actions/order';
 
-export function CancelOrderButton({
-  orderId,
-  className,
-  children = 'Отменить заказ',
-}: {
-  orderId: string;
-  className?: string;
-  children?: React.ReactNode;
-}) {
+export function CancelOrderButton({ orderId }: { orderId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -42,8 +34,8 @@ export function CancelOrderButton({
 
   return (
     <div className="space-y-2">
-      <Button variant="danger" size="md" className={className} onClick={requestCancellation} disabled={busy}>
-        {children}
+      <Button variant="danger" size="md" onClick={requestCancellation} disabled={busy}>
+        Отменить заказ
       </Button>
 
       <Dialog.Root open={confirmOpen} onOpenChange={(open) => !busy && setConfirmOpen(open)}>

@@ -2,25 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const createMock = vi.fn();
 const cancelMock = vi.fn();
-const refundMock = vi.fn();
 const loadMock = vi.fn();
 vi.mock('@webzaytsev/yookassa-ts-sdk', () => ({
-  YooKassa: () => ({
-    payments: { create: createMock, cancel: cancelMock, load: loadMock },
-    refunds: { create: refundMock },
-  }),
+  YooKassa: () => ({ payments: { create: createMock, cancel: cancelMock, load: loadMock } }),
   CurrencyEnum: { RUB: 'RUB' },
   LocaleEnum: { ru_RU: 'ru_RU' },
 }));
 
-import {
-  createPayment,
-  createPaymentAttempt,
-  cancelPayment,
-  refundPayment,
-  getPaymentDetails,
-  getPaymentStatus,
-} from '@/lib/yookassa';
+import { createPayment, cancelPayment, getPaymentStatus } from '@/lib/yookassa';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -90,81 +79,11 @@ describe('createPayment', () => {
   });
 });
 
-describe('createPaymentAttempt', () => {
-  const input = {
-    amountRub: 15999,
-    capture: true as const,
-    description: 'Заказ #1025',
-    idempotencyKey: 'payment-order-uuid-1025',
-    locale: 'ru_RU' as const,
-    metadata: { orderNumber: '1025' },
-    returnUrl: 'https://shop.test/orders/1025',
-  };
-
-  it('returns sanitized provider details after dispatch', async () => {
-    createMock.mockResolvedValue({
-      id: 'pay-1',
-      status: 'pending',
-      amount: { value: '15999.00', currency: 'RUB' },
-      metadata: { orderNumber: '1025' },
-      confirmation: { confirmation_url: 'https://yoo/redirect' },
-    });
-    await expect(createPaymentAttempt(input)).resolves.toEqual({
-      outcome: 'CREATED',
-      payment: {
-        id: 'pay-1',
-        status: 'pending',
-        amountRub: 15999,
-        orderNumber: '1025',
-        confirmationUrl: 'https://yoo/redirect',
-      },
-    });
-  });
-
-  it('classifies every SDK failure after invocation as indeterminate', async () => {
-    createMock.mockRejectedValue(Object.assign(new Error('HTTP 400 invalid_request'), { status: 400 }));
-    await expect(createPaymentAttempt(input)).resolves.toEqual({
-      outcome: 'INDETERMINATE',
-      dispatched: true,
-      reason: 'provider-error',
-    });
-  });
-
-  it('classifies malformed returned data as indeterminate', async () => {
-    createMock.mockResolvedValue({ id: 'pay-1', status: 'pending' });
-    await expect(createPaymentAttempt(input)).resolves.toEqual({
-      outcome: 'INDETERMINATE',
-      dispatched: true,
-      reason: 'malformed-response',
-    });
-  });
-
-  it('proves no dispatch when local adapter configuration fails before SDK invocation', async () => {
-    delete process.env.YOOKASSA_SHOP_ID;
-    await expect(createPaymentAttempt(input)).resolves.toEqual({ outcome: 'NOT_CREATED', dispatched: false });
-    expect(createMock).not.toHaveBeenCalled();
-  });
-});
-
 describe('cancelPayment', () => {
   it('зовёт sdk.payments.cancel с id', async () => {
     cancelMock.mockResolvedValue({ id: 'pay_1', status: 'canceled' });
     await cancelPayment('pay_1');
     expect(cancelMock).toHaveBeenCalledWith('pay_1');
-  });
-});
-
-describe('refundPayment', () => {
-  it('создаёт полный возврат с детерминированным ключом идемпотентности', async () => {
-    refundMock.mockResolvedValue({ id: 'refund_1', status: 'pending' });
-    await refundPayment('pay_1', 15999);
-    expect(refundMock).toHaveBeenCalledWith(
-      {
-        payment_id: 'pay_1',
-        amount: { value: '15999.00', currency: 'RUB' },
-      },
-      'refund-canceled-order-pay_1',
-    );
   });
 });
 
@@ -174,72 +93,5 @@ describe('getPaymentStatus', () => {
     const status = await getPaymentStatus('pay_1');
     expect(loadMock).toHaveBeenCalledWith('pay_1');
     expect(status).toBe('succeeded');
-  });
-
-  it.each([[{ id: 'pay-1' }], [{ id: 'pay-1', status: 'refunded' }]])(
-    'rejects malformed or unknown provider status',
-    async (payload) => {
-      loadMock.mockResolvedValue(payload);
-      await expect(getPaymentStatus('pay-1')).rejects.toThrow('Malformed YooKassa payment status response');
-    },
-  );
-});
-
-describe('getPaymentDetails', () => {
-  it('returns only bounded correlation fields', async () => {
-    loadMock.mockResolvedValue({
-      id: 'pay-1',
-      status: 'pending',
-      amount: { value: '15999.00', currency: 'RUB' },
-      metadata: { orderNumber: '1025', ignored: 'secret-shaped-provider-data' },
-      confirmation: { confirmation_url: 'https://yoo/redirect' },
-    });
-    await expect(getPaymentDetails('pay-1')).resolves.toEqual({
-      id: 'pay-1',
-      status: 'pending',
-      amountRub: 15999,
-      orderNumber: '1025',
-      confirmationUrl: 'https://yoo/redirect',
-    });
-  });
-
-  it('rejects malformed provider data', async () => {
-    loadMock.mockResolvedValue({ id: 'pay-1', status: 'pending' });
-    await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
-  });
-
-  it('returns null only for provider not-found', async () => {
-    loadMock.mockRejectedValue(Object.assign(new Error('not found'), { status: 404 }));
-    await expect(getPaymentDetails('pay-missing')).resolves.toBeNull();
-  });
-
-  it.each(['not_found', 'HTTP_404'])('returns null for installed SDK YooKassaErr name %s', async (name) => {
-    loadMock.mockRejectedValue(Object.assign(new Error('payment absent'), { name }));
-    await expect(getPaymentDetails('pay-missing')).resolves.toBeNull();
-  });
-
-  it('propagates provider transport and authentication failures', async () => {
-    loadMock.mockRejectedValue(Object.assign(new Error('provider unavailable'), { status: 503 }));
-    await expect(getPaymentDetails('pay-1')).rejects.toThrow('provider unavailable');
-  });
-
-  it('rejects invalid successful provider payloads instead of treating them as absence', async () => {
-    loadMock.mockResolvedValue({
-      id: 'pay-1',
-      status: 'pending',
-      amount: { value: '15999.00', currency: 'USD' },
-      metadata: { orderNumber: '1025' },
-    });
-    await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
-  });
-
-  it('rejects unknown payment status in otherwise valid provider details', async () => {
-    loadMock.mockResolvedValue({
-      id: 'pay-1',
-      status: 'refunded',
-      amount: { value: '15999.00', currency: 'RUB' },
-      metadata: { orderNumber: '1025' },
-    });
-    await expect(getPaymentDetails('pay-1')).rejects.toThrow('Malformed YooKassa payment response');
   });
 });

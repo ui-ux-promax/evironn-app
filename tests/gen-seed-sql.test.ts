@@ -5,8 +5,9 @@ describe('generateSeedSql', () => {
   it('includes launch-slice coupons in preview SQL', () => {
     const sql = generateSeedSql();
     const expectedCouponStatements = [
-      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_welcome10\',\'WELCOME10\',10,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
-      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_evironn15\',\'EVIRONN15\',15,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
+      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_ritm10\',\'RITM10\',10,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
+      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_welcome15\',\'WELCOME15\',15,true,NULL) ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
+      'INSERT INTO "Coupon" (id,code,percent,active,"expiresAt") VALUES (\'coupon_expired\',\'EXPIRED\',50,true,\'2020-01-01T00:00:00.000Z\') ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = EXCLUDED.active, "expiresAt" = EXCLUDED."expiresAt";',
     ];
 
     for (const statement of expectedCouponStatements) {
@@ -19,18 +20,7 @@ describe('generateSeedSql', () => {
   it('keeps the seeded PDP product visible in preview SQL', () => {
     const sql = generateSeedSql();
 
-    expect(sql).toContain('noma-woven-lounge');
-    for (const combinationKey of [
-      'finish=oak|upholstery=ivory-boucle',
-      'finish=walnut|upholstery=ivory-boucle',
-      'finish=oak|upholstery=graphite',
-      'finish=walnut|upholstery=graphite',
-      'finish=oak|upholstery=terracotta',
-      'finish=walnut|upholstery=terracotta',
-    ]) {
-      expect(sql).toContain(combinationKey);
-    }
-    expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm');
-    expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png');
+    expect(sql).toContain('ritm-white-tee-oversize');
+    expect(sql).toContain('/products/product-white-tee.png');
   });
 });

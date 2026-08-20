@@ -1,33 +1,44 @@
-import { Hero } from '@/components/evironn/home/hero';
-import {
-  FurnitureCategorySection,
-  InteractiveFurnitureCards,
-  EditorialStatement,
-  NatureSection,
-  BenefitsShowcaseSection,
-  FurnitureWorksParallax,
-  InstagramFollowSection,
-} from '@/components/evironn/home';
+import { cookies } from 'next/headers';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma-client';
+import { productCardInclude, buildProductCardData } from '@/lib/product-summary';
+import { getWishlistProductIds } from '@/lib/wishlist';
+import { wishlistCookieName } from '@/lib/wishlist-cookie';
+import { NEW_PRODUCT_WINDOW_DAYS, LOW_STOCK_THRESHOLD } from '@/constants/config';
+import { Hero } from '@/components/shared/home/hero';
+import { IntroSection } from '@/components/shared/home/intro-section';
+import { EditorialSection } from '@/components/shared/home/editorial-section';
+import { BestsellersSection } from '@/components/shared/home/bestsellers-section';
+import { SeasonSection } from '@/components/shared/home/season-section';
+import { LandingMotion } from '@/components/shared/home/landing-motion';
 
-export default function HomePage() {
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  const now = new Date();
+  const cfg = { newWindowDays: NEW_PRODUCT_WINDOW_DAYS, lowStock: LOW_STOCK_THRESHOLD };
+
+  const [bestRaw, session, store] = await Promise.all([
+    prisma.product.findMany({
+      where: { active: true },
+      take: 6,
+      orderBy: [{ isBestseller: 'desc' }, { createdAt: 'desc' }],
+      include: productCardInclude,
+    }),
+    auth(),
+    cookies(),
+  ]);
+
+  const bestsellers = bestRaw.map((p) => buildProductCardData(p, now, cfg));
+  const wishlistedIds = await getWishlistProductIds(session, store.get(wishlistCookieName)?.value);
+
   return (
-    <>
-      <a
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[300] focus:rounded-full focus:bg-black focus:px-4 focus:py-3 focus:text-sm focus:text-white"
-        href="#main-content"
-      >
-        Перейти к содержимому
-      </a>
-      <main id="main-content" tabIndex={-1}>
-        <Hero />
-        <FurnitureCategorySection />
-        <InteractiveFurnitureCards />
-        <EditorialStatement />
-        <NatureSection />
-        <BenefitsShowcaseSection />
-        <FurnitureWorksParallax />
-        <InstagramFollowSection />
-      </main>
-    </>
+    <LandingMotion>
+      <Hero />
+      <IntroSection />
+      <EditorialSection />
+      <BestsellersSection products={bestsellers} wishlistedIds={wishlistedIds} />
+      <SeasonSection />
+    </LandingMotion>
   );
 }

@@ -1,8 +1,8 @@
 ﻿import { NextResponse } from 'next/server';
 import { parseNotification } from '@webzaytsev/yookassa-ts-sdk';
 import { logger } from '@/lib/logger';
-import { reconcilePaymentStatus, recoverPaymentCorrelation } from '@/lib/payment-sync';
-import { getPaymentStatus, isPaymentProviderStatus } from '@/lib/yookassa';
+import { reconcilePaymentStatus } from '@/lib/payment-sync';
+import { getPaymentStatus } from '@/lib/yookassa';
 
 export const runtime = 'nodejs';
 
@@ -25,23 +25,11 @@ export async function POST(req: Request) {
 
   try {
     const remoteStatus = await getPaymentStatus(notification.object.id);
-    if (!isPaymentProviderStatus(remoteStatus)) {
-      throw new Error('Malformed YooKassa payment status response');
-    }
-    const result = await reconcilePaymentStatus({
+    await reconcilePaymentStatus({
       paymentId: notification.object.id,
       remoteStatus,
       source: 'webhook',
     });
-    if (result.kind === 'missing') {
-      const recovered = await recoverPaymentCorrelation(notification.object.id);
-      if (recovered.kind === 'error') {
-        throw new Error(`Payment correlation recovery failed: ${recovered.reason}`);
-      }
-      if (recovered.kind === 'recovered') {
-        await reconcilePaymentStatus({ paymentId: recovered.paymentId, remoteStatus, source: 'webhook' });
-      }
-    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     logger.error('yookassa_webhook_failed', e);

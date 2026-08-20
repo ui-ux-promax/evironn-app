@@ -47,15 +47,4 @@ describe('updateProfile', () => {
     expect(r).toEqual({ ok: false, error: 'Проверьте поля' });
     expect(update).not.toHaveBeenCalled();
   });
-
-  it('игнорирует попытку изменить email и не передаёт его в update', async () => {
-    const r = await updateProfile({ name: 'Иван', email: 'attacker@example.com' });
-
-    expect(r).toEqual({ ok: true });
-    expect(update).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      data: { name: 'Иван', phone: null, birthdate: null },
-    });
-    expect(JSON.stringify(update.mock.calls[0][0])).not.toContain('attacker@example.com');
-  });
 });

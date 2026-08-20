@@ -4,20 +4,15 @@ const { parseMock } = vi.hoisted(() => ({ parseMock: vi.fn() }));
 
 vi.mock('@webzaytsev/yookassa-ts-sdk', () => ({ parseNotification: parseMock }));
 vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
-vi.mock('@/lib/payment-sync', () => ({ reconcilePaymentStatus: vi.fn(), recoverPaymentCorrelation: vi.fn() }));
-vi.mock('@/lib/yookassa', () => ({
-  getPaymentStatus: vi.fn(),
-  isPaymentProviderStatus: (status: unknown) =>
-    status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled',
-}));
+vi.mock('@/lib/payment-sync', () => ({ reconcilePaymentStatus: vi.fn() }));
+vi.mock('@/lib/yookassa', () => ({ getPaymentStatus: vi.fn() }));
 
 import { POST } from '@/app/api/yookassa/webhook/route';
-import { reconcilePaymentStatus, recoverPaymentCorrelation } from '@/lib/payment-sync';
+import { reconcilePaymentStatus } from '@/lib/payment-sync';
 import { getPaymentStatus } from '@/lib/yookassa';
 
 const reconcileMock = reconcilePaymentStatus as unknown as ReturnType<typeof vi.fn>;
 const statusMock = getPaymentStatus as unknown as ReturnType<typeof vi.fn>;
-const recoverMock = recoverPaymentCorrelation as unknown as ReturnType<typeof vi.fn>;
 
 function req() {
   return { json: async () => ({}) } as unknown as Request;
@@ -26,7 +21,6 @@ function req() {
 beforeEach(() => {
   vi.clearAllMocks();
   reconcileMock.mockResolvedValue({ kind: 'applied', transition: 'succeeded' });
-  recoverMock.mockResolvedValue({ kind: 'recovered', paymentId: 'pay_missing' });
   statusMock.mockResolvedValue('succeeded');
 });
 
@@ -84,34 +78,6 @@ describe('yookassa webhook', () => {
     const res = await POST(req() as never);
 
     expect(res.status).toBe(200);
-    expect(recoverMock).toHaveBeenCalledWith('pay_missing');
-    expect(reconcileMock).toHaveBeenCalledTimes(2);
-  });
-
-  it.each([
-    { kind: 'error', reason: 'provider-lookup-failed' },
-    { kind: 'error', reason: 'correlation-persist-failed' },
-  ])('returns 500 when missing-payment recovery fails: $reason', async (recovery) => {
-    parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_missing' } });
-    statusMock.mockResolvedValue('succeeded');
-    reconcileMock.mockResolvedValue({ kind: 'missing' });
-    recoverMock.mockResolvedValue(recovery);
-
-    const res = await POST(req() as never);
-
-    expect(res.status).toBe(500);
-  });
-
-  it('returns 500 when missing-payment recovery rejects malformed provider status', async () => {
-    parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_unknown_status' } });
-    statusMock.mockResolvedValue('succeeded');
-    reconcileMock.mockResolvedValue({ kind: 'missing' });
-    recoverMock.mockResolvedValue({ kind: 'error', reason: 'provider-lookup-failed' });
-
-    const res = await POST(req() as never);
-
-    expect(res.status).toBe(500);
-    expect(recoverMock).toHaveBeenCalledWith('pay_unknown_status');
   });
 
   it('ignores unsupported provider event after parsing', async () => {
@@ -144,16 +110,6 @@ describe('yookassa webhook', () => {
     expect(reconcileMock).not.toHaveBeenCalled();
   });
 
-  it('returns 500 when provider status boundary yields malformed data', async () => {
-    parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_1' } });
-    statusMock.mockResolvedValue(undefined);
-
-    const res = await POST(req() as never);
-
-    expect(res.status).toBe(500);
-    expect(reconcileMock).not.toHaveBeenCalled();
-  });
-
   it('unexpected reconciliation error returns 500', async () => {
     parseMock.mockReturnValue({ event: 'payment.succeeded', object: { id: 'pay_1' } });
     statusMock.mockResolvedValue('succeeded');
@@ -162,17 +118,5 @@ describe('yookassa webhook', () => {
     const res = await POST(req() as never);
 
     expect(res.status).toBe(500);
-  });
-
-  it('allows a provider retry after post-commit reconciliation side effects fail', async () => {
-    parseMock.mockReturnValue({ event: 'payment.canceled', object: { id: 'pay_1' } });
-    statusMock.mockResolvedValue('canceled');
-    reconcileMock
-      .mockRejectedValueOnce(new Error('review pruning failed'))
-      .mockResolvedValueOnce({ kind: 'ignored', reason: 'already-canceled' });
-
-    expect((await POST(req() as never)).status).toBe(500);
-    expect((await POST(req() as never)).status).toBe(200);
-    expect(reconcileMock).toHaveBeenCalledTimes(2);
   });
 });

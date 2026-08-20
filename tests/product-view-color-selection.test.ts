@@ -3,113 +3,236 @@
  */
 import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ProductPage from '@/components/evironn/product/ProductPage';
-import type {
-  ShowcaseCombinationDto,
-  ShowcaseProductPageDto,
-  ShowcaseUpholsteryId,
-  ShowcaseWoodId,
-} from '@/lib/showcase-product';
+import { ProductView } from '@/components/shared/product/product-view';
 
-vi.mock('@/components/evironn/home/interactive-furniture-cards', () => ({
-  InteractiveFurnitureCards: ({ heading }: { heading: string }) => React.createElement('section', null, heading),
+(globalThis as typeof globalThis & { React: typeof React }).React = React;
+
+const routerPush = vi.hoisted(() => vi.fn());
+
+vi.mock('next/image', () => ({
+  default: ({
+    src,
+    alt,
+    fill: _fill,
+    priority,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & {
+    src: string;
+    fill?: boolean;
+    priority?: boolean;
+  }) => React.createElement('img', { src, alt, ...props, 'data-test-priority': priority ? 'true' : 'false' }),
 }));
 
-const turntable = {
-  videoUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
-  posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
-  fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
-  alt: 'Noma 360',
-};
-
-const combinations: ShowcaseCombinationDto[] = [
-  ['ivory', 'pine'],
-  ['ivory', 'walnut'],
-  ['charcoal', 'pine'],
-  ['charcoal', 'walnut'],
-  ['terracotta', 'pine'],
-  ['terracotta', 'walnut'],
-].map(([upholstery, wood], index) => ({
-  upholstery: upholstery as ShowcaseUpholsteryId,
-  wood: wood as ShowcaseWoodId,
-  canonicalOption: `finish=${wood === 'pine' ? 'oak' : 'walnut'}&upholstery=${upholstery}`,
-  canonicalPath: `/product/noma-woven-lounge?option=finish%3A${wood === 'pine' ? 'oak' : 'walnut'}%2Cupholstery%3A${upholstery}`,
-  chairUrl: `/assets/products/chair-${upholstery}-${wood}.png`,
-  sku: {
-    id: `sku-${index}`,
-    articleNumber: `EV-NWL-${index}`,
-    price: 89990 + index * 1000,
-    oldPrice: 109990 + index * 1000,
-    stock: 3,
-    priceLabel: `${89990 + index * 1000}`,
-    oldPriceLabel: `${109990 + index * 1000}`,
-  },
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: routerPush }),
 }));
 
-const model: ShowcaseProductPageDto = {
-  product: {
-    name: 'Кресло Graphite',
-    description: 'Мягкое кресло для спокойных жилых пространств.',
-    categoryName: 'Кресла',
-    categorySlug: 'armchairs',
-  },
-  sceneBackgroundUrl: '/assets/products/05-graphite-walnut-room-background-fixed.png',
-  selected: combinations[1],
-  combinations,
-  turntable,
-};
+vi.mock('@/components/shared/product/purchase-panel', () => ({
+  PurchasePanel: ({
+    onColorChange,
+    onSelectedVariantChange,
+  }: {
+    onColorChange: (slug: string) => void;
+    onSelectedVariantChange?: (variantId: string | null) => void;
+  }) =>
+    React.createElement(
+      React.Fragment,
+      null,
+      React.createElement('button', { type: 'button', onClick: () => onColorChange('terracotta') }, 'Terracotta'),
+      React.createElement(
+        'button',
+        { type: 'button', onClick: () => onSelectedVariantChange?.('variant-graphite') },
+        'Select size',
+      ),
+    ),
+}));
+
+vi.mock('@/components/shared/wishlist/wishlist-heart', () => ({
+  WishlistHeart: () => null,
+}));
+
+vi.mock('@/components/shared/product/reviews-section', () => ({
+  ReviewsSection: () => null,
+}));
+
+vi.mock('@/components/shared/product/breadcrumbs', () => ({
+  Breadcrumbs: () => null,
+}));
 
 beforeEach(() => {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((query: string) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  );
+  routerPush.mockClear();
 });
 
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
+afterEach(() => cleanup());
 
-describe('showcase ProductPage visual selection', () => {
-  it('projects every upholstery/wood selection immediately without router navigation or scroll movement', () => {
-    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => undefined);
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 640 });
+describe('ProductView colour selection', () => {
+  it('changes the gallery without navigation and retains the selected colour in the URL', () => {
+    window.history.replaceState(null, '', '/product/cables');
+    const replaceState = vi.spyOn(window.history, 'replaceState');
 
-    render(React.createElement(ProductPage, { model }));
+    render(
+      React.createElement(ProductView, {
+        product: {
+          id: 'p1',
+          name: 'CABLES',
+          slug: 'cables',
+          fitNote: null,
+          description: null,
+          specs: null,
+          category: { name: 'Knitwear', slug: 'knitwear' },
+        },
+        galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
+        isNew: false,
+        panelColorways: [
+          { slug: 'graphite', name: 'Graphite', swatchHex: '#4b5563', thumbUrl: '/graphite.jpg' },
+          { slug: 'terracotta', name: 'Terracotta', swatchHex: '#b9654b', thumbUrl: '/terracotta.jpg' },
+        ],
+        activeColorwaySlug: 'graphite',
+        activeColorwayName: 'Graphite',
+        panelVariants: [
+          { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: 6000 },
+        ],
+        ratingAvg: null,
+        ratingCount: 0,
+        reviews: [],
+        reviewState: 'guest',
+        related: [],
+        wishlistedIds: new Set<string>(),
+        wishlisted: false,
+        productId: 'p1',
+        colorways: [
+          {
+            slug: 'graphite',
+            name: 'Graphite',
+            swatchHex: '#4b5563',
+            thumbUrl: '/graphite.jpg',
+            galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
+            variants: [
+              { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: 6000 },
+            ],
+          },
+          {
+            slug: 'terracotta',
+            name: 'Terracotta',
+            swatchHex: '#b9654b',
+            thumbUrl: '/terracotta.jpg',
+            galleryImages: [{ url: '/terracotta.jpg', alt: 'Terracotta cardigan' }],
+            variants: [
+              { id: 'variant-terracotta', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: null },
+            ],
+          },
+          {
+            slug: 'clay',
+            name: 'Clay',
+            swatchHex: '#a05a42',
+            thumbUrl: '/terracotta.jpg',
+            galleryImages: [{ url: '/terracotta.jpg', alt: 'Clay cardigan' }],
+            variants: [{ id: 'variant-clay', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: null }],
+          },
+        ],
+      } as never),
+    );
 
-    for (const combination of combinations) {
-      fireEvent.click(
-        screen.getByRole('button', {
-          name: `Обивка: ${combination.upholstery === 'ivory' ? 'Айвори' : combination.upholstery === 'charcoal' ? 'Графит' : 'Терракота'}`,
-        }),
-      );
-      fireEvent.click(
-        screen.getByRole('button', { name: `Дерево: ${combination.wood === 'pine' ? 'Сосна' : 'Орех'}` }),
-      );
+    const preloadedImage = document.querySelector('img[data-preload-image="/terracotta.jpg"]');
 
-      expect(document.querySelector<HTMLImageElement>('.product-page__scene-chair')).toHaveAttribute(
-        'src',
-        combination.chairUrl,
-      );
-      expect(replaceState).toHaveBeenLastCalledWith(null, '', combination.canonicalPath);
-      expect(window.scrollY).toBe(640);
-    }
+    expect(preloadedImage?.getAttribute('sizes')).toBe('(min-width: 1024px) 600px, 100vw');
+    expect(preloadedImage?.getAttribute('loading')).toBe('eager');
+    expect(preloadedImage?.getAttribute('data-test-priority')).toBe('false');
+    expect(document.querySelectorAll('img[data-preload-image="/terracotta.jpg"]')).toHaveLength(1);
 
-    expect(replaceState).toHaveBeenCalled();
-    expect(scrollTo).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Terracotta' }));
+
+    expect(screen.getAllByAltText('Terracotta cardigan')[0].getAttribute('src')).toBe('/terracotta.jpg');
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/product/cables?color=terracotta');
+  });
+
+  it('shows the previous price when the active colourway is discounted', () => {
+    window.history.replaceState(null, '', '/product/cables');
+
+    render(
+      React.createElement(ProductView, {
+        product: {
+          id: 'p1',
+          name: 'CABLES',
+          slug: 'cables',
+          fitNote: null,
+          description: null,
+          specs: null,
+          category: { name: 'Knitwear', slug: 'knitwear' },
+        },
+        isNew: false,
+        initialColorwaySlug: 'graphite',
+        ratingAvg: null,
+        ratingCount: 0,
+        reviews: [],
+        reviewState: 'guest',
+        related: [],
+        wishlistedIds: new Set<string>(),
+        wishlisted: false,
+        productId: 'p1',
+        colorways: [
+          {
+            slug: 'graphite',
+            name: 'Graphite',
+            swatchHex: '#4b5563',
+            thumbUrl: '/graphite.jpg',
+            galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
+            variants: [
+              { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: 6000 },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(screen.getByText(/6[\s\u00a0]000 ₽/)).toBeTruthy();
+  });
+
+  it('routes buy now to checkout for the selected variant only', () => {
+    const { container } = render(
+      React.createElement(ProductView, {
+        product: {
+          id: 'p1',
+          name: 'CABLES',
+          slug: 'cables',
+          fitNote: null,
+          description: null,
+          specs: null,
+          category: { name: 'Knitwear', slug: 'knitwear' },
+        },
+        isNew: false,
+        initialColorwaySlug: 'graphite',
+        ratingAvg: null,
+        ratingCount: 0,
+        reviews: [],
+        reviewState: 'guest',
+        related: [],
+        wishlistedIds: new Set<string>(),
+        wishlisted: false,
+        productId: 'p1',
+        colorways: [
+          {
+            slug: 'graphite',
+            name: 'Graphite',
+            swatchHex: '#4b5563',
+            thumbUrl: '/graphite.jpg',
+            galleryImages: [{ url: '/graphite.jpg', alt: 'Graphite cardigan' }],
+            variants: [
+              { id: 'variant-graphite', size: 'S', stock: 1, active: true, price: 5500, compareAtPrice: null },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const buyNow = container.querySelector('button[aria-busy]') as HTMLButtonElement;
+    expect(buyNow.disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select size' }));
+    expect(buyNow.disabled).toBe(false);
+
+    fireEvent.click(buyNow);
+    expect(routerPush).toHaveBeenCalledWith('/checkout?buyNow=variant-graphite');
   });
 });

@@ -13,13 +13,10 @@ vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/wishlist', () => ({ resolveOwnerWishlist: vi.fn() }));
 vi.mock('@/lib/prisma-client', () => ({
-  prisma: {
-    product: { findFirst: vi.fn() },
-    wishlistItem: { findUnique: vi.fn(), create: vi.fn(), upsert: vi.fn(), delete: vi.fn() },
-  },
+  prisma: { wishlistItem: { findUnique: vi.fn(), create: vi.fn(), delete: vi.fn() } },
 }));
 
-import { addToWishlist, toggleWishlist } from '@/app/actions/wishlist';
+import { toggleWishlist } from '@/app/actions/wishlist';
 import { auth } from '@/auth';
 import { resolveOwnerWishlist } from '@/lib/wishlist';
 import { prisma } from '@/lib/prisma-client';
@@ -28,9 +25,7 @@ const authMock = auth as unknown as ReturnType<typeof vi.fn>;
 const resolveMock = resolveOwnerWishlist as unknown as ReturnType<typeof vi.fn>;
 const itemFindUnique = prisma.wishlistItem.findUnique as unknown as ReturnType<typeof vi.fn>;
 const itemCreate = prisma.wishlistItem.create as unknown as ReturnType<typeof vi.fn>;
-const itemUpsert = prisma.wishlistItem.upsert as unknown as ReturnType<typeof vi.fn>;
 const itemDelete = prisma.wishlistItem.delete as unknown as ReturnType<typeof vi.fn>;
-const productFindFirst = prisma.product.findFirst as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -38,7 +33,6 @@ beforeEach(() => {
   store.set('wishlistToken', 'tok');
   authMock.mockResolvedValue({ user: { id: 'u1' } });
   resolveMock.mockResolvedValue({ id: 'w1', userId: 'u1', token: 'tok' });
-  productFindFirst.mockResolvedValue({ id: 'p1' });
 });
 
 describe('toggleWishlist', () => {
@@ -88,41 +82,5 @@ describe('toggleWishlist', () => {
     const r = await toggleWishlist({ productId: 'p1' });
     expect(r).toEqual({ ok: true, active: true });
     expect(store.get('wishlistToken')).toBeTruthy();
-  });
-
-  it('неактивный товар не меняет wishlist', async () => {
-    productFindFirst.mockResolvedValue(null);
-    const r = await toggleWishlist({ productId: 'p1' });
-    expect(r).toEqual({ ok: false, error: 'Товар не найден' });
-    expect(itemCreate).not.toHaveBeenCalled();
-    expect(itemDelete).not.toHaveBeenCalled();
-  });
-});
-
-describe('addToWishlist', () => {
-  it('идемпотентно добавляет активный товар через upsert and never removes it', async () => {
-    itemUpsert.mockResolvedValue({ id: 'i1' });
-    const r = await addToWishlist({ productId: 'p1' });
-    expect(r).toEqual({ ok: true, active: true });
-    expect(itemUpsert).toHaveBeenCalledWith({
-      where: { wishlistId_productId: { wishlistId: 'w1', productId: 'p1' } },
-      create: { wishlistId: 'w1', productId: 'p1' },
-      update: {},
-    });
-    expect(itemDelete).not.toHaveBeenCalled();
-  });
-
-  it('returns a stable success result when a duplicate race wins elsewhere', async () => {
-    const { Prisma } = await import('@prisma/client');
-    itemUpsert.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError('dup', { code: 'P2002', clientVersion: 'x' }),
-    );
-    await expect(addToWishlist({ productId: 'p1' })).resolves.toEqual({ ok: true, active: true });
-  });
-
-  it('rejects nonexistent products before creating an owner item', async () => {
-    productFindFirst.mockResolvedValue(null);
-    await expect(addToWishlist({ productId: 'nope' })).resolves.toEqual({ ok: false, error: 'Товар не найден' });
-    expect(itemUpsert).not.toHaveBeenCalled();
   });
 });

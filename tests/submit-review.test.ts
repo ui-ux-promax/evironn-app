@@ -52,12 +52,6 @@ describe('submitReview', () => {
     expect(r.ok).toBe(false);
     expect(reviewCreate).not.toHaveBeenCalled();
   });
-  it('client eligibility flag is rejected by reviewSchema', async () => {
-    const r = await submitReview({ ...valid, eligible: true });
-    expect(r.ok).toBe(false);
-    expect(canReviewMock).not.toHaveBeenCalled();
-    expect(reviewCreate).not.toHaveBeenCalled();
-  });
   it('дубль (P2002) → «уже оставили»', async () => {
     const { Prisma } = await import('@prisma/client');
     reviewCreate.mockRejectedValue(

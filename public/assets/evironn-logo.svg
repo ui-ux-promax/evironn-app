@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 72" role="img" aria-labelledby="title">
-  <title id="title">Evironn</title>
-  <g fill="none" stroke="#262626" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M36 14C22.745 14 12 24.745 12 38s10.745 24 24 24c8.774 0 16.447-4.71 20.635-11.735" stroke-width="4"/>
-    <path d="M23 28h29M23 38h23M23 48h29" stroke-width="4"/>
-  </g>
-  <text x="76" y="48" fill="#262626" font-family="Fraunces, Georgia, serif" font-size="41" font-weight="500" letter-spacing="0">Evironn</text>
-</svg>

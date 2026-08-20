@@ -24,10 +24,4 @@ describe('couponStatus', () => {
   it('boundary: expiresAt exactly now is NOT expired', () => {
     expect(couponStatus({ active: true, expiresAt: new Date(NOW) }, NOW)).toBe('active');
   });
-
-  it('remains a status-only server helper without cart totals or persistence fields', () => {
-    const result = couponStatus({ active: true, expiresAt: FUTURE }, NOW);
-    expect(result).toBe('active');
-    expect(typeof result).toBe('string');
-  });
 });

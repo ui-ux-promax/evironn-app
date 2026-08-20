@@ -13,28 +13,13 @@ export function calcCouponDiscount(itemsTotal: number, percent: number): number 
 
 export type CouponCheck = { ok: true; code: string; percent: number } | { ok: false; error: string };
 
-export interface CouponReader {
-  coupon: {
-    findUnique(args: { where: { code: string } }): Promise<{
-      code: string;
-      percent: number;
-      active: boolean;
-      expiresAt: Date | null;
-    } | null>;
-  };
-}
-
 // Проверка купона против БД (без привязки к корзине). Одиночный findUnique.
-export async function checkCoupon(
-  rawCode: string,
-  client: CouponReader = prisma,
-  now: () => Date = () => new Date(),
-): Promise<CouponCheck> {
+export async function checkCoupon(rawCode: string): Promise<CouponCheck> {
   const code = normalizeCouponCode(rawCode);
   if (!code) return { ok: false, error: 'Введите промокод' };
-  const coupon = await client.coupon.findUnique({ where: { code } });
+  const coupon = await prisma.coupon.findUnique({ where: { code } });
   if (!coupon || !coupon.active) return { ok: false, error: 'Промокод недействителен' };
-  if (coupon.expiresAt && coupon.expiresAt.getTime() < now().getTime()) {
+  if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
     return { ok: false, error: 'Срок действия промокода истёк' };
   }
   // Fail-closed на криво заведённый купон (percent вне 1..100): лучше отказать, чем

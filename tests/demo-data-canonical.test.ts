@@ -5,7 +5,7 @@ import { expect, it } from 'vitest';
 it('derives unique inventory from source-controlled seed data', () => {
   expect(CANONICAL_INVENTORY.length).toBeGreaterThan(0);
   expect(new Set(CANONICAL_INVENTORY.map((row) => row.sku)).size).toBe(CANONICAL_INVENTORY.length);
-  expect(CANONICAL_COUPONS.map((coupon) => coupon.code)).toContain('WELCOME10');
+  expect(CANONICAL_COUPONS.map((coupon) => coupon.code)).toContain('RITM10');
 });
 
 it('fails closed outside portfolio production', () => {

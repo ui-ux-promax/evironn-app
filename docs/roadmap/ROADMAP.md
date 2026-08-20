@@ -16,7 +16,7 @@ Visual composition, copy, interactions, responsive behavior, CSS, and selected r
 
 ## Delivery rules
 
-- One phase per Codex session and one branch per phase.
+- One branch per phase. ADR-021 permits the unusually large Phase 5 to span bounded 5A–5D sessions on the same branch with durable handoffs and one final PR.
 - No phase starts before its predecessor is accepted and merged into `dev`.
 - Every phase branch starts from current `dev`.
 - Pull requests target `dev`, use English title/body, pass the full quality gate, and merge with a merge commit.

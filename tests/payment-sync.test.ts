@@ -15,6 +15,7 @@ vi.mock('@/lib/prisma-client', () => ({
 }));
 vi.mock('@/lib/yookassa', () => ({
   getPaymentDetails: vi.fn(),
+  refundPayment: vi.fn(),
   isPaymentProviderStatus: (status: unknown) =>
     status === 'pending' || status === 'waiting_for_capture' || status === 'succeeded' || status === 'canceled',
 }));
@@ -29,6 +30,7 @@ import {
 } from '@/lib/payment-sync';
 import { prisma } from '@/lib/prisma-client';
 import { getPaymentDetails } from '@/lib/yookassa';
+import { refundPayment } from '@/lib/yookassa';
 import { pruneReviewsAfterCancel } from '@/lib/review';
 
 const paymentUpdate = prisma.payment.update as unknown as ReturnType<typeof vi.fn>;
@@ -43,6 +45,7 @@ const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 const orderFindMany = prisma.order.findMany as unknown as ReturnType<typeof vi.fn>;
 const orderFindUnique = prisma.order.findUnique as unknown as ReturnType<typeof vi.fn>;
 const detailsMock = getPaymentDetails as unknown as ReturnType<typeof vi.fn>;
+const refundMock = refundPayment as unknown as ReturnType<typeof vi.fn>;
 const pruneMock = pruneReviewsAfterCancel as unknown as ReturnType<typeof vi.fn>;
 
 const orderItems = [{ productVariantId: 'v1', quantity: 2, productVariant: { colorway: { productId: 'prod_1' } } }];
@@ -53,7 +56,7 @@ function payment(status = 'pending', paidAt: Date | null = null, orderStatus = '
     orderId: 'o1',
     status,
     paidAt,
-    order: { id: 'o1', userId: 'u1', status: orderStatus, items: orderItems },
+    order: { id: 'o1', userId: 'u1', status: orderStatus, totalAmount: 159900, items: orderItems },
   };
 }
 
@@ -349,6 +352,50 @@ describe('reconcilePaymentStatus', () => {
     expect(variantUpdate).not.toHaveBeenCalled();
     expect(productUpdate).not.toHaveBeenCalled();
     expect(pruneMock).not.toHaveBeenCalled();
+  });
+
+  it('late succeeded on a locally cancelled order records payment and requests one full refund', async () => {
+    paymentFindUnique.mockResolvedValue(payment('pending', null, 'CANCELLED'));
+
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'succeeded', source: 'webhook', now: () => fixedNow }),
+    ).resolves.toEqual({ kind: 'ignored', reason: 'already-canceled' });
+
+    expect(paymentUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'pay_1', status: { notIn: ['succeeded', 'canceled'] } },
+      data: { status: 'succeeded', paidAt: fixedNow },
+    });
+    expect(orderUpdateMany).not.toHaveBeenCalled();
+    expect(refundMock).toHaveBeenCalledWith('pay_1', 159900);
+    expect(variantUpdate).not.toHaveBeenCalled();
+    expect(productUpdate).not.toHaveBeenCalled();
+  });
+
+  it('retries the same refund request for a repeated late succeeded event', async () => {
+    paymentFindUnique.mockResolvedValue(payment('succeeded', fixedNow, 'CANCELLED'));
+
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'succeeded', source: 'webhook', now: () => fixedNow }),
+    ).resolves.toEqual({ kind: 'ignored', reason: 'already-canceled' });
+
+    expect(refundMock).toHaveBeenCalledWith('pay_1', 159900);
+    expect(orderUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('finalizes a provider cancellation after local cancellation without repeating stock effects', async () => {
+    paymentFindUnique.mockResolvedValue(payment('pending', null, 'CANCELLED'));
+
+    await expect(
+      reconcilePaymentStatus({ paymentId: 'pay_1', remoteStatus: 'canceled', source: 'webhook' }),
+    ).resolves.toEqual({ kind: 'ignored', reason: 'already-canceled' });
+
+    expect(paymentUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'pay_1', status: { notIn: ['succeeded', 'canceled'] } },
+      data: { status: 'canceled' },
+    });
+    expect(variantUpdate).not.toHaveBeenCalled();
+    expect(productUpdate).not.toHaveBeenCalled();
+    expect(refundMock).not.toHaveBeenCalled();
   });
 
   it('retries review pruning from final canceled state without repeating stock or sales', async () => {

@@ -2,9 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const createMock = vi.fn();
 const cancelMock = vi.fn();
+const refundMock = vi.fn();
 const loadMock = vi.fn();
 vi.mock('@webzaytsev/yookassa-ts-sdk', () => ({
-  YooKassa: () => ({ payments: { create: createMock, cancel: cancelMock, load: loadMock } }),
+  YooKassa: () => ({
+    payments: { create: createMock, cancel: cancelMock, load: loadMock },
+    refunds: { create: refundMock },
+  }),
   CurrencyEnum: { RUB: 'RUB' },
   LocaleEnum: { ru_RU: 'ru_RU' },
 }));
@@ -13,6 +17,7 @@ import {
   createPayment,
   createPaymentAttempt,
   cancelPayment,
+  refundPayment,
   getPaymentDetails,
   getPaymentStatus,
 } from '@/lib/yookassa';
@@ -146,6 +151,20 @@ describe('cancelPayment', () => {
     cancelMock.mockResolvedValue({ id: 'pay_1', status: 'canceled' });
     await cancelPayment('pay_1');
     expect(cancelMock).toHaveBeenCalledWith('pay_1');
+  });
+});
+
+describe('refundPayment', () => {
+  it('создаёт полный возврат с детерминированным ключом идемпотентности', async () => {
+    refundMock.mockResolvedValue({ id: 'refund_1', status: 'pending' });
+    await refundPayment('pay_1', 15999);
+    expect(refundMock).toHaveBeenCalledWith(
+      {
+        payment_id: 'pay_1',
+        amount: { value: '15999.00', currency: 'RUB' },
+      },
+      'refund-canceled-order-pay_1',
+    );
   });
 });
 

@@ -283,7 +283,7 @@ export async function getOrderPageDto({
         details.orderNumber === String(order.orderNumber)
       ) {
         providerProof = details.status === 'pending';
-        providerCancelProof = details.status === 'waiting_for_capture';
+        providerCancelProof = details.status === 'pending' || details.status === 'waiting_for_capture';
         const result = await reconcilePaymentStatus({
           paymentId: order.payment.id,
           remoteStatus: details.status,

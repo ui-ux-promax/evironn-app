@@ -161,7 +161,7 @@ describe('order page payment recovery', () => {
       payment: { id: 'pay-1', status: 'pending', confirmationUrl: 'https://pay/continue', amount: 1000, paidAt: null },
     };
     mocks.findFirst.mockResolvedValueOnce(correlated).mockResolvedValue({ ...correlated, status: 'PROCESSING' });
-    mocks.details.mockResolvedValue({
+    mocks.details.mockResolvedValueOnce({
       id: 'pay-1',
       status: 'succeeded',
       amountRub: 1000,
@@ -195,7 +195,7 @@ describe('order page payment recovery', () => {
       expect(dto.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_PENDING');
   });
 
-  it('exposes cancellation only when YooKassa proves waiting_for_capture', async () => {
+  it('exposes cancellation when YooKassa proves pending or waiting_for_capture', async () => {
     const correlated = {
       ...base,
       paymentInitializationState: 'CORRELATED',
@@ -213,6 +213,19 @@ describe('order page payment recovery', () => {
     mocks.reconcile.mockResolvedValue({ kind: 'ignored', reason: 'remote-not-final' });
     const dto = await getOrderPageDto({ userId: 'u1', orderNumber: 52, now: new Date('2026-08-18T12:00:00Z') });
     expect(dto?.canCancel).toBe(true);
+
+    mocks.details.mockResolvedValueOnce({
+      id: 'pay-1',
+      status: 'pending',
+      amountRub: 1000,
+      orderNumber: '52',
+      confirmationUrl: 'https://pay/continue',
+    });
+    await expect(
+      getOrderPageDto({ userId: 'u1', orderNumber: 52, now: new Date('2026-08-18T12:00:00Z') }),
+    ).resolves.toMatchObject({
+      canCancel: true,
+    });
   });
 
   it('derives review targets through shared eligibility while preserving snapshot items', async () => {

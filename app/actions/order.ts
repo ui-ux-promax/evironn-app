@@ -304,11 +304,6 @@ const cancellationPendingSync = (): CancelOrderResult => ({
   error: 'Статус отмены платежа проверяется. Обновите заказ и повторите попытку позже.',
 });
 
-const cancellationAwaitingPayment = (): CancelOrderResult => ({
-  ok: false,
-  error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
-});
-
 const canceledOrderProducts = (order: {
   items: Array<{
     quantity: number;
@@ -352,6 +347,32 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
     return { ok: true };
   }
   if (order.status !== 'PENDING') return { ok: false, error: 'Этот заказ нельзя отменить' };
+
+  const cancelLocally = async (paymentMethod: 'cod' | 'online'): Promise<boolean> => {
+    const cancelled = await prisma.$transaction(
+      async (transaction) => {
+        const result = await transaction.order.updateMany({
+          where: { id: orderId, userId, status: 'PENDING', paymentMethod },
+          data: { status: 'CANCELLED' },
+        });
+        if (!result.count) return false;
+        for (const item of order.items) {
+          if (item.skuId) {
+            await transaction.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
+          } else if (item.productVariantId) {
+            await transaction.productVariant.update({
+              where: { id: item.productVariantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+        }
+        return true;
+      },
+      { isolationLevel: 'Serializable' },
+    );
+    if (cancelled) await adjustSalesCount(canceledOrderProducts(order), -1);
+    return cancelled;
+  };
 
   let pruneAfterCancel = order.paymentMethod !== 'online';
   if (order.paymentMethod === 'online') {
@@ -402,7 +423,13 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
       ) {
         return cancellationPendingSync();
       }
-      if (details.status === 'pending') return cancellationAwaitingPayment();
+      if (details.status === 'pending') {
+        if (!(await cancelLocally('online'))) return { ok: false, error: 'Этот заказ нельзя отменить' };
+        await pruneReviewsAfterCancel(userId, productIds);
+        revalidatePath('/profile');
+        revalidatePath(`/orders/${order.orderNumber}`);
+        return { ok: true };
+      }
       if (details.status === 'succeeded') {
         return { ok: false, error: 'Оплата уже прошла. Для отмены потребуется оформить возврат.' };
       }
@@ -440,29 +467,8 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
       }
     }
   } else {
-    const cancelled = await prisma.$transaction(
-      async (transaction) => {
-        const result = await transaction.order.updateMany({
-          where: { id: orderId, userId, status: 'PENDING', paymentMethod: 'cod' },
-          data: { status: 'CANCELLED' },
-        });
-        if (!result.count) return false;
-        for (const item of order.items) {
-          if (item.skuId) {
-            await transaction.sku.update({ where: { id: item.skuId }, data: { stock: { increment: item.quantity } } });
-          } else if (item.productVariantId) {
-            await transaction.productVariant.update({
-              where: { id: item.productVariantId },
-              data: { stock: { increment: item.quantity } },
-            });
-          }
-        }
-        return true;
-      },
-      { isolationLevel: 'Serializable' },
-    );
+    const cancelled = await cancelLocally('cod');
     if (!cancelled) return { ok: false, error: 'Этот заказ нельзя отменить' };
-    await adjustSalesCount(canceledOrderProducts(order), -1);
   }
 
   if (pruneAfterCancel) await pruneReviewsAfterCancel(userId, productIds);

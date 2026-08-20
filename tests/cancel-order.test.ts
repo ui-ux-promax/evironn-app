@@ -137,7 +137,7 @@ describe('cancelOrder', () => {
     expect(pruneMock).not.toHaveBeenCalled();
   });
 
-  it('does not call provider cancel for a pending payment', async () => {
+  it('cancels a pending online order locally without calling provider cancel', async () => {
     const correlated = order({
       paymentMethod: 'online',
       paymentInitializationState: 'CORRELATED',
@@ -151,12 +151,17 @@ describe('cancelOrder', () => {
       orderNumber: '1025',
       confirmationUrl: null,
     });
-    await expect(cancelOrder('o1')).resolves.toEqual({
-      ok: false,
-      error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
-    });
+    await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
     expect(cancelMock).not.toHaveBeenCalled();
     expect(reconcileMock).not.toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
+    expect(orderUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'o1', userId: 'u1', status: 'PENDING', paymentMethod: 'online' },
+      data: { status: 'CANCELLED' },
+    });
+    expect(skuUpdate).toHaveBeenCalledWith({ where: { id: 'sku-1' }, data: { stock: { increment: 2 } } });
+    expect(productUpdate).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { salesCount: { increment: -2 } } });
+    expect(pruneMock).toHaveBeenCalledWith('u1', ['p1']);
   });
 
   it('uses newly persisted payment only after fresh owner-scoped reread', async () => {
@@ -186,7 +191,7 @@ describe('cancelOrder', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it('preserves local state when provider payment is still pending', async () => {
+  it('cancels locally when provider payment is still pending', async () => {
     const correlated = order({ paymentMethod: 'online', paymentInitializationState: 'CORRELATED', payment: { id: 'pay-1', status: 'pending', amount: 159900 } });
     findUnique.mockResolvedValueOnce(correlated).mockResolvedValueOnce(correlated);
     detailsMock.mockResolvedValue({
@@ -196,13 +201,10 @@ describe('cancelOrder', () => {
       orderNumber: '1025',
       confirmationUrl: null,
     });
-    await expect(cancelOrder('o1')).resolves.toEqual({
-      ok: false,
-      error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
-    });
+    await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
     expect(cancelMock).not.toHaveBeenCalled();
     expect(reconcileMock).not.toHaveBeenCalled();
-    expect(transaction).not.toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalledTimes(1);
   });
 
   it('reconciles an already-canceled provider payment even when repeated cancel rejects', async () => {
@@ -244,12 +246,9 @@ describe('cancelOrder', () => {
       orderNumber: '1025',
       confirmationUrl: null,
     });
-    await expect(cancelOrder('o1')).resolves.toEqual({
-      ok: false,
-      error: 'Платёж ещё не подтверждён. Отмена станет доступна после подтверждения платежа.',
-    });
+    await expect(cancelOrder('o1')).resolves.toEqual({ ok: true });
     expect(reconcileMock).not.toHaveBeenCalled();
-    expect(transaction).not.toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalledTimes(1);
   });
 
   it('returns pending sync when verified provider cancellation cannot commit locally', async () => {

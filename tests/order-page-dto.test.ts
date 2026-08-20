@@ -175,18 +175,18 @@ describe('order page DTO', () => {
     expect(dto.canCancel).toBe(false);
   });
 
-  it('requires fresh verified provider proof for continue and never treats pending as cancelable', () => {
+  it('requires fresh verified provider proof for continue and cancellation', () => {
     const stale = buildOrderPageDto(onlineOrder(), { now, providerProof: false });
-    const verified = buildOrderPageDto(onlineOrder(), { now, providerProof: true });
+    const verified = buildOrderPageDto(onlineOrder(), { now, providerProof: true, providerCancelProof: true });
     if (stale.payment.kind === 'online')
       expect(stale.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_PENDING');
     expect(stale.canCancel).toBe(false);
     if (verified.payment.kind === 'online')
       expect(verified.payment.initialization?.status).toBe('PAYMENT_INITIALIZATION_READY');
-    expect(verified.canCancel).toBe(false);
+    expect(verified.canCancel).toBe(true);
   });
 
-  it('allows cancellation only with provider proof for waiting_for_capture', () => {
+  it('allows cancellation with verified provider proof', () => {
     const dto = buildOrderPageDto(onlineOrder(), { now, providerCancelProof: true });
     expect(dto.canCancel).toBe(true);
   });

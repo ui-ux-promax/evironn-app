@@ -163,6 +163,17 @@ export async function cancelPayment(paymentId: string): Promise<void> {
   await sdk.payments.cancel(paymentId);
 }
 
+export async function refundPayment(paymentId: string, amountRub: number): Promise<void> {
+  const sdk = getYooKassa();
+  await sdk.refunds.create(
+    {
+      payment_id: paymentId,
+      amount: { value: amountRub.toFixed(2), currency: CurrencyEnum.RUB },
+    },
+    `refund-canceled-order-${paymentId}`,
+  );
+}
+
 // Запрос актуального статуса платежа у ЮKassa (источник правды).
 // Используется страницей заказа, чтобы подтвердить оплату без зависимости от вебхука.
 export async function getPaymentStatus(paymentId: string): Promise<PaymentProviderStatus> {

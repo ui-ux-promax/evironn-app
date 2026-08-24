@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { requireAdminApi } from '@/lib/admin/require-admin';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma-client';
 
@@ -15,6 +16,9 @@ import { prisma } from '@/lib/prisma-client';
  * Intentionally fire-and-forget — ошибки здесь не показываются пользователю.
  */
 export async function GET() {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   try {
     await prisma.$queryRaw`SELECT 1`;
     return NextResponse.json({ ok: true });

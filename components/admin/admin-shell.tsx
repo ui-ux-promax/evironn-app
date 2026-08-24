@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { Icon } from '@/components/admin/icon';
 import SidebarSkeletonGate from '@/components/admin/sidebar-skeleton-gate';
 import { ContentReadyGate } from '@/components/admin/content-ready-gate';
-import { ADMIN_NAV, isNavActive } from '@/lib/admin/nav';
+import { ADMIN_NAV, ADMIN_NAV_ICON_NAMES, isActiveAdminHref } from '@/lib/admin/nav';
 import { AdminTabBar } from '@/components/admin/admin-tab-bar';
 import { AdminMobileMenu } from '@/components/admin/admin-mobile-menu';
 
@@ -55,8 +55,17 @@ export function AdminShell({ user, children }: AdminShellProps) {
 
         <div className="flex items-center gap-3 px-1 pb-1">
           <div>
-            <Image src="/ritm-logo-light.svg" alt="Ritm" width={112} height={40} priority className="h-auto w-28" />
-            <p className="mt-0.5 text-xs font-bold text-white/50">админка магазина</p>
+            <div className="inline-flex rounded-[14px] bg-white px-2.5 py-1.5">
+              <Image
+                src="/assets/evironn-logo.svg"
+                alt="Evironn"
+                width={150}
+                height={44}
+                priority
+                className="h-auto w-[132px]"
+              />
+            </div>
+            <p className="mt-1 text-xs font-bold text-white/50">админ-панель</p>
           </div>
         </div>
 
@@ -74,7 +83,7 @@ export function AdminShell({ user, children }: AdminShellProps) {
         <nav className="flex flex-1 flex-col gap-1">
           <div className="px-2 pt-1 text-[11px] font-extrabold uppercase tracking-[.06em] text-white/40">Главное</div>
           {ADMIN_NAV.map((item) => {
-            const active = isNavActive(item, pathname);
+            const active = isActiveAdminHref(item, pathname);
             return (
               <Link
                 key={item.href}
@@ -86,7 +95,7 @@ export function AdminShell({ user, children }: AdminShellProps) {
                     : 'text-white/65 hover:bg-white/10 hover:text-admin-on-primary',
                 )}
               >
-                <Icon name={item.icon} filled={active} className="text-[21px]" />
+                <Icon name={ADMIN_NAV_ICON_NAMES[item.href]} filled={active} className="text-[21px]" />
                 <span>{item.label}</span>
               </Link>
             );
@@ -130,8 +139,15 @@ export function AdminShell({ user, children }: AdminShellProps) {
       </aside>
 
       <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center gap-4 border-b border-admin-outline-variant bg-admin-surface/90 px-[18px] backdrop-blur-lg md:hidden">
-        <Link href="/admin" aria-label="Ritm admin" className="flex items-center">
-          <Image src="/ritm-logo.svg" alt="Ritm" width={98} height={28} priority className="h-auto w-[84px]" />
+        <Link href="/admin" aria-label="Evironn admin" className="flex items-center">
+          <Image
+            src="/assets/evironn-logo.svg"
+            alt="Evironn"
+            width={124}
+            height={36}
+            priority
+            className="h-auto w-[106px]"
+          />
         </Link>
         <div className="ml-auto">
           <AdminMobileMenu user={user} />

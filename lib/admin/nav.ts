@@ -1,25 +1,32 @@
-export interface AdminNavItem {
-  label: string;
+export type AdminNavItem = {
   href: string;
-  icon: string; // Material Symbols name
-  exact: boolean; // exact match (dashboard) vs prefix match
-}
+  label: string;
+  match: 'exact' | 'prefix';
+};
 
-/** Single source of truth for primary admin navigation (sidebar + mobile tab bar). */
-export const ADMIN_NAV: AdminNavItem[] = [
-  { label: 'Дашборд', href: '/admin', icon: 'dashboard', exact: true },
-  { label: 'Заказы', href: '/admin/orders', icon: 'shopping_cart', exact: false },
-  { label: 'Каталог', href: '/admin/catalog', icon: 'deployed_code', exact: false },
-  { label: 'Клиенты', href: '/admin/customers', icon: 'group', exact: false },
-  { label: 'Промокоды', href: '/admin/marketing', icon: 'confirmation_number', exact: false },
-];
+export const ADMIN_NAV: readonly AdminNavItem[] = [
+  { href: '/admin', label: 'Дашборд', match: 'exact' },
+  { href: '/admin/catalog', label: 'Каталог', match: 'prefix' },
+  { href: '/admin/orders', label: 'Заказы', match: 'prefix' },
+  { href: '/admin/customers', label: 'Клиенты', match: 'prefix' },
+  { href: '/admin/marketing', label: 'Промокоды', match: 'prefix' },
+] as const;
 
-/** True if a nav item is the active route for `pathname`. */
-export function isNavActive(item: AdminNavItem, pathname: string): boolean {
-  return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + '/');
-}
+export const ADMIN_CATALOG_TABS: readonly AdminNavItem[] = [
+  { href: '/admin/catalog/products', label: 'Товары', match: 'prefix' },
+  { href: '/admin/catalog/categories', label: 'Категории', match: 'prefix' },
+] as const;
 
-/** Index of the active ADMIN_NAV item, or -1 if none match. */
-export function resolveActiveIndex(pathname: string): number {
-  return ADMIN_NAV.findIndex((item) => isNavActive(item, pathname));
+export const ADMIN_NAV_ICON_NAMES: Readonly<Record<string, string>> = {
+  '/admin': 'dashboard',
+  '/admin/catalog': 'deployed_code',
+  '/admin/orders': 'shopping_cart',
+  '/admin/customers': 'group',
+  '/admin/marketing': 'confirmation_number',
+};
+
+export function isActiveAdminHref(item: AdminNavItem, pathname: string): boolean {
+  return item.match === 'exact'
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(`${item.href}/`);
 }

@@ -2,11 +2,12 @@
 
 ## Current checkpoint
 
-- Status: READY_FOR_USER_APPROVAL.
+- Status: 5A.6_CHECKPOINT_RECORDED; ADMIN visual acceptance pending.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Phase 4 is merged and closed. Phase 5 implementation has not started.
-- Preparation changed documentation and local handoff only; no application code, tests, build, database, provider, push, PR, or merge occurred.
+- Current HEAD before 5A.6 checkpoint commit: `05e0a3a` (`feat(admin): compose Evironn dashboard panels`).
+- Phase 4 is merged and closed. 5A.1–5A.5 implementation is committed; 5A.6 records focused evidence and visual acceptance state.
+- No 5B work, push, PR, merge, migration, full gate, build, or E2E ran in this checkpoint.
 
 ## Binding inputs
 
@@ -101,3 +102,13 @@ Pre-commit HEAD: `0b9d4c8b15dbe72138180ec3cc6820f32958c1f7`.
 - Global classes consumed without local import: `material-symbols-outlined`, `fill`, `sk*`
 
 Protected-path evidence: `git status --short --untracked-files=all` showed `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` and `docs/superpowers/plans/phase-2-task-3-execution.md` as untracked; neither path was modified or staged.
+
+## Phase 5 checkpoint — 5A.6 visual acceptance and stream checkpoint
+
+- Focused batch: `npm test -- tests/admin-access-boundary.test.ts tests/admin-nav.test.ts tests/admin-primitives-contract.test.ts tests/admin-dashboard-analytics.test.ts tests/admin-dashboard-render.test.ts`.
+- Evidence: 5 test files passed; 24 tests passed; exit code 0; Vitest duration 1.94s.
+- Local server: `npm run dev`; port 3000 was occupied, so Next.js served this run at `http://localhost:3002`.
+- Anonymous no-cookie probe: `http://localhost:3002/admin` returned `307 Temporary Redirect` with `location: /login?callbackUrl=http%3A%2F%2Flocalhost%3A3002%2Fadmin`.
+- CUSTOMER browser session: signed-in `Петр` session requested `http://localhost:3002/admin`; final URL was `http://localhost:3002/`, showing denial before admin render.
+- ADMIN browser session was unavailable. Desktop `1440×900` and mobile `390×844` visual acceptance is `PENDING_USER_VISUAL_ACCEPTANCE`; exact checklist and command are in `.superpowers/sdd/task-5A.6-report.md`.
+- Protected Phase 2 plan paths remained untracked and untouched.

@@ -12,11 +12,11 @@ export interface StatusChipsSkeletonProps {
 
 export function StatusChipsSkeleton({ count = 5 }: StatusChipsSkeletonProps) {
   return (
-    <div aria-hidden className="flex flex-wrap gap-3">
+    <div aria-hidden className="flex flex-wrap gap-1.5">
       {Array.from({ length: Math.max(1, count) }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-2 bg-admin-surface border border-admin-outline-variant rounded-full px-4 py-2"
+          className="flex min-h-[34px] items-center gap-2 rounded-full border border-admin-outline-variant bg-admin-surface px-3 py-1.5"
         >
           <Skeleton rounded="pill" delay={((i % 5) + 1) as 1 | 2 | 3 | 4 | 5} className="h-5 w-20" />
           <Skeleton rounded="line" delay={((i % 5) + 1) as 1 | 2 | 3 | 4 | 5} className="h-3 w-6" />

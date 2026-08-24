@@ -18,13 +18,13 @@ export interface TableSkeletonProps {
 export function TableSkeleton({ rows = 8, cols = 5, withThumb }: TableSkeletonProps) {
   const colCount = Math.max(1, cols);
   return (
-    <div aria-hidden className="bg-admin-surface border border-admin-outline-variant rounded-xl overflow-hidden">
+    <div aria-hidden className="overflow-hidden rounded-2xl border border-admin-outline-variant bg-admin-surface">
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-admin-surface-high">
             <tr>
               {Array.from({ length: colCount }).map((_, c) => (
-                <th key={c} className="px-6 py-4">
+                <th key={c} className="px-3.5 pb-2.5 pt-3">
                   <Skeleton rounded="line" className="h-3 w-20" />
                 </th>
               ))}
@@ -36,7 +36,7 @@ export function TableSkeleton({ rows = 8, cols = 5, withThumb }: TableSkeletonPr
               return (
                 <tr key={r}>
                   {Array.from({ length: colCount }).map((_, c) => (
-                    <td key={c} className="px-6 py-4">
+                    <td key={c} className="px-3.5 py-3.5">
                       {c === 0 && withThumb ? (
                         <div className="flex items-center gap-3">
                           <Skeleton rounded="box" delay={delay} className="w-12 h-12 rounded-lg shrink-0" />
@@ -58,7 +58,7 @@ export function TableSkeleton({ rows = 8, cols = 5, withThumb }: TableSkeletonPr
       </div>
 
       {/* Подвал-пагинация */}
-      <div className="px-6 py-4 border-t border-admin-outline-variant flex items-center justify-between">
+      <div className="flex items-center justify-between border-t border-admin-outline-variant px-3.5 py-3.5">
         <Skeleton rounded="line" className="h-3 w-40" />
         <div className="flex items-center gap-1.5">
           {Array.from({ length: 4 }).map((_, i) => (

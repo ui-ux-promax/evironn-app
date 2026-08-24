@@ -22,23 +22,23 @@ export function AdminPageHeader({
   className,
 }: AdminPageHeaderProps) {
   return (
-    <header className={cn('flex items-start justify-between gap-[22px] max-[760px]:grid', className)}>
+    <header className={cn('flex flex-wrap items-end justify-between gap-5', className)}>
       <div className="min-w-0">
-        <div className="text-[13px] font-bold uppercase tracking-[.06em] text-admin-on-surface-variant">{kicker}</div>
-        <h1 className="mt-1 font-admin-head text-[clamp(32px,3.4vw,52px)] font-extrabold leading-[.96] tracking-[-.035em] text-admin-on-surface">
+        <div className="text-[10px] font-bold uppercase tracking-[.12em] text-admin-on-surface-variant">{kicker}</div>
+        <h1 className="mt-2 font-admin-head text-[clamp(1.9rem,3.4vw,2.9rem)] font-medium leading-none tracking-[-.01em] text-admin-on-surface">
           {title}
         </h1>
-        <p className="mt-[9px] max-w-[64ch] text-[15px] text-admin-on-surface-variant">{subtitle}</p>
+        <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-[1.55] text-admin-on-surface-variant">{subtitle}</p>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-3 max-[760px]:justify-start">
+      <div className="flex flex-wrap items-center justify-end gap-2.5 max-[760px]:w-full max-[760px]:justify-start">
         {searchPlaceholder && (
-          <label className="flex h-14 w-[min(36vw,480px)] min-w-[330px] items-center gap-3 rounded-full border border-admin-outline-variant bg-admin-surface px-[18px] text-admin-on-surface-variant shadow-[var(--admin-shadow-tight)] max-[760px]:w-full max-[760px]:min-w-0">
-            <Icon name="search" className="text-[20px]" />
+          <label className="flex min-h-9 w-[min(36vw,480px)] min-w-[260px] items-center gap-2 rounded-[10px] border border-admin-outline-variant bg-admin-surface px-3.5 text-admin-on-surface-variant shadow-[var(--admin-shadow-tight)] transition-[border-color,box-shadow] focus-within:border-admin-outline focus-within:shadow-[var(--admin-shadow-soft)] max-[760px]:w-full max-[760px]:min-w-0">
+            <Icon name="search" className="text-[15px]" />
             <input
               type="search"
               name="q"
               placeholder={searchPlaceholder}
-              className="min-w-0 flex-1 bg-transparent text-[15px] text-admin-on-surface outline-none placeholder:text-admin-on-surface-variant"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-admin-on-surface outline-none placeholder:text-admin-on-surface-variant"
             />
           </label>
         )}

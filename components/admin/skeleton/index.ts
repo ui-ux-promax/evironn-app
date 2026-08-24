@@ -1,4 +1,4 @@
-// Публичный API скелетон-компонентов админки RITM.
+// Public API for admin loading primitives.
 // Импорт: import { ListPageSkeleton, DetailPageSkeleton, FormPageSkeleton, DashboardSkeleton } from '@/components/admin/skeleton';
 // Все компоненты серверные (без 'use client') — рендерятся в loading.tsx.
 

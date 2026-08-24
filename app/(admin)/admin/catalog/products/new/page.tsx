@@ -1,5 +1,6 @@
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { ProductForm } from '../_components/product-form';
 
@@ -7,6 +8,7 @@ export const metadata = { title: 'Новый товар' };
 export const dynamic = 'force-dynamic';
 
 export default async function NewProductPage() {
+  await requireAdminPage();
   const [categories, brandRows] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: 'asc' }, select: { id: true, name: true } }),
     prisma.product.findMany({ distinct: ['brand'], orderBy: { brand: 'asc' }, select: { brand: true } }),

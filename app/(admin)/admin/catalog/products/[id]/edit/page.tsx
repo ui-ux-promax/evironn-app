@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { ProductForm, type ProductFormInitial } from '../../_components/product-form';
 import type { ProductValues } from '@/services/dto/product.dto';
@@ -10,6 +11,7 @@ export const metadata = { title: 'Редактирование товара' };
 export const dynamic = 'force-dynamic';
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage();
   const { id } = await params;
   const [product, categories, brandRows] = await Promise.all([
     prisma.product.findUnique({

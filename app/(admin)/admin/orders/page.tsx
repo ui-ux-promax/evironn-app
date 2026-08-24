@@ -2,6 +2,7 @@ import type { Prisma, OrderStatus } from '@prisma/client';
 import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { parsePaginationParams, buildPaginationMeta, readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
 import { ORDER_STATUS_META } from '@/lib/order';
@@ -18,6 +19,7 @@ type SP = Record<string, string | string[] | undefined>;
 const PAYMENT_FILTER_VALUES = [...PAYMENT_STATUS_VALUES, 'none'] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const { page, limit, skip } = parsePaginationParams(sp, { limit: 10 });
   const q = readSearchQuery(sp);

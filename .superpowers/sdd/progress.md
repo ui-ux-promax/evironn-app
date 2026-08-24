@@ -112,3 +112,11 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - CUSTOMER browser session: signed-in `Петр` session requested `http://localhost:3002/admin`; final URL was `http://localhost:3002/`, showing denial before admin render.
 - ADMIN browser session was unavailable. Desktop `1440×900` and mobile `390×844` visual acceptance is `PENDING_USER_VISUAL_ACCEPTANCE`; exact checklist and command are in `.superpowers/sdd/task-5A.6-report.md`.
 - Protected Phase 2 plan paths remained untracked and untouched.
+
+## Phase 5A review remediation
+
+- Scope: dashboard period interactivity, ADMIN boundary scanner enforcement, anonymous warmup relocation, and evidence correction only.
+- Fresh local probe remains `http://localhost:3002` because port 3000 was occupied. Anonymous `/admin` returned `307` to `/login?callbackUrl=http%3A%2F%2Flocalhost%3A3002%2Fadmin`; CUSTOMER `/admin` ended at `http://localhost:3002/`.
+- No real warmup caller was present. Public warmup is now outside `/api/admin/**`; all admin API routes remain protected.
+- ADMIN visual acceptance remains `PENDING_USER_VISUAL_ACCEPTANCE`; no ADMIN session was available.
+- Detailed remediation evidence: `.superpowers/sdd/task-5A-review-remediation-report.md`.

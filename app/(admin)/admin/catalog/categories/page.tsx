@@ -9,6 +9,7 @@ import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
 import { Button } from '@/components/admin/ui/button';
 import { Icon } from '@/components/admin/icon';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { CategoryTable, type CategoryRow } from './_components/category-table';
 
@@ -16,6 +17,7 @@ export const metadata = { title: 'Категории' };
 export const dynamic = 'force-dynamic';
 
 export default async function CatalogPage() {
+  await requireAdminPage();
   const categories = await prisma.category.findMany({
     orderBy: { sortOrder: 'asc' },
     select: {

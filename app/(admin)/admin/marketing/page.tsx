@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
 import { normalizeCouponCode } from '@/lib/coupon';
@@ -20,6 +21,7 @@ type SP = Record<string, string | string[] | undefined>;
 const STATUS_VALUES = ['active', 'inactive', 'expired'] as const;
 
 export default async function MarketingPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const q = readSearchQuery(sp);
   const status = readEnumParam(sp, 'status', STATUS_VALUES);

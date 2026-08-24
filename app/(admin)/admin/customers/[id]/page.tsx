@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { Icon } from '@/components/admin/icon';
 import { formatPrice, formatDateTime, formatDate } from '@/lib/format';
@@ -13,6 +14,7 @@ export const dynamic = 'force-dynamic';
 const HISTORY_LIMIT = 50;
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage();
   const { id } = await params;
 
   const user = await prisma.user.findUnique({

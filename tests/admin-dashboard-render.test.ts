@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 import { DashboardView, type AdminDashboardViewProps } from '@/app/(admin)/admin/_components/dashboard-view';
 
 const emptyProjection: AdminDashboardViewProps = {
@@ -98,6 +104,13 @@ describe('admin dashboard composition', () => {
     expect(layout.indexOf('requireAdminPage()')).toBeLessThan(layout.indexOf('<AdminShell'));
     expect(page).toMatch(/async function DashboardPage[\s\S]*?\{\s*const session = await requireAdminPage\(\);/);
     expect(page).not.toContain('Ritm');
+  });
+
+  it('keeps the dashboard period selector interactive and URL-driven', () => {
+    const dashboard = readFileSync('app/(admin)/admin/_components/dashboard-view.tsx', 'utf8');
+
+    expect(dashboard).toContain('actions={<PeriodToggle />}');
+    expect(dashboard).not.toContain('actions={<PeriodToggle staticView />}');
   });
 
   it('exposes dashboard loading semantics', () => {

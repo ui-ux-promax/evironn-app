@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { Icon } from '@/components/admin/icon';
 import { formatPrice, formatDateTime } from '@/lib/format';
@@ -16,6 +17,7 @@ const SHIPPING_LABEL: Record<string, string> = { courier: 'Курьер', pickup
 const PAYMENT_METHOD_LABEL: Record<string, string> = { online: 'Онлайн', cod: 'При получении' };
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage();
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },

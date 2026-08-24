@@ -103,7 +103,7 @@ export function DashboardView({
         <AdminPanel
           title="Продажи по дням"
           note={periodLabel}
-          actions={<PeriodToggle staticView />}
+          actions={<PeriodToggle />}
           className="min-h-[346px] rounded-[28px] p-6"
         >
           {hasRevenue ? (

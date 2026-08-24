@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const root = process.cwd();
 const sourceExtensions = /\.(?:ts|tsx|js|mjs)$/;
 const privilegedRead =
-  /\b(?:prisma|listAdminProducts|getAdmin|getKpis|getKpiSeries|getStatusDistribution|getBestSellers|getLowStock|getRecentOrders|analytics|catalog|orderAdmin|customerAdmin)\b/i;
+  /\b(?:prisma|provider|cloudinary|listAdminProducts|getAdmin|getKpis|getKpiSeries|getStatusDistribution|getBestSellers|getLowStock|getRecentOrders|analytics|catalog|orderAdmin|customerAdmin)\b/i;
 
 type RecursiveDirent = Dirent & { parentPath?: string };
 
@@ -215,6 +215,16 @@ function exportedFunctionBodies(text: string, asyncOnly: boolean): FunctionBody[
     functions.push({ name: match[1], body: text.slice(openingIndex + 1, closingIndex) });
   }
 
+  const asyncArrowPattern =
+    /export\s+(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*=\s*async\s*(?:<[^>]+>\s*)?(?:\([^)]*\)|[A-Za-z0-9_$]+)\s*=>\s*\{/g;
+  for (const match of text.matchAll(asyncArrowPattern)) {
+    const matchText = match[0];
+    const openingIndex = (match.index ?? 0) + matchText.lastIndexOf('{');
+    const closingIndex = matchingBrace(text, openingIndex);
+    if (closingIndex === -1) continue;
+    functions.push({ name: match[1], body: text.slice(openingIndex + 1, closingIndex) });
+  }
+
   return functions;
 }
 
@@ -254,6 +264,38 @@ const adminClientFiles = [
 const scannedSourceFiles = ['app', 'components', 'lib', 'services', 'scripts', 'prisma', 'tests'].flatMap((directory) =>
   enumerateFiles(directory, (filePath) => sourceExtensions.test(filePath)),
 );
+
+const negativePageFixture = `
+  export default async function MissingPageGuard() {
+    return prisma.product.findMany();
+  }
+`;
+const negativeAsyncArrowActionFixture = `
+  export const asyncArrowAction = async () => {
+    await prisma.product.findMany();
+    return await requireAdminAction();
+  };
+`;
+const negativeProviderBeforeGuardFixture = `
+  export async function providerBeforeGuard() {
+    const result = await provider.getDetails();
+    const gate = await requireAdminAction();
+    return { result, gate };
+  }
+`;
+
+function guardViolations(text: string, guardName: string): string[] {
+  return exportedFunctionBodies(text, true).flatMap((fn) => {
+    const body = codeOnly(fn.body);
+    const readIndex = firstPrivilegedRead(body);
+    if (readIndex < 0) return [];
+
+    const guardIndex = body.indexOf(`${guardName}()`);
+    if (guardIndex < 0) return [`${fn.name} missing ${guardName}()`];
+    if (guardIndex >= readIndex) return [`${fn.name} calls ${guardName}() after privileged access`];
+    return [];
+  });
+}
 
 describe('server-side ADMIN boundary contract', () => {
   it('discovers the staged protected pages and layouts', () => {
@@ -303,11 +345,11 @@ describe('server-side ADMIN boundary contract', () => {
         if (readIndex < 0) continue;
 
         const localGuardIndex = body.indexOf('requireAdminPage()');
-        if (localGuardIndex >= 0) {
-          expect(localGuardIndex, `${relativePath(pageFile)}:${fn.name} must guard before reads`).toBeLessThan(
-            readIndex,
-          );
-        }
+        expect(
+          localGuardIndex,
+          `${relativePath(pageFile)}:${fn.name} must call requireAdminPage()`,
+        ).toBeGreaterThanOrEqual(0);
+        expect(localGuardIndex, `${relativePath(pageFile)}:${fn.name} must guard before reads`).toBeLessThan(readIndex);
       }
     }
   });
@@ -321,13 +363,15 @@ describe('server-side ADMIN boundary contract', () => {
       for (const fn of functions) {
         const body = codeOnly(fn.body);
         const guardIndex = body.indexOf('requireAdminAction()');
-        const prismaIndex = body.indexOf('prisma');
+        const privilegedIndex = firstPrivilegedRead(body);
         expect(
           guardIndex,
           `${relativePath(filePath)}:${fn.name} must call requireAdminAction()`,
         ).toBeGreaterThanOrEqual(0);
-        if (prismaIndex >= 0) {
-          expect(guardIndex, `${relativePath(filePath)}:${fn.name} must guard before Prisma`).toBeLessThan(prismaIndex);
+        if (privilegedIndex >= 0) {
+          expect(guardIndex, `${relativePath(filePath)}:${fn.name} must guard before Prisma or providers`).toBeLessThan(
+            privilegedIndex,
+          );
         }
       }
     }
@@ -342,7 +386,7 @@ describe('server-side ADMIN boundary contract', () => {
       for (const fn of functions) {
         const body = codeOnly(fn.body);
         const guardIndex = body.indexOf('requireAdminApi()');
-        const providerIndex = body.search(/\b(?:prisma|cloudinary|provider)\b/i);
+        const providerIndex = firstPrivilegedRead(body);
         expect(guardIndex, `${relativePath(filePath)}:${fn.name} must call requireAdminApi()`).toBeGreaterThanOrEqual(
           0,
         );
@@ -353,6 +397,27 @@ describe('server-side ADMIN boundary contract', () => {
         }
       }
     }
+  });
+
+  it('detects missing page guards in negative fixtures', () => {
+    expect(guardViolations(negativePageFixture, 'requireAdminPage')).toEqual([
+      'MissingPageGuard missing requireAdminPage()',
+    ]);
+  });
+
+  it('detects exported async-arrow actions in negative fixtures', () => {
+    const functions = exportedFunctionBodies(negativeAsyncArrowActionFixture, true);
+
+    expect(functions.map((fn) => fn.name)).toContain('asyncArrowAction');
+    expect(guardViolations(negativeAsyncArrowActionFixture, 'requireAdminAction')).toEqual([
+      'asyncArrowAction calls requireAdminAction() after privileged access',
+    ]);
+  });
+
+  it('detects provider access before action guards in negative fixtures', () => {
+    expect(guardViolations(negativeProviderBeforeGuardFixture, 'requireAdminAction')).toEqual([
+      'providerBeforeGuard calls requireAdminAction() after privileged access',
+    ]);
   });
 
   it('keeps role decisions on the server side', () => {

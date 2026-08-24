@@ -1,5 +1,6 @@
 import type { UserRole } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { parsePaginationParams, buildPaginationMeta, readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
 import { ROLE_FILTER_VALUES, CUSTOMER_SORT_VALUES, buildCustomerOrderByClause, escapeLike } from '@/lib/customer-admin';
@@ -23,6 +24,7 @@ type CustomerListRaw = {
 };
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const { page, limit, skip } = parsePaginationParams(sp, { limit: 20 });
   const q = readSearchQuery(sp);

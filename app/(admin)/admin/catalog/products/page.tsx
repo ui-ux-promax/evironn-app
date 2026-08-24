@@ -13,6 +13,7 @@ import { formatAddedAgo } from '@/lib/relative-time';
 import { ProductFilters } from './_components/product-filters';
 import { ProductTable, type ProductRow } from './_components/product-table';
 import { ViewToggle } from './_components/view-toggle';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 
 export const metadata = { title: 'Товары' };
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,7 @@ type SP = Record<string, string | string[] | undefined>;
 const LOW_STOCK_TOTAL = 200; // порог для подписи «Здоровый/Низкий» на карточке остатка
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const { page, limit, skip } = parsePaginationParams(sp, { limit: 20 });
   const q = readSearchQuery(sp);

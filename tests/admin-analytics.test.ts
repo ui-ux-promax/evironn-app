@@ -169,14 +169,31 @@ describe('getStatusDistribution', () => {
 describe('getLowStock', () => {
   it('classifies tier by stock and shapes rows', async () => {
     vi.clearAllMocks();
-    p.sku.findMany.mockResolvedValue([]);
-    p.productVariant.findMany.mockResolvedValue([
-      { id: 'v1', stock: 2, sku: 'A-1', size: 'M', colorway: { name: 'Black', product: { name: 'Urban Flow' } } },
-      { id: 'v2', stock: 7, sku: 'B-2', size: 'XL', colorway: { name: 'White', product: { name: 'Cloud' } } },
+    p.sku.findMany.mockResolvedValue([
+      {
+        id: 'sku-1',
+        stock: 2,
+        articleNumber: 'A-1',
+        product: { name: 'Urban Flow' },
+        selections: [
+          { optionGroup: { name: 'Finish' }, optionValue: { name: 'Black' } },
+          { optionGroup: { name: 'Size' }, optionValue: { name: 'M' } },
+        ],
+      },
+      {
+        id: 'sku-2',
+        stock: 7,
+        articleNumber: 'B-2',
+        product: { name: 'Cloud' },
+        selections: [
+          { optionGroup: { name: 'Finish' }, optionValue: { name: 'White' } },
+          { optionGroup: { name: 'Size' }, optionValue: { name: 'XL' } },
+        ],
+      },
     ]);
     const rows = await getLowStock(prisma as never);
-    expect(rows[0]).toMatchObject({ id: 'v1', tier: 'critical', productName: 'Urban Flow', size: 'M', stock: 2 });
-    expect(rows[1]).toMatchObject({ id: 'v2', tier: 'warning', productName: 'Cloud', size: 'XL', stock: 7 });
+    expect(rows[0]).toMatchObject({ id: 'sku-1', tier: 'critical', productName: 'Urban Flow', size: 'Size: M', stock: 2 });
+    expect(rows[1]).toMatchObject({ id: 'sku-2', tier: 'warning', productName: 'Cloud', size: 'Size: XL', stock: 7 });
   });
 
   it('includes canonical furniture SKUs', async () => {

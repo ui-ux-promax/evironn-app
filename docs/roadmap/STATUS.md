@@ -58,10 +58,10 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 ## Next action
 
 1. Start a fresh Phase 5 planning session on Luna High.
-2. Dispatch one isolated Sol XHigh planner using `.superpowers/sdd/phase-5-handoff.md` and `docs/superpowers/specs/2026-08-20-phase-5-planning-brief.md`.
+2. Invoke one isolated read-only Claude Opus XHigh planner through the local CLI bridge using `.superpowers/sdd/phase-5-handoff.md` and `docs/superpowers/specs/2026-08-20-phase-5-planning-brief.md`.
 3. Review and approve the executable plan before any implementation.
-4. Execute sequentially with Luna High implementers and fresh Sol Medium task reviewers.
-5. Use a fresh Sol Medium final functional reviewer and a Sol High security reviewer for ADMIN/role/Cloudinary boundaries.
+4. Execute sequentially with Luna High implementers and fresh Claude Opus XHigh task reviewers.
+5. Use fresh Claude Opus XHigh runs for high-risk, final functional, and ADMIN/role/Cloudinary security review. Sol Medium is fallback only when Claude is unavailable and the reason is recorded.
 
 ## Preparation validation
 

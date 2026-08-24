@@ -30,11 +30,11 @@ These are bounded sessions on one branch and one final Phase 5 PR. Do not merge 
 ## Agent workflow
 
 - Root/coordinator and implementers: Luna High.
-- Planner: one isolated Sol XHigh.
-- Task reviewers: fresh Sol Medium.
-- Final functional reviewer: fresh Sol Medium over `da5e87e..HEAD`.
-- Final ADMIN/role/Cloudinary security reviewer: Sol High.
-- Normal/default service tier only; never fast/priority/accelerated.
+- Planner: one isolated Claude Opus XHigh run through the local read-only CLI bridge.
+- Task reviewers: fresh Claude Opus XHigh runs with exact task diffs and no tools.
+- High-risk/final/security reviewers: fresh Claude Opus XHigh runs over the exact relevant diff/contracts.
+- Fallback: fresh Sol Medium only when Claude is genuinely unavailable after one bounded retry; the coordinator records the reason and never substitutes silently.
+- Codex agents use normal/default service tier only; never fast/priority/accelerated.
 - Agent messages use `caveman ultra`; durable documents and code use normal technical English.
 
 ## Stop gate

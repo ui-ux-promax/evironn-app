@@ -1,40 +1,46 @@
+import Link from 'next/link';
+import { LOW_STOCK_THRESHOLD } from '@/constants/config';
 import { cn } from '@/lib/utils';
-import type { LowStockRow } from '@/lib/admin/analytics';
+import type { AdminLowStockSku } from '@/lib/admin/analytics';
 
-export function LowStock({ rows }: { rows: LowStockRow[] }) {
+export function LowStock({ rows }: { rows: AdminLowStockSku[] }) {
   return (
-    <div className="bg-admin-surface border border-admin-outline-variant rounded-xl p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-admin-head text-lg font-bold text-admin-on-surface">Низкий сток</h3>
+    <section className="rounded-[32px] border border-admin-outline-variant bg-admin-surface p-6 shadow-[var(--admin-shadow-tight)]">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-admin-head text-[clamp(22px,1.7vw,30px)] font-extrabold leading-[1.05] tracking-[-.035em] text-admin-on-surface">
+          Низкие остатки
+        </h2>
         {rows.length > 0 && (
-          <span className="px-3 py-1 bg-admin-error text-admin-on-error rounded-full font-bold text-xs">
+          <span className="rounded-full bg-admin-error px-3 py-1 text-xs font-bold text-admin-on-error">
             {rows.length} поз.
           </span>
         )}
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm text-admin-on-surface-variant">Сток в норме.</p>
+        <p className="rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-8 text-center text-sm font-bold text-admin-on-surface-variant">
+          Низких остатков нет.
+        </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {rows.map((row) => {
-            const critical = row.tier === 'critical';
+            const critical = row.stock <= LOW_STOCK_THRESHOLD;
             return (
-              <div
-                key={row.id}
+              <Link
+                href="/admin/catalog/stock"
+                key={row.skuId}
                 className={cn(
-                  'p-3 rounded-xl border flex justify-between items-center gap-2',
+                  'flex items-center justify-between gap-2 rounded-xl border p-3',
                   critical
                     ? 'border-admin-error bg-admin-error/10'
                     : 'border-admin-secondary-container bg-admin-secondary-container/30',
                 )}
               >
                 <div className="min-w-0">
-                  <p className="font-bold text-admin-on-surface truncate">{row.productName}</p>
-                  <p className="text-xs text-admin-on-surface-variant truncate">
-                    {row.colorwayName} · Размер {row.size} · {row.sku}
-                  </p>
+                  <p className="truncate font-bold text-admin-on-surface">{row.productName}</p>
+                  <p className="truncate text-xs text-admin-on-surface-variant">{row.combinationLabel}</p>
+                  <p className="text-[10px] font-bold uppercase text-admin-on-surface-variant">{row.articleNumber}</p>
                 </div>
-                <div className="text-right shrink-0">
+                <div className="shrink-0 text-right">
                   <p
                     className={cn(
                       'font-admin-head text-xl font-bold tabular-nums',
@@ -43,13 +49,13 @@ export function LowStock({ rows }: { rows: LowStockRow[] }) {
                   >
                     {row.stock}
                   </p>
-                  <p className="text-[10px] uppercase font-bold text-admin-on-surface-variant">в наличии</p>
+                  <p className="text-[10px] font-bold uppercase text-admin-on-surface-variant">в наличии</p>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

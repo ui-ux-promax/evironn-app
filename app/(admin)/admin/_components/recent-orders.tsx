@@ -64,7 +64,7 @@ export function RecentOrders({ rows }: { rows: RecentOrderRow[] }) {
 
       {filtered.length === 0 ? (
         <div className="rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-8 text-center text-sm font-bold text-admin-on-surface-variant">
-          Ничего не найдено. Измените статус.
+          Заказов пока нет.
         </div>
       ) : (
         <>

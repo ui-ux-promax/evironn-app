@@ -61,11 +61,7 @@ export function StatusDonut({ segments, total }: { segments: StatusSegment[]; to
   }, [segmentKey, total]);
 
   if (total === 0) {
-    return (
-      <p className="text-sm text-admin-on-surface-variant">
-        {'\u0417\u0430\u043a\u0430\u0437\u043e\u0432 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442.'}
-      </p>
-    );
+    return <p className="text-sm text-admin-on-surface-variant">{'Заказов пока нет.'}</p>;
   }
 
   return (

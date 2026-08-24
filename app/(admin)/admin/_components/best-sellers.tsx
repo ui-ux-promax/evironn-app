@@ -8,7 +8,7 @@ export function BestSellers({ items }: { items: BestSeller[] }) {
       <div className="mb-[22px] flex items-start justify-between gap-[18px]">
         <div>
           <h2 className="font-admin-head text-[clamp(22px,1.7vw,30px)] font-extrabold leading-[1.05] tracking-[-.035em] text-admin-on-surface">
-            Топ товаров
+            Лучшие продажи
           </h2>
           <p className="mt-1.5 text-[13px] text-admin-on-surface-variant">Лидеры по выручке за период</p>
         </div>

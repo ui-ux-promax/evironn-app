@@ -70,6 +70,24 @@ export function DashboardBody() {
         </CardSkeleton>
       </div>
 
+      {/* Каталог, остатки и покрытие 360° */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-2">
+        {[1, 2].map((d) => (
+          <CardSkeleton key={d}>
+            <Skeleton rounded="line" className="mb-4 h-5 w-48" />
+            <Skeleton rounded="line" delay={d as 1 | 2} className="mb-6 h-3.5 w-64" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((metric) => (
+                <div key={metric} className="rounded-[18px] border border-admin-outline-variant p-4">
+                  <Skeleton rounded="line" delay={metric as 1 | 2 | 3 | 4} className="mb-3 h-2.5 w-20" />
+                  <Skeleton rounded="line" delay={metric as 1 | 2 | 3 | 4} className="h-6 w-12" />
+                </div>
+              ))}
+            </div>
+          </CardSkeleton>
+        ))}
+      </div>
+
       {/* Нижний ряд: топ-продаж (5) + низкий сток / последние заказы (7) */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-12">
         {/* Топ продаж */}

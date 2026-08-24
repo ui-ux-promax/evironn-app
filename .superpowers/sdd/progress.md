@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-- Status: READY_FOR_PLANNING.
+- Status: READY_FOR_USER_APPROVAL.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
 - Phase 4 is merged and closed. Phase 5 implementation has not started.
@@ -47,3 +47,57 @@ Do not modify, stage, delete, reset, or clean:
 
 - `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md`
 - `docs/superpowers/plans/phase-2-task-3-execution.md`
+
+## Planning bridge incident — 2026-08-24
+
+- Initial visible Claude Planner wrapper failed with exit code 1 before returning structured output; model, cost, and raw result were unavailable.
+- One bounded retry exposed a Windows PowerShell 5.1 UTF-8 path-decoding failure for the archived clone source. The source exists at the required path; no Claude call was made on that retry.
+- The ignored local bridge was repaired with ASCII-only discovery of the existing archived clone path. Paid Planner calls then reached `claude-opus-5` but ended as `error_max_turns` at 31 turns before final structured output. Telemetry recorded 70 and 58 tool calls for two completed max-turn runs; an additional duplicate invocation was also attempted by the wrapper. No plan was produced.
+- Root cause: the 30-turn Planner limit was too small for broad autonomous inspection across three repositories, while the bridge discarded stdout before parsing non-zero results. This was not Claude/provider unavailability, so Sol fallback is not authorized by this incident.
+- Bridge remediation preserves non-zero raw JSON and reports subtype/turns/model/cost, blocks duplicate output paths, and disables Planner repository tools by default. Luna must prepare a compact evidence bundle before one controlled Planner call. No production code, application tests, build, database, provider, push, PR, commit, or protected-file change occurred.
+
+## Planning result — 2026-08-24
+
+- Executable plan: `docs/superpowers/plans/2026-08-20-phase-5-admin-demo.md`.
+- Controlled zero-tool Planner completed with `claude-opus-5`; Luna applied review remediations to the plan only.
+- Independent Opus reviews resolved all Critical findings and the identified Important findings. The last approval review reported one staged 5B.10/5C.3 retirement-scan conflict; Luna then corrected that exact conflict without another paid review.
+- Phase 5 implementation has not started. No production code, application test run, build, database mutation, commit, push, PR, or merge occurred.
+- Next action: user reviews/approves the executable plan, then starts Phase 5 execution in a new session.
+
+## Phase 5 checkpoint — 5A.0 Baseline record and plan commit
+
+- Commit: `chore(phase-5): record admin and demo-admin execution plan` (final SHA recorded in `.superpowers/sdd/task-5A.0-report.md`)
+- Files: `docs/superpowers/plans/2026-08-20-phase-5-admin-demo.md`, `.superpowers/sdd/progress.md`, `.superpowers/sdd/phase-5-handoff.md`
+- RED: none; documentation-only task
+- GREEN: `git status --short` showed only the pre-existing modified progress file and the three untracked plan paths before edits; no source files changed
+- Invariants confirmed: Phase 5 remains documentation-only; protected paths remain untracked and untouched; command conventions and CI check names are unchanged; D1–D15 acknowledged
+- Decisions recorded: plan §0.4 and D8 baseline
+- Open items for next task: 5A.1 ADMIN boundary contract
+
+### §0.4 command conventions quoted verbatim
+
+### 0.4 Command conventions
+
+Package manager is npm; CI uses `npm ci` and `package-lock.json`. Exact scripts: `format` = `prettier --write .`, `lint` = `prettier --check . && eslint .`, `typecheck` = `tsc --noEmit`, `test` = `vitest run`, `gate` = `npm run lint && npm run typecheck && npm run test`, `build` = `next build`, `e2e` = `playwright test`.
+
+- Focused unit test form: `npm test -- tests/example.test.ts` with the task's explicit filename substituted.
+- Focused E2E form: `npm run e2e -- e2e/example.spec.ts --grep "scenario title"` with the task's explicit filename and title substituted.
+- Schema check: `npx prisma validate`.
+- Skip audit: `git grep -nE "\.(skip|only|todo)\(" -- tests e2e`.
+
+Do not invent `format:check`, `gate:phase5`, `e2e:phase5` or any other script; `package.json` scripts and CI definitions are never modified in Phase 5. Required GitHub check contexts are exactly `Quality / quality` (workflow `Quality`, job `quality`, pull requests, main push; checkout with LFS, Node 22/npm cache, `npm ci`, Prisma generate, typecheck, test, build) and `Deployment Smoke / smoke` (workflow `Deployment Smoke`, job `smoke`, deployment-status trigger; checkout, Node 22/npm cache, `npm ci`, completed-deployment check, `npm run smoke:production`). Neither workflow has `continue-on-error` or a skipping `if:`. CI does not run `npm run format`, `npm run gate` or Playwright, so §7 supplies them; a `skipped` required check is never success evidence (`docs/roadmap/STATUS.md`).
+
+### 5A.0 styling baseline
+
+Pre-commit HEAD: `0b9d4c8b15dbe72138180ec3cc6820f32958c1f7`.
+
+- Files scanned: 38
+- Tailwind utility classes via `className`: 333 matches
+- Class composition via `cn`: 49 matches
+- Variant composition via `cva`: 1 match
+- Inline `style` props: 2 matches
+- CSS custom properties: 13 matches
+- Stylesheet imports: 0
+- Global classes consumed without local import: `material-symbols-outlined`, `fill`, `sk*`
+
+Protected-path evidence: `git status --short --untracked-files=all` showed `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` and `docs/superpowers/plans/phase-2-task-3-execution.md` as untracked; neither path was modified or staged.

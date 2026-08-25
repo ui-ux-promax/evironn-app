@@ -3,7 +3,7 @@
 ## Current state
 
 - Bootstrap and Phases 1–4 are complete and merged into `dev`.
-- Active delivery: Phase 5. Stream 5A is functionally complete and user-accepted; its final accepted visual adjustment is present in the local worktree above `0f2a739` and must be checkpointed before 5B starts.
+- Active delivery: Phase 5. Streams 5A and 5B are complete and user-closed. Closed 5B documentation checkpoint is `5be199a`; the current branch may include a later documentation-only 5C preparation commit. Stream 5C planning is next and implementation has not started.
 - Integration branch: `dev` at merge commit `da5e87e` (Phase 4 closeout PR #9).
 - Current delivery branch: `phase/05-admin-demo`, created from exact `origin/dev` commit `da5e87e`.
 - Phase 5 scope: protected production admin, furniture catalog/SKU/media administration, orders, customers, roles, coupons, dashboard, and public synthetic read-only demo admin.
@@ -59,11 +59,13 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 ## Next action
 
 1. Continue on `phase/05-admin-demo`; do not create or switch branches.
-2. Inspect and checkpoint the user-accepted 5A worktree plus this durable handoff update. Reuse fresh focused evidence where valid; do not run a post-visual 5A Opus re-review.
-3. Before 5B implementation, have Luna prepare a compact current-state evidence bundle, run one fresh bounded Claude Opus XHigh 5B Planner, then one fresh isolated Claude Opus XHigh Plan Reviewer. Resolve all Critical/Important plan findings and stop for user approval.
-4. After approval, execute 5B sequentially with Luna High implementers, focused verification, and bounded Claude Opus XHigh reviews only at meaningful task/risk boundaries.
+2. Treat `5be199a` as the closed 5B checkpoint. Preserve its approved focused evidence: 39 Vitest files / 298 tests, typecheck, changed-file Prettier, and `git diff --check`; no full Phase 5 gate/build/E2E is claimed yet.
+3. Before 5C implementation, have Luna prepare a compact current-state evidence bundle, run one fresh isolated Sol Medium planner, then one fresh isolated Sol Medium plan reviewer. Resolve all Critical/Important plan findings and stop for user approval.
+4. After approval, execute 5C sequentially with Luna High implementers, focused verification, and fresh Sol Medium reviews only at meaningful task/risk boundaries.
 5. Keep the current accepted admin presentation stable during 5B and 5C. Complete exact cross-route Evironn visual parity once in 5D after all admin functionality exists.
-6. Do not push, open a PR, merge, or run the full Phase 5 completion gate during 5B.
+6. Do not push, open a PR, merge, or run the full Phase 5 completion gate during 5C; the consolidated gate remains a 5D closeout action.
+
+Database note: `.env.local` contains the expected application database variable names. The earlier 5B inventory gap came from a standalone process that did not load `.env.local`; it was not evidence that Vercel or the project lacked database variables. Never print their values.
 
 ## Preparation validation
 

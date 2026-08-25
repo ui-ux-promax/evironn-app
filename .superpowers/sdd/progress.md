@@ -2,12 +2,13 @@
 
 ## Current checkpoint
 
-- Status: 5B_PLAN_APPROVED_PENDING_USER; 5A accepted and checkpointed; 5B implementation not authorized.
+- Status: 5B_COMPLETE; 5A and 5B are user-closed; 5C planning is next and 5C implementation is not authorized.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Current committed HEAD: `42ec908` (`feat(admin): align dashboard with Evironn shell`); `C5A_ACCEPTED=42ec908`.
-- Phase 4 is merged and closed. 5A.0–5A.6 implementation and remediation are complete. The user accepted the current dashboard on 2026-08-25. The earlier bounded Opus review remains valid for `0f2a739`; no additional Opus call is required for the later visual-only adjustment.
-- No 5B implementation, push, PR, merge, migration, full gate, build, or E2E ran in this checkpoint. The accepted 5A worktree and ADR-022 amendment are checkpointed.
+- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). A later documentation-only 5C preparation commit may be current HEAD.
+- Phase 4 is merged and closed. 5A and 5B implementation/review are complete and user-closed. The accepted shell remains frozen until the consolidated 5D parity pass.
+- 5B focused completion evidence: 39 Vitest files / 298 tests passed, typecheck passed, changed-file Prettier passed, and `git diff --check` passed. No full Phase 5 gate, build, E2E, push, PR, merge, or migration is claimed.
+- Database inventory was unavailable only to a standalone process that did not load `.env.local`; the expected application database variable names exist there. No values were read or recorded.
 
 ## Binding inputs
 
@@ -32,23 +33,23 @@
 - A separate paid Claude/Opus re-review of the post-`0f2a739` visual-only adjustment was intentionally skipped; final functional/security review remains required at the appropriate Phase 5 boundaries.
 - ADR-022 freezes the accepted shell for 5B and 5C. These streams deliver functionality and responsive usability without route-by-route redesign.
 - Exact protected and demo-admin Evironn visual parity is performed once in 5D after all routes and operations exist, preserving server/data/action boundaries.
-- Immediate next action: user reviews/approves the reviewed 5B plan. Only after approval may a new session execute 5B sequentially. Do not implement 5B yet.
+- Immediate next action: prepare and review the bounded 5C executable plan, then stop for user approval. Do not implement 5C yet.
 
 These are bounded sessions on one branch and one final Phase 5 PR. Do not merge an internal delivery into `dev`.
 
 ## Agent workflow
 
 - Root/coordinator and implementers: Luna High.
-- Planner: one isolated Claude Opus XHigh run through the local read-only CLI bridge.
-- Task reviewers: fresh Claude Opus XHigh runs with exact task diffs and no tools.
-- High-risk/final/security reviewers: fresh Claude Opus XHigh runs over the exact relevant diff/contracts.
-- Fallback: fresh Sol Medium only when Claude is genuinely unavailable after one bounded retry; the coordinator records the reason and never substitutes silently.
+- Planner and fresh plan reviewer: isolated Sol Medium.
+- Task reviewers: fresh isolated Sol Medium runs with exact task diffs at meaningful boundaries.
+- High-risk/final/security reviewers: fresh isolated Sol Medium runs over the exact relevant diff/contracts.
+- Claude Opus is explicit opt-in only through `$using-claude-opus-agent-workflow` and is never invoked by default.
 - Codex agents use normal/default service tier only; never fast/priority/accelerated.
 - Agent messages use `caveman ultra`; durable documents and code use normal technical English.
 
 ## Stop gate
 
-The next session produces and reviews an executable Phase 5 plan. It must not begin implementation until the user approves that plan. Do not push, open a PR, merge, delete branches, or begin Phase 6 without explicit authorization.
+The next session produces and reviews the executable 5C plan. It must not begin implementation until the user approves that plan. Do not push, open a PR, merge, delete branches, or begin Phase 6 without explicit authorization.
 
 ## Protected local files
 

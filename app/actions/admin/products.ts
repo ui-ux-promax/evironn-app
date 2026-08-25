@@ -410,6 +410,9 @@ type ProductReferenceCounts = {
   referencedWishlistCount: number;
 };
 
+type FurnitureProductSaveResult = { productId: string; skuCount: number; deactivatedSkuIds: string[] };
+type ProductActiveResult = { productId: string; active: boolean };
+
 type SkuPlan = {
   updates: { current: CanonicalSku; next: FurnitureProductValues['skus'][number] }[];
   creates: FurnitureProductValues['skus'][number][];
@@ -946,9 +949,7 @@ function canonicalMediaForSku(sku: FurnitureProductValues['skus'][number], curre
     : sku.media.map(toAdminMediaInput);
 }
 
-export async function saveFurnitureProduct(
-  input: unknown,
-): Promise<AdminActionResult<{ productId: string; skuCount: number; deactivatedSkuIds: string[] }>> {
+export async function saveFurnitureProduct(input: unknown): Promise<AdminActionResult<FurnitureProductSaveResult>> {
   const gate = await requireAdminAction();
   if (!gate.ok) return adminError('UNEXPECTED', gate.error);
 
@@ -1277,9 +1278,7 @@ export async function saveFurnitureProduct(
   }
 }
 
-export async function setProductActive(
-  input: unknown,
-): Promise<AdminActionResult<{ productId: string; active: boolean }>> {
+export async function setProductActive(input: unknown): Promise<AdminActionResult<ProductActiveResult>> {
   const gate = await requireAdminAction();
   if (!gate.ok) return adminError('UNEXPECTED', gate.error);
   const parsed = productToggleSchema.safeParse(input);

@@ -17,6 +17,7 @@ export const ADMIN_CATALOG_TABS: readonly AdminNavItem[] = [
   { href: '/admin/catalog/categories', label: 'Категории', match: 'prefix' },
   { href: '/admin/catalog/options', label: 'Опции', match: 'prefix' },
   { href: '/admin/catalog/rooms', label: 'Комнаты', match: 'prefix' },
+  { href: '/admin/catalog/stock', label: 'Остатки', match: 'prefix' },
 ] as const;
 
 export const ADMIN_NAV_ICON_NAMES: Readonly<Record<string, string>> = {

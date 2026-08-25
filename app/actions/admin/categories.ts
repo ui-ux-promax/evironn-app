@@ -145,14 +145,13 @@ export async function moveCategory(id: string, dir: 'up' | 'down'): Promise<Cate
 }
 
 const TURNTABLE_KINDS = ['TURN_TABLE_VIDEO', 'TURN_TABLE_POSTER', 'TURN_TABLE_FALLBACK'] as const;
+type CategoryTurntableResult = { categoryId: string; productId: string | null };
 
 function validationMessage(error: import('zod').ZodError): string {
   return error.issues[0]?.message ?? 'Проверьте поля';
 }
 
-export async function setCategoryTurntable(
-  input: unknown,
-): Promise<AdminActionResult<{ categoryId: string; productId: string | null }>> {
+export async function setCategoryTurntable(input: unknown): Promise<AdminActionResult<CategoryTurntableResult>> {
   const gate = await requireAdminAction();
   if (!gate.ok) return adminError('UNEXPECTED', gate.error);
 

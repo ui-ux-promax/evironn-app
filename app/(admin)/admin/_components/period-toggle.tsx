@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PERIOD_VALUES, DEFAULT_PERIOD } from '@/lib/admin/analytics-config';
 
-const LABELS: Record<number, string> = { 7: 'Неделя', 30: 'Месяц', 90: 'Сезон' };
+const LABELS: Record<number, string> = { 7: '7 дней', 30: '30 дней', 90: '90 дней' };
 
 export function PeriodToggle({ staticView = false }: { staticView?: boolean }) {
   if (staticView) return <PeriodToggleView active={DEFAULT_PERIOD} />;

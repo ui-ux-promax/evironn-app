@@ -40,60 +40,48 @@ const emptyProjection: AdminDashboardViewProps = {
 };
 
 describe('admin dashboard composition', () => {
-  it('renders every furniture and operations panel with explicit empty states', () => {
+  it('renders the clone dashboard landmarks and exactly four KPI cards', () => {
     const markup = renderToStaticMarkup(createElement(DashboardView, emptyProjection));
 
     expect(markup).toContain('data-testid="admin-dashboard"');
     for (const heading of [
-      'Выручка за период',
-      'Заказы',
-      'Средний чек',
-      'Активные товары',
-      'Всего SKU',
-      'Продажи по дням',
-      'Статусы заказов',
-      'Каталог и остатки',
-      'Категории и 360°',
-      'Операции',
-      'Низкие остатки',
-      'Лучшие продажи',
+      'Обзор',
+      'Сводка смены',
+      'Выручка по дням',
+      'Статусы',
+      'Часто покупают',
       'Последние заказы',
     ]) {
       expect(markup).toContain(heading);
     }
 
-    for (const emptyState of [
-      'Продаж за период нет.',
-      'Заказов пока нет.',
-      'Низких остатков нет.',
-      'Каталог пока пуст.',
-      'Категории и комнаты пока не настроены.',
-    ]) {
-      expect(markup).toContain(emptyState);
+    for (const label of ['Выручка', 'Заказы', 'Средний чек', 'Отмены']) {
+      expect(markup).toContain(label);
     }
+    expect(markup.match(/data-testid="admin-kpi"/g)).toHaveLength(4);
 
+    expect(markup).toContain('Всё, что нужно держать в поле зрения: деньги, очередь заказов и остатки.');
     expect(markup).not.toContain('Ritm');
   });
 
-  it('links canonical low-stock rows to stock administration', () => {
+  it('uses the Evironn display face for the top KPI values', () => {
+    const styles = readFileSync('app/(admin)/admin/_components/dashboard-view.module.css', 'utf8');
+    const kpiValue = styles.match(/\.kpiValue\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+
+    expect(kpiValue).toContain('font-family: var(--ev-font-display);');
+    expect(kpiValue).not.toContain('Fraunces');
+  });
+
+  it('uses real status distribution data for the cancellations KPI', () => {
     const markup = renderToStaticMarkup(
       createElement(DashboardView, {
         ...emptyProjection,
-        lowStock: [
-          {
-            skuId: 'sku-1',
-            articleNumber: 'EV-NOMA-OAK',
-            productId: 'product-1',
-            productName: 'Noma',
-            combinationLabel: 'Finish: Oak',
-            stock: 2,
-          },
-        ],
+        statusDist: { segments: [{ status: 'CANCELLED', label: 'Отменён', count: 3 }], total: 3 },
       }),
     );
 
-    expect(markup).toContain('href="/admin/catalog/stock"');
-    expect(markup).toContain('EV-NOMA-OAK');
+    expect(markup).toContain('data-kpi="cancellations"');
+    expect(markup).toContain('>3</strong>');
   });
 
   it('keeps page and layout authorization source contracts before reads and shell output', () => {
@@ -109,8 +97,39 @@ describe('admin dashboard composition', () => {
   it('keeps the dashboard period selector interactive and URL-driven', () => {
     const dashboard = readFileSync('app/(admin)/admin/_components/dashboard-view.tsx', 'utf8');
 
-    expect(dashboard).toContain('actions={<PeriodToggle />}');
-    expect(dashboard).not.toContain('actions={<PeriodToggle staticView />}');
+    expect(dashboard).toContain('<PeriodToggle />');
+    expect(dashboard).not.toContain('<PeriodToggle staticView />');
+    expect(readFileSync('app/(admin)/admin/_components/period-toggle.tsx', 'utf8')).toContain('7 дней');
+  });
+
+  it('removes the old dashboard composition and search/profile header', () => {
+    const dashboard = readFileSync('app/(admin)/admin/_components/dashboard-view.tsx', 'utf8');
+    const shell = readFileSync('components/admin/admin-shell.tsx', 'utf8');
+
+    for (const oldCopy of [
+      'Главная страница',
+      'Дашборд магазина',
+      'Продажи по дням',
+      'Статусы заказов',
+      'Каталог и остатки',
+      'Категории и 360°',
+      'Операции',
+      'Низкие остатки',
+    ]) {
+      expect(dashboard).not.toContain(oldCopy);
+    }
+    expect(dashboard).not.toContain('searchPlaceholder');
+    expect(dashboard).not.toContain('DashboardUser');
+    expect(shell).not.toContain('w-[286px]');
+    expect(shell).toContain('className={styles.rail}');
+  });
+
+  it('uses a narrow responsive shell rail with clone tooltips', () => {
+    const shellStyles = readFileSync('components/admin/admin-shell.module.css', 'utf8');
+
+    expect(shellStyles).toContain('grid-template-columns: 76px minmax(0, 1fr)');
+    expect(shellStyles).toContain('.railLink:hover .tooltip');
+    expect(shellStyles).toContain('@media (max-width: 820px)');
   });
 
   it('exposes dashboard loading semantics', () => {

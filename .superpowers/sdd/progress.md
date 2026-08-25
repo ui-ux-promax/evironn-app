@@ -2,12 +2,12 @@
 
 ## Current checkpoint
 
-- Status: 5A.6_CHECKPOINT_RECORDED; ADMIN visual acceptance pending.
+- Status: 5A_USER_ACCEPTED; accepted post-review visual adjustment is uncommitted; 5B authorized next.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Current HEAD before 5A.6 checkpoint commit: `05e0a3a` (`feat(admin): compose Evironn dashboard panels`).
-- Phase 4 is merged and closed. 5A.1–5A.5 implementation is committed; 5A.6 records focused evidence and visual acceptance state.
-- No 5B work, push, PR, merge, migration, full gate, build, or E2E ran in this checkpoint.
+- Current committed HEAD: `0f2a739` (`fix(admin): remediate 5A review findings`); the accepted visual adjustment remains in the worktree.
+- Phase 4 is merged and closed. 5A.0–5A.6 implementation and remediation are complete. The user accepted the current dashboard on 2026-08-25. The earlier bounded Opus review remains valid for `0f2a739`; no additional Opus call is required for the later visual-only adjustment.
+- No 5B work, push, PR, merge, migration, full gate, build, or E2E ran in this checkpoint. Before 5B, checkpoint the accepted 5A worktree and durable ADR-022 amendment.
 
 ## Binding inputs
 
@@ -24,7 +24,15 @@
 - 5A: ADMIN protection, shared admin shell, dashboard foundation.
 - 5B: categories, products, furniture option matrix, SKUs, stock, media, and 360.
 - 5C: orders, customers, roles, and coupons.
-- 5D: public synthetic read-only demo admin, integration closeout, and visual acceptance.
+- 5D: public synthetic read-only demo admin, consolidated protected/demo Evironn visual parity, integration closeout, and final visual acceptance.
+
+## Phase 5A user acceptance and visual sequencing — 2026-08-25
+
+- The user accepted the current local 5A dashboard.
+- A separate paid Claude/Opus re-review of the post-`0f2a739` visual-only adjustment was intentionally skipped; final functional/security review remains required at the appropriate Phase 5 boundaries.
+- ADR-022 freezes the accepted shell for 5B and 5C. These streams deliver functionality and responsive usability without route-by-route redesign.
+- Exact protected and demo-admin Evironn visual parity is performed once in 5D after all routes and operations exist, preserving server/data/action boundaries.
+- Immediate next action: inspect and commit the accepted 5A worktree, then run the bounded Claude Opus 5B Planner -> fresh Claude Opus Plan Reviewer workflow and stop for user approval. Do not implement 5B yet.
 
 These are bounded sessions on one branch and one final Phase 5 PR. Do not merge an internal delivery into `dev`.
 
@@ -120,3 +128,19 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - No real warmup caller was present. Public warmup is now outside `/api/admin/**`; all admin API routes remain protected.
 - ADMIN visual acceptance remains `PENDING_USER_VISUAL_ACCEPTANCE`; no ADMIN session was available.
 - Detailed remediation evidence: `.superpowers/sdd/task-5A-review-remediation-report.md`.
+
+## Phase 5A Claude review packaging incident
+
+- One Opus Code CLI process ran for 2041 seconds and was user-interrupted. Three provider-dashboard rows were internal requests from that one invocation, not three wrapper retries.
+- Root cause: the wrapper used a plan-review prompt for implementation review and sent four contexts totaling approximately 403 KB, including the complete Phase 5 plan and planning brief. The provider attempted a 43265-token completion; no final bridge JSON existed because the process never exited.
+- The local bridge now has a dedicated bounded `CodeReviewer`: maximum three context files, 320000 UTF-8 bytes checked before model execution, four turns, USD 4, a 900-second wall-clock timeout, and bounded structured-output fields. Regression tests cover count/size rejection with zero fake-model calls and forced termination of a stalled fake process.
+- The final re-review used only the three permitted context files: `.superpowers/sdd/phase-5-5A-sol-review-20260824.json`, `.superpowers/sdd/task-5A-review-remediation-report.md`, and `.superpowers/sdd/review-5A-remediation-a8cd608..0f2a739.diff`.
+
+## Phase 5A final Opus re-review — 2026-08-24
+
+- Validation passed: `CodeReviewer`, `opus`, 4 turns, USD 4.0 cap, 320000-byte cap, 34464-byte payload, 900-second timeout.
+- One fresh isolated bridge call completed with exact model ID `claude-opus-5`, subtype `success`, 3 turns, cost USD 0.86498875, verdict `APPROVED`.
+- Findings: 0 Critical, 0 Important, 3 Minor. Minor findings remain non-blocking and were not auto-fixed.
+- Raw JSON: `.superpowers/sdd/claude-5A-remediation-rereview-20260824.json`.
+- ADMIN visual desktop/mobile acceptance remains `PENDING_USER_VISUAL_ACCEPTANCE`.
+- No commit, push, PR, merge, or 5B work followed the review.

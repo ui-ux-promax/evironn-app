@@ -2,44 +2,44 @@
 
 ## Parity matrix
 
-| Area | Current Evironn | Technical source | Visual source | Disposition | Evidence |
-|---|---|---|---|---|---|
-| Admin route protection (layout and page boundaries) | `app/(admin)/layout.tsx` and every protected page call `requireAdminPage()` before privileged reads; `lib/admin/require-admin.ts` exposes `requireAdminPage`/`requireAdminAction`/`requireAdminApi`. | fashion-shop admin layout and admin guard module (same three-boundary model; authorization reference only). | None. Clone `src/admin` has no auth boundary. | reuse | `requireAdminPage()` redirects anonymous to `/login?callbackUrl=/admin` and non-admin to `/`; actions/API handlers retain independent guards. A static contract scans every discovered admin page/layout, action and API boundary, including guard-before-Prisma ordering. |
-| Shared admin shell layout and navigation | `components/admin/admin-shell.tsx`, `components/admin/admin-mobile-menu.tsx`, `components/admin/admin-tab-bar.tsx`, `lib/admin/nav.ts`. | fashion-shop admin shell/nav modules (Next/Auth.js session wiring, sign-out, responsive menu). | clone `src/admin/AdminShell.tsx` + `src/admin/AdminShell.css` (rail, bento grid, breakpoints, density). | adapt | Bundle: current shell is Next/Auth.js-aware with mobile menu, tab bar and loading gates, but nav has no option-group/stock entries and branding is Ritm. Adapt structure and nav data while retaining session and guard boundaries. |
-| Admin visual system (panels, headers, KPI/chart/table/pager/status primitives, skeletons) | `components/admin/admin-page-header.tsx`, `components/admin/admin-panel.tsx`, `components/admin/ui/*`, `components/admin/skeleton/*`, `components/admin/media/*`. | fashion-shop admin UI/skeleton modules (component API shape and loading-state coverage). | clone `src/admin/AdminPrimitives.tsx` + `src/admin/AdminPrimitives.css` (head/panel/KPI/chart/donut/status/filter/table/button/pager/toast/error). | port-presentation | Bundle: existing primitives already cover the required component set; only the visual language (spacing, density, focus states, status colour vocabulary) differs from the clone. Behaviour and props stay; presentation is ported. |
-| Ritm brand assets and copy inside the protected shell | `/ritm-logo.svg`, `/ritm-logo-light.svg` references in `components/admin/admin-shell.tsx`; inherited Ritm dashboard copy. | None. Fashion-shop is the origin of the Ritm-shaped branding and must not be re-copied. | reuse existing `/assets/evironn-logo.svg`; clone shell typography is transcribed into existing admin styling. | retire | Presentation-only Ritm references are removed from owned admin/demo consumers. Production mark already exists at `public/assets/evironn-logo.svg`; no clone asset port is needed. |
-| Dashboard analytics queries and projections | `lib/admin/analytics.ts`, `lib/admin/analytics-config.ts`, `app/(admin)/admin/page.tsx`, `app/(admin)/admin/_components/*`. | fashion-shop dashboard analytics module (bounded query patterns, KPI series shape, low-stock and recent-order projections). | clone `src/admin/AdminShell.tsx` dashboard composition plus KPI/chart/donut primitives in `AdminPrimitives.tsx`. | adapt | Bundle: analytics already provides bounded Prisma KPI series, status split, best sellers, low stock, recent orders and pending-payment count, but low stock is computed from legacy `ProductVariant.stock` and there are no furniture KPIs (SKU, category/room, 360 coverage). Query authority stays in `lib/admin/analytics.ts`; projections are extended. |
-| Categories administration | `app/(admin)/admin/catalog/categories` list/new/[id]/edit; `app/actions/admin/categories.ts`. | fashion-shop category action (CRUD, sort movement transaction, occupied-category delete guard, Cloudinary cleanup). | clone `AdminPrimitives.tsx` table/filter/panel primitives; clone has no catalog screen, so only primitives are authoritative. | adapt | Bundle: current pages/action already use canonical `Category` fields (`name`, `slug`, `tagline`, cover, `sortOrder`, product count) with reorder transaction and delete guard. Adaptation is limited to Evironn copy, presentation and the new turntable binding control. |
-| Rooms and product-room assignment | `Room` and `ProductRoom` exist in `prisma/schema.prisma`; read-side usage in `lib/find-products.ts` and catalog adapters; no write path. | None. Fashion-shop has no room concept; only multi-select form patterns are reusable. | clone `AdminPrimitives.tsx` filter/table primitives. | adapt | Phase 5 adds full Room CRUD (`name`, unique `slug`, `sortOrder`, reorder and `ROOM_HAS_PRODUCTS` delete refusal) plus `(productId, roomId)` assignment in the canonical product form. |
-| Products list and read layer | `app/(admin)/admin/catalog/products/page.tsx` list query, filters, stock aggregate; edit loader in `[id]/edit`. | fashion-shop product list page (pagination, filter parsing, aggregate columns). | clone `AdminPrimitives.tsx` table/filter/pager primitives. | adapt | Bundle gap 1: the list query, filters, stock aggregate and edit loader read `ProductColorway`/`ProductImage`/`ProductVariant`. Canonical reads must come from `Product.skus`/`ProductMedia`; the page shape, pagination and filter contract are retained. |
-| Product create/update/delete action | `app/actions/admin/products.ts` (nested legacy colorway/image/variant CRUD, order-reference guard, best-effort Cloudinary deletion). | fashion-shop product action (guard-first ordering, transaction structure, reference guard, Cloudinary cleanup sequencing) — technical shape only, its domain is also legacy. | None (server module). | adapt | Bundle gap 2: `furnitureProductSchema`/`FurnitureProductValues` exist and are unit-tested but unused by admin, which still imports `productSchema`. The proven action boundary (guard, parse, transaction, revalidate, reference guard) is adapted onto the canonical furniture DTO. |
-| Legacy colorway/image/variant admin write path | Nested `ProductColorway`/`ProductImage`/`ProductVariant` create/update/delete branches in `app/actions/admin/products.ts` and the legacy nested media UI. | fashion-shop product action (the origin of this shape; explicitly not the canonical target). | None. | retire | Bundle: schema documents these three models as a legacy clothing-shaped compatibility adapter and states they are not the Phase 5 canonical target. Admin writes are retired; read compatibility for historical rows is preserved and proven by a focused test before removal. |
-| Legacy variant matrix generator and legacy admin DTO usage | legacy `variant-matrix.tsx` size/colour SKU generation and `productSchema`/`ProductValues` imports in `services/dto/product.dto.ts` consumers. | fashion-shop variant matrix and product DTO (fashion colourway semantics; explicitly not to be carried into furniture). | clone `AdminPrimitives.tsx` table primitives for replacement matrix presentation. | retire | Canonical contract is `furnitureProductSchema`, `Sku.combinationKey`, unique `articleNumber`, one selection per option group and exact `buildCombinationKey`; legacy generator is retired in favour of canonical matrix. |
-| Option groups and option values administration | No admin route or action. `OptionGroup`, `OptionValue`, `ProductOptionGroup`, `ProductOptionValue` exist in schema; validation rules exist in `services/dto/product.dto.ts` and `lib/furniture-sku.ts`. | fashion-shop category/product action patterns (slug uniqueness handling, sort ordering, reference-guarded delete) — pattern reuse only, no fashion colourway semantics. | clone `AdminPrimitives.tsx` panel/table/filter/button primitives; clone has no catalog implementation. | adapt | Bundle gap 3: no option-group/value administration exists. Phase 5 adds routes and an action bound to canonical models and reuses unique-slug and selection-completeness rules. |
-| SKU matrix (combination, article number, price, old price, active) | Legacy `variant-matrix.tsx` plus legacy DTO path; no canonical SKU matrix UI. | fashion-shop variant matrix interaction model (bulk row editing, generation from selected axes, per-row validation surfacing). | clone `AdminPrimitives.tsx` compact dense table, status chips and inline field styling. | adapt | Bundle: `Sku` has unique `articleNumber`, unique `(productId, combinationKey)`, `price`, nullable `oldPrice`, `stock`, active state and `SkuOptionValue` selections; `furnitureProductSchema` rejects duplicate articles/combinations and incomplete selections. The interaction shape is adapted onto these canonical invariants. |
-| Stock administration | Products page aggregates `ProductVariant.stock`; no canonical stock write path. Canonical stock lives on `Sku.stock`. | fashion-shop stock column and variant stock editing; `changeUserRole` guarded one-shot update pattern in this repository is the closer precedent. | clone `AdminPrimitives.tsx` table, status and filter primitives. | adapt | Bundle: stock edits must preserve order reservations, cart references, cancellation/restoration and immutable historical order snapshots. Phase 5 adapts stock administration to a guarded conditional update on `Sku.stock` instead of a blind write. |
-| Product and SKU media management | `components/admin/media/*` uploader, `lib/cloudinary/admin-media.ts`, nested legacy colorway image UI. | fashion-shop media uploader and Cloudinary helper wiring (signed upload flow, fresh-versus-persisted asset diffing, removal bookkeeping). | clone `AdminPrimitives.tsx` panel/button/toast/error primitives. | adapt | Bundle: the uploader and signed routes are reusable infrastructure, but persistence must move to `ProductMedia`/`SkuMedia` with kind, public ID, order and alt text plus exact ownership checks. Infrastructure is retained; persistence and ownership are adapted. |
-| 360 turntable media and category binding | No admin exposure. `Category.turntableProductId` is unique; `ProductMediaKind` has `TURN_TABLE_VIDEO`, `TURN_TABLE_POSTER`, `TURN_TABLE_FALLBACK`; `furnitureProductSchema` already validates cardinality. | None. Fashion-shop has no turntable concept; only its Cloudinary upload/validation flow applies. | clone `AdminPrimitives.tsx` panel/status primitives for coverage state display. | adapt | Bundle gap 3: category turntable binding is not exposed although schema and DTO already encode the rules (one of each kind when enabled, rejection otherwise, unique binding per category). Phase 5 adapts admin surfaces to those existing constraints. |
-| Cloudinary signing API route | `app/api/admin/media/sign/route.ts` with `requireAdminApi()` and folder validation limited to `ritm/uploads`, `ritm/categories`, `ritm/products`. | fashion-shop signing route (guard-first ordering, signature payload construction, error envelope). | None. | adapt | Bundle gap 5: the route already requires ADMIN and validates input, but its allowlist is not Evironn-owned. Phase 5 adapts the allowlist source to a shared Evironn folder constant while keeping guard and signing behaviour. |
-| Cloudinary delete API route | `app/api/admin/media/delete/route.ts` validates only a non-empty `publicId`. | fashion-shop delete route and idempotent delete semantics. | None. | adapt | Bundle gap 5: the delete route accepts any non-empty public ID, so a foreign asset can be deleted by an ADMIN request. Phase 5 adapts it to require an Evironn-owned public ID or a database-referenced asset. |
-| `ritm/*` folder allowlist and tests asserting `ritm/products/*` | Folder constants in the sign route and expectations inside existing Cloudinary tests. | fashion-shop folder naming (origin of `ritm/*`). | None. | retire | Bundle gap 5: `ritm/*` is inherited naming that does not prove Evironn ownership, and existing tests hard-code `ritm/products/*`. The prefix and its assertions are retired together with a documented migration decision for already-persisted assets. |
-| Cloudinary helper libraries | `lib/cloudinary/{config,server,sign,url,validate,admin-media}.ts` with presence-only env checks at call time and idempotent delete handling. | fashion-shop Cloudinary helpers (same module set). | None. | reuse | Bundle: config checks presence of the three env names at call time, server treats `ok`/`not found` as idempotent success, and signing/URL/validation are already covered by focused tests. No behavioural gap was found, so helpers are reused and only the new folder module is added beside them. |
-| Orders list and detail read layer | `app/(admin)/admin/orders/page.tsx`, `[id]/page.tsx`, `lib/order-admin.ts`, `lib/admin/pagination.ts`. | fashion-shop order pages (filter/pagination/detail composition, status labelling). | clone `src/admin/AdminShell.tsx` orders composition and `adminState.ts` status/payment label vocabulary (presentation only). | adapt | Bundle: pages, DTO and filtering are reusable, but detail must render canonical `Sku` snapshot fields and Phase 4 payment state, and copy/presentation must match Evironn. Reads are adapted, not rewritten. |
-| Order status transition and admin cancellation actions | `app/actions/admin/orders.ts` with forward transition guarded by current status, then best-effort provider/stock/sales/review side effects; `lib/order-admin.ts` pipeline `PENDING -> PROCESSING -> SHIPPED -> DELIVERED`, cancellation only from `PENDING`/`PROCESSING`. | fashion-shop order action (transition guard and side-effect ordering) — reference only; it does not carry Phase 4 payment-claim semantics. | clone `useAdmin.ts` mock transitions (interaction affordances only; must not be imported). | adapt | Bundle gap 4: status is updated first and stock/provider work runs best-effort, supporting both `skuId` and legacy `productVariantId`. Phase 5 adapts the mutation to ADR-017/018 payment states and exactly-once transactional stock restoration without redesigning the provider. |
-| Customers list and detail | `app/(admin)/admin/customers/page.tsx`, `[id]/page.tsx`, `lib/customer-admin.ts`. | fashion-shop customer pages and helper (aggregation, order history panel, pagination). | clone `AdminPrimitives.tsx` table/panel/status primitives; clone has no customer screen. | adapt | Bundle: `lib/customer-admin.ts` already provides the read contract and existing pages work; adaptation is limited to Evironn presentation, empty/error states and canonical order-line labels. |
-| Roles (ADMIN/CUSTOMER) | Prisma `UserRole` with JWT/session backing; `changeUserRole` in `app/actions/admin/customers.ts` enforcing role whitelist, self-demotion block, last-admin block and guarded one-shot update. | fashion-shop role action (same safeguards). | None; clone has no role surface. | reuse | Bundle: the role contract and all three safeguards already exist and are session-backed, and no separate role route exists. Behaviour is reused unchanged; only the calling control in the customer detail page is re-presented. |
-| Coupon server action and validation | `app/actions/admin/coupons.ts` (CRUD/toggle/delete), `lib/coupon.ts`, `lib/coupon-status.ts`. | fashion-shop coupon action — byte-identical to current Evironn action per bundle. | clone `adminState.ts` promocode vocabulary is reference-only. | reuse | Bundle: action is byte-identical to proven fashion reference, `Coupon` is stateless with no usage relation, and server validation/status are covered by focused tests. No usage relation is invented. |
-| Coupon pages and copy | `app/(admin)/admin/marketing` list/new/[id]/edit. | fashion-shop marketing pages (form layout, toggle affordance, list columns). | clone `AdminPrimitives.tsx` panel/table/status/button primitives. | adapt | Bundle: coupon behaviour is reused unchanged, so only presentation, Evironn copy and loading/empty/error/validation states are adapted at the page level. |
-| Shared admin support helpers (pagination, API error envelope, readiness gates) | `lib/admin/pagination.ts`, `lib/admin/api-error.ts`, `components/admin/admin-ready.ts`, `components/admin/content-ready-gate.tsx`. | fashion-shop equivalents (same helper set). | clone loading/error primitives inform only the visual treatment of gated content. | reuse | Bundle: these helpers are already used consistently by existing admin routes and APIs, and no defect or missing capability was recorded. They are reused as-is by every new route to avoid parallel implementations. |
-| Demo-admin shell and layout | `app/(demo-admin)/demo-admin/layout.tsx`, `components/demo-admin/demo-admin-shell.tsx`, `demo-readonly-banner.tsx`, `lib/demo-admin/nav.ts`. | fashion-shop demo shell (read-only banner, nav shape, isolation posture). | clone `src/admin/AdminShell.tsx`/`AdminShell.css` rail and bento layout. | port-presentation | Bundle: the demo shell already satisfies the read-only, Prisma-free and Auth-free contract enforced by `tests/demo-admin-isolation.test.ts`; only the visual language needs to match the ported protected shell. |
-| `/demo-admin` (synthetic dashboard route) | `app/(demo-admin)/demo-admin/page.tsx` with `demo-kpi-grid.tsx` and demo-local chart/donut/status replacements. | fashion-shop demo dashboard composition. | clone `src/admin/AdminShell.tsx` dashboard bento and `adminData.ts` deterministic synthetic series (structure only). | adapt | Bundle gap 9: fixtures are deterministic and isolated, but the current dashboard imports admin chart primitives. 5D.2–5D.3 transcribe every required visual import into demo-local chart/donut/status files; KPIs adapt to furniture terms (SKU, category/room, 360 coverage) with the isolation scan kept green. |
-| `/demo-admin/catalog` | `app/(demo-admin)/demo-admin/catalog/page.tsx` with `demo-data-table.tsx` and generic product rows. | fashion-shop demo catalog page. | clone `AdminPrimitives.tsx` table/filter/status primitives. | adapt | Bundle: the route and render contract already exist; Phase 5 adapts rows to furniture product/option/SKU/article/media/360 vocabulary as static fixtures, with no Prisma, action, API or mutation form. |
-| `/demo-admin/orders` | `app/(demo-admin)/demo-admin/orders/page.tsx` over `lib/demo-admin/fixtures.ts`. | fashion-shop demo orders page. | clone `src/admin/AdminShell.tsx` orders composition and `adminState.ts` status/payment label vocabulary. | adapt | Bundle: existing route/render/fixture contracts hold; adaptation adds canonical SKU/article order lines and Evironn status labels while remaining read-only and provider-free. |
-| `/demo-admin/customers` | `app/(demo-admin)/demo-admin/customers/page.tsx` over deterministic fixtures. | fashion-shop demo customers page. | clone `AdminPrimitives.tsx` table/panel primitives (clone has no customer screen). | adapt | Bundle: route exists with deterministic fixtures and no Auth.js usage; only furniture-flavoured synthetic content and ported visual language change. |
-| `/demo-admin/marketing` | `app/(demo-admin)/demo-admin/marketing/page.tsx` over coupon-shaped fixtures. | fashion-shop demo marketing page. | clone `AdminPrimitives.tsx` status/table primitives (clone has no promocode screen). | adapt | Bundle: coupon fixture shape matches stateless `Coupon` with no usage relation; adaptation is copy/presentation only, and no synthetic usage counters are invented. |
-| Demo fixtures, types and nav data | `lib/demo-admin/fixtures.ts`, `lib/demo-admin/types.ts`, `lib/demo-admin/nav.ts`; contract test `tests/demo-admin-fixtures.test.ts`. | fashion-shop demo fixtures/types (deterministic dataset shape). | clone `src/admin/adminData.ts` deterministic synthetic orders/customers/catalog lines (structure as reference, not imported). | adapt | Bundle: fixtures are already deterministic and covered by a contract test, but types are generic. Phase 5 extends types and datasets with furniture entities while keeping determinism (no clock or randomness). |
-| Demo isolation, route-contract and render-contract tests | `tests/demo-admin-isolation.test.ts`, `tests/demo-admin-route-contract.test.ts`, `tests/demo-admin-render-contract.test.ts`, `tests/demo-admin-fixtures.test.ts`. | fashion-shop demo isolation test (scan strategy for forbidden imports). | None. | adapt | Bundle: the scan already rejects Prisma, Auth.js, admin action/API, payment and provider imports and route existence/non-indexability is covered. Phase 5 extends the scan to the new demo files, forbids `use server` and form actions, and keeps every assertion non-skipped. |
-| Clone prototype state modules as production code | Not present in the production repository. | None. | clone `src/admin/useAdmin.ts`, `src/admin/adminState.ts`, `src/admin/adminData.ts`. | retire | Bundle gap 7: `useAdmin.ts` mutates in-memory synthetic orders and clone implements only `/admin` and `/admin/orders`; catalog/customers/promocodes are visual references only. These modules are excluded from production and demo bundles; only CSS, structure and label vocabulary are ported. |
+| Area                                                                                      | Current Evironn                                                                                                                                                                                                                                                           | Technical source                                                                                                                                                             | Visual source                                                                                                                                      | Disposition       | Evidence                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin route protection (layout and page boundaries)                                       | `app/(admin)/layout.tsx` and every protected page call `requireAdminPage()` before privileged reads; `lib/admin/require-admin.ts` exposes `requireAdminPage`/`requireAdminAction`/`requireAdminApi`.                                                                      | fashion-shop admin layout and admin guard module (same three-boundary model; authorization reference only).                                                                  | None. Clone `src/admin` has no auth boundary.                                                                                                      | reuse             | `requireAdminPage()` redirects anonymous to `/login?callbackUrl=/admin` and non-admin to `/`; actions/API handlers retain independent guards. A static contract scans every discovered admin page/layout, action and API boundary, including guard-before-Prisma ordering.                                                                                  |
+| Shared admin shell layout and navigation                                                  | `components/admin/admin-shell.tsx`, `components/admin/admin-mobile-menu.tsx`, `components/admin/admin-tab-bar.tsx`, `lib/admin/nav.ts`.                                                                                                                                   | fashion-shop admin shell/nav modules (Next/Auth.js session wiring, sign-out, responsive menu).                                                                               | clone `src/admin/AdminShell.tsx` + `src/admin/AdminShell.css` (rail, bento grid, breakpoints, density).                                            | adapt             | Bundle: current shell is Next/Auth.js-aware with mobile menu, tab bar and loading gates, but nav has no option-group/stock entries and branding is Ritm. Adapt structure and nav data while retaining session and guard boundaries.                                                                                                                         |
+| Admin visual system (panels, headers, KPI/chart/table/pager/status primitives, skeletons) | `components/admin/admin-page-header.tsx`, `components/admin/admin-panel.tsx`, `components/admin/ui/*`, `components/admin/skeleton/*`, `components/admin/media/*`.                                                                                                         | fashion-shop admin UI/skeleton modules (component API shape and loading-state coverage).                                                                                     | clone `src/admin/AdminPrimitives.tsx` + `src/admin/AdminPrimitives.css` (head/panel/KPI/chart/donut/status/filter/table/button/pager/toast/error). | port-presentation | Bundle: existing primitives already cover the required component set; only the visual language (spacing, density, focus states, status colour vocabulary) differs from the clone. Behaviour and props stay; presentation is ported.                                                                                                                         |
+| Ritm brand assets and copy inside the protected shell                                     | `/ritm-logo.svg`, `/ritm-logo-light.svg` references in `components/admin/admin-shell.tsx`; inherited Ritm dashboard copy.                                                                                                                                                 | None. Fashion-shop is the origin of the Ritm-shaped branding and must not be re-copied.                                                                                      | reuse existing `/assets/evironn-logo.svg`; clone shell typography is transcribed into existing admin styling.                                      | retire            | Presentation-only Ritm references are removed from owned admin/demo consumers. Production mark already exists at `public/assets/evironn-logo.svg`; no clone asset port is needed.                                                                                                                                                                           |
+| Dashboard analytics queries and projections                                               | `lib/admin/analytics.ts`, `lib/admin/analytics-config.ts`, `app/(admin)/admin/page.tsx`, `app/(admin)/admin/_components/*`.                                                                                                                                               | fashion-shop dashboard analytics module (bounded query patterns, KPI series shape, low-stock and recent-order projections).                                                  | clone `src/admin/AdminShell.tsx` dashboard composition plus KPI/chart/donut primitives in `AdminPrimitives.tsx`.                                   | adapt             | Bundle: analytics already provides bounded Prisma KPI series, status split, best sellers, low stock, recent orders and pending-payment count, but low stock is computed from legacy `ProductVariant.stock` and there are no furniture KPIs (SKU, category/room, 360 coverage). Query authority stays in `lib/admin/analytics.ts`; projections are extended. |
+| Categories administration                                                                 | `app/(admin)/admin/catalog/categories` list/new/[id]/edit; `app/actions/admin/categories.ts`.                                                                                                                                                                             | fashion-shop category action (CRUD, sort movement transaction, occupied-category delete guard, Cloudinary cleanup).                                                          | clone `AdminPrimitives.tsx` table/filter/panel primitives; clone has no catalog screen, so only primitives are authoritative.                      | adapt             | Bundle: current pages/action already use canonical `Category` fields (`name`, `slug`, `tagline`, cover, `sortOrder`, product count) with reorder transaction and delete guard. Adaptation is limited to Evironn copy, presentation and the new turntable binding control.                                                                                   |
+| Rooms and product-room assignment                                                         | `Room` and `ProductRoom` exist in `prisma/schema.prisma`; read-side usage in `lib/find-products.ts` and catalog adapters; no write path.                                                                                                                                  | None. Fashion-shop has no room concept; only multi-select form patterns are reusable.                                                                                        | clone `AdminPrimitives.tsx` filter/table primitives.                                                                                               | adapt             | Phase 5 adds full Room CRUD (`name`, unique `slug`, `sortOrder`, reorder and `ROOM_HAS_PRODUCTS` delete refusal) plus `(productId, roomId)` assignment in the canonical product form.                                                                                                                                                                       |
+| Products list and read layer                                                              | `app/(admin)/admin/catalog/products/page.tsx` list query, filters, stock aggregate; edit loader in `[id]/edit`.                                                                                                                                                           | fashion-shop product list page (pagination, filter parsing, aggregate columns).                                                                                              | clone `AdminPrimitives.tsx` table/filter/pager primitives.                                                                                         | adapt             | Bundle gap 1: the list query, filters, stock aggregate and edit loader read `ProductColorway`/`ProductImage`/`ProductVariant`. Canonical reads must come from `Product.skus`/`ProductMedia`; the page shape, pagination and filter contract are retained.                                                                                                   |
+| Product create/update/delete action                                                       | `app/actions/admin/products.ts` (nested legacy colorway/image/variant CRUD, order-reference guard, best-effort Cloudinary deletion).                                                                                                                                      | fashion-shop product action (guard-first ordering, transaction structure, reference guard, Cloudinary cleanup sequencing) — technical shape only, its domain is also legacy. | None (server module).                                                                                                                              | adapt             | Bundle gap 2: `furnitureProductSchema`/`FurnitureProductValues` exist and are unit-tested but unused by admin, which still imports `productSchema`. The proven action boundary (guard, parse, transaction, revalidate, reference guard) is adapted onto the canonical furniture DTO.                                                                        |
+| Legacy colorway/image/variant admin write path                                            | Nested `ProductColorway`/`ProductImage`/`ProductVariant` create/update/delete branches in `app/actions/admin/products.ts` and the legacy nested media UI.                                                                                                                 | fashion-shop product action (the origin of this shape; explicitly not the canonical target).                                                                                 | None.                                                                                                                                              | retire            | Bundle: schema documents these three models as a legacy clothing-shaped compatibility adapter and states they are not the Phase 5 canonical target. Admin writes are retired; read compatibility for historical rows is preserved and proven by a focused test before removal.                                                                              |
+| Legacy variant matrix generator and legacy admin DTO usage                                | legacy `variant-matrix.tsx` size/colour SKU generation and `productSchema`/`ProductValues` imports in `services/dto/product.dto.ts` consumers.                                                                                                                            | fashion-shop variant matrix and product DTO (fashion colourway semantics; explicitly not to be carried into furniture).                                                      | clone `AdminPrimitives.tsx` table primitives for replacement matrix presentation.                                                                  | retire            | Canonical contract is `furnitureProductSchema`, `Sku.combinationKey`, unique `articleNumber`, one selection per option group and exact `buildCombinationKey`; legacy generator is retired in favour of canonical matrix.                                                                                                                                    |
+| Option groups and option values administration                                            | No admin route or action. `OptionGroup`, `OptionValue`, `ProductOptionGroup`, `ProductOptionValue` exist in schema; validation rules exist in `services/dto/product.dto.ts` and `lib/furniture-sku.ts`.                                                                   | fashion-shop category/product action patterns (slug uniqueness handling, sort ordering, reference-guarded delete) — pattern reuse only, no fashion colourway semantics.      | clone `AdminPrimitives.tsx` panel/table/filter/button primitives; clone has no catalog implementation.                                             | adapt             | Bundle gap 3: no option-group/value administration exists. Phase 5 adds routes and an action bound to canonical models and reuses unique-slug and selection-completeness rules.                                                                                                                                                                             |
+| SKU matrix (combination, article number, price, old price, active)                        | Legacy `variant-matrix.tsx` plus legacy DTO path; no canonical SKU matrix UI.                                                                                                                                                                                             | fashion-shop variant matrix interaction model (bulk row editing, generation from selected axes, per-row validation surfacing).                                               | clone `AdminPrimitives.tsx` compact dense table, status chips and inline field styling.                                                            | adapt             | Bundle: `Sku` has unique `articleNumber`, unique `(productId, combinationKey)`, `price`, nullable `oldPrice`, `stock`, active state and `SkuOptionValue` selections; `furnitureProductSchema` rejects duplicate articles/combinations and incomplete selections. The interaction shape is adapted onto these canonical invariants.                          |
+| Stock administration                                                                      | Products page aggregates `ProductVariant.stock`; no canonical stock write path. Canonical stock lives on `Sku.stock`.                                                                                                                                                     | fashion-shop stock column and variant stock editing; `changeUserRole` guarded one-shot update pattern in this repository is the closer precedent.                            | clone `AdminPrimitives.tsx` table, status and filter primitives.                                                                                   | adapt             | Bundle: stock edits must preserve order reservations, cart references, cancellation/restoration and immutable historical order snapshots. Phase 5 adapts stock administration to a guarded conditional update on `Sku.stock` instead of a blind write.                                                                                                      |
+| Product and SKU media management                                                          | `components/admin/media/*` uploader, `lib/cloudinary/admin-media.ts`, nested legacy colorway image UI.                                                                                                                                                                    | fashion-shop media uploader and Cloudinary helper wiring (signed upload flow, fresh-versus-persisted asset diffing, removal bookkeeping).                                    | clone `AdminPrimitives.tsx` panel/button/toast/error primitives.                                                                                   | adapt             | Bundle: the uploader and signed routes are reusable infrastructure, but persistence must move to `ProductMedia`/`SkuMedia` with kind, public ID, order and alt text plus exact ownership checks. Infrastructure is retained; persistence and ownership are adapted.                                                                                         |
+| 360 turntable media and category binding                                                  | No admin exposure. `Category.turntableProductId` is unique; `ProductMediaKind` has `TURN_TABLE_VIDEO`, `TURN_TABLE_POSTER`, `TURN_TABLE_FALLBACK`; `furnitureProductSchema` already validates cardinality.                                                                | None. Fashion-shop has no turntable concept; only its Cloudinary upload/validation flow applies.                                                                             | clone `AdminPrimitives.tsx` panel/status primitives for coverage state display.                                                                    | adapt             | Bundle gap 3: category turntable binding is not exposed although schema and DTO already encode the rules (one of each kind when enabled, rejection otherwise, unique binding per category). Phase 5 adapts admin surfaces to those existing constraints.                                                                                                    |
+| Cloudinary signing API route                                                              | `app/api/admin/media/sign/route.ts` with `requireAdminApi()` and folder validation limited to `ritm/uploads`, `ritm/categories`, `ritm/products`.                                                                                                                         | fashion-shop signing route (guard-first ordering, signature payload construction, error envelope).                                                                           | None.                                                                                                                                              | adapt             | Bundle gap 5: the route already requires ADMIN and validates input, but its allowlist is not Evironn-owned. Phase 5 adapts the allowlist source to a shared Evironn folder constant while keeping guard and signing behaviour.                                                                                                                              |
+| Cloudinary delete API route                                                               | `app/api/admin/media/delete/route.ts` validates only a non-empty `publicId`.                                                                                                                                                                                              | fashion-shop delete route and idempotent delete semantics.                                                                                                                   | None.                                                                                                                                              | adapt             | Bundle gap 5: the delete route accepts any non-empty public ID, so a foreign asset can be deleted by an ADMIN request. Phase 5 adapts it to require an Evironn-owned public ID or a database-referenced asset.                                                                                                                                              |
+| `ritm/*` folder allowlist and tests asserting `ritm/products/*`                           | Folder constants in the sign route and expectations inside existing Cloudinary tests.                                                                                                                                                                                     | fashion-shop folder naming (origin of `ritm/*`).                                                                                                                             | None.                                                                                                                                              | retire            | Bundle gap 5: `ritm/*` is inherited naming that does not prove Evironn ownership, and existing tests hard-code `ritm/products/*`. The prefix and its assertions are retired together with a documented migration decision for already-persisted assets.                                                                                                     |
+| Cloudinary helper libraries                                                               | `lib/cloudinary/{config,server,sign,url,validate,admin-media}.ts` with presence-only env checks at call time and idempotent delete handling.                                                                                                                              | fashion-shop Cloudinary helpers (same module set).                                                                                                                           | None.                                                                                                                                              | reuse             | Bundle: config checks presence of the three env names at call time, server treats `ok`/`not found` as idempotent success, and signing/URL/validation are already covered by focused tests. No behavioural gap was found, so helpers are reused and only the new folder module is added beside them.                                                         |
+| Orders list and detail read layer                                                         | `app/(admin)/admin/orders/page.tsx`, `[id]/page.tsx`, `lib/order-admin.ts`, `lib/admin/pagination.ts`.                                                                                                                                                                    | fashion-shop order pages (filter/pagination/detail composition, status labelling).                                                                                           | clone `src/admin/AdminShell.tsx` orders composition and `adminState.ts` status/payment label vocabulary (presentation only).                       | adapt             | Bundle: pages, DTO and filtering are reusable, but detail must render canonical `Sku` snapshot fields and Phase 4 payment state, and copy/presentation must match Evironn. Reads are adapted, not rewritten.                                                                                                                                                |
+| Order status transition and admin cancellation actions                                    | `app/actions/admin/orders.ts` with forward transition guarded by current status, then best-effort provider/stock/sales/review side effects; `lib/order-admin.ts` pipeline `PENDING -> PROCESSING -> SHIPPED -> DELIVERED`, cancellation only from `PENDING`/`PROCESSING`. | fashion-shop order action (transition guard and side-effect ordering) — reference only; it does not carry Phase 4 payment-claim semantics.                                   | clone `useAdmin.ts` mock transitions (interaction affordances only; must not be imported).                                                         | adapt             | Bundle gap 4: status is updated first and stock/provider work runs best-effort, supporting both `skuId` and legacy `productVariantId`. Phase 5 adapts the mutation to ADR-017/018 payment states and exactly-once transactional stock restoration without redesigning the provider.                                                                         |
+| Customers list and detail                                                                 | `app/(admin)/admin/customers/page.tsx`, `[id]/page.tsx`, `lib/customer-admin.ts`.                                                                                                                                                                                         | fashion-shop customer pages and helper (aggregation, order history panel, pagination).                                                                                       | clone `AdminPrimitives.tsx` table/panel/status primitives; clone has no customer screen.                                                           | adapt             | Bundle: `lib/customer-admin.ts` already provides the read contract and existing pages work; adaptation is limited to Evironn presentation, empty/error states and canonical order-line labels.                                                                                                                                                              |
+| Roles (ADMIN/CUSTOMER)                                                                    | Prisma `UserRole` with JWT/session backing; `changeUserRole` in `app/actions/admin/customers.ts` enforcing role whitelist, self-demotion block, last-admin block and guarded one-shot update.                                                                             | fashion-shop role action (same safeguards).                                                                                                                                  | None; clone has no role surface.                                                                                                                   | reuse             | Bundle: the role contract and all three safeguards already exist and are session-backed, and no separate role route exists. Behaviour is reused unchanged; only the calling control in the customer detail page is re-presented.                                                                                                                            |
+| Coupon server action and validation                                                       | `app/actions/admin/coupons.ts` (CRUD/toggle/delete), `lib/coupon.ts`, `lib/coupon-status.ts`.                                                                                                                                                                             | fashion-shop coupon action — byte-identical to current Evironn action per bundle.                                                                                            | clone `adminState.ts` promocode vocabulary is reference-only.                                                                                      | reuse             | Bundle: action is byte-identical to proven fashion reference, `Coupon` is stateless with no usage relation, and server validation/status are covered by focused tests. No usage relation is invented.                                                                                                                                                       |
+| Coupon pages and copy                                                                     | `app/(admin)/admin/marketing` list/new/[id]/edit.                                                                                                                                                                                                                         | fashion-shop marketing pages (form layout, toggle affordance, list columns).                                                                                                 | clone `AdminPrimitives.tsx` panel/table/status/button primitives.                                                                                  | adapt             | Bundle: coupon behaviour is reused unchanged, so only presentation, Evironn copy and loading/empty/error/validation states are adapted at the page level.                                                                                                                                                                                                   |
+| Shared admin support helpers (pagination, API error envelope, readiness gates)            | `lib/admin/pagination.ts`, `lib/admin/api-error.ts`, `components/admin/admin-ready.ts`, `components/admin/content-ready-gate.tsx`.                                                                                                                                        | fashion-shop equivalents (same helper set).                                                                                                                                  | clone loading/error primitives inform only the visual treatment of gated content.                                                                  | reuse             | Bundle: these helpers are already used consistently by existing admin routes and APIs, and no defect or missing capability was recorded. They are reused as-is by every new route to avoid parallel implementations.                                                                                                                                        |
+| Demo-admin shell and layout                                                               | `app/(demo-admin)/demo-admin/layout.tsx`, `components/demo-admin/demo-admin-shell.tsx`, `demo-readonly-banner.tsx`, `lib/demo-admin/nav.ts`.                                                                                                                              | fashion-shop demo shell (read-only banner, nav shape, isolation posture).                                                                                                    | clone `src/admin/AdminShell.tsx`/`AdminShell.css` rail and bento layout.                                                                           | port-presentation | Bundle: the demo shell already satisfies the read-only, Prisma-free and Auth-free contract enforced by `tests/demo-admin-isolation.test.ts`; only the visual language needs to match the ported protected shell.                                                                                                                                            |
+| `/demo-admin` (synthetic dashboard route)                                                 | `app/(demo-admin)/demo-admin/page.tsx` with `demo-kpi-grid.tsx` and demo-local chart/donut/status replacements.                                                                                                                                                           | fashion-shop demo dashboard composition.                                                                                                                                     | clone `src/admin/AdminShell.tsx` dashboard bento and `adminData.ts` deterministic synthetic series (structure only).                               | adapt             | Bundle gap 9: fixtures are deterministic and isolated, but the current dashboard imports admin chart primitives. 5D.2–5D.3 transcribe every required visual import into demo-local chart/donut/status files; KPIs adapt to furniture terms (SKU, category/room, 360 coverage) with the isolation scan kept green.                                           |
+| `/demo-admin/catalog`                                                                     | `app/(demo-admin)/demo-admin/catalog/page.tsx` with `demo-data-table.tsx` and generic product rows.                                                                                                                                                                       | fashion-shop demo catalog page.                                                                                                                                              | clone `AdminPrimitives.tsx` table/filter/status primitives.                                                                                        | adapt             | Bundle: the route and render contract already exist; Phase 5 adapts rows to furniture product/option/SKU/article/media/360 vocabulary as static fixtures, with no Prisma, action, API or mutation form.                                                                                                                                                     |
+| `/demo-admin/orders`                                                                      | `app/(demo-admin)/demo-admin/orders/page.tsx` over `lib/demo-admin/fixtures.ts`.                                                                                                                                                                                          | fashion-shop demo orders page.                                                                                                                                               | clone `src/admin/AdminShell.tsx` orders composition and `adminState.ts` status/payment label vocabulary.                                           | adapt             | Bundle: existing route/render/fixture contracts hold; adaptation adds canonical SKU/article order lines and Evironn status labels while remaining read-only and provider-free.                                                                                                                                                                              |
+| `/demo-admin/customers`                                                                   | `app/(demo-admin)/demo-admin/customers/page.tsx` over deterministic fixtures.                                                                                                                                                                                             | fashion-shop demo customers page.                                                                                                                                            | clone `AdminPrimitives.tsx` table/panel primitives (clone has no customer screen).                                                                 | adapt             | Bundle: route exists with deterministic fixtures and no Auth.js usage; only furniture-flavoured synthetic content and ported visual language change.                                                                                                                                                                                                        |
+| `/demo-admin/marketing`                                                                   | `app/(demo-admin)/demo-admin/marketing/page.tsx` over coupon-shaped fixtures.                                                                                                                                                                                             | fashion-shop demo marketing page.                                                                                                                                            | clone `AdminPrimitives.tsx` status/table primitives (clone has no promocode screen).                                                               | adapt             | Bundle: coupon fixture shape matches stateless `Coupon` with no usage relation; adaptation is copy/presentation only, and no synthetic usage counters are invented.                                                                                                                                                                                         |
+| Demo fixtures, types and nav data                                                         | `lib/demo-admin/fixtures.ts`, `lib/demo-admin/types.ts`, `lib/demo-admin/nav.ts`; contract test `tests/demo-admin-fixtures.test.ts`.                                                                                                                                      | fashion-shop demo fixtures/types (deterministic dataset shape).                                                                                                              | clone `src/admin/adminData.ts` deterministic synthetic orders/customers/catalog lines (structure as reference, not imported).                      | adapt             | Bundle: fixtures are already deterministic and covered by a contract test, but types are generic. Phase 5 extends types and datasets with furniture entities while keeping determinism (no clock or randomness).                                                                                                                                            |
+| Demo isolation, route-contract and render-contract tests                                  | `tests/demo-admin-isolation.test.ts`, `tests/demo-admin-route-contract.test.ts`, `tests/demo-admin-render-contract.test.ts`, `tests/demo-admin-fixtures.test.ts`.                                                                                                         | fashion-shop demo isolation test (scan strategy for forbidden imports).                                                                                                      | None.                                                                                                                                              | adapt             | Bundle: the scan already rejects Prisma, Auth.js, admin action/API, payment and provider imports and route existence/non-indexability is covered. Phase 5 extends the scan to the new demo files, forbids `use server` and form actions, and keeps every assertion non-skipped.                                                                             |
+| Clone prototype state modules as production code                                          | Not present in the production repository.                                                                                                                                                                                                                                 | None.                                                                                                                                                                        | clone `src/admin/useAdmin.ts`, `src/admin/adminState.ts`, `src/admin/adminData.ts`.                                                                | retire            | Bundle gap 7: `useAdmin.ts` mutates in-memory synthetic orders and clone implements only `/admin` and `/admin/orders`; catalog/customers/promocodes are visual references only. These modules are excluded from production and demo bundles; only CSS, structure and label vocabulary are ported.                                                           |
 
 ## Plan
 
@@ -52,6 +52,10 @@
 - Pull request: exactly one PR, `phase/05-admin-demo` → `dev`, opened only after the closeout gate in §7 passes
 - Evidence basis: `.superpowers/sdd/phase-5-planner-evidence.md`, `docs/superpowers/specs/2026-08-20-phase-5-planning-brief.md`, `.superpowers/sdd/phase-5-handoff.md`, `docs/roadmap/{ROADMAP,STATUS,DECISIONS}.md`
 - Sources: production foundation in this repository is authoritative; `D:\Projects\fashion-shop` is a read-only technical reference; `D:\Новая папка (2)\evironn-clone\src\admin` is a read-only visual reference
+
+> **2026-08-25 sequencing amendment (ADR-022):** the user accepted the current 5A dashboard and deferred further cross-route visual work until the admin is functionally complete. Streams 5B and 5C keep the accepted shell stable and prioritize reusable server/data/form boundaries. Stream 5D performs one consolidated exact Evironn visual-parity pass across the completed protected and demo routes before final desktop/mobile acceptance. This amendment supersedes intermediate route-by-route visual-polish requirements but does not relax functionality, authorization, validation, isolation, accessibility, responsive usability, or the final visual acceptance gate.
+
+> **Bounded stream planning:** before implementation of each remaining stream, the coordinator converts this approved master plan into a current-state executable stream plan using one fresh Claude Opus XHigh Planner and one fresh isolated Claude Opus XHigh Plan Reviewer. The stream plan may refine task boundaries and exact files from current repository evidence but may not expand Phase 5 scope or contradict the master contracts. Implementation waits for user approval of the reviewed stream plan.
 
 ## 0. Delivery frame
 
@@ -72,38 +76,39 @@ Out of scope (no Phase 6 work): refunds, payment provider redesign, outbox/retry
 7. **No parallel implementations.** Reuse existing helpers (`lib/admin/pagination.ts`, `lib/admin/api-error.ts`, `lib/admin/require-admin.ts`, `components/admin/ui/*`, `components/admin/skeleton/*`, `lib/cloudinary/*`). Reuse from fashion-shop is symbol/file level after contract inspection; no directory copying.
 8. **Read-only references.** Never write to `D:\Projects\fashion-shop` or the clone directory. Never import from them at build time; port code by transcription into Evironn paths.
 9. **Schema/config ownership.** Phase 5 makes no Prisma schema change; `prisma/schema.prisma` is read-only. If implementation proves a schema change necessary, stop and escalate to the coordinator with the affected task and invariant before editing. `constants/config.ts` is inventoried by 5A.4 and remains the single owner of `LOW_STOCK_THRESHOLD`.
+10. **Visual sequencing.** During 5B and 5C, do not redesign the accepted shell or attempt isolated clone-parity rewrites for individual routes. New screens use the existing admin primitives and keep presentation separate from Prisma, actions, validation and DTOs. Exact protected/demo visual parity is a single 5D responsibility after all screens exist.
 
 ### 0.3 Ownership model
 
 Streams run sequentially on the single branch because 5A, 5B, 5C and 5D all touch `lib/admin/*`, `components/admin/*` and the shared test directory: **5A → 5B → 5C → 5D**. One implementation agent owns one stream end to end; within a stream, tasks execute strictly in the order given by `Depends on`. The external review agent reviews each stream boundary using the stream review range. The coordinator owns handoff checkpoints and the closeout gate.
 
-| Stream | Owner label | Boundary |
-|---|---|---|
-| 5A | `impl-5A` | Guards, shared shell, navigation, visual system, dashboard |
-| 5B | `impl-5B` | Categories, rooms, products, options, SKU matrix, stock, media, 360, Cloudinary allowlist |
-| 5C | `impl-5C` | Orders, customers, roles, coupons |
-| 5D | `impl-5D` | Demo-admin, integration parity, visual acceptance, closeout |
+| Stream | Owner label | Boundary                                                                                  |
+| ------ | ----------- | ----------------------------------------------------------------------------------------- |
+| 5A     | `impl-5A`   | Guards, shared shell, navigation, visual system, dashboard                                |
+| 5B     | `impl-5B`   | Categories, rooms, products, options, SKU matrix, stock, media, 360, Cloudinary allowlist |
+| 5C     | `impl-5C`   | Orders, customers, roles, coupons                                                         |
+| 5D     | `impl-5D`   | Demo-admin, consolidated protected/demo visual parity, final acceptance, closeout         |
 
 Owned legacy-hit cleanup is staged by file so the final scan needs no cross-stream edits:
 
-| File | Owner task | Required disposition |
-|---|---|---|
-| `components/admin/admin-shell.tsx` | 5A.2 | Remove Ritm logo references and copy; use `/assets/evironn-logo.svg`. |
-| `app/(admin)/admin/page.tsx` | 5A.5 | Remove Ritm dashboard copy. |
-| `components/admin/skeleton/index.ts` | 5A.3 | Remove Ritm-only labels or fixture text. |
-| `app/api/admin/media/sign/route.ts` | 5B.2 | Replace literal folders with `EVIRONN_MEDIA_FOLDERS`. |
-| `app/api/admin/media/delete/route.ts` | 5B.2 | Retain only documented database-referenced legacy-ID branch. |
-| `lib/cloudinary/folders.ts` | 5B.2 | Retain the single `LEGACY_MEDIA_PREFIX = 'ritm/'` declaration. |
-| `components/admin/media/image-uploader.tsx` | 5B.2 | Replace legacy uploader defaults with shared Evironn folders. |
-| `components/admin/media/uploader-demo.tsx` | 5B.2 | Remove legacy demo defaults. |
-| `app/(admin)/admin/catalog/categories/_components/category-form.tsx` | 5B.2 | Use `EVIRONN_MEDIA_FOLDERS` value `evironn/categories`. |
-| `app/(admin)/admin/catalog/products/_components/colorway-card.tsx` | 5B.10 | Retire legacy nested media UI after importer/read-compatibility audit. |
-| `app/(admin)/admin/marketing/_components/coupon-form.tsx` | 5C.6 | Remove inherited Ritm copy. |
-| `lib/demo-admin/fixtures.ts` | 5D.1 | Replace inherited vocabulary with furniture fixtures. |
-| `app/(demo-admin)/demo-admin/page.tsx` | 5D.3 | Replace inherited dashboard copy. |
-| `components/demo-admin/demo-admin-shell.tsx` | 5D.2 | Remove inherited branding/copy. |
-| `public/ritm-logo.svg` | 5D.2 | Delete. |
-| `public/ritm-logo-light.svg` | 5D.2 | Delete. |
+| File                                                                 | Owner task | Required disposition                                                   |
+| -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------- |
+| `components/admin/admin-shell.tsx`                                   | 5A.2       | Remove Ritm logo references and copy; use `/assets/evironn-logo.svg`.  |
+| `app/(admin)/admin/page.tsx`                                         | 5A.5       | Remove Ritm dashboard copy.                                            |
+| `components/admin/skeleton/index.ts`                                 | 5A.3       | Remove Ritm-only labels or fixture text.                               |
+| `app/api/admin/media/sign/route.ts`                                  | 5B.2       | Replace literal folders with `EVIRONN_MEDIA_FOLDERS`.                  |
+| `app/api/admin/media/delete/route.ts`                                | 5B.2       | Retain only documented database-referenced legacy-ID branch.           |
+| `lib/cloudinary/folders.ts`                                          | 5B.2       | Retain the single `LEGACY_MEDIA_PREFIX = 'ritm/'` declaration.         |
+| `components/admin/media/image-uploader.tsx`                          | 5B.2       | Replace legacy uploader defaults with shared Evironn folders.          |
+| `components/admin/media/uploader-demo.tsx`                           | 5B.2       | Remove legacy demo defaults.                                           |
+| `app/(admin)/admin/catalog/categories/_components/category-form.tsx` | 5B.2       | Use `EVIRONN_MEDIA_FOLDERS` value `evironn/categories`.                |
+| `app/(admin)/admin/catalog/products/_components/colorway-card.tsx`   | 5B.10      | Retire legacy nested media UI after importer/read-compatibility audit. |
+| `app/(admin)/admin/marketing/_components/coupon-form.tsx`            | 5C.6       | Remove inherited Ritm copy.                                            |
+| `lib/demo-admin/fixtures.ts`                                         | 5D.1       | Replace inherited vocabulary with furniture fixtures.                  |
+| `app/(demo-admin)/demo-admin/page.tsx`                               | 5D.3       | Replace inherited dashboard copy.                                      |
+| `components/demo-admin/demo-admin-shell.tsx`                         | 5D.2       | Remove inherited branding/copy.                                        |
+| `public/ritm-logo.svg`                                               | 5D.2       | Delete.                                                                |
+| `public/ritm-logo-light.svg`                                         | 5D.2       | Delete.                                                                |
 
 ### 0.4 Command conventions
 
@@ -133,6 +138,7 @@ Do not invent `format:check`, `gate:phase5`, `e2e:phase5` or any other script; `
 
 ```md
 ## Phase 5 checkpoint — task identifier and title
+
 - Commit: recorded SHA and subject
 - Files: owned paths
 - RED: exact command — failing assertion
@@ -164,7 +170,7 @@ These decisions resolve planner-level unknowns so tasks are executable. Each is 
 - **D12 — Evironn mark.** Existing `public/assets/evironn-logo.svg` is served as `/assets/evironn-logo.svg`; owned Ritm consumers/assets are removed; no compatibility logo is added.
 - **D13 — Test harness.** §0.7 is mandatory for every Prisma-backed or static contract test.
 - **D14 — Critical E2E.** 5D.6 authors required Playwright specs and test IDs.
-- **D15 — ADR ids.** Next free id is ADR-022. 5D.8 writes exactly ADR-022 Cloudinary ownership, ADR-023 canonical furniture writes, ADR-024 route granularity including Room CRUD, and ADR-025 order transition/cancellation policy. ADR-019 through ADR-021 are never reused.
+- **D15 — ADR ids.** ADR-022 records the approved visual-sequencing amendment. 5D.8 writes exactly ADR-023 Cloudinary ownership, ADR-024 canonical furniture writes, ADR-025 route granularity including Room CRUD, and ADR-026 order transition/cancellation policy. ADR-019 through ADR-022 are never reused.
 
 ## 2. Stream 5A — ADMIN protection, shared shell, dashboard
 
@@ -239,7 +245,7 @@ Machine output: `files=38`; Tailwind utility classes via `className=333`; class 
 ```ts
 // lib/admin/nav.ts
 export type AdminNavItem = { href: string; label: string; match: 'exact' | 'prefix' };
-export const ADMIN_NAV: readonly AdminNavItem[];        // dashboard, catalog, orders, customers, marketing
+export const ADMIN_NAV: readonly AdminNavItem[]; // dashboard, catalog, orders, customers, marketing
 export const ADMIN_CATALOG_TABS: readonly AdminNavItem[]; // initially products/categories; route tasks append options/rooms/stock
 export function isActiveAdminHref(item: AdminNavItem, pathname: string): boolean;
 ```
@@ -280,8 +286,8 @@ export type AdminCatalogKpis = {
   activeProducts: number;
   totalSkus: number;
   activeSkus: number;
-  lowStockSkus: number;      // 0 < stock <= LOW_STOCK_THRESHOLD (3, imported from constants/config.ts)
-  outOfStockSkus: number;    // stock === 0
+  lowStockSkus: number; // 0 < stock <= LOW_STOCK_THRESHOLD (3, imported from constants/config.ts)
+  outOfStockSkus: number; // stock === 0
   categories: number;
   rooms: number;
   turntableBoundCategories: number;
@@ -289,8 +295,12 @@ export type AdminCatalogKpis = {
 };
 export async function getAdminCatalogKpis(): Promise<AdminCatalogKpis>;
 export type AdminLowStockSku = {
-  skuId: string; articleNumber: string; productId: string; productName: string;
-  combinationLabel: string; stock: number;
+  skuId: string;
+  articleNumber: string;
+  productId: string;
+  productName: string;
+  combinationLabel: string;
+  stock: number;
 };
 export async function getAdminLowStockSkus(limit?: number): Promise<AdminLowStockSku[]>;
 ```
@@ -336,23 +346,38 @@ Stream paths: `app/(admin)/admin/catalog/**`, `app/actions/admin/{categories,pro
 ```ts
 // lib/admin/catalog.ts
 export type AdminProductRow = {
-  id: string; name: string; slug: string; active: boolean;
-  categoryId: string | null; categoryName: string | null;
-  skuCount: number; activeSkuCount: number;
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+  categoryId: string | null;
+  categoryName: string | null;
+  skuCount: number;
+  activeSkuCount: number;
   canonicalState: 'complete' | 'incomplete-zero-sku';
-  minPrice: number | null; maxPrice: number | null;
-  totalStock: number; lowStockSkuCount: number; outOfStockSkuCount: number;
-  coverUrl: string | null; hasTurntableMedia: boolean;
+  minPrice: number | null;
+  maxPrice: number | null;
+  totalStock: number;
+  lowStockSkuCount: number;
+  outOfStockSkuCount: number;
+  coverUrl: string | null;
+  hasTurntableMedia: boolean;
   updatedAt: Date;
 };
 export type AdminProductListParams = {
-  page: number; perPage: number;
-  query?: string; categoryId?: string; roomId?: string;
-  active?: boolean; stock?: 'all' | 'low' | 'out';
+  page: number;
+  perPage: number;
+  query?: string;
+  categoryId?: string;
+  roomId?: string;
+  active?: boolean;
+  stock?: 'all' | 'low' | 'out';
 };
 export type AdminProductList = { rows: AdminProductRow[]; total: number; page: number; perPage: number };
 export async function listAdminProducts(params: AdminProductListParams): Promise<AdminProductList>;
-export async function getAdminProductDraft(productId: string): Promise<(FurnitureProductValues & { id: string; canonicalState: 'complete' | 'incomplete-zero-sku' }) | null>;
+export async function getAdminProductDraft(
+  productId: string,
+): Promise<(FurnitureProductValues & { id: string; canonicalState: 'complete' | 'incomplete-zero-sku' }) | null>;
 ```
 
 - Work: call `requireAdminPage()` before the first privileged read; read only canonical relations (`skus`, `media`, `optionGroups`, `optionValues`, rooms, category); reuse `lib/admin/pagination.ts` for page parsing and clamping; keep every query bounded and index-friendly. A product with zero canonical `Sku` rows is a safe list/edit case: return `skuCount: 0`, `activeSkuCount: 0`, null price bounds, zero stock counts, `hasTurntableMedia: false`, and `canonicalState: 'incomplete-zero-sku'`; do not throw or invent legacy aggregates. `getAdminProductDraft` returns a `furnitureProductSchema`-parseable draft plus this marker so the form can offer migration-on-save without a second mapping layer.
@@ -361,8 +386,6 @@ export async function getAdminProductDraft(productId: string): Promise<(Furnitur
 - Commit: `feat(admin): add canonical furniture catalog read layer`
 - Review range: `git diff '$C5A6..$C5B1' -- 'lib/admin' 'app/(admin)/admin/catalog' 'app/actions' 'app/api/admin' 'services/dto' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'tests'`
 - Checkpoint: canonical read contract available to product form, stock console and demo vocabulary.
-
-
 
 ### 5B.2 — Product/SKU media and Evironn Cloudinary allowlist
 
@@ -373,7 +396,11 @@ export async function getAdminProductDraft(productId: string): Promise<(Furnitur
 ```ts
 // lib/cloudinary/folders.ts
 export const EVIRONN_MEDIA_FOLDERS = [
-  'evironn/uploads', 'evironn/categories', 'evironn/products', 'evironn/skus', 'evironn/turntable',
+  'evironn/uploads',
+  'evironn/categories',
+  'evironn/products',
+  'evironn/skus',
+  'evironn/turntable',
 ] as const;
 export type EvironnMediaFolder = (typeof EVIRONN_MEDIA_FOLDERS)[number];
 export const LEGACY_MEDIA_PREFIX = 'ritm/';
@@ -388,8 +415,6 @@ export function isEvironnPublicId(publicId: string): boolean; // prefix match; r
 - Review range: `git diff '$C5B1..$C5B2' -- 'lib/cloudinary' 'app/api/admin' 'app/actions' 'components/admin/media' 'services/dto' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'app/(admin)/admin/catalog/categories/_components/category-form.tsx' 'tests'`
 - Checkpoint: allowlist decision and legacy-asset handling recorded verbatim for ADR draft; the repository-wide `ritm` scan is intentionally authored and gated by final cleanup owner 5D.2.
 
-
-
 ### 5B.3 — Option group and option value administration
 
 - Owner: `impl-5B`. Depends on: 5B.2
@@ -400,15 +425,16 @@ export function isEvironnPublicId(publicId: string): boolean; // prefix match; r
 // services/dto/option-group.dto.ts
 export const optionGroupSchema: ZodType<OptionGroupValues>;
 export type OptionGroupValues = {
-  name: string; slug: string; sortOrder: number;
+  name: string;
+  slug: string;
+  sortOrder: number;
   values: Array<{ id?: string; name: string; slug: string; swatchHex?: string; sortOrder: number }>;
 };
 
 // app/actions/admin/option-groups.ts
 // lib/admin/action-result.ts
 export type AdminActionResult<T = undefined> =
-  | { ok: true; data: T }
-  | { ok: false; error: string; code?: string; details?: unknown };
+  { ok: true; data: T } | { ok: false; error: string; code?: string; details?: unknown };
 
 export async function createOptionGroup(input: unknown): Promise<AdminActionResult<{ id: string }>>;
 export async function updateOptionGroup(id: string, input: unknown): Promise<AdminActionResult<{ id: string }>>;
@@ -423,8 +449,6 @@ export async function deleteOptionValue(id: string): Promise<AdminActionResult>;
 - Review range: `git diff '$C5B2..$C5B3' -- 'services/dto' 'app/actions' 'app/api/admin' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'app/(admin)/admin/catalog/options' 'lib/admin/nav.ts' 'tests'`
 - Checkpoint: option library slugs/ids available to the product form and SKU matrix.
 
-
-
 ### 5B.4 — Room administration
 
 - Owner: impl-5B. Depends on: 5B.3
@@ -436,7 +460,6 @@ export async function deleteOptionValue(id: string): Promise<AdminActionResult>;
 - Commit: feat(admin): administer rooms.
 - Review range: `git diff '$C5B3..$C5B4' -- 'services/dto' 'app/actions' 'app/api/admin' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'app/(admin)/admin/catalog/rooms' 'lib/admin/nav.ts' 'tests'`.
 
-
 ### 5B.5 — Deterministic SKU matrix component
 
 - Owner: `impl-5B`. Depends on: 5B.4
@@ -445,7 +468,7 @@ export async function deleteOptionValue(id: string): Promise<AdminActionResult>;
 
 ```ts
 export type SkuMatrixRow = {
-  key: string;                       // buildCombinationKey output, never hand-built
+  key: string; // buildCombinationKey output, never hand-built
   selections: Array<{ groupId: string; valueId: string }>;
   articleNumber: string;
   price: number;
@@ -467,8 +490,6 @@ export function buildSkuMatrixRows(input: {
 - Review range: `git diff '$C5B4..$C5B5' -- 'lib/admin/sku-matrix.ts' 'app/(admin)/admin/catalog/products' 'app/actions' 'app/api/admin' 'services/dto' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'tests'`
 - Checkpoint: matrix contract recorded for demo catalog vocabulary in 5D.1.
 
-
-
 ### 5B.6 — Canonical product action, options, rooms and SKU matrix
 
 - Owner: `impl-5B`. Depends on: 5B.5
@@ -480,7 +501,6 @@ export function buildSkuMatrixRows(input: {
 export async function createFurnitureProduct(input: unknown): Promise<AdminActionResult<{ id: string }>>;
 export async function updateFurnitureProduct(id: string, input: unknown): Promise<AdminActionResult<{ id: string }>>;
 export async function deleteProduct(id: string): Promise<AdminActionResult>;
-
 ```
 
 - Work: execute ordered substeps: (1) guard/DTO contract and migration refusal; (2) one product form with option, room and SKU inputs; (3) one transaction for canonical writes and reference-safe deactivation; (4) exact revalidation assertions for `/admin/catalog/products`, `/catalog`, and `/product/[slug]`; (5) focused assertions and external review before 5B.7. Import `furnitureProductSchema`/`FurnitureProductValues`; introduce `product-form.tsx` exactly once with option assignment, room assignment and SKU matrix, and add `data-testid="admin-product-form"` plus `data-testid="admin-sku-matrix-row"`. One transaction writes `Product`, `ProductRoom`, `ProductOptionGroup`, `ProductOptionValue`, `Sku` and `SkuOptionValue` in that order. Product/SKU references from orders or carts deactivate, never delete; cart/wishlist rows and immutable snapshots stay intact; no cartItem or wishlist delete. Refuse product delete/disable with typed zero-write `TURNTABLE_BOUND_PRODUCT` until explicit category unbind when `Category.turntableProductId` points at the product. For `canonicalState: 'incomplete-zero-sku'`, migration-on-save requires complete submitted option selections and at least one sellable canonical SKU, creates canonical groups/values/SKUs in this transaction, leaves all legacy rows untouched, and returns typed `MIGRATION_REQUIRES_CANONICAL_SKU` with zero writes when incomplete.
@@ -489,8 +509,6 @@ export async function deleteProduct(id: string): Promise<AdminActionResult>;
 - Commit: `feat(admin): write furniture products through canonical DTO`
 - Review range: `git diff '$C5B5..$C5B6' -- 'app/actions/admin/products.ts' 'app/api/admin' 'app/(admin)/admin/catalog/products' 'services/dto' 'constants' 'lib/admin' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'tests'`
 - Checkpoint: canonical core write path live; media/360 persistence follows in 5B.7, legacy branches retire in 5B.10.
-
-
 
 ### 5B.7 — Canonical product media and 360 sections
 
@@ -521,7 +539,8 @@ sku.media: Array<{ publicId: string; url: string; alt: string; sortOrder: number
 ```ts
 // app/actions/admin/categories.ts (additions)
 export async function setCategoryTurntable(input: {
-  categoryId: string; productId: string | null;
+  categoryId: string;
+  productId: string | null;
 }): Promise<AdminActionResult<{ categoryId: string; productId: string | null }>>;
 ```
 
@@ -531,8 +550,6 @@ export async function setCategoryTurntable(input: {
 - Commit: `feat(admin): bind category turntable and 360 media`
 - Review range: `git diff '$C5B7..$C5B8' -- 'app/actions/admin/categories.ts' 'app/api/admin' 'app/(admin)/admin/catalog/categories' 'services/dto' 'constants' 'lib/admin' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'tests'`
 - Checkpoint: 360 coverage semantics aligned with the dashboard KPI from 5A.4.
-
-
 
 ### 5B.9 — Guarded SKU stock console
 
@@ -545,7 +562,9 @@ export async function setCategoryTurntable(input: {
 export type StockConflict = { reason: 'STALE_VALUE'; currentStock: number };
 export type StockConflictResult = { ok: false; error: string; conflict: StockConflict };
 export async function setSkuStock(input: {
-  skuId: string; expectedStock: number; nextStock: number;
+  skuId: string;
+  expectedStock: number;
+  nextStock: number;
 }): Promise<AdminActionResult<{ skuId: string; stock: number }> | StockConflictResult>;
 ```
 
@@ -555,8 +574,6 @@ export async function setSkuStock(input: {
 - Commit: `feat(admin): add guarded SKU stock console`
 - Review range: `git diff '$C5B8..$C5B9' -- 'app/(admin)/admin/catalog/stock' 'app/actions' 'app/api/admin' 'services/dto' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'lib/admin/nav.ts' 'tests'`
 - Checkpoint: stock write contract recorded for the 5C cancellation restoration review.
-
-
 
 ### 5B.10 — Retire legacy admin writes with compatibility evidence
 
@@ -570,13 +587,11 @@ export async function setSkuStock(input: {
 - Review range: `git diff '$C5B9..$C5B10' -- 'app' 'components' 'app/actions' 'app/api/admin' 'services/dto' 'constants' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'tests'`
 - Checkpoint: retirement evidence table (symbol → remaining consumers → action taken), including the exact temporary restoration exemption and owner `5C.3` that removes it.
 
-
-
-### 5B.11 — 5B visual acceptance and stream checkpoint
+### 5B.11 — 5B functional UX acceptance and stream checkpoint
 
 - Owner: `impl-5B`. Depends on: 5B.10
 - Files: `.superpowers/sdd/phase-5-handoff.md`, `.superpowers/sdd/progress.md`.
-- Work: §6 acceptance for `/admin/catalog/products`, `/new`, `/[id]/edit` (including SKU matrix, media and 360 sections), `/admin/catalog/categories` (+ new/edit with turntable binding), `/admin/catalog/options` (+ new/edit), `/admin/catalog/rooms` (+ new/edit), `/admin/catalog/stock`, at both viewports, including validation-error and conflict states.
+- Work: verify functional usability for `/admin/catalog/products`, `/new`, `/[id]/edit` (including SKU matrix, media and 360 sections), `/admin/catalog/categories` (+ new/edit with turntable binding), `/admin/catalog/options` (+ new/edit), `/admin/catalog/rooms` (+ new/edit), and `/admin/catalog/stock` at desktop and mobile, including validation-error and conflict states. This checkpoint verifies navigation, readability, form operation and responsive usability inside the accepted shell; it does not require exact clone parity or a route-specific redesign. Record visual debt for the consolidated 5D pass rather than polishing it here.
 - Verification: rerun explicit batch `tests/admin-catalog-read.test.ts`, `tests/cloudinary-folders.test.ts`, `tests/admin-media-routes.test.ts`, `tests/option-group-dto.test.ts`, `tests/admin-option-groups.test.ts`, `tests/room-dto.test.ts`, `tests/admin-rooms-action.test.ts`, `tests/admin-sku-matrix.test.ts`, `tests/admin-products-action.test.ts`, `tests/admin-product-media.test.ts`, `tests/admin-categories-turntable.test.ts`, `tests/admin-stock-action.test.ts`, `tests/admin-legacy-write-retirement.test.ts`, `tests/admin-nav.test.ts`, plus `tests/admin-access-boundary.test.ts`.
 - Commit: `docs(phase-5): record 5B visual acceptance checkpoint`
 - Stream review range: `git diff '$C5A6..$C5B11' -- 'app/(admin)' 'app/actions' 'app/api/admin' 'services/dto' 'constants' 'lib/admin' 'lib/cloudinary' 'lib/order-admin.ts' 'lib/customer-admin.ts' 'lib/order.ts' 'lib/sales-count.ts' 'tests'`
@@ -606,14 +621,26 @@ Stream paths: `app/(admin)/admin/{orders,customers,marketing}/**`, `app/actions/
 ```ts
 // lib/order-admin.ts (additions)
 export type AdminOrderRow = {
-  id: string; number: string; createdAt: Date;
-  status: OrderStatus; paymentInitializationState: string; paymentLabel: string;
-  customerLabel: string; itemCount: number; total: number;
+  id: string;
+  number: string;
+  createdAt: Date;
+  status: OrderStatus;
+  paymentInitializationState: string;
+  paymentLabel: string;
+  customerLabel: string;
+  itemCount: number;
+  total: number;
 };
 export type AdminOrderListParams = {
-  page: number; perPage: number; status?: OrderStatus; query?: string; paymentState?: string;
+  page: number;
+  perPage: number;
+  status?: OrderStatus;
+  query?: string;
+  paymentState?: string;
 };
-export async function listAdminOrders(params: AdminOrderListParams): Promise<{ rows: AdminOrderRow[]; total: number; page: number; perPage: number }>;
+export async function listAdminOrders(
+  params: AdminOrderListParams,
+): Promise<{ rows: AdminOrderRow[]; total: number; page: number; perPage: number }>;
 ```
 
 - Work: keep the existing legal forward pipeline and cancellation eligibility helpers as the single source of truth; add payment-state filtering only for states that exist in `prisma/schema.prisma`; reuse `lib/admin/pagination.ts`; do not read provider APIs from list pages.
@@ -634,7 +661,9 @@ export async function listAdminOrders(params: AdminOrderListParams): Promise<{ r
 export function nextAdminStatuses(status: OrderStatus): OrderStatus[]; // PENDING->PROCESSING->SHIPPED->DELIVERED
 // app/actions/admin/orders.ts
 export async function advanceOrderStatus(input: {
-  orderId: string; expectedStatus: OrderStatus; nextStatus: OrderStatus;
+  orderId: string;
+  expectedStatus: OrderStatus;
+  nextStatus: OrderStatus;
 }): Promise<AdminActionResult<{ status: OrderStatus }>>;
 ```
 
@@ -659,10 +688,11 @@ export type AdminCancelBlockReason =
   | 'PAYMENT_CLAIM_IN_FLIGHT'
   | 'PAYMENT_STATE_UNSAFE';
 export function canAdminCancel(
-  order: Prisma.OrderGetPayload<{ include: { payment: true } }>
+  order: Prisma.OrderGetPayload<{ include: { payment: true } }>,
 ): { ok: true } | { ok: false; reason: AdminCancelBlockReason };
 export async function cancelOrderAsAdmin(input: {
-  orderId: string; expectedStatus: OrderStatus;
+  orderId: string;
+  expectedStatus: OrderStatus;
 }): Promise<AdminActionResult<{ status: OrderStatus; stockRestored: boolean }>>;
 ```
 
@@ -725,13 +755,23 @@ Stream paths: `app/(demo-admin)/**`, `components/demo-admin/**`, `lib/demo-admin
 ```ts
 // lib/demo-admin/types.ts (additions)
 export type DemoSkuRow = {
-  articleNumber: string; combinationLabel: string;
-  price: number; oldPrice: number | null; stock: number; active: boolean;
+  articleNumber: string;
+  combinationLabel: string;
+  price: number;
+  oldPrice: number | null;
+  stock: number;
+  active: boolean;
 };
 export type DemoProductRow = {
-  id: string; name: string; category: string; rooms: string[];
-  skuCount: number; priceFrom: number; totalStock: number;
-  mediaCount: number; turntable: 'ready' | 'partial' | 'none';
+  id: string;
+  name: string;
+  category: string;
+  rooms: string[];
+  skuCount: number;
+  priceFrom: number;
+  totalStock: number;
+  mediaCount: number;
+  turntable: 'ready' | 'partial' | 'none';
   skus: DemoSkuRow[];
 };
 export type DemoOptionGroupRow = { name: string; values: string[]; usedByProducts: number };
@@ -793,18 +833,18 @@ export type DemoOptionGroupRow = { name: string; values: string[]; usedByProduct
 - Commit: `test(admin): cover critical Phase 5 admin and demo scenarios end to end`.
 - Review range: `git diff '$C5D5..$C5D6' -- 'e2e'`.
 
-### 5D.7 — Full visual acceptance matrix
+### 5D.7 — Consolidated Evironn visual parity and full acceptance matrix
 
 - Owner: `impl-5D`. Depends on: 5D.6.
-- Files: `.superpowers/sdd/phase-5-handoff.md` (acceptance matrix section), `.superpowers/sdd/progress.md`.
-- Work: execute §6 in full across every admin and demo route at both viewports, including access and accessibility checks, and record one pass/fail line per route/viewport with defects and fix commits. E2E evidence remains mandatory.
-- Commit: `docs(phase-5): record visual acceptance matrix`
-- Review range: `git diff '$C5D6..$C5D7' -- '.superpowers' 'docs'`
+- Files: completed protected admin and demo-admin presentation components under `app/(admin)/**`, `components/admin/**`, `app/(demo-admin)/**`, and `components/demo-admin/**`; `.superpowers/sdd/phase-5-handoff.md` (acceptance matrix section); `.superpowers/sdd/progress.md`.
+- Work: with all functionality frozen, compare every completed protected and demo route against the read-only clone `src/admin/AdminShell.tsx`, `AdminShell.css`, `AdminPrimitives.tsx`, and `AdminPrimitives.css`; apply one coherent Evironn shell/primitives/style pass without changing Prisma queries, actions, DTOs, ADMIN boundaries, Cloudinary ownership, payment/stock invariants, or demo isolation. Then execute §6 in full at both viewports, including access, loading/empty/error, keyboard, reduced-motion and accessibility checks, and record one pass/fail line per route/viewport with defects and fix commits. E2E evidence remains mandatory. User desktop/mobile visual acceptance blocks closeout.
+- Commit: `feat(admin): complete Evironn visual parity`
+- Review range: `git diff '$C5D6..$C5D7' -- 'app/(admin)' 'components/admin' 'app/(demo-admin)' 'components/demo-admin' '.superpowers' 'docs'`
 
 ### 5D.8 — Documentation, ADRs and local closeout gate
 
 - Owner: `impl-5D`. Depends on: 5D.7.
-- Files: `docs/roadmap/ROADMAP.md`, `docs/roadmap/STATUS.md`, `docs/roadmap/DECISIONS.md` (ADR-022, ADR-023, ADR-024, ADR-025), `.superpowers/sdd/progress.md`, `.superpowers/sdd/phase-5-handoff.md`.
+- Files: `docs/roadmap/ROADMAP.md`, `docs/roadmap/STATUS.md`, `docs/roadmap/DECISIONS.md` (retain ADR-022 and add ADR-023, ADR-024, ADR-025, ADR-026), `.superpowers/sdd/progress.md`, `.superpowers/sdd/phase-5-handoff.md`.
 - Work: record decisions, phase status and delivery summary; preserve protected untracked Phase 2 paths; run §7 in full and record exact output. No PR or push in this task.
 - Commit: `docs(phase-5): close out admin and demo-admin phase`
 - Review range: `git diff '$C5D7..$C5D8' -- '.superpowers' 'docs'`
@@ -820,18 +860,18 @@ export type DemoOptionGroupRow = { name: string; values: string[]; usedByProduct
 
 Environment: `npm run dev` with local fixture provisioning for 5A.6, 5B.11 and 5C.7; provision one ADMIN, one CUSTOMER, one dispatched order, one stale-status conflict, and one empty-projection case without global reset. Use local production preview (`npm run build` then `npm start`) for 5D.7, then deployed Preview URL for 5D.9. Viewports: desktop 1440×900 and mobile 390×844. The matrix is executed twice; both results are recorded. Every row is checked at both viewports.
 
-| Route | Checks |
-|---|---|
-| `/admin` | KPI panels, chart/donut, best sellers, low stock, recent orders, pending payments; skeleton on first paint; empty-state copy when a projection is empty |
-| `/admin/catalog/products` | filters (query, category, active, stock), pagination, empty result state, row navigation, mobile table density |
-| `/admin/catalog/products/new` and `/[id]/edit` | option assignment, SKU matrix generation and inline errors, media upload progress/error, 360 section, submit success and validation failure |
-| `/admin/catalog/categories` (+ new/edit) | reorder controls, cover upload, delete blocked when occupied, turntable binding success and conflict |
-| `/admin/catalog/options` (+ new/edit) | value list editing, duplicate-slug error, referenced-delete refusal |
-| `/admin/catalog/stock` | low/out filters, inline stock edit, stale-value conflict message and reload |
-| `/admin/orders` and `/admin/orders/[id]` | status filter, payment-state filter, transition control, cancel control, blocked-cancel reason, snapshot line rendering |
-| `/admin/customers` and `/admin/customers/[id]` | pagination, order history, role control, self/last-admin blocked copy |
-| `/admin/marketing` (+ new/edit) | list status chips, toggle, validation errors, empty state |
-| `/demo-admin`, `/catalog`, `/orders`, `/customers`, `/marketing` | read-only banner, no mutation affordances, deterministic content, mobile navigation |
+| Route                                                            | Checks                                                                                                                                                  |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/admin`                                                         | KPI panels, chart/donut, best sellers, low stock, recent orders, pending payments; skeleton on first paint; empty-state copy when a projection is empty |
+| `/admin/catalog/products`                                        | filters (query, category, active, stock), pagination, empty result state, row navigation, mobile table density                                          |
+| `/admin/catalog/products/new` and `/[id]/edit`                   | option assignment, SKU matrix generation and inline errors, media upload progress/error, 360 section, submit success and validation failure             |
+| `/admin/catalog/categories` (+ new/edit)                         | reorder controls, cover upload, delete blocked when occupied, turntable binding success and conflict                                                    |
+| `/admin/catalog/options` (+ new/edit)                            | value list editing, duplicate-slug error, referenced-delete refusal                                                                                     |
+| `/admin/catalog/stock`                                           | low/out filters, inline stock edit, stale-value conflict message and reload                                                                             |
+| `/admin/orders` and `/admin/orders/[id]`                         | status filter, payment-state filter, transition control, cancel control, blocked-cancel reason, snapshot line rendering                                 |
+| `/admin/customers` and `/admin/customers/[id]`                   | pagination, order history, role control, self/last-admin blocked copy                                                                                   |
+| `/admin/marketing` (+ new/edit)                                  | list status chips, toggle, validation errors, empty state                                                                                               |
+| `/demo-admin`, `/catalog`, `/orders`, `/customers`, `/marketing` | read-only banner, no mutation affordances, deterministic content, mobile navigation                                                                     |
 
 Cross-cutting checks for every route: keyboard-only navigation reaches all controls with visible focus; `prefers-reduced-motion: reduce` removes non-essential animation; loading, empty, error and validation states are all reachable and legible; no console errors; no `Ritm` string anywhere in admin output.
 
@@ -876,12 +916,11 @@ gh pr create --base dev --head phase/05-admin-demo \
   --body-file .superpowers/sdd/phase-5-handoff.md
 ```
 
-The PR description must state: delivery base `da5e87e`, stream commit list, decisions D1–D15 with ADR-022 through ADR-025 references, both acceptance-matrix results, the closeout gate output summary, both CI check contexts, and the explicit statement that no Phase 6 work is included.
+The PR description must state: delivery base `da5e87e`, stream commit list, decisions D1–D15 with ADR-022 through ADR-026 references, both acceptance-matrix results, the closeout gate output summary, both CI check contexts, and the explicit statement that no Phase 6 work is included.
 
 ## 8. Out of scope restated
 
 No refunds, provider redesign, outbox/retry, webhook tooling, bulk import/export, additional roles, warehouse analytics, storefront redesign, or schema changes beyond what a task in this plan requires. No new admin routes beyond D3. No new demo routes beyond D9. No changes to `package.json` scripts, CI definitions, or environment variable names.
-
 
 ## Summary
 

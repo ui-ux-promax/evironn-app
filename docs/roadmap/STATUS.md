@@ -3,7 +3,7 @@
 ## Current state
 
 - Bootstrap and Phases 1–4 are complete and merged into `dev`.
-- Active delivery: Phase 5 preparation; implementation has not started.
+- Active delivery: Phase 5. Stream 5A is functionally complete and user-accepted; its final accepted visual adjustment is present in the local worktree above `0f2a739` and must be checkpointed before 5B starts.
 - Integration branch: `dev` at merge commit `da5e87e` (Phase 4 closeout PR #9).
 - Current delivery branch: `phase/05-admin-demo`, created from exact `origin/dev` commit `da5e87e`.
 - Phase 5 scope: protected production admin, furniture catalog/SKU/media administration, orders, customers, roles, coupons, dashboard, and public synthetic read-only demo admin.
@@ -40,6 +40,7 @@ Historical delivery details are summarized in `docs/roadmap/archive/PHASES-1-4.m
 - `/demo-admin` remains public, synthetic, read-only, independent from Prisma and mutation endpoints.
 - Cloudinary signing/deletion must be ADMIN-only and restricted to an Evironn-owned folder boundary.
 - Admin visual acceptance on desktop and mobile is required before Phase 5 merge.
+- The user accepted the current 5A dashboard on 2026-08-25. Exact cross-route Evironn admin visual parity is intentionally deferred until all protected admin and demo-admin functionality is complete; 5B and 5C must preserve the accepted shell and use reusable data/form boundaries rather than perform route-by-route redesigns.
 
 ## Session and verification policy
 
@@ -57,11 +58,12 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 
 ## Next action
 
-1. Start a fresh Phase 5 planning session on Luna High.
-2. Invoke one isolated read-only Claude Opus XHigh planner through the local CLI bridge using `.superpowers/sdd/phase-5-handoff.md` and `docs/superpowers/specs/2026-08-20-phase-5-planning-brief.md`.
-3. Review and approve the executable plan before any implementation.
-4. Execute sequentially with Luna High implementers and fresh Claude Opus XHigh task reviewers.
-5. Use fresh Claude Opus XHigh runs for high-risk, final functional, and ADMIN/role/Cloudinary security review. Sol Medium is fallback only when Claude is unavailable and the reason is recorded.
+1. Continue on `phase/05-admin-demo`; do not create or switch branches.
+2. Inspect and checkpoint the user-accepted 5A worktree plus this durable handoff update. Reuse fresh focused evidence where valid; do not run a post-visual 5A Opus re-review.
+3. Before 5B implementation, have Luna prepare a compact current-state evidence bundle, run one fresh bounded Claude Opus XHigh 5B Planner, then one fresh isolated Claude Opus XHigh Plan Reviewer. Resolve all Critical/Important plan findings and stop for user approval.
+4. After approval, execute 5B sequentially with Luna High implementers, focused verification, and bounded Claude Opus XHigh reviews only at meaningful task/risk boundaries.
+5. Keep the current accepted admin presentation stable during 5B and 5C. Complete exact cross-route Evironn visual parity once in 5D after all admin functionality exists.
+6. Do not push, open a PR, merge, or run the full Phase 5 completion gate during 5B.
 
 ## Preparation validation
 

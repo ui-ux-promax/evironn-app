@@ -7,20 +7,21 @@ import { Icon } from '@/components/admin/icon';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/admin/ui/select';
 
 export interface ProductFilterOptions {
-  brands: string[];
   categories: { id: string; name: string }[];
+  rooms: { id: string; name: string }[];
 }
 
-const GENDERS = [
-  { value: 'MEN', label: 'Мужские' },
-  { value: 'WOMEN', label: 'Женские' },
-  { value: 'UNISEX', label: 'Унисекс' },
-  { value: 'KIDS', label: 'Детские' },
+const SORTS = [
+  { value: 'sortOrder', label: 'По порядку' },
+  { value: 'name', label: 'По названию' },
+  { value: 'minPrice', label: 'По цене' },
+  { value: 'stock', label: 'По остатку' },
 ];
 const STATUSES = [
   { value: 'all', label: 'Все' },
   { value: 'active', label: 'Активные' },
   { value: 'inactive', label: 'Черновики' },
+  { value: 'incomplete', label: 'Без SKU' },
 ];
 const ALL = '__all__';
 
@@ -57,7 +58,7 @@ export function ProductFilters({ options }: { options: ProductFilterOptions }) {
           />
         </div>
 
-        <Select value={params.get('category') ?? ALL} onValueChange={(v) => setParam('category', v)}>
+        <Select value={params.get('categoryId') ?? ALL} onValueChange={(v) => setParam('categoryId', v)}>
           <SelectTrigger className={TRIGGER}>
             <SelectValue placeholder="Все категории" />
           </SelectTrigger>
@@ -71,29 +72,28 @@ export function ProductFilters({ options }: { options: ProductFilterOptions }) {
           </SelectContent>
         </Select>
 
-        <Select value={params.get('brand') ?? ALL} onValueChange={(v) => setParam('brand', v)}>
+        <Select value={params.get('roomId') ?? ALL} onValueChange={(v) => setParam('roomId', v)}>
           <SelectTrigger className={TRIGGER}>
-            <SelectValue placeholder="Все бренды" />
+            <SelectValue placeholder="Все комнаты" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Все бренды</SelectItem>
-            {options.brands.map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
+            <SelectItem value={ALL}>Все комнаты</SelectItem>
+            {options.rooms.map((room) => (
+              <SelectItem key={room.id} value={room.id}>
+                {room.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select value={params.get('gender') ?? ALL} onValueChange={(v) => setParam('gender', v)}>
+        <Select value={params.get('sort') ?? 'sortOrder'} onValueChange={(v) => setParam('sort', v)}>
           <SelectTrigger className={TRIGGER}>
-            <SelectValue placeholder="Любой пол" />
+            <SelectValue placeholder="Сортировка" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Любой пол</SelectItem>
-            {GENDERS.map((g) => (
-              <SelectItem key={g.value} value={g.value}>
-                {g.label}
+            {SORTS.map((sort) => (
+              <SelectItem key={sort.value} value={sort.value}>
+                {sort.label}
               </SelectItem>
             ))}
           </SelectContent>

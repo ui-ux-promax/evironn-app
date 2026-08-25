@@ -24,19 +24,9 @@ import {
 } from '@/components/admin/ui/dialog';
 import { formatPrice } from '@/lib/format';
 import { deleteProduct } from '@/app/actions/admin/products';
+import type { AdminCatalogProductRow } from '@/lib/admin/catalog';
 
-export interface ProductRow {
-  id: string;
-  name: string;
-  brand: string;
-  categoryName: string;
-  coverImage: string | null;
-  minPrice: number;
-  totalStock: number;
-  active: boolean;
-  discountPct: number;
-  addedAgo: string;
-}
+export type ProductRow = AdminCatalogProductRow;
 
 const LOW_STOCK = 20;
 
@@ -100,16 +90,7 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
                 <td className="border-b border-admin-outline-variant px-4 py-[14px]">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-admin-outline-variant bg-admin-surface-low p-1">
-                      {row.coverImage ? (
-                        /* eslint-disable-next-line @next/next/no-img-element -- admin thumb */
-                        <img
-                          src={row.coverImage}
-                          alt=""
-                          className="object-contain w-full h-full transition-transform duration-300 group-hover:scale-110"
-                        />
-                      ) : (
-                        <Icon name="image" className="text-admin-on-surface-variant" />
-                      )}
+                      <Icon name="image" className="text-admin-on-surface-variant" />
                     </div>
                     <div className="min-w-0">
                       <Link
@@ -118,7 +99,7 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
                       >
                         {row.name}
                       </Link>
-                      <div className="text-xs text-admin-on-surface-variant">{row.addedAgo}</div>
+                      <div className="text-xs text-admin-on-surface-variant">{row.slug}</div>
                     </div>
                   </div>
                 </td>
@@ -153,11 +134,11 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
                 </td>
                 {/* Цена */}
                 <td className="whitespace-nowrap border-b border-admin-outline-variant px-4 py-[14px] font-bold tabular-nums text-admin-on-surface">
-                  {formatPrice(row.minPrice)}
+                  {row.minPrice == null ? '—' : formatPrice(row.minPrice)}
                 </td>
                 {/* Статус */}
                 <td className="border-b border-admin-outline-variant px-4 py-[14px]">
-                  <StatusPill active={row.active} discountPct={row.discountPct} />
+                  <StatusPill active={row.active} />
                 </td>
                 {/* Действия */}
                 <td className="border-b border-admin-outline-variant px-4 py-[14px] text-right">
@@ -197,12 +178,7 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
           <div key={row.id} className="p-4">
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-lg bg-admin-surface-high border border-admin-outline-variant p-1 overflow-hidden flex items-center justify-center shrink-0">
-                {row.coverImage ? (
-                  /* eslint-disable-next-line @next/next/no-img-element -- admin thumb */
-                  <img src={row.coverImage} alt="" className="object-contain w-full h-full" />
-                ) : (
-                  <Icon name="image" className="text-admin-on-surface-variant" />
-                )}
+                <Icon name="image" className="text-admin-on-surface-variant" />
               </div>
 
               <div className="min-w-0 flex-1">
@@ -263,12 +239,12 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
 
               {/* Цена */}
               <span className="font-bold text-admin-on-surface tabular-nums whitespace-nowrap">
-                {formatPrice(row.minPrice)}
+                {row.minPrice == null ? '—' : formatPrice(row.minPrice)}
               </span>
             </div>
 
             <div className="mt-2">
-              <StatusPill active={row.active} discountPct={row.discountPct} />
+              <StatusPill active={row.active} />
             </div>
           </div>
         ))}
@@ -334,14 +310,7 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
   );
 }
 
-function StatusPill({ active, discountPct }: { active: boolean; discountPct: number }) {
-  if (active && discountPct > 0) {
-    return (
-      <span className="flex min-h-[29px] w-fit items-center gap-1 rounded-full border border-[hsl(var(--color-warning)/.38)] bg-[hsl(var(--color-warning)/.18)] px-[10px] text-xs font-extrabold text-[hsl(42_78%_28%)]">
-        <span className="h-[7px] w-[7px] rounded-full bg-current" /> Скидка
-      </span>
-    );
-  }
+function StatusPill({ active }: { active: boolean }) {
   if (active) {
     return (
       <span className="flex min-h-[29px] w-fit items-center gap-1 rounded-full border border-[hsl(var(--color-success)/.22)] bg-[hsl(var(--color-success)/.12)] px-[10px] text-xs font-extrabold text-[var(--admin-money)]">

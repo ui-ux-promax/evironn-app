@@ -35,20 +35,24 @@ export function RoleToggle({ userId, currentRole, isSelf = false, isLastAdmin = 
     ? 'Нельзя снять роль администратора с самого себя'
     : 'Нельзя разжаловать последнего администратора';
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitRoleChange(formData: FormData) {
     setBusy(true);
-    const res: RoleActionResult = await changeUserRoleFromForm({ ok: true }, new FormData(event.currentTarget));
+    const res: RoleActionResult = await changeUserRoleFromForm({ ok: true }, formData);
     setBusy(false);
     setConfirm(false);
     if (res.ok) router.refresh();
     else setError(res.error);
   }
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await submitRoleChange(new FormData(event.currentTarget));
+  }
+
   if (blocked) {
     return (
       <div className="space-y-2">
-        <form action={changeUserRoleFromForm}>
+        <form action={submitRoleChange}>
           <input type="hidden" name="userId" value={userId} />
           <input type="hidden" name="role" value={target} />
           <Button type="submit" variant="outline" className="w-full" disabled>
@@ -85,7 +89,7 @@ export function RoleToggle({ userId, currentRole, isSelf = false, isLastAdmin = 
                 : 'Пользователь потеряет доступ к админ-панели и станет обычным клиентом.'}
             </DialogDescription>
           </DialogHeader>
-          <form action={changeUserRoleFromForm} onSubmit={handleSubmit}>
+          <form action={submitRoleChange} onSubmit={handleSubmit}>
             <input type="hidden" name="userId" value={userId} />
             <input type="hidden" name="role" value={target} />
             <DialogFooter className="gap-2 pt-2">

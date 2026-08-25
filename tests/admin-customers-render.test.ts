@@ -83,7 +83,9 @@ describe('admin customer detail composition', () => {
     expect(markup).toMatch(/заказов нет/i);
 
     const roleToggle = readFileSync('app/(admin)/admin/customers/_components/role-toggle.tsx', 'utf8');
-    expect(roleToggle).toContain('action={changeUserRoleFromForm}');
+    expect(roleToggle).not.toContain('action={changeUserRoleFromForm}');
+    expect(roleToggle.match(/action=\{submitRoleChange\}/g)).toHaveLength(2);
+    expect(roleToggle).toContain('changeUserRoleFromForm({ ok: true }, formData)');
     expect(roleToggle).toContain('res.error');
     expect(roleToggle).toContain('aria-live');
   });

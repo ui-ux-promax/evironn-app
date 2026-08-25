@@ -2,12 +2,12 @@
 
 ## Current checkpoint
 
-- Status: 5A_USER_ACCEPTED; accepted post-review visual adjustment is uncommitted; 5B authorized next.
+- Status: 5B_PLAN_APPROVED_PENDING_USER; 5A accepted and checkpointed; 5B implementation not authorized.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Current committed HEAD: `0f2a739` (`fix(admin): remediate 5A review findings`); the accepted visual adjustment remains in the worktree.
+- Current committed HEAD: `42ec908` (`feat(admin): align dashboard with Evironn shell`); `C5A_ACCEPTED=42ec908`.
 - Phase 4 is merged and closed. 5A.0–5A.6 implementation and remediation are complete. The user accepted the current dashboard on 2026-08-25. The earlier bounded Opus review remains valid for `0f2a739`; no additional Opus call is required for the later visual-only adjustment.
-- No 5B work, push, PR, merge, migration, full gate, build, or E2E ran in this checkpoint. Before 5B, checkpoint the accepted 5A worktree and durable ADR-022 amendment.
+- No 5B implementation, push, PR, merge, migration, full gate, build, or E2E ran in this checkpoint. The accepted 5A worktree and ADR-022 amendment are checkpointed.
 
 ## Binding inputs
 
@@ -32,7 +32,7 @@
 - A separate paid Claude/Opus re-review of the post-`0f2a739` visual-only adjustment was intentionally skipped; final functional/security review remains required at the appropriate Phase 5 boundaries.
 - ADR-022 freezes the accepted shell for 5B and 5C. These streams deliver functionality and responsive usability without route-by-route redesign.
 - Exact protected and demo-admin Evironn visual parity is performed once in 5D after all routes and operations exist, preserving server/data/action boundaries.
-- Immediate next action: inspect and commit the accepted 5A worktree, then run the bounded Claude Opus 5B Planner -> fresh Claude Opus Plan Reviewer workflow and stop for user approval. Do not implement 5B yet.
+- Immediate next action: user reviews/approves the reviewed 5B plan. Only after approval may a new session execute 5B sequentially. Do not implement 5B yet.
 
 These are bounded sessions on one branch and one final Phase 5 PR. Do not merge an internal delivery into `dev`.
 
@@ -144,3 +144,24 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Raw JSON: `.superpowers/sdd/claude-5A-remediation-rereview-20260824.json`.
 - ADMIN visual desktop/mobile acceptance remains `PENDING_USER_VISUAL_ACCEPTANCE`.
 - No commit, push, PR, merge, or 5B work followed the review.
+
+## Phase 5B planning session — 2026-08-25
+
+- `C5A_ACCEPTED`: `42ec908`; branch `phase/05-admin-demo`; base and `origin/dev` `da5e87e`; identity `ui-ux-promax <gojjoy22@gmail.com>`.
+- Evidence bundle: `.superpowers/sdd/phase-5b-planner-evidence.md`.
+- Executable plan: `docs/superpowers/plans/2026-08-25-phase-5b-canonical-catalog-admin.md`; 11 sequential tasks, 5B.1–5B.11.
+- Planner wrapper: `Claude 5B Planner`; exact model `claude-opus-5`; subtype `success`; 3 turns; USD 2.474195; raw JSON `.superpowers/sdd/claude-5b-planner-20260825.json`.
+- Initial plan review: exact model `claude-opus-5`; subtype `success`; 2 turns; USD 0.797315; verdict `NEEDS_FIX`; raw JSON `.superpowers/sdd/claude-5b-plan-review-20260825.json`. Four Important findings were remediated by one fresh Planner pass.
+- Remediation wrapper: `Claude 5B Planner Remediation`; exact model `claude-opus-5`; subtype `success`; 2 turns; USD 1.53936125; raw JSON `.superpowers/sdd/claude-5b-plan-remediation-20260825.json`.
+- First post-remediation review timed out after 1200 seconds with no raw result; no retry/fallback was performed. A manually repackaged fresh bounded review used a new output path and 4-turn/900-second bound.
+- Final reviewer wrapper: `Claude 5B Plan Reviewer`; exact model `claude-opus-5`; subtype `success`; 3 turns; USD 1.109945; standard tier; verdict `APPROVED`; 0 Critical/Important, 4 Minor; raw JSON `.superpowers/sdd/claude-5b-plan-review-bounded-20260825.json`.
+- Minor findings remain non-blocking and documented: (1) per-SKU child deletion order should be reconfirmed against schema before implementation; (2) 5B.6→5B.7 media interim behavior is a short-lived sequencing gap with existing media preserved and covered by 5B.11; (3) 5B.4 access-boundary coverage is repeated in 5B.9 and the 5B.11 consolidated batch; (4) remaining `ritm/` signer callers are inventoried by 5B.10 before closeout. None weakens the frozen plan's ADMIN boundary, canonical write safety, Phase 4 invariants, or scope.
+- No production 5B source files changed. No push, PR, merge, database/provider mutation, full gate, build, or E2E ran. Plan remains uncommitted pending user approval.
+
+## Phase 5B root plan review — 2026-08-25
+
+- Root verdict: `APPROVED_FOR_USER_DECISION`; implementation still requires explicit user approval.
+- The four non-blocking final Opus findings were resolved directly without another paid review: removed-SKU child/media cleanup is explicit, the 5B.6-to-5B.7 media preservation contract is named, 5B.4 includes the ADMIN access-boundary test, and 5B.2 scans remaining `ritm/` callers before narrowing the signer allowlist.
+- Current schema evidence was made binding: `WishlistItem.productId` is counted for product deletion, `SkuMedia` and `SkuOptionValue` cleanup is explicit despite cascade declarations, and zero active SKUs persist `minPrice: 0` / `discountPct: 0`.
+- The 5B.11 product URLs were corrected to `/admin/catalog/products/...`; manual acceptance was reduced to representative critical journeys suitable for a portfolio project while the consolidated focused automated batch retains typed edge-case coverage.
+- No application source, test execution, database/provider mutation, commit, push, PR, merge, build, E2E, or extra Claude call occurred during root review.

@@ -220,6 +220,23 @@ describe('canonical product and SKU media', () => {
     expect(refused).toMatchObject({ ok: false, code: 'MEDIA_OWNERSHIP_REJECTED', details: { publicIdKind: 'legacy' } });
   });
 
+  it('refuses legacy media when a persisted row id belongs to another owner', async () => {
+    const legacySkuMedia = { ...skuMedia, id: 'shared-row', publicId: 'ritm/skus/chair-oak' };
+    const current = state({ skus: [{ ...state().skus[0], media: [legacySkuMedia] }] });
+    prepare(current);
+
+    const result = await saveFurnitureProduct({
+      product: draft({ media: [{ ...productMedia, id: 'shared-row', publicId: legacySkuMedia.publicId }] }),
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: 'MEDIA_OWNERSHIP_REJECTED',
+      details: { publicIdKind: 'legacy' },
+    });
+    expect(p.$transaction).not.toHaveBeenCalled();
+  });
+
   it('destroys removed assets once after commit and returns warning on failure', async () => {
     const current = state({
       media: [{ ...productMedia, publicId: 'evironn/products/removed' }],
@@ -243,6 +260,38 @@ describe('canonical product and SKU media', () => {
     expect(deleteAssetMock).toHaveBeenCalledWith('evironn/products/removed');
     expect(deleteAssetMock).toHaveBeenCalledWith('evironn/skus/removed');
     expect(result).toMatchObject({ ok: true, warnings: ['media-destroy-failed'] });
+  });
+
+  it('does not destroy a removed asset still referenced by another SKU', async () => {
+    const removedPublicId = 'evironn/products/removed-shared';
+    const current = state({ media: [{ ...productMedia, publicId: removedPublicId }] });
+    prepare(current);
+    p.productMedia.findMany.mockImplementation(async (args: { where?: { publicId?: unknown } }) =>
+      args.where?.publicId ? [] : current.media,
+    );
+    p.skuMedia.findMany.mockImplementation(async (args: { where?: { publicId?: unknown } }) =>
+      args.where?.publicId ? [{ publicId: removedPublicId }] : current.skus.flatMap((sku) => sku.media),
+    );
+
+    const result = await saveFurnitureProduct({ product: draft({ media: [] }) });
+
+    expect(result).toMatchObject({ ok: true });
+    expect(deleteAssetMock).not.toHaveBeenCalledWith(removedPublicId);
+  });
+
+  it('preserves existing active SKU media when media is omitted', async () => {
+    prepare();
+
+    const result = await saveFurnitureProduct({
+      product: draft({ skus: [{ ...draft().skus[0], media: undefined }] }),
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    expect(p.skuMedia.deleteMany).toHaveBeenCalledWith({ where: { skuId: 'sku1' } });
+    expect(p.skuMedia.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ skuId: 'sku1', publicId: skuMedia.publicId })],
+    });
+    expect(deleteAssetMock).not.toHaveBeenCalled();
   });
 
   it('refuses a bound turntable product with incomplete final media without writes', async () => {

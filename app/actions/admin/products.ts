@@ -69,6 +69,17 @@ function mapP2002(e: unknown): ProductActionResult | null {
   return null;
 }
 
+function canonicalP2002(e: unknown): AdminActionResult<never> | null {
+  if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== 'P2002') return null;
+  const target = (e as { meta?: { target?: unknown } }).meta?.target;
+  const targets = Array.isArray(target) ? target : [target];
+  const targetText = targets.filter((value): value is string => typeof value === 'string').join(' ');
+  if (/articleNumber/i.test(targetText))
+    return adminError('ARTICLE_NUMBER_TAKEN', 'SKU article number is already in use');
+  if (/slug/i.test(targetText)) return adminError('SLUG_TAKEN', 'Product slug is already in use');
+  return adminError('UNEXPECTED', 'Product or SKU unique constraint failed');
+}
+
 export async function createProduct(raw: unknown): Promise<ProductActionResult> {
   const gate = await requireAdminAction();
   if (!gate.ok) return { ok: false, error: gate.error };
@@ -878,23 +889,36 @@ function mediaPublicIdKind(publicId: string): 'legacy' | 'unsafe' | 'foreign' {
   return 'foreign';
 }
 
-function submittedMedia(values: FurnitureProductValues) {
-  return [...values.media, ...values.skus.flatMap((sku) => sku.media ?? [])];
+function mediaOwnershipConflict(
+  media: AdminMediaInput,
+  persistedById: Map<string, { id: string; publicId: string | null }>,
+) {
+  if (!media.publicId || isEvironnPublicId(media.publicId)) return null;
+  const persisted = media.id ? persistedById.get(media.id) : undefined;
+  if (isLegacyPublicId(media.publicId) && persisted?.publicId === media.publicId) return null;
+  return new MediaOwnershipConflict(mediaPublicIdKind(media.publicId));
 }
 
 function validateNewMediaPublicIds(values: FurnitureProductValues, current: CanonicalProduct | null) {
-  const persistedById = new Map<string, { id: string; publicId: string | null }>();
-  for (const media of [...(current?.media ?? []), ...(current?.skus ?? []).flatMap((sku) => sku.media)]) {
-    persistedById.set(media.id, media);
-  }
-
-  for (const media of submittedMedia(values)) {
-    if (!media.publicId || isEvironnPublicId(media.publicId)) continue;
-    const persisted = media.id ? persistedById.get(media.id) : undefined;
-    if (isLegacyPublicId(media.publicId) && persisted?.publicId === media.publicId) continue;
-    return adminError('MEDIA_OWNERSHIP_REJECTED', 'Media public ID is not owned by Evironn', {
-      publicIdKind: mediaPublicIdKind(media.publicId),
-    });
+  const productMediaById = new Map((current?.media ?? []).map((media) => [media.id, media]));
+  const skuMediaBySkuId = new Map(
+    (current?.skus ?? []).map((sku) => [sku.id, new Map(sku.media.map((media) => [media.id, media]))]),
+  );
+  const submitted = [
+    { media: values.media, persistedById: productMediaById },
+    ...values.skus.map((sku) => ({
+      media: sku.media ?? [],
+      persistedById: sku.id ? skuMediaBySkuId.get(sku.id) : undefined,
+    })),
+  ];
+  for (const entry of submitted) {
+    for (const media of entry.media) {
+      const conflict = mediaOwnershipConflict(toAdminMediaInput(media), entry.persistedById ?? new Map());
+      if (conflict)
+        return adminError('MEDIA_OWNERSHIP_REJECTED', 'Media public ID is not owned by Evironn', {
+          publicIdKind: conflict.publicIdKind,
+        });
+    }
   }
   return null;
 }
@@ -985,7 +1009,11 @@ export async function saveFurnitureProduct(
   const removedRoomIds = [...existingRoomIds].filter((id) => !nextRoomIds.has(id));
   const addedRoomIds = [...nextRoomIds].filter((id) => !existingRoomIds.has(id));
   const existingGroupIds = new Set((current?.optionGroups ?? []).map((group) => group.optionGroupId));
-  const addedGroupIds = groups.map((group) => group.id).filter((id) => !existingGroupIds.has(id));
+  const detachedGroupIds = new Set(envelope.detachOptionGroupIds);
+  const detachedValueIds = new Set(envelope.detachOptionValueIds);
+  const addedGroupIds = groups
+    .map((group) => group.id)
+    .filter((id) => !existingGroupIds.has(id) && !detachedGroupIds.has(id));
   const existingValueKeys = new Set(
     (current?.optionGroups ?? []).flatMap((group) =>
       group.values.map((value) => `${group.optionGroupId}:${value.optionValueId}`),
@@ -993,7 +1021,12 @@ export async function saveFurnitureProduct(
   );
   const addedValues = groups.flatMap((group) =>
     group.values
-      .filter((value) => !existingValueKeys.has(`${group.id}:${value.id}`))
+      .filter(
+        (value) =>
+          !existingValueKeys.has(`${group.id}:${value.id}`) &&
+          !detachedGroupIds.has(group.id) &&
+          !detachedValueIds.has(value.id),
+      )
       .map((value) => ({ productId: nextProductId, optionGroupId: group.id, optionValueId: value.id })),
   );
   const removedValueIds = envelope.detachOptionValueIds.filter((id) =>
@@ -1144,20 +1177,6 @@ export async function saveFurnitureProduct(
             })
           : [];
 
-      const persistedById = new Map<string, { publicId: string | null }>();
-      for (const media of persistedProductMedia) persistedById.set(media.id, media);
-      for (const media of persistedSkuMedia) persistedById.set(media.id, media);
-      const finalMedia = [
-        ...values.media.map(toAdminMediaInput),
-        ...values.skus.flatMap((sku) => (sku.media ?? []).map(toAdminMediaInput)),
-      ];
-      for (const media of finalMedia) {
-        if (!media.publicId || isEvironnPublicId(media.publicId)) continue;
-        const persisted = media.id ? persistedById.get(media.id) : undefined;
-        if (isLegacyPublicId(media.publicId) && persisted?.publicId === media.publicId) continue;
-        throw new MediaOwnershipConflict(mediaPublicIdKind(media.publicId));
-      }
-
       const finalProductMedia = values.media.map(toAdminMediaInput);
       const finalSkuMedia = [
         ...plan.updates.map(({ current: sku, next }) => ({ skuId: sku.id, media: canonicalMediaForSku(next, sku) })),
@@ -1170,6 +1189,24 @@ export async function saveFurnitureProduct(
           media: (sku.media ?? []).map(toAdminMediaInput),
         })),
       ];
+      const persistedProductMediaById = new Map(persistedProductMedia.map((media) => [media.id, media]));
+      const persistedSkuMediaBySkuId = new Map<string, Map<string, (typeof persistedSkuMedia)[number]>>();
+      for (const media of persistedSkuMedia) {
+        const ownerMedia = persistedSkuMediaBySkuId.get(media.skuId) ?? new Map();
+        ownerMedia.set(media.id, media);
+        persistedSkuMediaBySkuId.set(media.skuId, ownerMedia);
+      }
+      for (const media of finalProductMedia) {
+        const conflict = mediaOwnershipConflict(media, persistedProductMediaById);
+        if (conflict) throw conflict;
+      }
+      for (const { skuId, media } of finalSkuMedia) {
+        const persistedById = persistedSkuMediaBySkuId.get(skuId) ?? new Map();
+        for (const item of media) {
+          const conflict = mediaOwnershipConflict(item, persistedById);
+          if (conflict) throw conflict;
+        }
+      }
       const beforePublicIds = [
         ...persistedProductMedia.map((media) => media.publicId),
         ...persistedSkuMedia.map((media) => media.publicId),
@@ -1234,9 +1271,8 @@ export async function saveFurnitureProduct(
       return adminError('MEDIA_OWNERSHIP_REJECTED', 'Media public ID is not owned by Evironn', {
         publicIdKind: error.publicIdKind,
       });
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return adminError('UNEXPECTED', 'Product or SKU unique constraint failed');
-    }
+    const mappedP2002 = canonicalP2002(error);
+    if (mappedP2002) return mappedP2002;
     throw error;
   }
 }

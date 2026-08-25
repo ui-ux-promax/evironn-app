@@ -80,7 +80,6 @@ export function ProductForm({
   categories,
   brands,
   availableRooms = [],
-  selectedRoomIds = [],
   detachOptionGroupIds = [],
   detachOptionValueIds = [],
 }: {
@@ -89,7 +88,6 @@ export function ProductForm({
   categories: { id: string; name: string }[];
   brands: string[];
   availableRooms?: Pick<AdminRoomRow, 'id' | 'name' | 'slug'>[];
-  selectedRoomIds?: string[];
   detachOptionGroupIds?: string[];
   detachOptionValueIds?: string[];
 }) {
@@ -148,9 +146,12 @@ export function ProductForm({
       oldPrice: row.oldPrice,
       stock: row.stock,
       active: row.active,
-      media: row.skuId
-        ? (values.skus.find((sku) => sku.id === row.skuId)?.media ?? [])
-        : (newSkuMedia[row.combinationKey] ?? []),
+      ...(row.skuId
+        ? (() => {
+            const existingSku = values.skus.find((sku) => sku.id === row.skuId);
+            return existingSku ? { media: existingSku.media } : {};
+          })()
+        : { media: newSkuMedia[row.combinationKey] ?? [] }),
     }));
     const result = await saveFurnitureProduct({
       product: { ...(initial ? { id: initial.id } : {}), ...values, skus },
@@ -236,7 +237,6 @@ export function ProductForm({
           <select
             multiple
             {...register('roomIds')}
-            defaultValue={selectedRoomIds}
             aria-label="Комнаты товара"
             data-testid="admin-product-form-rooms"
             className="min-h-24 w-full rounded-[10px] border border-admin-outline-variant bg-admin-surface px-3 py-2 text-[13px]"

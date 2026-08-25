@@ -150,13 +150,16 @@ describe('SkuMatrix', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('stays unwired while the legacy variant matrix remains mounted', () => {
+  it('keeps the canonical SKU matrix wired while the legacy variant matrix remains available', () => {
     const productForm = readFileSync(
       resolve(process.cwd(), 'app/(admin)/admin/catalog/products/_components/product-form.tsx'),
       'utf8',
     );
 
-    expect(productForm).not.toContain('sku-matrix');
+    expect(productForm).toContain("import { SkuMatrix } from './sku-matrix';");
+    expect(productForm).toContain('<SkuMatrix');
+    expect(productForm).not.toContain('defaultValue={selectedRoomIds}');
+    expect(productForm).not.toContain('selectedRoomIds = []');
     expect(
       existsSync(resolve(process.cwd(), 'app/(admin)/admin/catalog/products/_components/variant-matrix.tsx')),
     ).toBe(true);

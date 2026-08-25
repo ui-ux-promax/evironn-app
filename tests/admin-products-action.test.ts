@@ -381,8 +381,31 @@ describe('canonical furniture product actions', () => {
     });
 
     expect(result).toMatchObject({ ok: true });
+    expect(p.productOptionValue.createMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([expect.objectContaining({ optionValueId: 'ov1' })]),
+      }),
+    );
     expect(p.productOptionValue.deleteMany).toHaveBeenCalledWith({ where: { productId: 'pr1', optionValueId: 'ov1' } });
     expect(p.skuOptionValue.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['articleNumber', 'ARTICLE_NUMBER_TAKEN'],
+    ['slug', 'SLUG_TAKEN'],
+  ])('maps an in-transaction P2002 target %s to %s', async (target, code) => {
+    const { Prisma } = await import('@prisma/client');
+    prepareCanonicalMocks(canonicalState());
+    const collision = new Prisma.PrismaClientKnownRequestError('duplicate', {
+      code: 'P2002',
+      clientVersion: 'x',
+    });
+    Object.assign(collision, { meta: { target: [target] } });
+    p.$transaction.mockRejectedValue(collision);
+
+    const result = await saveFurnitureProduct({ product: furnitureDraft() });
+
+    expect(result).toMatchObject({ ok: false, code });
   });
 
   it('refuses value detach while a sellable SKU selects it with zero writes', async () => {

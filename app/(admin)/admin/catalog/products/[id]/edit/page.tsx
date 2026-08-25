@@ -20,7 +20,6 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   ]);
   if (!draft) notFound();
 
-  const selectedRoomIds = rooms.filter((room) => draft.values.roomIds.includes(room.slug)).map((room) => room.slug);
   const initial: ProductFormInitial = { id, ...draft.values };
 
   return (
@@ -35,7 +34,6 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           categories={categories}
           brands={brandRows.map((b) => b.brand)}
           availableRooms={rooms}
-          selectedRoomIds={selectedRoomIds}
         />
       </AdminPanel>
     </div>

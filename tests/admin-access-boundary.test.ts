@@ -354,6 +354,23 @@ describe('server-side ADMIN boundary contract', () => {
     }
   });
 
+  it('protects the new marketing page locally before rendering', () => {
+    const pageFile = adminPageFiles.find(
+      (filePath) => relativePath(filePath) === 'app/(admin)/admin/marketing/new/page.tsx',
+    );
+    expect(pageFile).toBeDefined();
+
+    const pageFunctions = exportedFunctionBodies(source(pageFile!), true);
+    const page = pageFunctions.find((fn) => fn.name === 'NewCouponPage');
+    expect(page, 'new marketing page must be an exported async server page').toBeDefined();
+
+    const body = codeOnly(page!.body);
+    const guardIndex = body.indexOf('requireAdminPage()');
+    const renderIndex = body.indexOf('return');
+    expect(guardIndex, 'new marketing page must call requireAdminPage()').toBeGreaterThanOrEqual(0);
+    expect(guardIndex, 'new marketing page must guard before rendering').toBeLessThan(renderIndex);
+  });
+
   it('guards every exported async admin action before Prisma', () => {
     expect(adminActionFiles.length).toBeGreaterThan(0);
 

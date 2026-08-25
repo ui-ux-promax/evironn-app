@@ -2,6 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` to implement this plan task-by-task. Use `test-driven-development` for behavior changes, `systematic-debugging` for unexpected failures, and `verification-before-completion` before completion claims. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+## Current closeout state — 2026-08-26
+
+- Phase 5C is implemented through checkpoint HEAD `72227e8` (`docs(phase-5c): record commerce admin checkpoint`) on `phase/05-admin-demo`; bounded final-review remediation is in progress.
+- Focused typechecks passed at 5C.3 and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
+- High-risk 5C.3 Sol review `Mill` covered the 5C.0 policy plus the exact 5C.3 range and returned `APPROVE`, Critical 0 / Important 0 / Minor 0.
+- Fresh final Sol review `Nash` on 2026-08-26 returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1. Remediation targets: page-local `requireAdminPage()` plus a focused boundary assertion for `/admin/marketing/new`, and reconciliation of current-state durable documents. Final approval is not claimed.
+- COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
+
 **Goal:** Complete protected administration for orders, customers, roles, and coupons while preserving Phase 4 payment, inventory, immutable-snapshot, sales-count, and review invariants.
 
 **Architecture:** Keep pure order policy in `lib/order-admin.ts`, Prisma-backed projections in `lib/admin/*`, and writes in ADMIN-guarded server actions. Cancellation runs through the existing serializable transaction helper; one server-only cancellation module resolves canonical and legacy inventory references before any write and applies status, stock, and sales-count changes atomically. Existing customer-role and coupon write contracts are reused unchanged.
@@ -502,7 +510,7 @@ export type CouponFormProps = {
 
 ---
 
-### 5C.7: Record the bounded 5C checkpoint
+### Historical 5C.7 execution checklist: record the bounded 5C checkpoint
 
 **Files:**
 
@@ -517,7 +525,7 @@ export type CouponFormProps = {
 rg -n "Phase 5C checkpoint" ".superpowers/sdd/phase-5-handoff.md" ".superpowers/sdd/progress.md" "docs/roadmap/STATUS.md"
 ```
 
-Expected: no completed 5C checkpoint record. Do not replay task test batches; reuse their fresh focused evidence.
+Historical expected result before the checkpoint: no completed 5C checkpoint record. The checkpoint is now recorded below; do not replay task test batches.
 
 - [ ] Run changed-file formatting and structural checks once:
 
@@ -545,7 +553,7 @@ foreach ($key in @('POSTGRES_URL', 'POSTGRES_URL_NON_POOLING')) {
 - [ ] Run checkpoint GREEN: `rg -n "Phase 5C checkpoint" ".superpowers/sdd/phase-5-handoff.md" ".superpowers/sdd/progress.md" "docs/roadmap/STATUS.md"`. Expected: completed checkpoint matches in all three files.
 - [ ] Commit: `docs(phase-5c): record commerce admin checkpoint`.
 - [ ] Capture `$C5C7 = (git rev-parse HEAD).Trim()`.
-- [ ] In a fresh final-review shell set `$C5C_FINAL = (git rev-parse HEAD).Trim()` and run one fresh Sol Medium final functional/security review over `git diff "5f31f2d..$C5C_FINAL"` plus focused evidence. Resolve all Critical/Important findings with separate commits and rerun only affected checks; when code changes, start another fresh shell, recapture `$C5C_FINAL`, and repeat the final review over the new exact range.
+- [x] In a fresh final-review shell set `$C5C_FINAL = (git rev-parse HEAD).Trim()` and run one fresh Sol Medium final functional/security review over `git diff "5f31f2d..$C5C_FINAL"` plus focused evidence. Nash returned `REQUEST CHANGES` on 2026-08-26 with Critical 0 / Important 2 / Minor 1; bounded remediation is in progress and final approval is not claimed.
 - [ ] Stop for user acceptance. Do not push, open a PR, merge, or start 5D.
 
 **Review range:** exact Phase 5C base through current immutable final candidate, recovered in the review shell as `"5f31f2d..$C5C_FINAL"`.
@@ -555,12 +563,12 @@ foreach ($key in @('POSTGRES_URL', 'POSTGRES_URL_NON_POOLING')) {
 - Structural RED was clean before documentation. Changed-file Prettier and `git diff --check` passed; both required database variable names were present without exposing values.
 - `npm run dev` served `http://localhost:3000`; acceptance used application UI only. Disposable COD creation failed closed because checkout phone/email values did not persist. Unsafe online order `#52` supplied blocked-reason display; safe COD cancellation and stale conflict are unavailable.
 - Customer role promotion/restoration and coupon `PHASE5C_20260826` create/edit/toggle/delete passed. Both viewport route inspections passed with no browser errors; existing smooth-scroll warning only.
-- Unresolved checkout contact-input defect and remaining 5D visual-parity debt are recorded in durable handoff/progress/STATUS. No multi-agent dispatch tool was exposed for fresh final review; self-review performed, no separate verdict claimed. Stop for user acceptance; no push, PR, merge, or 5D.
+- Unresolved checkout contact-input defect and remaining 5D visual-parity debt are recorded in durable handoff/progress/STATUS. High-risk 5C.3 Sol review `Mill` returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Fresh final Sol review `Nash` returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1; final approval is not claimed. Stop for user acceptance after bounded remediation; no push, PR, merge, or 5D.
 
 ## Review checkpoints
 
-1. **High-risk review after 5C.3:** cancellation policy and transaction only.
-2. **Final review after 5C.7:** complete Phase 5C diff and focused evidence.
+1. **High-risk review after 5C.3 — complete:** Sol `Mill`, `APPROVE`, Critical 0 / Important 0 / Minor 0; scope was the 5C.0 policy plus the exact 5C.3 range.
+2. **Final review after 5C.7 — remediation in progress:** Sol `Nash`, 2026-08-26, `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1; final approval is not claimed.
 
 Reviewers reuse existing evidence and do not run the full gate, build, E2E, database, or provider commands.
 

@@ -3,7 +3,7 @@
 ## Current state
 
 - Bootstrap and Phases 1–4 are complete and merged into `dev`.
-- Active delivery: Phase 5. Streams 5A and 5B are complete and user-closed. Stream 5C implementation and its bounded checkpoint are recorded on `phase/05-admin-demo`; 5D remains pending user acceptance and authorization.
+- Active delivery: Phase 5. Streams 5A and 5B are complete and user-closed. Stream 5C implementation is checkpointed at `72227e8` on `phase/05-admin-demo`; bounded final-review remediation is in progress. 5D remains pending user acceptance and authorization.
 - Integration branch: `dev` at merge commit `da5e87e` (Phase 4 closeout PR #9).
 - Current delivery branch: `phase/05-admin-demo`, created from exact `origin/dev` commit `da5e87e`.
 - Phase 5 scope: protected production admin, furniture catalog/SKU/media administration, orders, customers, roles, coupons, dashboard, and public synthetic read-only demo admin.
@@ -56,14 +56,21 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 - `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md`
 - `docs/superpowers/plans/phase-2-task-3-execution.md`
 
+## Current 5C closeout state
+
+- Checkpoint HEAD: `72227e8` (`docs(phase-5c): record commerce admin checkpoint`).
+- Focused typechecks passed at the 5C.3 shared-contract checkpoint and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
+- Fresh final Sol review `Nash` on 2026-08-26 returned `REQUEST CHANGES` with Critical 0, Important 2, Minor 1. Targets: add page-local `requireAdminPage()` to `/admin/marketing/new` with a focused boundary assertion, and reconcile the current-state durable documents. Final approval has not been granted.
+- High-risk 5C.3 Sol review `Mill` returned `APPROVE` with Critical 0, Important 0, Minor 0 for the 5C.0 policy plus the exact 5C.3 range.
+- COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
+
 ## Next action
 
 1. Continue on `phase/05-admin-demo`; do not create or switch branches.
 2. Treat `5be199a` as the closed 5B checkpoint. Preserve its approved focused evidence: 39 Vitest files / 298 tests, typecheck, changed-file Prettier, and `git diff --check`; no full Phase 5 gate/build/E2E is claimed yet.
-3. Before 5C implementation, have Luna prepare a compact current-state evidence bundle, run one fresh isolated Sol Medium planner, then one fresh isolated Sol Medium plan reviewer. Resolve all Critical/Important plan findings and stop for user approval.
-4. After approval, execute 5C sequentially with Luna High implementers, focused verification, and fresh Sol Medium reviews only at meaningful task/risk boundaries.
-5. Keep the current accepted admin presentation stable during 5B and 5C. Complete exact cross-route Evironn visual parity once in 5D after all admin functionality exists.
-6. Do not push, open a PR, merge, or run the full Phase 5 completion gate during 5C; the consolidated gate remains a 5D closeout action.
+3. Complete only the bounded final-review remediation from Nash, rerun affected focused checks, and keep the final status as not approved until review evidence changes.
+4. Keep the current accepted admin presentation stable. Complete exact cross-route Evironn visual parity once in 5D after all admin functionality exists.
+5. Do not push, open a PR, merge, or start 5D; the consolidated gate remains a later closeout action.
 
 Database note: `.env.local` contains the expected application database variable names. The earlier 5B inventory gap came from a standalone process that did not load `.env.local`; it was not evidence that Vercel or the project lacked database variables. Never print their values.
 
@@ -79,10 +86,10 @@ Database note: `.env.local` contains the expected application database variable 
 
 - Pre-checkpoint candidate: `652cf16`; task commits: `265011c`, `b5b9f46`, `131de2e`, `687a419`, `4d4aeae`, `2cc8b46`, `6830cb9` plus `652cf16` remediation.
 - RED search found no prior checkpoint. Changed-file Prettier and `git diff --check` passed. Presence-only checks reported `POSTGRES_URL=present` and `POSTGRES_URL_NON_POOLING=present`; values were not printed.
-- `npm run dev` served `http://localhost:3000`. Acceptance used the signed-in ADMIN application UI only; dev process stopped after evidence capture. No full suite/gate/build/E2E/typecheck, database CLI, provider call, push, PR, merge, or 5D work ran.
+- `npm run dev` served `http://localhost:3000`. Acceptance used the signed-in ADMIN application UI only; dev process stopped after evidence capture. Focused typechecks passed at 5C.3 and role-form remediation; no full suite/gate/build/E2E, database CLI, provider call, push, PR, merge, or 5D work ran.
 - Disposable COD fixture unavailable because checkout phone/email inputs did not retain synthetic values; no order was submitted. Unsafe online order `#52` was used only for blocked cancellation-reason display. Safe COD cancel and stale two-tab conflict are unavailable, not passed. Historical cancelled COD `#53` was not mutated.
 - Customer `cmt06hqpk0000tsq44ckx8z6a` was promoted from `CUSTOMER` and restored. Self/only-admin refusal rendered without a write; independent non-self last-admin refusal was not isolated.
 - Coupon `PHASE5C_20260826` create/edit/toggle/delete passed through UI. Auxiliary visual fixtures were deleted; list returned to six.
 - Orders/list and detail, customers/list and detail, marketing/list, new coupon, and edit coupon were inspected at `1440x900` and `390x844`; mobile overflow was false. No browser errors; existing smooth-scroll warning only.
 - Unresolved defect: checkout contact-input persistence blocked disposable COD creation and dependent order mutation/conflict checks. Remaining 5D debt: exact clone visual parity plus consolidated protected-admin/demo-admin visual acceptance.
-- No multi-agent dispatch tool was exposed for fresh final review; self-review performed without a separate verdict. Stop for user acceptance; do not push, open a PR, merge, or start 5D.
+- High-risk 5C.3 Sol review `Mill` (5C.0 policy plus exact 5C.3 range) returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Fresh final Sol review `Nash` on 2026-08-26 returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1; the page-local new-marketing guard/test and durable current-state docs are the remediation targets. Final approval is not claimed. Do not push, open a PR, merge, or start 5D.

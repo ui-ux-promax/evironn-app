@@ -2,13 +2,17 @@
 
 ## Current checkpoint
 
-- Status: 5B_COMPLETE; 5A and 5B are user-closed; 5C planning is next and 5C implementation is not authorized.
+- Status: 5C_CHECKPOINTED; 5A and 5B are user-closed; bounded final-review remediation is in progress on `phase/05-admin-demo`.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). A later documentation-only 5C preparation commit may be current HEAD.
+- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). 5C checkpoint HEAD is `72227e8`.
 - Phase 4 is merged and closed. 5A and 5B implementation/review are complete and user-closed. The accepted shell remains frozen until the consolidated 5D parity pass.
 - 5B focused completion evidence: 39 Vitest files / 298 tests passed, typecheck passed, changed-file Prettier passed, and `git diff --check` passed. No full Phase 5 gate, build, E2E, push, PR, merge, or migration is claimed.
 - Database inventory was unavailable only to a standalone process that did not load `.env.local`; the expected application database variable names exist there. No values were read or recorded.
+- Focused typechecks passed at 5C.3 and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
+- High-risk 5C.3 Sol review `Mill` covered the 5C.0 policy plus the exact 5C.3 range and returned `APPROVE`, Critical 0 / Important 0 / Minor 0.
+- Fresh final Sol review `Nash` on 2026-08-26 returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1. Remediation targets: page-local guard/test for `/admin/marketing/new` and current-state durable-document reconciliation. Final approval is not claimed.
+- COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
 
 ## Binding inputs
 
@@ -27,13 +31,13 @@
 - 5C: orders, customers, roles, and coupons.
 - 5D: public synthetic read-only demo admin, consolidated protected/demo Evironn visual parity, integration closeout, and final visual acceptance.
 
-## Phase 5A user acceptance and visual sequencing — 2026-08-25
+## Historical Phase 5A user acceptance and visual sequencing — 2026-08-25
 
 - The user accepted the current local 5A dashboard.
 - A separate paid Claude/Opus re-review of the post-`0f2a739` visual-only adjustment was intentionally skipped; final functional/security review remains required at the appropriate Phase 5 boundaries.
 - ADR-022 freezes the accepted shell for 5B and 5C. These streams deliver functionality and responsive usability without route-by-route redesign.
 - Exact protected and demo-admin Evironn visual parity is performed once in 5D after all routes and operations exist, preserving server/data/action boundaries.
-- Immediate next action: prepare and review the bounded 5C executable plan, then stop for user approval. Do not implement 5C yet.
+- Historical next action at that checkpoint: prepare and review the bounded 5C executable plan, then stop for user approval.
 
 These are bounded sessions on one branch and one final Phase 5 PR. Do not merge an internal delivery into `dev`.
 
@@ -66,13 +70,13 @@ Do not modify, stage, delete, reset, or clean:
 - Root cause: the 30-turn Planner limit was too small for broad autonomous inspection across three repositories, while the bridge discarded stdout before parsing non-zero results. This was not Claude/provider unavailability, so Sol fallback is not authorized by this incident.
 - Bridge remediation preserves non-zero raw JSON and reports subtype/turns/model/cost, blocks duplicate output paths, and disables Planner repository tools by default. Luna must prepare a compact evidence bundle before one controlled Planner call. No production code, application tests, build, database, provider, push, PR, commit, or protected-file change occurred.
 
-## Planning result — 2026-08-24
+## Historical planning result — 2026-08-24
 
 - Executable plan: `docs/superpowers/plans/2026-08-20-phase-5-admin-demo.md`.
 - Controlled zero-tool Planner completed with `claude-opus-5`; Luna applied review remediations to the plan only.
 - Independent Opus reviews resolved all Critical findings and the identified Important findings. The last approval review reported one staged 5B.10/5C.3 retirement-scan conflict; Luna then corrected that exact conflict without another paid review.
-- Phase 5 implementation has not started. No production code, application test run, build, database mutation, commit, push, PR, or merge occurred.
-- Next action: user reviews/approves the executable plan, then starts Phase 5 execution in a new session.
+- At that historical planning checkpoint, Phase 5 implementation had not started. No production code, application test run, build, database mutation, commit, push, PR, or merge had occurred.
+- Historical next action was user review/approval of the executable plan before Phase 5 execution.
 
 ## Phase 5 checkpoint — 5A.0 Baseline record and plan commit
 
@@ -169,26 +173,26 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 
 ## Phase 5C implementation progress
 
-- Task 5C.0: complete (commit 265011c, review pending at the high-risk checkpoint).
+- Task 5C.0: complete (commit 265011c; its policy was included in the high-risk `Mill` review).
 - Task 5C.1: complete (commit b5b9f46, focused read and ADMIN-boundary checks clean).
 - Task 5C.2: complete (commit 131de2e, focused transition/action checks clean).
-- Task 5C.3: complete (commit 687a419, focused cancellation checks and typecheck clean; high-risk Sol review approved).
+- Task 5C.3: complete (commit 687a419, focused cancellation checks and typecheck clean; high-risk Sol review `Mill` approved with Critical 0 / Important 0 / Minor 0 for the 5C.0 policy plus exact 5C.3 range).
 - Task 5C.4: complete (commit 4d4aeae, focused snapshot-detail and ADMIN-boundary checks clean).
 - Task 5C.5: complete (commit 2cc8b46, focused customer/role and ADMIN-boundary checks clean).
 - Task 5C.6: complete (commit 6830cb9 plus 652cf16 remediation, focused coupon/role checks and second typecheck clean).
 - Policy evidence: 43/43 focused tests passed after RED; Prettier and git diff --check passed.
 - The approved 5C plan is now tracked by Task 5C.0. Protected Phase 2 plans remain untracked and untouched.
-- No full suite, gate, typecheck, build, E2E, database CLI, provider call, push, PR, merge, or branch operation ran.
+- Focused typechecks passed at 5C.3 and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, provider call, push, PR, merge, or branch operation ran.
 
 ## Phase 5C checkpoint — bounded commerce admin acceptance
 
 - Task 5C.7 recorded on `phase/05-admin-demo` from base `5f31f2d`; pre-checkpoint candidate `652cf16`.
 - Task chain: `265011c`, `b5b9f46`, `131de2e`, `687a419`, `4d4aeae`, `2cc8b46`, `6830cb9`, remediation `652cf16`.
 - RED search had no prior checkpoint. Changed-file Prettier and `git diff --check` passed. Presence-only checks passed for `POSTGRES_URL` and `POSTGRES_URL_NON_POOLING`; values were not exposed.
-- `npm run dev` served `http://localhost:3000`; signed-in ADMIN UI only. Dev process stopped after evidence capture. No full suite/gate/build/E2E/typecheck, database CLI, or provider call ran.
+- `npm run dev` served `http://localhost:3000`; signed-in ADMIN UI only. Dev process stopped after evidence capture. Focused typechecks passed at 5C.3 and role-form remediation; no full suite/gate/build/E2E, database CLI, or provider call ran.
 - Disposable COD fixture unavailable: synthetic checkout phone/email values did not persist, so no order was submitted. Existing online order `#52` was used only for blocked-reason display. Safe COD cancel and stale two-tab conflict are unavailable, not passed.
 - Customer `cmt06hqpk0000tsq44ckx8z6a` was promoted from `CUSTOMER` to `ADMIN` and restored. Self/only-admin refusal was visible without a write; independent non-self last-admin refusal was not isolated.
 - `PHASE5C_20260826` create/edit/toggle/delete passed through UI; auxiliary visual coupons were deleted; list returned to six.
 - Routes rendered at `1440x900` and `390x844`: orders/list and detail, customers/list and detail, marketing/list, new coupon, edit coupon. Mobile overflow false. No browser errors; existing smooth-scroll warning only.
 - Remaining defect: checkout contact-input persistence. Remaining 5D debt: exact clone visual parity and consolidated admin/demo-admin visual acceptance.
-- Final reviewer dispatch unavailable because no multi-agent tool was exposed; self-review completed without a separate verdict. Stop for user acceptance; no push, PR, merge, or 5D.
+- Fresh final Sol review `Nash` on 2026-08-26 ran and returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1. The page-local new-marketing guard/test and current-state document reconciliation are the bounded remediation targets; final approval is not claimed. Stop for user acceptance after remediation; no push, PR, merge, or 5D.

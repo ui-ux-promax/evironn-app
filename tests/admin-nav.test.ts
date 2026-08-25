@@ -31,7 +31,7 @@ describe('admin navigation contract', () => {
     expect(ADMIN_NAV.every((item) => Object.keys(item).sort().join(',') === 'href,label,match')).toBe(true);
   });
 
-  it('exposes only existing product and category catalog tabs', () => {
+  it('exposes only existing product, category, and option catalog tabs', () => {
     expect(ADMIN_CATALOG_TABS).toBeDefined();
     if (!ADMIN_CATALOG_TABS) return;
 
@@ -39,6 +39,7 @@ describe('admin navigation contract', () => {
     expect(ADMIN_CATALOG_TABS.map((item) => item.href)).toEqual([
       '/admin/catalog/products',
       '/admin/catalog/categories',
+      '/admin/catalog/options',
     ]);
   });
 });

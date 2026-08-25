@@ -8,7 +8,7 @@ import { ADMIN_CATALOG_TABS, isActiveAdminHref } from '@/lib/admin/nav';
 export function CatalogTabs() {
   const pathname = usePathname();
   return (
-    <div className="flex gap-1 border-b border-admin-outline-variant">
+    <div aria-label="Разделы каталога" className="flex gap-1 border-b border-admin-outline-variant">
       {ADMIN_CATALOG_TABS.map((tab) => {
         const active = isActiveAdminHref(tab, pathname);
         return (

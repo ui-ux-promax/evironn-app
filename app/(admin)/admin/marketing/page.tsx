@@ -32,7 +32,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
     ...(status === 'active'
       ? { active: true, OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] }
       : status === 'inactive'
-        ? { active: false }
+        ? { active: false, OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] }
         : status === 'expired'
           ? { expiresAt: { lt: now } }
           : {}),
@@ -52,7 +52,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
   const activeCount = rows.filter((row) => row.status === 'active').length;
   const inactiveCount = rows.filter((row) => row.status === 'inactive').length;
   const expiredCount = rows.filter((row) => row.status === 'expired').length;
-  const avgPercent = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length) : 0;
+  const averagePercent = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length) : 0;
 
   return (
     <div className="space-y-[24px]">
@@ -83,7 +83,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
           value={expiredCount.toLocaleString('ru-RU')}
           tone={expiredCount > 0 ? 'danger' : 'default'}
         />
-        <AdminKpiCard icon="percent" label="Средняя скидка" value={`${avgPercent}%`} />
+        <AdminKpiCard icon="percent" label="Средняя скидка" value={`${averagePercent}%`} />
       </div>
 
       <AdminPanel

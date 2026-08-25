@@ -15,18 +15,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/admin/ui/dialog';
-import type { CouponStatus } from '@/lib/coupon-status';
 import { deleteCoupon, toggleCoupon } from '@/app/actions/admin/coupons';
 
-export interface CouponRow {
+export type CouponRow = {
   id: string;
   code: string;
   percent: number;
   active: boolean;
-  status: CouponStatus;
+  status: 'active' | 'inactive' | 'expired';
   expiresLabel: string;
   createdLabel: string;
-}
+};
+
+type CouponStatus = CouponRow['status'];
 
 const STATUS_META: Record<CouponStatus, { label: string; cls: string }> = {
   active: {

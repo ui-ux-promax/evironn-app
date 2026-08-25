@@ -9,7 +9,7 @@ export default function NewCouponPage() {
     <div className="space-y-[24px]">
       <AdminPageHeader kicker="Маркетинг" title="Новый промокод" subtitle="Создание процентного кода для корзины." />
       <AdminPanel title="Данные промокода">
-        <CouponForm />
+        <CouponForm mode="create" />
       </AdminPanel>
     </div>
   );

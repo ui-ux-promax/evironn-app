@@ -19,12 +19,13 @@ export default async function EditCouponPage({ params }: { params: Promise<{ id:
       <AdminPageHeader kicker="Маркетинг" title="Редактирование промокода" subtitle={coupon.code} />
       <AdminPanel title="Данные промокода">
         <CouponForm
-          initial={{
+          mode="edit"
+          coupon={{
             id: coupon.id,
             code: coupon.code,
             percent: coupon.percent,
             active: coupon.active,
-            expiresAt: coupon.expiresAt ? coupon.expiresAt.toISOString() : null,
+            expiresAt: coupon.expiresAt ? coupon.expiresAt.toISOString().slice(0, 10) : '',
           }}
         />
       </AdminPanel>

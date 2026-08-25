@@ -166,3 +166,29 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Current schema evidence was made binding: `WishlistItem.productId` is counted for product deletion, `SkuMedia` and `SkuOptionValue` cleanup is explicit despite cascade declarations, and zero active SKUs persist `minPrice: 0` / `discountPct: 0`.
 - The 5B.11 product URLs were corrected to `/admin/catalog/products/...`; manual acceptance was reduced to representative critical journeys suitable for a portfolio project while the consolidated focused automated batch retains typed edge-case coverage.
 - No application source, test execution, database/provider mutation, commit, push, PR, merge, build, E2E, or extra Claude call occurred during root review.
+
+## Phase 5C implementation progress
+
+- Task 5C.0: complete (commit 265011c, review pending at the high-risk checkpoint).
+- Task 5C.1: complete (commit b5b9f46, focused read and ADMIN-boundary checks clean).
+- Task 5C.2: complete (commit 131de2e, focused transition/action checks clean).
+- Task 5C.3: complete (commit 687a419, focused cancellation checks and typecheck clean; high-risk Sol review approved).
+- Task 5C.4: complete (commit 4d4aeae, focused snapshot-detail and ADMIN-boundary checks clean).
+- Task 5C.5: complete (commit 2cc8b46, focused customer/role and ADMIN-boundary checks clean).
+- Task 5C.6: complete (commit 6830cb9 plus 652cf16 remediation, focused coupon/role checks and second typecheck clean).
+- Policy evidence: 43/43 focused tests passed after RED; Prettier and git diff --check passed.
+- The approved 5C plan is now tracked by Task 5C.0. Protected Phase 2 plans remain untracked and untouched.
+- No full suite, gate, typecheck, build, E2E, database CLI, provider call, push, PR, merge, or branch operation ran.
+
+## Phase 5C checkpoint — bounded commerce admin acceptance
+
+- Task 5C.7 recorded on `phase/05-admin-demo` from base `5f31f2d`; pre-checkpoint candidate `652cf16`.
+- Task chain: `265011c`, `b5b9f46`, `131de2e`, `687a419`, `4d4aeae`, `2cc8b46`, `6830cb9`, remediation `652cf16`.
+- RED search had no prior checkpoint. Changed-file Prettier and `git diff --check` passed. Presence-only checks passed for `POSTGRES_URL` and `POSTGRES_URL_NON_POOLING`; values were not exposed.
+- `npm run dev` served `http://localhost:3000`; signed-in ADMIN UI only. Dev process stopped after evidence capture. No full suite/gate/build/E2E/typecheck, database CLI, or provider call ran.
+- Disposable COD fixture unavailable: synthetic checkout phone/email values did not persist, so no order was submitted. Existing online order `#52` was used only for blocked-reason display. Safe COD cancel and stale two-tab conflict are unavailable, not passed.
+- Customer `cmt06hqpk0000tsq44ckx8z6a` was promoted from `CUSTOMER` to `ADMIN` and restored. Self/only-admin refusal was visible without a write; independent non-self last-admin refusal was not isolated.
+- `PHASE5C_20260826` create/edit/toggle/delete passed through UI; auxiliary visual coupons were deleted; list returned to six.
+- Routes rendered at `1440x900` and `390x844`: orders/list and detail, customers/list and detail, marketing/list, new coupon, edit coupon. Mobile overflow false. No browser errors; existing smooth-scroll warning only.
+- Remaining defect: checkout contact-input persistence. Remaining 5D debt: exact clone visual parity and consolidated admin/demo-admin visual acceptance.
+- Final reviewer dispatch unavailable because no multi-agent tool was exposed; self-review completed without a separate verdict. Stop for user acceptance; no push, PR, merge, or 5D.

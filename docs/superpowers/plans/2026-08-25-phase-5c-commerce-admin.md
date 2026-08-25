@@ -550,6 +550,13 @@ foreach ($key in @('POSTGRES_URL', 'POSTGRES_URL_NON_POOLING')) {
 
 **Review range:** exact Phase 5C base through current immutable final candidate, recovered in the review shell as `"5f31f2d..$C5C_FINAL"`.
 
+#### 5C.7 closeout evidence
+
+- Structural RED was clean before documentation. Changed-file Prettier and `git diff --check` passed; both required database variable names were present without exposing values.
+- `npm run dev` served `http://localhost:3000`; acceptance used application UI only. Disposable COD creation failed closed because checkout phone/email values did not persist. Unsafe online order `#52` supplied blocked-reason display; safe COD cancellation and stale conflict are unavailable.
+- Customer role promotion/restoration and coupon `PHASE5C_20260826` create/edit/toggle/delete passed. Both viewport route inspections passed with no browser errors; existing smooth-scroll warning only.
+- Unresolved checkout contact-input defect and remaining 5D visual-parity debt are recorded in durable handoff/progress/STATUS. No multi-agent dispatch tool was exposed for fresh final review; self-review performed, no separate verdict claimed. Stop for user acceptance; no push, PR, merge, or 5D.
+
 ## Review checkpoints
 
 1. **High-risk review after 5C.3:** cancellation policy and transaction only.

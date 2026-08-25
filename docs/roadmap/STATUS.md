@@ -3,7 +3,7 @@
 ## Current state
 
 - Bootstrap and Phases 1–4 are complete and merged into `dev`.
-- Active delivery: Phase 5. Streams 5A and 5B are complete and user-closed. Closed 5B documentation checkpoint is `5be199a`; the current branch may include a later documentation-only 5C preparation commit. Stream 5C planning is next and implementation has not started.
+- Active delivery: Phase 5. Streams 5A and 5B are complete and user-closed. Stream 5C implementation and its bounded checkpoint are recorded on `phase/05-admin-demo`; 5D remains pending user acceptance and authorization.
 - Integration branch: `dev` at merge commit `da5e87e` (Phase 4 closeout PR #9).
 - Current delivery branch: `phase/05-admin-demo`, created from exact `origin/dev` commit `da5e87e`.
 - Phase 5 scope: protected production admin, furniture catalog/SKU/media administration, orders, customers, roles, coupons, dashboard, and public synthetic read-only demo admin.
@@ -74,3 +74,15 @@ Database note: `.env.local` contains the expected application database variable 
 - `phase/05-admin-demo` was created from that exact commit.
 - Git identity remains `ui-ux-promax <gojjoy22@gmail.com>`.
 - No application tests, build, database command, provider call, push, PR, merge, or Phase 5 implementation ran during preparation.
+
+## Phase 5C checkpoint — bounded commerce admin acceptance
+
+- Pre-checkpoint candidate: `652cf16`; task commits: `265011c`, `b5b9f46`, `131de2e`, `687a419`, `4d4aeae`, `2cc8b46`, `6830cb9` plus `652cf16` remediation.
+- RED search found no prior checkpoint. Changed-file Prettier and `git diff --check` passed. Presence-only checks reported `POSTGRES_URL=present` and `POSTGRES_URL_NON_POOLING=present`; values were not printed.
+- `npm run dev` served `http://localhost:3000`. Acceptance used the signed-in ADMIN application UI only; dev process stopped after evidence capture. No full suite/gate/build/E2E/typecheck, database CLI, provider call, push, PR, merge, or 5D work ran.
+- Disposable COD fixture unavailable because checkout phone/email inputs did not retain synthetic values; no order was submitted. Unsafe online order `#52` was used only for blocked cancellation-reason display. Safe COD cancel and stale two-tab conflict are unavailable, not passed. Historical cancelled COD `#53` was not mutated.
+- Customer `cmt06hqpk0000tsq44ckx8z6a` was promoted from `CUSTOMER` and restored. Self/only-admin refusal rendered without a write; independent non-self last-admin refusal was not isolated.
+- Coupon `PHASE5C_20260826` create/edit/toggle/delete passed through UI. Auxiliary visual fixtures were deleted; list returned to six.
+- Orders/list and detail, customers/list and detail, marketing/list, new coupon, and edit coupon were inspected at `1440x900` and `390x844`; mobile overflow was false. No browser errors; existing smooth-scroll warning only.
+- Unresolved defect: checkout contact-input persistence blocked disposable COD creation and dependent order mutation/conflict checks. Remaining 5D debt: exact clone visual parity plus consolidated protected-admin/demo-admin visual acceptance.
+- No multi-agent dispatch tool was exposed for fresh final review; self-review performed without a separate verdict. Stop for user acceptance; do not push, open a PR, merge, or start 5D.

@@ -155,6 +155,15 @@ const furnitureMediaSchema = z.object({
   sortOrder: z.number().int().min(0),
 });
 
+export type AdminMediaInput = {
+  id: string | null;
+  kind: z.infer<typeof furnitureMediaSchema>['kind'];
+  url: string;
+  publicId: string | null;
+  alt: string | null;
+  sortOrder: number;
+};
+
 const furnitureSkuSchema = z
   .object({
     id: z.string().optional(),

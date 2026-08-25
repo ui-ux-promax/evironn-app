@@ -7,6 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/admin/ui/button';
 import { Input } from '@/components/admin/ui/input';
 import { Switch } from '@/components/admin/ui/switch';
+import { ImageUploader } from '@/components/admin/media/image-uploader';
+import type { UploadedImage } from '@/lib/cloudinary/types';
+import { EVIRONN_PRODUCTS_FOLDER } from '@/lib/cloudinary/folders';
 import { slugify } from '@/lib/slugify';
 import { furnitureProductSchema, type FurnitureProductValues } from '@/services/dto/product.dto';
 import { saveFurnitureProduct } from '@/app/actions/admin/products';
@@ -18,6 +21,8 @@ import type { AdminRoomRow } from '@/lib/admin/catalog';
 export interface ProductFormInitial extends FurnitureProductValues {
   id: string;
 }
+
+type ProductSkuMedia = NonNullable<FurnitureProductValues['skus'][number]['media']>;
 
 const EMPTY: FurnitureProductValues = {
   name: '',
@@ -65,6 +70,7 @@ function existingForMatrix(values: FurnitureProductValues) {
       stock: sku.stock,
       active: sku.active,
       referenced: false,
+      media: sku.media ?? [],
     }));
 }
 
@@ -94,6 +100,7 @@ export function ProductForm({
   const [matrixResult, setMatrixResult] = React.useState<SkuMatrixResult>(() =>
     buildSkuMatrix({ axes: axesFromValues(defaults), existing: existingForMatrix(defaults) }),
   );
+  const [newSkuMedia, setNewSkuMedia] = React.useState<Record<string, ProductSkuMedia>>({});
   const form = useForm<FurnitureProductValues>({
     resolver: zodResolver(furnitureProductSchema),
     defaultValues: defaults,
@@ -110,6 +117,8 @@ export function ProductForm({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const anyControl = control as unknown as Control<any>;
   const optionGroups = watch('optionGroups');
+  const watchedMedia = watch('media');
+  const watchedSkus = watch('skus');
   const axes = React.useMemo(
     () => axesFromValues({ ...defaults, optionGroups: optionGroups ?? [] }),
     [defaults, optionGroups],
@@ -139,7 +148,9 @@ export function ProductForm({
       oldPrice: row.oldPrice,
       stock: row.stock,
       active: row.active,
-      media: row.skuId ? (values.skus.find((sku) => sku.id === row.skuId)?.media ?? []) : [],
+      media: row.skuId
+        ? (values.skus.find((sku) => sku.id === row.skuId)?.media ?? [])
+        : (newSkuMedia[row.combinationKey] ?? []),
     }));
     const result = await saveFurnitureProduct({
       product: { ...(initial ? { id: initial.id } : {}), ...values, skus },
@@ -151,6 +162,33 @@ export function ProductForm({
       return;
     }
     router.push('/admin/catalog/products');
+  }
+
+  function updateProductImages(images: UploadedImage[]) {
+    const existingImages = watchedMedia.filter((media) => media.kind === 'IMAGE');
+    const nextImages = images.map((image, index) => {
+      const previous = existingImages.find((media) => media.publicId === image.publicId);
+      return {
+        id: previous?.id,
+        kind: 'IMAGE' as const,
+        url: image.url,
+        publicId: image.publicId,
+        alt: image.alt,
+        sortOrder: index,
+      };
+    });
+    setValue(
+      'media',
+      [
+        ...watchedMedia.filter((media) => media.kind !== 'IMAGE'),
+        ...watchedMedia.filter((media) => media.kind === 'IMAGE' && !media.publicId),
+        ...nextImages,
+      ],
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
+    );
   }
 
   return (
@@ -227,6 +265,55 @@ export function ProductForm({
         </label>
       </div>
 
+      <section className="space-y-3 rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-4">
+        <div>
+          <h3 className="font-admin-head text-[22px] font-extrabold tracking-[-.035em] text-admin-on-surface">
+            Медиа товара
+          </h3>
+          <p className="text-sm text-admin-on-surface-variant">Изображения сохраняются вместе с карточкой товара.</p>
+        </div>
+        <ImageUploader
+          value={watchedMedia
+            .filter((media) => media.kind === 'IMAGE' && Boolean(media.publicId))
+            .map((media) => ({
+              publicId: media.publicId as string,
+              url: media.url,
+              width: 0,
+              height: 0,
+              format: 'image',
+              bytes: 0,
+              alt: media.alt ?? undefined,
+              persisted: Boolean(media.id),
+            }))}
+          onChange={updateProductImages}
+          folder={EVIRONN_PRODUCTS_FOLDER}
+          max={12}
+        />
+        {watchedMedia.some((media) => media.kind.startsWith('TURN_TABLE_')) && (
+          <div className="space-y-2 text-sm">
+            <p className="font-bold text-admin-on-surface">360° ресурсы</p>
+            {watchedMedia
+              .filter((media) => media.kind.startsWith('TURN_TABLE_'))
+              .map((media) => (
+                <div key={`${media.kind}-${media.id ?? media.sortOrder}`} className="grid gap-2 sm:grid-cols-2">
+                  <Input value={media.kind} readOnly aria-label={`${media.kind} type`} />
+                  <Input
+                    value={media.url}
+                    aria-label={`${media.kind} URL`}
+                    onChange={(event) =>
+                      setValue(
+                        'media',
+                        watchedMedia.map((item) => (item === media ? { ...item, url: event.target.value } : item)),
+                        { shouldDirty: true },
+                      )
+                    }
+                  />
+                </div>
+              ))}
+          </div>
+        )}
+      </section>
+
       <section className="space-y-3">
         <div>
           <h3 className="font-admin-head text-[22px] font-extrabold tracking-[-.035em] text-admin-on-surface">
@@ -247,7 +334,19 @@ export function ProductForm({
         {axes.length > 0 && (
           <SkuMatrix
             axes={axes}
-            existing={existingForMatrix({ ...defaults, optionGroups: optionGroups ?? [] })}
+            existing={existingForMatrix({ ...defaults, optionGroups: optionGroups ?? [], skus: watchedSkus ?? [] })}
+            mediaByCombinationKey={newSkuMedia}
+            onMediaChange={(skuId, combinationKey, media) => {
+              if (skuId) {
+                setValue(
+                  'skus',
+                  (watchedSkus ?? []).map((sku) => (sku.id === skuId ? { ...sku, media } : sku)),
+                  { shouldDirty: true },
+                );
+              } else {
+                setNewSkuMedia((current) => ({ ...current, [combinationKey]: media }));
+              }
+            }}
             onChange={setMatrixResult}
           />
         )}

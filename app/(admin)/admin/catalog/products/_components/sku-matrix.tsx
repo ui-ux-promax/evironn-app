@@ -1,18 +1,25 @@
 'use client';
 
 import * as React from 'react';
+import { ImageUploader } from '@/components/admin/media/image-uploader';
 import { Input } from '@/components/admin/ui/input';
+import { EVIRONN_SKUS_FOLDER } from '@/lib/cloudinary/folders';
+import type { FurnitureProductValues } from '@/services/dto/product.dto';
+import type { UploadedImage } from '@/lib/cloudinary/types';
 import { buildSkuMatrix, type SkuMatrixAxis, type SkuMatrixResult, type SkuMatrixRow } from '@/lib/admin/sku-matrix';
 
-type SkuMatrixExistingSku = Parameters<typeof buildSkuMatrix>[0]['existing'][number];
+type SkuMedia = NonNullable<FurnitureProductValues['skus'][number]['media']>[number];
+type SkuMatrixExistingSku = Parameters<typeof buildSkuMatrix>[0]['existing'][number] & { media?: SkuMedia[] };
 
 type SkuMatrixProps = {
   axes: SkuMatrixAxis[];
   existing: SkuMatrixExistingSku[];
   onChange?: (result: SkuMatrixResult) => void;
+  mediaByCombinationKey?: Record<string, SkuMedia[]>;
+  onMediaChange?: (skuId: string | null, combinationKey: string, media: SkuMedia[]) => void;
 };
 
-export function SkuMatrix({ axes, existing, onChange }: SkuMatrixProps) {
+export function SkuMatrix({ axes, existing, mediaByCombinationKey = {}, onChange, onMediaChange }: SkuMatrixProps) {
   const [result, setResult] = React.useState(() => buildSkuMatrix({ axes, existing }));
 
   React.useEffect(() => {
@@ -41,6 +48,7 @@ export function SkuMatrix({ axes, existing, onChange }: SkuMatrixProps) {
             <th className="px-3 py-2 font-bold">Old price</th>
             <th className="px-3 py-2 font-bold">Stock</th>
             <th className="px-3 py-2 font-bold">Active</th>
+            <th className="px-3 py-2 font-bold">Media</th>
           </tr>
         </thead>
         <tbody>
@@ -100,10 +108,61 @@ export function SkuMatrix({ axes, existing, onChange }: SkuMatrixProps) {
                   onChange={(event) => updateRow(rowIndex, { active: event.target.checked })}
                 />
               </td>
+              <td className="min-w-[220px] px-3 py-2 align-top">
+                <SkuMediaEditor
+                  media={
+                    row.skuId
+                      ? (existing.find((sku) => sku.skuId === row.skuId)?.media ?? [])
+                      : (mediaByCombinationKey[row.combinationKey] ?? [])
+                  }
+                  onChange={(media) => onMediaChange?.(row.skuId, row.combinationKey, media)}
+                />
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function SkuMediaEditor({ media, onChange }: { media: SkuMedia[]; onChange?: (media: SkuMedia[]) => void }) {
+  const images = media.filter((item) => item.kind === 'IMAGE' && Boolean(item.publicId));
+  function handleChange(uploaded: UploadedImage[]) {
+    const previousImages = media.filter((item) => item.kind === 'IMAGE');
+    const nextImages = uploaded.map((image, index) => {
+      const previous = previousImages.find((item) => item.publicId === image.publicId);
+      return {
+        id: previous?.id,
+        kind: 'IMAGE' as const,
+        url: image.url,
+        publicId: image.publicId,
+        alt: image.alt,
+        sortOrder: index,
+      };
+    });
+    onChange?.([
+      ...media.filter((item) => item.kind !== 'IMAGE'),
+      ...media.filter((item) => item.kind === 'IMAGE' && !item.publicId),
+      ...nextImages,
+    ]);
+  }
+
+  return (
+    <ImageUploader
+      value={images.map((image) => ({
+        publicId: image.publicId as string,
+        url: image.url,
+        width: 0,
+        height: 0,
+        format: 'image',
+        bytes: 0,
+        alt: image.alt ?? undefined,
+        persisted: Boolean(image.id),
+      }))}
+      onChange={handleChange}
+      folder={EVIRONN_SKUS_FOLDER}
+      max={4}
+    />
   );
 }

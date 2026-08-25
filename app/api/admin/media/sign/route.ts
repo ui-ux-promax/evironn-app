@@ -3,11 +3,8 @@ import { z } from 'zod';
 import { requireAdminApi } from '@/lib/admin/require-admin';
 import { apiError, apiZodError, apiInternalError } from '@/lib/admin/api-error';
 import { isCloudinaryConfigured, getCloudinaryEnv } from '@/lib/cloudinary/config';
+import { assertSignableFolder, EVIRONN_MEDIA_FOLDERS, type EvironnMediaFolder } from '@/lib/cloudinary/folders';
 import { buildUploadSignature } from '@/lib/cloudinary/sign';
-
-// Folders the admin may sign uploads into. Consumers (3.2/3.3) extend this list.
-const ALLOWED_FOLDERS = ['ritm/uploads', 'ritm/categories', 'ritm/products'] as const;
-const DEFAULT_FOLDER = 'ritm/uploads';
 
 const bodySchema = z.object({ folder: z.string().optional() });
 
@@ -28,8 +25,11 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(raw);
   if (!parsed.success) return apiZodError(parsed.error);
 
-  const folder = parsed.data.folder ?? DEFAULT_FOLDER;
-  if (!(ALLOWED_FOLDERS as readonly string[]).includes(folder)) {
+  const requestedFolder = parsed.data.folder ?? EVIRONN_MEDIA_FOLDERS[0];
+  let folder: EvironnMediaFolder;
+  try {
+    folder = assertSignableFolder(requestedFolder);
+  } catch {
     return apiError('Недопустимая папка', 400);
   }
 

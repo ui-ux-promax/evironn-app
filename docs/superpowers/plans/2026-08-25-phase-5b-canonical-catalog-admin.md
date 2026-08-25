@@ -679,3 +679,46 @@ Four Important review findings were resolved in place; scope, task count and che
 | 5B.6 option-value removal versus referenced-SKU deactivation | Rule V in 3.1 with exact `retained` / `sellable` / `retained inactive referenced` definitions, transaction reordered so SKU reconciliation (step 5/6) precedes subtractive link removal (step 7), non-cascade statement, separation from the stricter global 5B.3 rule, and required focused cases 1-3 in `tests/admin-products-action.test.ts`. |
 | 5B.6 delete/deactivate ignores legacy references | Rule R in 3.1 with `ProductReferenceCounts`, the new `PRODUCT_HAS_REFERENCES` code, child-first delete order only for zero-reference products, deactivation-never-deletes statement, bounded `WishlistItem` schema read, and required focused cases 4-6 including the zero-write invariant. |
 | 5B.6 absolute SKU stock write bypasses the 5B.9 guard | Rule S in 3.1 plus the 5B.6 step 5 restriction, read-only existing-stock UI in 2.4 and 5B.5, the fixed `existing-sku-stock-ignored` warning literal, the 5B.9 sole-authority statement, required focused cases 7-8, checkpoint 2 focus, the 5B.11 functional step and a definition-of-done bullet. |
+
+## 8. 5B closeout evidence
+
+### Delivery commits
+
+- 5B.1 canonical catalog read: `dab95de`
+- 5B.2 Cloudinary boundary: `ff7ba29`; remediation: `a81257d`
+- 5B.3 option groups and values: `1b93559`
+- 5B.4 rooms: `0c103ce`
+- 5B.5 SKU matrix: `961400a`
+- 5B.6 canonical product/SKU action: `039e0cc`
+- 5B.7 canonical product and SKU media: `9ef01bd`; remediation: `180f894`
+- 5B.8 category turntable binding: `9d2405b`
+- 5B.9 guarded SKU stock console: `4b5863c`
+- 5B.10 legacy admin-write retirement: `8d6ce62`
+- 5B.11 functional checkpoint evidence: pending until this closeout is committed.
+
+Review checkpoints:
+
+- `C5B_MEDIA = a81257d`; fresh Claude Opus review approved the Cloudinary remediation.
+- `C5B_CANONICAL = 180f894`; the initial review found Critical/Important findings, all were remediated, and the bounded fresh Claude Opus remediation re-review approved the result.
+- `C5B_FINAL = pending until the final closeout review and docs commit.`
+
+### Automated evidence
+
+The consolidated focused batch completed with `39 test files passed; 298 tests passed`. `npm run typecheck` passed. The source/test-only Prettier sweep over all changed 5B TypeScript, TSX and CSS files passed, and `git diff --check` passed. Per the approved scope, no full gate, production build or E2E run was executed.
+
+### Legacy inventory and disposition
+
+The required static scans produced these bounded findings:
+
+- `productSchema` / `ProductValues`: no production legacy DTO symbols remain; remaining matches are canonical `furnitureProductSchema` / `FurnitureProductValues` and retirement-test assertions.
+- `productColorway` / `productImage` / `productVariant`: remaining production matches are compatibility reads, media ownership resolution, order/cart/payment/demo-reset paths, and focused tests. The only remaining legacy admin write is `app/actions/admin/orders.ts :: cancelOrderByAdmin :: productVariantId branch :: prisma.productVariant.update({ data: { stock: { increment: item.quantity } } })`.
+- `variant-matrix` / `colorway-card`: both retired admin components are deleted; remaining matches are static retirement assertions and the canonical matrix contract test.
+- `ritm/`: legacy public IDs remain in compatibility helpers, read/ownership paths and tests. Legacy folders are not signable. Repository-wide cleanup is deferred to 5D.
+
+Database inventory counts (products with zero canonical SKUs and legacy `ritm/` public-ID counts) were unavailable because this worktree had no database connection variables. No environment values were printed, no schema or database rows were changed, and no legacy rows were deleted. `WishlistItem.productId` is a confirmed Prisma schema reference to `Product` and remains covered by Rule R.
+
+### Handoff and deferred visual work
+
+5B reuses the accepted admin shell and clone primitives. Exact clone parity for typography, spacing, media details and responsive polish is visual debt for one 5D pass; no visual redesign was included in 5B. The 5C handoff preserves the named `cancelOrderByAdmin` exemption until 5C.3 and carries `lib/admin/analytics.ts` canonical aggregate migration forward. No 5C or 5D implementation occurred.
+
+Automated functional evidence is green. This closeout does not claim desktop/mobile visual acceptance, and no push, PR, merge, schema change, provider change or release action occurred.

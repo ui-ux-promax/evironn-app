@@ -1,7 +1,8 @@
-import type { OrderStatus, Prisma } from '@prisma/client';
+import type { OrderStatus, PaymentInitializationState, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma-client';
 import { buildPaginationMeta, parsePaginationParams } from '@/lib/admin/pagination';
-import { ORDER_STATUS_VALUES } from '@/lib/order-admin';
+import { formatOrderItemConfiguration } from '@/lib/order';
+import { canAdminCancel, nextOrderStatus, ORDER_STATUS_VALUES, type AdminCancelBlockReason } from '@/lib/order-admin';
 
 export type AdminOrderListInput = {
   page: number;
@@ -33,6 +34,37 @@ export type AdminOrderListResult = {
   filteredRevenue: number;
 };
 
+export type AdminOrderItemSnapshot = {
+  id: string;
+  articleNumber: string | null;
+  combinationLabel: string;
+  productName: string;
+  imageUrl: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+};
+
+export type AdminOrderDetail = {
+  id: string;
+  orderNumber: number;
+  status: OrderStatus;
+  createdAt: Date;
+  contact: { name: string; email: string; phone: string };
+  delivery: { method: string; address: string; date: Date | null; window: string | null };
+  totals: { items: number; discount: number; shipping: number; services: number; total: number };
+  items: AdminOrderItemSnapshot[];
+  payment: {
+    method: string;
+    status: string | null;
+    initializationState: PaymentInitializationState | null;
+    claimEvidencePresent: boolean;
+    dispatchEvidencePresent: boolean;
+  };
+  nextStatus: OrderStatus | null;
+  cancelDecision: { ok: true } | { ok: false; reason: AdminCancelBlockReason };
+};
+
 const adminOrderSelect = {
   id: true,
   orderNumber: true,
@@ -45,6 +77,49 @@ const adminOrderSelect = {
   payment: { select: { status: true } },
   items: { select: { imageUrl: true, quantity: true } },
 } satisfies Prisma.OrderSelect;
+
+const adminOrderDetailSelect = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  createdAt: true,
+  contactName: true,
+  contactEmail: true,
+  contactPhone: true,
+  shippingMethod: true,
+  city: true,
+  addressLine: true,
+  deliveryDate: true,
+  deliveryWindow: true,
+  itemsTotal: true,
+  discountAmount: true,
+  shippingAmount: true,
+  serviceAmount: true,
+  totalAmount: true,
+  paymentMethod: true,
+  paymentInitializationState: true,
+  paymentInitializationClaimedAt: true,
+  paymentEverDispatchedAt: true,
+  payment: { select: { status: true } },
+  items: {
+    select: {
+      id: true,
+      skuArticleNumber: true,
+      productName: true,
+      imageUrl: true,
+      configuration: true,
+      sku: true,
+      colorwayName: true,
+      size: true,
+      unitPrice: true,
+      quantity: true,
+      lineTotal: true,
+    },
+  },
+} satisfies Prisma.OrderSelect;
+
+const SHIPPING_METHOD_LABEL: Record<string, string> = { courier: 'Курьер', pickup: 'Самовывоз' };
+const PAYMENT_METHOD_LABEL: Record<string, string> = { online: 'Онлайн', cod: 'При получении' };
 
 function buildSearchWhere(query: string): Prisma.OrderWhereInput {
   if (!query) return {};
@@ -127,5 +202,56 @@ export async function listAdminOrders(input: AdminOrderListInput): Promise<Admin
     },
     statusCounts: createStatusCounts(statusGroups),
     filteredRevenue: revenueAgg._sum.totalAmount ?? 0,
+  };
+}
+
+export async function getAdminOrderDetail(orderId: string): Promise<AdminOrderDetail | null> {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: adminOrderDetailSelect });
+  if (!order) return null;
+
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    createdAt: order.createdAt,
+    contact: { name: order.contactName, email: order.contactEmail, phone: order.contactPhone },
+    delivery: {
+      method: SHIPPING_METHOD_LABEL[order.shippingMethod] ?? order.shippingMethod,
+      address: [order.city, order.addressLine].filter(Boolean).join(', '),
+      date: order.deliveryDate,
+      window: order.deliveryWindow,
+    },
+    totals: {
+      items: order.itemsTotal,
+      discount: order.discountAmount,
+      shipping: order.shippingAmount,
+      services: order.serviceAmount,
+      total: order.totalAmount,
+    },
+    items: order.items.map((item) => ({
+      id: item.id,
+      articleNumber: item.skuArticleNumber,
+      combinationLabel: formatOrderItemConfiguration(item),
+      productName: item.productName,
+      imageUrl: item.imageUrl,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+      lineTotal: item.lineTotal,
+    })),
+    payment: {
+      method: PAYMENT_METHOD_LABEL[order.paymentMethod] ?? order.paymentMethod,
+      status: order.payment?.status ?? null,
+      initializationState: order.paymentInitializationState,
+      claimEvidencePresent: order.paymentInitializationClaimedAt !== null,
+      dispatchEvidencePresent: order.paymentEverDispatchedAt !== null,
+    },
+    nextStatus: nextOrderStatus(order.status),
+    cancelDecision: canAdminCancel({
+      status: order.status,
+      paymentInitializationState: order.paymentInitializationState,
+      paymentInitializationClaimedAt: order.paymentInitializationClaimedAt,
+      paymentEverDispatchedAt: order.paymentEverDispatchedAt,
+      payment: order.payment,
+    }),
   };
 }

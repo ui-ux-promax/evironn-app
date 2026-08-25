@@ -53,7 +53,7 @@ These are bounded sessions on one branch and one final Phase 5 PR. Do not merge 
 
 ## Stop gate
 
-The next session produces and reviews the executable 5C plan. It must not begin implementation until the user approves that plan. Do not push, open a PR, merge, delete branches, or begin Phase 6 without explicit authorization.
+Await user desktop/mobile acceptance after bounded 5C final-review remediation. Do not push, open a PR, merge, start 5D, or run the full Phase 5 gate without explicit authorization.
 
 ## Protected local files
 

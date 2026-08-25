@@ -10,7 +10,7 @@ import { ImageUploader } from '@/components/admin/media/image-uploader';
 import { categorySchema, type CategoryValues } from '@/services/dto/category.dto';
 import { slugify } from '@/lib/slugify';
 import type { UploadedImage } from '@/lib/cloudinary/types';
-import { EVIRONN_MEDIA_FOLDERS } from '@/lib/cloudinary/folders';
+import { EVIRONN_CATEGORIES_FOLDER } from '@/lib/cloudinary/folders';
 import { createCategory, updateCategory } from '@/app/actions/admin/categories';
 
 export interface CategoryFormInitial {
@@ -113,7 +113,7 @@ export function CategoryForm({ initial }: { initial?: CategoryFormInitial }) {
         <ImageUploader
           value={cover ? [cover] : []}
           onChange={(imgs) => setCover(imgs[0] ?? null)}
-          folder={EVIRONN_MEDIA_FOLDERS[1]}
+          folder={EVIRONN_CATEGORIES_FOLDER}
           max={1}
         />
       </div>

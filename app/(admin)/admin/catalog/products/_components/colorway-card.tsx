@@ -12,6 +12,7 @@ import { Input } from '@/components/admin/ui/input';
 import { Button } from '@/components/admin/ui/button';
 import { ImageUploader } from '@/components/admin/media/image-uploader';
 import type { UploadedImage } from '@/lib/cloudinary/types';
+import { EVIRONN_PRODUCTS_FOLDER } from '@/lib/cloudinary/folders';
 import { VariantMatrix } from './variant-matrix';
 
 export interface ColorwayCardProps {
@@ -92,7 +93,7 @@ export function ColorwayCard({
         <ImageUploader
           value={images}
           onChange={(imgs) => setValue(`colorways.${ci}.images`, imgs, { shouldDirty: true })}
-          folder="ritm/products"
+          folder={EVIRONN_PRODUCTS_FOLDER}
           max={8}
         />
       </div>

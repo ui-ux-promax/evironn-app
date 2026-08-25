@@ -23,12 +23,14 @@ import { POST as deleteMedia } from '@/app/api/admin/media/delete/route';
 import { POST as signMedia } from '@/app/api/admin/media/sign/route';
 import { isCloudinaryConfigured, getCloudinaryEnv } from '@/lib/cloudinary/config';
 import { deleteAsset } from '@/lib/cloudinary/server';
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma-client';
 
 const authMock = auth as unknown as ReturnType<typeof vi.fn>;
 const configuredMock = isCloudinaryConfigured as unknown as ReturnType<typeof vi.fn>;
 const envMock = getCloudinaryEnv as unknown as ReturnType<typeof vi.fn>;
 const deleteMock = deleteAsset as unknown as ReturnType<typeof vi.fn>;
+const loggerErrorMock = logger.error as unknown as ReturnType<typeof vi.fn>;
 const findCategory = prisma.category.findFirst as unknown as ReturnType<typeof vi.fn>;
 const findProductMedia = prisma.productMedia.findFirst as unknown as ReturnType<typeof vi.fn>;
 const findSkuMedia = prisma.skuMedia.findFirst as unknown as ReturnType<typeof vi.fn>;
@@ -107,16 +109,24 @@ describe('POST /api/admin/media/delete', () => {
     expect(findCategory).not.toHaveBeenCalled();
   });
 
-  it('accepts a legacy ID only when an exact database reference exists', async () => {
-    findCategory.mockResolvedValueOnce(null);
-    findProductMedia.mockResolvedValueOnce(null);
-    findSkuMedia.mockResolvedValueOnce(null);
-    findProductImage.mockResolvedValueOnce({ id: 'legacy-image' });
-
+  it.each([
+    ['Category cover', findCategory],
+    ['ProductMedia', findProductMedia],
+    ['SkuMedia', findSkuMedia],
+    ['ProductImage', findProductImage],
+  ])('accepts a legacy ID with an exact %s database reference', async (_label, referenceMock) => {
+    referenceMock.mockResolvedValueOnce({ id: 'legacy-reference' });
     const response = await deleteMedia(request({ publicId: 'ritm/products/old-chair' }));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
     expect(deleteMock).toHaveBeenCalledWith('ritm/products/old-chair');
+  });
+
+  it('refuses safe but unreferenced legacy IDs before Cloudinary', async () => {
+    const response = await deleteMedia(request({ publicId: 'ritm/products/unreferenced' }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: expect.any(String) });
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it('refuses foreign and unsafe IDs with the existing error envelope', async () => {
@@ -129,5 +139,17 @@ describe('POST /api/admin/media/delete', () => {
     expect(unsafe.status).toBe(400);
     expect(await unsafe.json()).toEqual({ message: expect.any(String) });
     expect(deleteMock).not.toHaveBeenCalled();
+  });
+
+  it('does not log the public ID when Cloudinary destroy fails', async () => {
+    const publicId = 'evironn/products/private-chair';
+    deleteMock.mockRejectedValue(new Error('cloudinary down'));
+
+    const response = await deleteMedia(request({ publicId }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: false });
+    expect(loggerErrorMock).toHaveBeenCalledWith('media_delete_failed', expect.any(Error));
+    expect(JSON.stringify(loggerErrorMock.mock.calls)).not.toContain(publicId);
   });
 });

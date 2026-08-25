@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireAdminApi } from '@/lib/admin/require-admin';
 import { apiError, apiZodError } from '@/lib/admin/api-error';
 import { isCloudinaryConfigured } from '@/lib/cloudinary/config';
-import { resolveMediaDeleteDecision } from '@/lib/cloudinary/admin-media';
+import { resolveMediaDeleteDecision } from '@/lib/cloudinary/admin-media.server';
 import { deleteAsset } from '@/lib/cloudinary/server';
 import { logger } from '@/lib/logger';
 

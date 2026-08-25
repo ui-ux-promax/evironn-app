@@ -11,6 +11,8 @@ import { Button } from '@/components/admin/ui/button';
 import { Icon } from '@/components/admin/icon';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
+import { listAdminCatalogProducts, listAdminCategoriesForCatalog } from '@/lib/admin/catalog';
+import { CategoryTurntableBinding } from './_components/category-form';
 import { CategoryTable, type CategoryRow } from './_components/category-table';
 
 export const metadata = { title: 'Категории' };
@@ -18,17 +20,21 @@ export const dynamic = 'force-dynamic';
 
 export default async function CatalogPage() {
   await requireAdminPage();
-  const categories = await prisma.category.findMany({
-    orderBy: { sortOrder: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      tagline: true,
-      coverImage: true,
-      _count: { select: { products: true } },
-    },
-  });
+  const [categories, canonicalCategories, catalogProducts] = await Promise.all([
+    prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        tagline: true,
+        coverImage: true,
+        _count: { select: { products: true } },
+      },
+    }),
+    listAdminCategoriesForCatalog(),
+    listAdminCatalogProducts({ page: 1, limit: 200, sort: 'name' }),
+  ]);
 
   const rows: CategoryRow[] = categories.map(({ _count, ...c }) => ({
     ...c,
@@ -57,6 +63,14 @@ export default async function CatalogPage() {
         <AdminKpiCard icon="inventory_2" label="Товаров в категориях" value={linkedProducts.toLocaleString('ru-RU')} />
         <AdminKpiCard icon="image" label="С обложками" value={categoriesWithCovers.toLocaleString('ru-RU')} />
       </div>
+
+      <AdminPanel title="360-карусель" note="Одна категория может иметь один товар с полным комплектом 360-медиа.">
+        <div className="grid gap-3 lg:grid-cols-2">
+          {canonicalCategories.map((category) => (
+            <CategoryTurntableBinding key={category.id} category={category} products={catalogProducts.rows} />
+          ))}
+        </div>
+      </AdminPanel>
 
       <AdminPanel
         title="Список категорий"

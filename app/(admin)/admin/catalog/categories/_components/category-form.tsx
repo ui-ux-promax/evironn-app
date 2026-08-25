@@ -11,7 +11,8 @@ import { categorySchema, type CategoryValues } from '@/services/dto/category.dto
 import { slugify } from '@/lib/slugify';
 import type { UploadedImage } from '@/lib/cloudinary/types';
 import { EVIRONN_CATEGORIES_FOLDER } from '@/lib/cloudinary/folders';
-import { createCategory, updateCategory } from '@/app/actions/admin/categories';
+import { createCategory, setCategoryTurntable, updateCategory } from '@/app/actions/admin/categories';
+import type { AdminCatalogProductRow, AdminCategoryRow } from '@/lib/admin/catalog';
 
 export interface CategoryFormInitial {
   id: string;
@@ -128,6 +129,79 @@ export function CategoryForm({ initial }: { initial?: CategoryFormInitial }) {
           Отмена
         </Button>
       </div>
+    </form>
+  );
+}
+
+type TurntableProductOption = Pick<AdminCatalogProductRow, 'id' | 'name' | 'slug' | 'turntableReady'>;
+
+export function CategoryTurntableBinding({
+  category,
+  products,
+}: {
+  category: Pick<AdminCategoryRow, 'id' | 'name' | 'turntableProductId'>;
+  products: TurntableProductOption[];
+}) {
+  const router = useRouter();
+  const [productId, setProductId] = React.useState(category.turntableProductId ?? '');
+  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const eligibleProducts = products.filter(
+    (product) => product.turntableReady || product.id === category.turntableProductId,
+  );
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setServerError(null);
+    setIsSubmitting(true);
+    const result = await setCategoryTurntable({ categoryId: category.id, productId: productId || null });
+    setIsSubmitting(false);
+    if (!result.ok) {
+      setServerError(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="space-y-3 rounded-[18px] border border-admin-outline-variant bg-admin-surface-low p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-bold text-admin-on-surface">{category.name}</p>
+          <p className="text-xs text-admin-on-surface-variant">Ровно один video, poster и fallback в товаре</p>
+        </div>
+        <span className="text-xs font-bold text-admin-on-surface-variant">
+          {category.turntableProductId ? 'Привязан' : 'Не привязан'}
+        </span>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label className="min-w-0 flex-1 space-y-1">
+          <span className="text-[12px] font-extrabold uppercase tracking-[.06em] text-admin-on-surface-variant">
+            Товар для 360
+          </span>
+          <select
+            value={productId}
+            onChange={(event) => setProductId(event.target.value)}
+            data-testid="admin-category-turntable-select"
+            className="h-12 w-full rounded-[14px] border border-admin-outline-variant bg-admin-surface px-3 text-sm text-admin-on-surface"
+          >
+            <option value="">Не привязан</option>
+            {eligibleProducts.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name} · {product.slug}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button type="submit" loading={isSubmitting}>
+          Сохранить 360
+        </Button>
+      </div>
+      {serverError && <p className="text-sm text-admin-error">{serverError}</p>}
     </form>
   );
 }

@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/admin/ui/dialog';
 import { formatPrice } from '@/lib/format';
-import { deleteProduct } from '@/app/actions/admin/products';
+import { deleteFurnitureProduct } from '@/app/actions/admin/products';
 import type { AdminCatalogProductRow } from '@/lib/admin/catalog';
 
 export type ProductRow = AdminCatalogProductRow;
@@ -48,7 +48,7 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
   async function handleDelete() {
     if (!toDelete) return;
     setDeleting(true);
-    const res = await deleteProduct(toDelete.id);
+    const res = await deleteFurnitureProduct({ productId: toDelete.id });
     setDeleting(false);
     setToDelete(null);
     if (!res.ok) setBlockMsg(res.error);

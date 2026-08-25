@@ -78,11 +78,7 @@ describe('Evironn Cloudinary folder ownership', () => {
   });
 
   it('uses named Evironn constants at every remaining admin signer input', () => {
-    const paths = [
-      'components/admin/media/image-uploader.tsx',
-      'components/admin/media/uploader-demo.tsx',
-      'app/(admin)/admin/catalog/products/_components/colorway-card.tsx',
-    ];
+    const paths = ['components/admin/media/image-uploader.tsx', 'components/admin/media/uploader-demo.tsx'];
     for (const path of paths) {
       const source = readFileSync(resolve(process.cwd(), path), 'utf8');
       expect(source, path).not.toMatch(/folder\s*(?:=|,)\s*["']ritm\//);

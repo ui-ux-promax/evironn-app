@@ -150,7 +150,7 @@ describe('SkuMatrix', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('keeps the canonical SKU matrix wired while the legacy variant matrix remains available', () => {
+  it('keeps the canonical SKU matrix wired after legacy matrix retirement', () => {
     const productForm = readFileSync(
       resolve(process.cwd(), 'app/(admin)/admin/catalog/products/_components/product-form.tsx'),
       'utf8',
@@ -162,6 +162,6 @@ describe('SkuMatrix', () => {
     expect(productForm).not.toContain('selectedRoomIds = []');
     expect(
       existsSync(resolve(process.cwd(), 'app/(admin)/admin/catalog/products/_components/variant-matrix.tsx')),
-    ).toBe(true);
+    ).toBe(false);
   });
 });

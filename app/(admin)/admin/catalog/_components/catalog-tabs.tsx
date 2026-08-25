@@ -15,6 +15,7 @@ export function CatalogTabs() {
           <Link
             key={tab.href}
             href={tab.href}
+            data-testid={`admin-catalog-tab-${tab.href.split('/').pop()}`}
             className={cn(
               'px-4 py-2.5 text-sm font-medium -mb-px border-b-2 transition-colors',
               active

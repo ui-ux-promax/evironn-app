@@ -13,6 +13,7 @@ import { productSchema, type ProductValues, GENDER_VALUES } from '@/services/dto
 import { createProduct, updateProduct } from '@/app/actions/admin/products';
 import { ColorwayCard } from './colorway-card';
 import { SpecsEditor } from './specs-editor';
+import type { AdminRoomRow } from '@/lib/admin/catalog';
 
 export interface ProductFormInitial extends ProductValues {
   id: string;
@@ -46,11 +47,15 @@ export function ProductForm({
   categories,
   brands,
   referencedVariantIds = [],
+  availableRooms = [],
+  selectedRoomIds = [],
 }: {
   initial?: ProductFormInitial;
   categories: { id: string; name: string }[];
   brands: string[];
   referencedVariantIds?: string[];
+  availableRooms?: Pick<AdminRoomRow, 'id' | 'name' | 'slug'>[];
+  selectedRoomIds?: string[];
 }) {
   const router = useRouter();
   const [serverError, setServerError] = React.useState<string | null>(null);
@@ -173,6 +178,26 @@ export function ProductForm({
       <Field label="Примечание по посадке" error={errors.fitNote?.message}>
         <Input {...register('fitNote')} placeholder="Маломерит на полразмера" />
       </Field>
+
+      {availableRooms.length > 0 && (
+        <Field label="Комнаты">
+          <select
+            multiple
+            value={selectedRoomIds}
+            onChange={() => undefined}
+            disabled
+            aria-label="Комнаты товара"
+            data-testid="admin-product-form-rooms"
+            className="min-h-24 w-full rounded-[10px] border border-admin-outline-variant bg-admin-surface px-3 py-2 text-[13px] text-admin-on-surface"
+          >
+            {availableRooms.map((room) => (
+              <option key={room.id} value={room.id}>
+                {room.name} ({room.slug})
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
 
       <div className="space-y-2 rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-4">
         <label className="text-sm font-bold text-admin-on-surface">Характеристики</label>

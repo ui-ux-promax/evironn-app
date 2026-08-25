@@ -15,7 +15,7 @@ import {
 } from '@/components/admin/ui/dialog';
 import { nextOrderStatus, canCancelOrder, FORWARD_ACTION_LABEL } from '@/lib/order-admin';
 import { advanceOrderStatus, cancelOrderByAdmin } from '@/app/actions/admin/orders';
-import type { OrderStatusUpdateInput } from '@/services/dto/order-admin.dto';
+import type { AdminOrderCancelInput, OrderStatusUpdateInput } from '@/services/dto/order-admin.dto';
 
 export function OrderStatusActions({ orderId, status }: { orderId: string; status: OrderStatus }) {
   const router = useRouter();
@@ -41,7 +41,10 @@ export function OrderStatusActions({ orderId, status }: { orderId: string; statu
 
   async function handleCancel() {
     setBusy(true);
-    const res = await cancelOrderByAdmin(orderId);
+    const res = await cancelOrderByAdmin({
+      orderId,
+      expectedStatus: status as AdminOrderCancelInput['expectedStatus'],
+    });
     setBusy(false);
     setConfirmCancel(false);
     if (res.ok) router.refresh();
@@ -75,8 +78,8 @@ export function OrderStatusActions({ orderId, status }: { orderId: string; statu
           <DialogHeader>
             <DialogTitle>Отменить заказ?</DialogTitle>
             <DialogDescription>
-              Сток вернётся на склад, популярность товаров скорректируется. Если заказ был оплачен онлайн — верните
-              деньги вручную в кабинете ЮKassa (автоматический рефанд не выполняется).
+              Сток вернётся на склад, а популярность товаров скорректируется. Платёжные признаки заказа будут проверены
+              перед отменой.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 pt-2">

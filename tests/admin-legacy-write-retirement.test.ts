@@ -19,7 +19,7 @@ function relative(path: string): string {
 }
 
 describe('legacy admin-write retirement', () => {
-  it('allows exactly one named legacy stock-restoration write site', () => {
+  it('allows exactly one named legacy stock-restoration write site in the cancellation server module', () => {
     const mutationPattern =
       /\b(?:prisma|txn|transaction)\.(productColorway|productImage|productVariant)\.(create|createMany|update|updateMany|delete|deleteMany|upsert)\s*\(/g;
     const mutations = [...sourceFiles(adminActionRoot), ...sourceFiles(adminRouteRoot)].flatMap((path) => {
@@ -31,12 +31,21 @@ describe('legacy admin-write retirement', () => {
       }));
     });
 
-    expect(mutations).toEqual([{ path: 'app/actions/admin/orders.ts', model: 'productVariant', operation: 'update' }]);
+    expect(mutations).toEqual([]);
+
+    const cancellationMutations = [
+      ...readFileSync(resolve(root, 'lib/admin/order-cancellation.server.ts'), 'utf8').matchAll(mutationPattern),
+    ].map((match) => ({ path: 'lib/admin/order-cancellation.server.ts', model: match[1], operation: match[2] }));
+    expect(cancellationMutations).toEqual([
+      { path: 'lib/admin/order-cancellation.server.ts', model: 'productVariant', operation: 'update' },
+    ]);
 
     const orders = readFileSync(resolve(root, 'app/actions/admin/orders.ts'), 'utf8');
-    expect(orders).toContain('else if (item.productVariantId)');
-    expect(orders).toContain('await prisma.productVariant.update({');
-    expect(orders).toContain('data: { stock: { increment: item.quantity } },');
+    expect(orders).not.toMatch(/productVariant\.(?:create|createMany|update|updateMany|delete|deleteMany|upsert)\s*\(/);
+
+    const cancellation = readFileSync(resolve(root, 'lib/admin/order-cancellation.server.ts'), 'utf8');
+    expect(cancellation).toContain('await transaction.productVariant.update({');
+    expect(cancellation).toContain('data: { stock: { increment: item.quantity } },');
   });
 
   it('removes the admin productSchema path and retired clothing components', () => {

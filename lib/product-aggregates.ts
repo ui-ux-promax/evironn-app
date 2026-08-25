@@ -35,7 +35,9 @@ export function productDenormFromColorways(colorways: DenormColorway[]): { minPr
 
 // Дельта продаж по товару: суммирует quantity по productId (один заказ может содержать
 // несколько вариантов одного товара). Используется для одного update на товар.
-export function salesDeltaByProduct(items: { productId: string; quantity: number }[]): Map<string, number> {
+export function salesDeltaByProduct(
+  items: ReadonlyArray<{ productId: string; quantity: number }>,
+): Map<string, number> {
   const delta = new Map<string, number>();
   for (const it of items) {
     delta.set(it.productId, (delta.get(it.productId) ?? 0) + it.quantity);

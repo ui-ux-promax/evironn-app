@@ -11,3 +11,12 @@ export const orderStatusUpdateSchema = z
   .strict();
 
 export type OrderStatusUpdateInput = z.infer<typeof orderStatusUpdateSchema>;
+
+export const adminOrderCancelSchema = z
+  .object({
+    orderId: z.string().min(1),
+    expectedStatus: z.enum(['PENDING', 'PROCESSING']),
+  })
+  .strict();
+
+export type AdminOrderCancelInput = z.infer<typeof adminOrderCancelSchema>;

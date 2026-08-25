@@ -70,9 +70,12 @@ beforeEach(() => {
 
 describe('advanceOrderStatus', () => {
   it('PENDING → PROCESSING via guarded updateMany', async () => {
-    p.order.findUnique.mockResolvedValue({ status: 'PENDING' });
-    const r = await advanceOrderStatus({ orderId: 'o1', toStatus: 'PROCESSING' });
-    expect(r.ok).toBe(true);
+    const r = await advanceOrderStatus({
+      orderId: 'o1',
+      expectedStatus: 'PENDING',
+      nextStatus: 'PROCESSING',
+    });
+    expect(r).toMatchObject({ ok: true, data: { status: 'PROCESSING' } });
     expect(p.order.updateMany).toHaveBeenCalledWith({
       where: { id: 'o1', status: 'PENDING' },
       data: { status: 'PROCESSING' },
@@ -80,36 +83,54 @@ describe('advanceOrderStatus', () => {
   });
 
   it('invalid jump PENDING → SHIPPED → error, no write', async () => {
-    p.order.findUnique.mockResolvedValue({ status: 'PENDING' });
-    const r = await advanceOrderStatus({ orderId: 'o1', toStatus: 'SHIPPED' });
+    const r = await advanceOrderStatus({
+      orderId: 'o1',
+      expectedStatus: 'PENDING',
+      nextStatus: 'SHIPPED',
+    });
     expect(r.ok).toBe(false);
     expect(p.order.updateMany).not.toHaveBeenCalled();
   });
 
   it('race (count:0) → error', async () => {
-    p.order.findUnique.mockResolvedValue({ status: 'PENDING' });
     p.order.updateMany.mockResolvedValue({ count: 0 });
-    const r = await advanceOrderStatus({ orderId: 'o1', toStatus: 'PROCESSING' });
+    const r = await advanceOrderStatus({
+      orderId: 'o1',
+      expectedStatus: 'PENDING',
+      nextStatus: 'PROCESSING',
+    });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/обновите/i);
+    if (!r.ok) expect(r).toMatchObject({ code: 'STALE_VALUE' });
   });
 
   it('order not found → error', async () => {
-    p.order.findUnique.mockResolvedValue(null);
-    const r = await advanceOrderStatus({ orderId: 'oX', toStatus: 'PROCESSING' });
-    expect(r.ok).toBe(false);
-    expect(p.order.updateMany).not.toHaveBeenCalled();
+    p.order.updateMany.mockResolvedValue({ count: 0 });
+    const r = await advanceOrderStatus({
+      orderId: 'oX',
+      expectedStatus: 'PENDING',
+      nextStatus: 'PROCESSING',
+    });
+    expect(r).toMatchObject({ ok: false, code: 'STALE_VALUE' });
+    expect(p.order.updateMany).toHaveBeenCalledTimes(1);
   });
 
   it('non-admin → error, no prisma touch', async () => {
     authMock.mockResolvedValue(null);
-    const r = await advanceOrderStatus({ orderId: 'o1', toStatus: 'PROCESSING' });
+    const r = await advanceOrderStatus({
+      orderId: 'o1',
+      expectedStatus: 'PENDING',
+      nextStatus: 'PROCESSING',
+    });
     expect(r.ok).toBe(false);
     expect(p.order.findUnique).not.toHaveBeenCalled();
   });
 
   it('bad input (zod) → error', async () => {
-    const r = await advanceOrderStatus({ orderId: '', toStatus: 'PENDING' });
+    const r = await advanceOrderStatus({
+      orderId: '',
+      expectedStatus: 'PENDING',
+      nextStatus: 'PROCESSING',
+    });
     expect(r.ok).toBe(false);
     expect(p.order.findUnique).not.toHaveBeenCalled();
   });

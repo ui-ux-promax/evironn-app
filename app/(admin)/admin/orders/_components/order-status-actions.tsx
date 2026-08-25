@@ -15,6 +15,7 @@ import {
 } from '@/components/admin/ui/dialog';
 import { nextOrderStatus, canCancelOrder, FORWARD_ACTION_LABEL } from '@/lib/order-admin';
 import { advanceOrderStatus, cancelOrderByAdmin } from '@/app/actions/admin/orders';
+import type { OrderStatusUpdateInput } from '@/services/dto/order-admin.dto';
 
 export function OrderStatusActions({ orderId, status }: { orderId: string; status: OrderStatus }) {
   const router = useRouter();
@@ -28,7 +29,11 @@ export function OrderStatusActions({ orderId, status }: { orderId: string; statu
   async function handleForward() {
     if (!forward) return;
     setBusy(true);
-    const res = await advanceOrderStatus({ orderId, toStatus: forward });
+    const res = await advanceOrderStatus({
+      orderId,
+      expectedStatus: status as OrderStatusUpdateInput['expectedStatus'],
+      nextStatus: forward as OrderStatusUpdateInput['nextStatus'],
+    });
     setBusy(false);
     if (res.ok) router.refresh();
     else setError(res.error);

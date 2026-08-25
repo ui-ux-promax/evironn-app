@@ -1,10 +1,12 @@
 'use server';
 
+import type { OrderStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdminAction } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { orderStatusUpdateSchema } from '@/services/dto/order-admin.dto';
 import { nextOrderStatus } from '@/lib/order-admin';
+import { adminError, adminOk, type AdminActionResult } from '@/lib/admin/action-result';
 import { adjustSalesCount } from '@/lib/sales-count';
 import { cancelPayment, getPaymentDetails } from '@/lib/yookassa';
 import { pruneReviewsAfterCancel } from '@/lib/review';
@@ -15,30 +17,25 @@ export type OrderActionResult = { ok: true } | { ok: false; error: string };
 const LIST_PATH = '/admin/orders';
 
 // Forward-переход по пайплайну. Чистая прогрессия — сток/платёж/salesCount НЕ трогаем.
-export async function advanceOrderStatus(input: unknown): Promise<OrderActionResult> {
+export async function advanceOrderStatus(input: unknown): Promise<AdminActionResult<{ status: OrderStatus }>> {
   const gate = await requireAdminAction();
-  if (!gate.ok) return { ok: false, error: gate.error };
+  if (!gate.ok) return adminError('UNEXPECTED', gate.error);
 
   const parsed = orderStatusUpdateSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: 'Некорректный статус' };
-  const { orderId, toStatus } = parsed.data;
+  if (!parsed.success) return adminError('VALIDATION_ERROR', 'Некорректный статус');
+  const { orderId, expectedStatus, nextStatus } = parsed.data;
 
-  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
-  if (!order) return { ok: false, error: 'Заказ не найден' };
-  if (nextOrderStatus(order.status) !== toStatus) {
-    return { ok: false, error: 'Недопустимый переход статуса' };
-  }
+  if (nextOrderStatus(expectedStatus) !== nextStatus) return adminError('VALIDATION_ERROR', 'Недопустимый переход статуса');
 
-  // Guarded one-shot: матчим текущий статус, чтобы не перепрыгнуть параллельное изменение.
   const res = await prisma.order.updateMany({
-    where: { id: orderId, status: order.status },
-    data: { status: toStatus },
+    where: { id: orderId, status: expectedStatus },
+    data: { status: nextStatus },
   });
-  if (res.count === 0) return { ok: false, error: 'Статус заказа изменился, обновите страницу' };
+  if (res.count === 0) return adminError('STALE_VALUE', 'Статус заказа изменился, обновите страницу');
 
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${orderId}`);
-  return { ok: true };
+  return adminOk({ status: nextStatus });
 }
 
 // Отмена до отгрузки: PENDING/PROCESSING → CANCELLED. Возврат стока (списан при оформлении)

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const root = process.cwd();
 const sourceExtensions = /\.(?:ts|tsx|js|mjs)$/;
 const privilegedRead =
-  /\b(?:prisma|provider|cloudinary|listAdminProducts|getAdmin|getKpis|getKpiSeries|getStatusDistribution|getBestSellers|getLowStock|getRecentOrders|analytics|catalog|orderAdmin|customerAdmin)\b/i;
+  /\b(?:prisma|provider|cloudinary|listAdminProducts|listAdminOrders|getAdmin|getKpis|getKpiSeries|getStatusDistribution|getBestSellers|getLowStock|getRecentOrders|analytics|catalog|orderAdmin|customerAdmin)\b/i;
 
 type RecursiveDirent = Dirent & { parentPath?: string };
 

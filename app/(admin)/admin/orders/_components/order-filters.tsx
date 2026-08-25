@@ -12,6 +12,7 @@ const PAYMENTS = [
   { value: '__all__', label: 'Любая оплата' },
   { value: 'none', label: 'Без оплаты (COD)' },
   { value: 'pending', label: 'Ожидает оплаты' },
+  { value: 'waiting_for_capture', label: 'Ожидает подтверждения' },
   { value: 'succeeded', label: 'Оплачен' },
   { value: 'canceled', label: 'Платёж отменён' },
 ];

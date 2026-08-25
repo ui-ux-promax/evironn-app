@@ -18,7 +18,13 @@ export function StockCell({ row }: { row: AdminSkuStockRow }) {
   }, [row.stock]);
 
   async function save() {
-    const nextStock = Number(value);
+    const rawValue = value.trim();
+    if (rawValue === '') {
+      setError('Введите целое число от 0');
+      return;
+    }
+
+    const nextStock = Number(rawValue);
     if (!Number.isInteger(nextStock) || nextStock < 0) {
       setError('Введите целое число от 0');
       return;
@@ -86,5 +92,6 @@ export function StockCell({ row }: { row: AdminSkuStockRow }) {
 }
 
 function nextValueUnchanged(value: string, currentStock: number): boolean {
-  return value.trim() !== '' && Number(value) === currentStock;
+  const rawValue = value.trim();
+  return rawValue === '' || Number(rawValue) === currentStock;
 }

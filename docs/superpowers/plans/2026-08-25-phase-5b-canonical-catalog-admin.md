@@ -694,13 +694,13 @@ Four Important review findings were resolved in place; scope, task count and che
 - 5B.8 category turntable binding: `9d2405b`
 - 5B.9 guarded SKU stock console: `4b5863c`
 - 5B.10 legacy admin-write retirement: `8d6ce62`
-- 5B.11 functional checkpoint evidence: pending until this closeout is committed.
+- 5B.11 functional checkpoint evidence: `bd23671`; final-review remediation: `f95f599`.
 
 Review checkpoints:
 
 - `C5B_MEDIA = a81257d`; fresh Claude Opus review approved the Cloudinary remediation.
 - `C5B_CANONICAL = 180f894`; the initial review found Critical/Important findings, all were remediated, and the bounded fresh Claude Opus remediation re-review approved the result.
-- `C5B_FINAL = pending until the final closeout review and docs commit.`
+- `C5B_FINAL = f95f599`; fresh Claude Opus final re-review approved the bounded final state with no Critical or Important findings. Remaining Minor risks are recorded in the review evidence and do not block the checkpoint.
 
 ### Automated evidence
 

@@ -2,16 +2,16 @@
 
 ## Current checkpoint
 
-- Status: 5C_CHECKPOINTED; 5A and 5B are user-closed; bounded final-review remediation is in progress on `phase/05-admin-demo`.
+- Status: 5C_FINAL_REVIEW_APPROVED; 5A and 5B are user-closed; 5C remediation and final review are complete on `phase/05-admin-demo`.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). 5C checkpoint HEAD is `72227e8`.
+- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). 5C final-review HEAD is `c14fd8d`; exact review range is `5f31f2d..c14fd8d`.
 - Phase 4 is merged and closed. 5A and 5B implementation/review are complete and user-closed. The accepted shell remains frozen until the consolidated 5D parity pass.
 - 5B focused completion evidence: 39 Vitest files / 298 tests passed, typecheck passed, changed-file Prettier passed, and `git diff --check` passed. No full Phase 5 gate, build, E2E, push, PR, merge, or migration is claimed.
 - Database inventory was unavailable only to a standalone process that did not load `.env.local`; the expected application database variable names exist there. No values were read or recorded.
 - Focused typechecks passed at 5C.3 and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
 - High-risk 5C.3 Sol review `Mill` covered the 5C.0 policy plus the exact 5C.3 range and returned `APPROVE`, Critical 0 / Important 0 / Minor 0.
-- Fresh final Sol review `Nash` on 2026-08-26 returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1. Remediation targets: page-local guard/test for `/admin/marketing/new` and current-state durable-document reconciliation. Final approval is not claimed.
+- Final-review remediation commits `92d1695` and `c14fd8d` completed the prior Nash findings. Fresh final Sol review `Avicenna` on 2026-08-26 covered exact range `5f31f2d..c14fd8d` and returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Nash remains historical prior review evidence.
 - COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
 
 ## Binding inputs
@@ -53,7 +53,7 @@ These are bounded sessions on one branch and one final Phase 5 PR. Do not merge 
 
 ## Stop gate
 
-Await user desktop/mobile acceptance after bounded 5C final-review remediation. Do not push, open a PR, merge, start 5D, or run the full Phase 5 gate without explicit authorization.
+Await user desktop/mobile acceptance after approved 5C final review. Do not push, open a PR, merge, start 5D, or run the full Phase 5 gate without explicit authorization.
 
 ## Protected local files
 
@@ -195,4 +195,4 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - `PHASE5C_20260826` create/edit/toggle/delete passed through UI; auxiliary visual coupons were deleted; list returned to six.
 - Routes rendered at `1440x900` and `390x844`: orders/list and detail, customers/list and detail, marketing/list, new coupon, edit coupon. Mobile overflow false. No browser errors; existing smooth-scroll warning only.
 - Remaining defect: checkout contact-input persistence. Remaining 5D debt: exact clone visual parity and consolidated admin/demo-admin visual acceptance.
-- Fresh final Sol review `Nash` on 2026-08-26 ran and returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1. The page-local new-marketing guard/test and current-state document reconciliation are the bounded remediation targets; final approval is not claimed. Stop for user acceptance after remediation; no push, PR, merge, or 5D.
+- Final-review remediation commits `92d1695` and `c14fd8d` completed the prior Nash findings. Fresh final Sol review `Avicenna` on 2026-08-26 covered exact range `5f31f2d..c14fd8d` and returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Nash remains historical prior review evidence. Stop for user acceptance; no push, PR, merge, or 5D.

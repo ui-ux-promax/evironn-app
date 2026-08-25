@@ -4,10 +4,10 @@
 
 ## Current closeout state — 2026-08-26
 
-- Phase 5C is implemented through checkpoint HEAD `72227e8` (`docs(phase-5c): record commerce admin checkpoint`) on `phase/05-admin-demo`; bounded final-review remediation is in progress.
+- Phase 5C remediation and final review are complete at HEAD `c14fd8d` on `phase/05-admin-demo`; exact final-review range is `5f31f2d..c14fd8d`. Remediation commits are `92d1695` and `c14fd8d`.
 - Focused typechecks passed at 5C.3 and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
 - High-risk 5C.3 Sol review `Mill` covered the 5C.0 policy plus the exact 5C.3 range and returned `APPROVE`, Critical 0 / Important 0 / Minor 0.
-- Fresh final Sol review `Nash` on 2026-08-26 returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1. Remediation targets: page-local `requireAdminPage()` plus a focused boundary assertion for `/admin/marketing/new`, and reconciliation of current-state durable documents. Final approval is not claimed.
+- Fresh final Sol review `Avicenna` on 2026-08-26 covered exact range `5f31f2d..c14fd8d` and returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Nash's earlier `REQUEST CHANGES` result remains historical prior review evidence; its findings were resolved by `92d1695` and `c14fd8d`.
 - COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
 
 **Goal:** Complete protected administration for orders, customers, roles, and coupons while preserving Phase 4 payment, inventory, immutable-snapshot, sales-count, and review invariants.
@@ -553,8 +553,8 @@ foreach ($key in @('POSTGRES_URL', 'POSTGRES_URL_NON_POOLING')) {
 - [ ] Run checkpoint GREEN: `rg -n "Phase 5C checkpoint" ".superpowers/sdd/phase-5-handoff.md" ".superpowers/sdd/progress.md" "docs/roadmap/STATUS.md"`. Expected: completed checkpoint matches in all three files.
 - [ ] Commit: `docs(phase-5c): record commerce admin checkpoint`.
 - [ ] Capture `$C5C7 = (git rev-parse HEAD).Trim()`.
-- [x] In a fresh final-review shell set `$C5C_FINAL = (git rev-parse HEAD).Trim()` and run one fresh Sol Medium final functional/security review over `git diff "5f31f2d..$C5C_FINAL"` plus focused evidence. Nash returned `REQUEST CHANGES` on 2026-08-26 with Critical 0 / Important 2 / Minor 1; bounded remediation is in progress and final approval is not claimed.
-- [ ] Stop for user acceptance. Do not push, open a PR, merge, or start 5D.
+- [x] Complete final-review remediation in commits `92d1695` and `c14fd8d`; in a fresh final-review shell set `$C5C_FINAL = c14fd8d` and run one fresh isolated Sol Medium final functional/security review over exact range `5f31f2d..c14fd8d` plus focused evidence. Avicenna returned `APPROVE` on 2026-08-26 with Critical 0 / Important 0 / Minor 0. Nash's earlier `REQUEST CHANGES` result remains historical prior review evidence.
+- [x] Stop for user acceptance. Do not push, open a PR, merge, or start 5D.
 
 **Review range:** exact Phase 5C base through current immutable final candidate, recovered in the review shell as `"5f31f2d..$C5C_FINAL"`.
 
@@ -563,12 +563,12 @@ foreach ($key in @('POSTGRES_URL', 'POSTGRES_URL_NON_POOLING')) {
 - Structural RED was clean before documentation. Changed-file Prettier and `git diff --check` passed; both required database variable names were present without exposing values.
 - `npm run dev` served `http://localhost:3000`; acceptance used application UI only. Disposable COD creation failed closed because checkout phone/email values did not persist. Unsafe online order `#52` supplied blocked-reason display; safe COD cancellation and stale conflict are unavailable.
 - Customer role promotion/restoration and coupon `PHASE5C_20260826` create/edit/toggle/delete passed. Both viewport route inspections passed with no browser errors; existing smooth-scroll warning only.
-- Unresolved checkout contact-input defect and remaining 5D visual-parity debt are recorded in durable handoff/progress/STATUS. High-risk 5C.3 Sol review `Mill` returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Fresh final Sol review `Nash` returned `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1; final approval is not claimed. Stop for user acceptance after bounded remediation; no push, PR, merge, or 5D.
+- Unresolved checkout contact-input defect and remaining 5D visual-parity debt are recorded in durable handoff/progress/STATUS. High-risk 5C.3 Sol review `Mill` returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Final-review remediation commits `92d1695` and `c14fd8d` completed the prior Nash findings. Fresh final Sol review `Avicenna` covered exact range `5f31f2d..c14fd8d` and returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Nash remains historical prior review evidence. Stop for user acceptance; no push, PR, merge, or 5D.
 
 ## Review checkpoints
 
 1. **High-risk review after 5C.3 — complete:** Sol `Mill`, `APPROVE`, Critical 0 / Important 0 / Minor 0; scope was the 5C.0 policy plus the exact 5C.3 range.
-2. **Final review after 5C.7 — remediation in progress:** Sol `Nash`, 2026-08-26, `REQUEST CHANGES`, Critical 0 / Important 2 / Minor 1; final approval is not claimed.
+2. **Final review after 5C.7 — complete:** Sol `Avicenna`, 2026-08-26, exact range `5f31f2d..c14fd8d`, `APPROVE`, Critical 0 / Important 0 / Minor 0. Prior Sol `Nash` `REQUEST CHANGES` remains historical and was resolved by `92d1695` and `c14fd8d`.
 
 Reviewers reuse existing evidence and do not run the full gate, build, E2E, database, or provider commands.
 

@@ -1,4 +1,4 @@
-import type { OrderStatus } from '@prisma/client';
+import type { OrderStatus, PaymentInitializationState } from '@prisma/client';
 
 // Управляемый пайплайн: следующий статус «вперёд». Терминальные → null.
 const ORDER_FLOW: Record<OrderStatus, OrderStatus | null> = {
@@ -18,6 +18,87 @@ const CANCELLABLE: ReadonlySet<OrderStatus> = new Set<OrderStatus>(['PENDING', '
 
 export function canCancelOrder(s: OrderStatus): boolean {
   return CANCELLABLE.has(s);
+}
+
+export type AdminPaymentSettlement = 'NONE' | 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'UNKNOWN';
+
+export type AdminCancelBlockReason =
+  | 'STATUS_NOT_CANCELLABLE'
+  | 'PAYMENT_DISPATCH_EVIDENCE_PRESENT'
+  | 'PAYMENT_SUCCEEDED_REFUND_REQUIRED'
+  | 'PAYMENT_CLAIM_IN_FLIGHT'
+  | 'PAYMENT_STATE_UNSAFE';
+
+export const ADMIN_CANCEL_POLICY: Record<PaymentInitializationState, AdminCancelBlockReason | 'ALLOWED_IF_UNSETTLED'> =
+  {
+    READY: 'ALLOWED_IF_UNSETTLED',
+    CLAIMED: 'PAYMENT_CLAIM_IN_FLIGHT',
+    DISPATCHED: 'PAYMENT_STATE_UNSAFE',
+    CORRELATED: 'PAYMENT_STATE_UNSAFE',
+    NOT_CREATED: 'ALLOWED_IF_UNSETTLED',
+  };
+
+export function classifyAdminPaymentSettlement(payment: { status: string } | null): AdminPaymentSettlement {
+  if (!payment) return 'NONE';
+
+  switch (payment.status) {
+    case 'pending':
+    case 'waiting_for_capture':
+      return 'PENDING';
+    case 'succeeded':
+      return 'SUCCEEDED';
+    case 'canceled':
+      return 'FAILED';
+    default:
+      return 'UNKNOWN';
+  }
+}
+
+export function canAdminCancel(order: {
+  status: OrderStatus;
+  paymentInitializationState: PaymentInitializationState | null;
+  paymentInitializationClaimedAt: Date | null;
+  paymentEverDispatchedAt: Date | null;
+  payment: { status: string } | null;
+}): { ok: true } | { ok: false; reason: AdminCancelBlockReason } {
+  if (!canCancelOrder(order.status)) {
+    return { ok: false, reason: 'STATUS_NOT_CANCELLABLE' };
+  }
+
+  if (order.paymentEverDispatchedAt !== null) {
+    return { ok: false, reason: 'PAYMENT_DISPATCH_EVIDENCE_PRESENT' };
+  }
+
+  const settlement = classifyAdminPaymentSettlement(order.payment);
+  if (settlement === 'SUCCEEDED') {
+    return { ok: false, reason: 'PAYMENT_SUCCEEDED_REFUND_REQUIRED' };
+  }
+
+  if (order.paymentInitializationState === 'CLAIMED' || order.paymentInitializationClaimedAt !== null) {
+    return { ok: false, reason: 'PAYMENT_CLAIM_IN_FLIGHT' };
+  }
+
+  if (order.paymentInitializationState === 'DISPATCHED' || order.paymentInitializationState === 'CORRELATED') {
+    return { ok: false, reason: 'PAYMENT_STATE_UNSAFE' };
+  }
+
+  if (settlement === 'PENDING' || settlement === 'UNKNOWN') {
+    return { ok: false, reason: 'PAYMENT_STATE_UNSAFE' };
+  }
+
+  const initializationPolicy =
+    order.paymentInitializationState === null
+      ? 'ALLOWED_IF_UNSETTLED'
+      : ADMIN_CANCEL_POLICY[order.paymentInitializationState];
+
+  if (initializationPolicy !== 'ALLOWED_IF_UNSETTLED') {
+    return {
+      ok: false,
+      reason: initializationPolicy ?? 'PAYMENT_STATE_UNSAFE',
+    };
+  }
+
+  return { ok: true };
 }
 
 // Текст кнопки «вперёд»; ключ — ТЕКУЩИЙ статус заказа.

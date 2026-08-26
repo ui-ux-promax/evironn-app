@@ -119,7 +119,7 @@ const expectedProtectedRows: readonly RouteRow[] = [
   ['/admin/marketing', 'app/(admin)/admin/marketing/page.tsx', '/admin/marketing', null, null],
   ['/admin/marketing/new', 'app/(admin)/admin/marketing/new/page.tsx', '/admin/marketing', null, null],
   ['/admin/marketing/:id/edit', 'app/(admin)/admin/marketing/[id]/edit/page.tsx', '/admin/marketing', null, null],
-].map(([route, file, primary, tab, redirect]) => ({ route, file, primary, tab, redirect }));
+].map(([route, file, primary, tab, redirect]): RouteRow => ({ route: route!, file: file!, primary, tab, redirect }));
 
 const expectedDemoRoutes = [
   ['/demo-admin', 'app/(demo-admin)/demo-admin/page.tsx'],

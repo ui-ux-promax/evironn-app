@@ -1,6 +1,6 @@
 # Phase 5D representative visual matrix
 
-Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d-captures-the-approved-repre-d45aba9fde863d2bbd46`.
+Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d-captures-the-approved-repre-41dfdf5bd0b59e0843f5`.
 
 ```json
 [
@@ -22,7 +22,10 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/admin",
       "actual": "/admin"
     },
-    "consoleErrors": [],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -73,9 +76,10 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/admin/catalog/products",
       "actual": "/admin/catalog/products"
     },
-    "consoleErrors": [
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
-    ],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -126,9 +130,12 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/admin/catalog/products/new",
       "actual": "/admin/catalog/products/new"
     },
-    "consoleErrors": [
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
-    ],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": [
+        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+      ]
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -163,9 +170,9 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
   },
   {
     "routeTemplate": "/admin/catalog/categories/{ownedCategoryId}/edit",
-    "resolvedUrl": "http://localhost:3000/admin/catalog/categories/cmt9tq24r0002ts2g49inoacm/edit",
+    "resolvedUrl": "http://localhost:3000/admin/catalog/categories/cmt9u98ux0002tsiwe2aat3z8/edit",
     "fixtureIds": {
-      "categoryId": "cmt9tq24r0002ts2g49inoacm"
+      "categoryId": "cmt9u98ux0002tsiwe2aat3z8"
     },
     "desktopCapture": ".superpowers/sdd/phase-5d-visual-evidence/04-admin-category-edit-desktop.png",
     "mobileCapture": ".superpowers/sdd/phase-5d-visual-evidence/04-admin-category-edit-mobile.png",
@@ -178,12 +185,17 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "mobile": "Tab focused a"
     },
     "navigation": {
-      "expected": "/admin/catalog/categories/cmt9tq24r0002ts2g49inoacm/edit",
-      "actual": "/admin/catalog/categories/cmt9tq24r0002ts2g49inoacm/edit"
+      "expected": "/admin/catalog/categories/cmt9u98ux0002tsiwe2aat3z8/edit",
+      "actual": "/admin/catalog/categories/cmt9u98ux0002tsiwe2aat3z8/edit"
     },
-    "consoleErrors": [
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
-    ],
+    "consoleErrors": {
+      "desktop": [
+        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+      ],
+      "mobile": [
+        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+      ]
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -218,9 +230,9 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
   },
   {
     "routeTemplate": "/admin/catalog/options/{ownedOptionGroupId}/edit",
-    "resolvedUrl": "http://localhost:3000/admin/catalog/options/cmt9tq2e50004ts2gtgpq3mp1/edit",
+    "resolvedUrl": "http://localhost:3000/admin/catalog/options/cmt9u994r0004tsiweu0bu5by/edit",
     "fixtureIds": {
-      "optionGroupId": "cmt9tq2e50004ts2gtgpq3mp1"
+      "optionGroupId": "cmt9u994r0004tsiweu0bu5by"
     },
     "desktopCapture": ".superpowers/sdd/phase-5d-visual-evidence/05-admin-option-edit-desktop.png",
     "mobileCapture": ".superpowers/sdd/phase-5d-visual-evidence/05-admin-option-edit-mobile.png",
@@ -233,10 +245,13 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "mobile": "Tab focused a"
     },
     "navigation": {
-      "expected": "/admin/catalog/options/cmt9tq2e50004ts2gtgpq3mp1/edit",
-      "actual": "/admin/catalog/options/cmt9tq2e50004ts2gtgpq3mp1/edit"
+      "expected": "/admin/catalog/options/cmt9u994r0004tsiweu0bu5by/edit",
+      "actual": "/admin/catalog/options/cmt9u994r0004tsiweu0bu5by/edit"
     },
-    "consoleErrors": [],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -287,9 +302,14 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/admin/catalog/stock",
       "actual": "/admin/catalog/stock"
     },
-    "consoleErrors": [
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
-    ],
+    "consoleErrors": {
+      "desktop": [
+        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+      ],
+      "mobile": [
+        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+      ]
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -324,9 +344,9 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
   },
   {
     "routeTemplate": "/admin/orders/{ownedOrderId}",
-    "resolvedUrl": "http://localhost:3000/admin/orders/cmt9tqn6f0001tsdctiu2vxo5",
+    "resolvedUrl": "http://localhost:3000/admin/orders/cmt9u9rk50001tssomml17zdi",
     "fixtureIds": {
-      "orderId": "cmt9tqn6f0001tsdctiu2vxo5"
+      "orderId": "cmt9u9rk50001tssomml17zdi"
     },
     "desktopCapture": ".superpowers/sdd/phase-5d-visual-evidence/07-admin-order-detail-desktop.png",
     "mobileCapture": ".superpowers/sdd/phase-5d-visual-evidence/07-admin-order-detail-mobile.png",
@@ -339,12 +359,13 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "mobile": "Tab focused a"
     },
     "navigation": {
-      "expected": "/admin/orders/cmt9tqn6f0001tsdctiu2vxo5",
-      "actual": "/admin/orders/cmt9tqn6f0001tsdctiu2vxo5"
+      "expected": "/admin/orders/cmt9u9rk50001tssomml17zdi",
+      "actual": "/admin/orders/cmt9u9rk50001tssomml17zdi"
     },
-    "consoleErrors": [
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
-    ],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -379,9 +400,9 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
   },
   {
     "routeTemplate": "/admin/customers/{ownedCustomerId}",
-    "resolvedUrl": "http://localhost:3000/admin/customers/cmt9tq22e0001ts2gg9y5q3b3",
+    "resolvedUrl": "http://localhost:3000/admin/customers/cmt9u98si0001tsiwvlmzm6nw",
     "fixtureIds": {
-      "customerId": "cmt9tq22e0001ts2gg9y5q3b3"
+      "customerId": "cmt9u98si0001tsiwvlmzm6nw"
     },
     "desktopCapture": ".superpowers/sdd/phase-5d-visual-evidence/08-admin-customer-detail-desktop.png",
     "mobileCapture": ".superpowers/sdd/phase-5d-visual-evidence/08-admin-customer-detail-mobile.png",
@@ -394,10 +415,13 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "mobile": "Tab focused a"
     },
     "navigation": {
-      "expected": "/admin/customers/cmt9tq22e0001ts2gg9y5q3b3",
-      "actual": "/admin/customers/cmt9tq22e0001ts2gg9y5q3b3"
+      "expected": "/admin/customers/cmt9u98si0001tsiwvlmzm6nw",
+      "actual": "/admin/customers/cmt9u98si0001tsiwvlmzm6nw"
     },
-    "consoleErrors": [],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -432,9 +456,9 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
   },
   {
     "routeTemplate": "/admin/marketing/{ownedCouponId}/edit",
-    "resolvedUrl": "http://localhost:3000/admin/marketing/cmt9tq4cg000jts2gdfve4ccq/edit",
+    "resolvedUrl": "http://localhost:3000/admin/marketing/cmt9u9b6l000jtsiw6ghcwoy6/edit",
     "fixtureIds": {
-      "couponId": "cmt9tq4cg000jts2gdfve4ccq"
+      "couponId": "cmt9u9b6l000jtsiw6ghcwoy6"
     },
     "desktopCapture": ".superpowers/sdd/phase-5d-visual-evidence/09-admin-coupon-edit-desktop.png",
     "mobileCapture": ".superpowers/sdd/phase-5d-visual-evidence/09-admin-coupon-edit-mobile.png",
@@ -447,12 +471,15 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "mobile": "Tab focused a"
     },
     "navigation": {
-      "expected": "/admin/marketing/cmt9tq4cg000jts2gdfve4ccq/edit",
-      "actual": "/admin/marketing/cmt9tq4cg000jts2gdfve4ccq/edit"
+      "expected": "/admin/marketing/cmt9u9b6l000jtsiw6ghcwoy6/edit",
+      "actual": "/admin/marketing/cmt9u9b6l000jtsiw6ghcwoy6/edit"
     },
-    "consoleErrors": [
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
-    ],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": [
+        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+      ]
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -503,7 +530,10 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/demo-admin",
       "actual": "/demo-admin"
     },
-    "consoleErrors": [],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -554,7 +584,10 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/demo-admin/catalog",
       "actual": "/demo-admin/catalog"
     },
-    "consoleErrors": [],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,
@@ -605,7 +638,10 @@ Captured at 1440x900 and 390x844 with one owned namespace: `phase5d-e2e-phase-5d
       "expected": "/demo-admin/orders",
       "actual": "/demo-admin/orders"
     },
-    "consoleErrors": [],
+    "consoleErrors": {
+      "desktop": [],
+      "mobile": []
+    },
     "cleanup": {
       "remainingOwnedRows": {
         "users": 0,

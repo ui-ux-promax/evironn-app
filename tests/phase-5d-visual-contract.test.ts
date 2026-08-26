@@ -30,9 +30,28 @@ type VisualEvidence = {
   overflow: { desktop: boolean; mobile: boolean };
   focusKeyboard: { desktop: string; mobile: string };
   navigation: { expected: string; actual: string };
-  consoleErrors: string[];
+  consoleErrors: { desktop: string[]; mobile: string[] };
   cleanup: { allZero: boolean; remainingOwnedRows: Record<string, number> };
 };
+
+const hydrationSummary =
+  "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:";
+const knownHydrationRoutes = new Set([
+  '/admin/catalog/products',
+  '/admin/catalog/products/new',
+  '/admin/catalog/categories/{ownedCategoryId}/edit',
+  '/admin/catalog/stock',
+  '/admin/orders/{ownedOrderId}',
+  '/admin/marketing/{ownedCouponId}/edit',
+]);
+
+function expectAllowedConsoleErrors(routeTemplate: string, errors: string[]): void {
+  if (!knownHydrationRoutes.has(routeTemplate)) {
+    expect(errors).toEqual([]);
+    return;
+  }
+  expect(errors.length === 0 || (errors.length === 1 && errors[0] === hydrationSummary)).toBe(true);
+}
 
 function readEvidence(): VisualEvidence[] {
   if (!existsSync(matrixPath)) return [];
@@ -62,7 +81,8 @@ describe('Phase 5D representative visual evidence', () => {
       expect(item.focusKeyboard.mobile.length).toBeGreaterThan(0);
       expect(item.navigation.expected.length).toBeGreaterThan(0);
       expect(item.navigation.actual.length).toBeGreaterThan(0);
-      expect(item.consoleErrors).toEqual(expect.any(Array));
+      expectAllowedConsoleErrors(item.routeTemplate, item.consoleErrors.desktop);
+      expectAllowedConsoleErrors(item.routeTemplate, item.consoleErrors.mobile);
       expect(item.cleanup.allZero).toBe(true);
       expect(Object.values(item.cleanup.remainingOwnedRows).every((count) => count === 0)).toBe(true);
     }

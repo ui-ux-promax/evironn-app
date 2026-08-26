@@ -32,7 +32,7 @@ type Evidence = {
   overflow: { desktop: boolean; mobile: boolean };
   focusKeyboard: { desktop: string; mobile: string };
   navigation: { expected: string; actual: string };
-  consoleErrors: string[];
+  consoleErrors: { desktop: string[]; mobile: string[] };
   cleanup: { allZero: boolean; remainingOwnedRows: Record<string, number> };
 };
 
@@ -184,7 +184,7 @@ test('Phase 5D captures the approved representative visual matrix', async ({ pag
         overflow: { desktop: desktop.overflow, mobile: mobile.overflow },
         focusKeyboard: { desktop: desktop.focusKeyboard, mobile: mobile.focusKeyboard },
         navigation: { expected: expectedPath, actual: new URL(desktop.resolvedUrl).pathname },
-        consoleErrors: [...desktop.consoleErrors, ...mobile.consoleErrors],
+        consoleErrors: { desktop: desktop.consoleErrors, mobile: mobile.consoleErrors },
         cleanup: { allZero: false, remainingOwnedRows: {} },
       });
     }

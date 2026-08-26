@@ -214,4 +214,5 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Boundary B: complete (initial C0/I1/M2; remediation `65658e2`; fresh Sol Medium re-review accepted exact `e11c0b1..65658e2` at Critical 0 / Important 0 / Minor 0).
 - Task 5D.6: complete (commit `29959f4`; five namespaced serial browser journeys pass individually with retries disabled, owned COD stale-tab invariants pass, and cleanup probes are zero). Report: `.superpowers/sdd/phase-5d-task-6-report.md`.
 - Task 5D.7: complete pending commit; 12 representative admin/demo templates captured at desktop/mobile (24 PNGs), matrix cleanup is zero, and focused visual/render contracts pass 31/31. Matrix records six concise hydration-error summaries on form-heavy admin routes for Boundary C.
+- Boundary C: in progress; fresh Sol Medium functional and security reviews cover `2c5c982..687e34a`, focused evidence, owned cleanup, and the 12-template visual matrix.
 - Boundary B initial review: REQUEST CHANGES (C0/I1/M2); remediation commit 65658e2 closes Unicode Cf validation, turntable pending regression, and exact-range evidence.

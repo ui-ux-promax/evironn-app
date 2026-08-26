@@ -119,3 +119,9 @@ Focused brainstorming completed and the user approved the narrow admin-only deta
 ## ADR-027 — restore Sol Medium as the default planning and review model
 
 The user restored the earlier Phase 5 agentic workflow on 2026-08-25. Luna High remains the coordinator and implementation model. Fresh isolated Sol Medium agents own planning, plan review, meaningful task/risk review, final functional review, and security review on the normal/default service tier. This supersedes only the model assignment in ADR-021; the bounded 5A–5D session structure, one phase branch, one final PR, review boundaries, and verification-economy rules remain unchanged. The Claude Opus CLI workflow is preserved as the personal explicit-only `$using-claude-opus-agent-workflow` skill and must not be invoked unless the user names or explicitly requests it.
+
+## ADR-028 — debt accountability at Phase 5 closeout
+
+The user accepted Phase 5C on 2026-08-26 and required retained and newly discovered debt to be resolved in later work rather than forgotten. Stream 5D therefore owns a durable debt ledger. Every functional or security item discovered during Phase 5 must have an explicit owner and must be fixed or conclusively verified before Phase 5 closes. Moving such an item to Phase 6 requires explicit user approval and a recorded reason.
+
+The current mandatory 5D debt is checkout contact-input persistence together with the dependent disposable COD cancellation and stale-tab conflict evidence, plus isolated non-self last-admin verification. Exact protected/demo visual parity, demo isolation, route parity, legacy cleanup, critical Phase 5 E2E, final reviews, and the single completion gate remain normal 5D scope. Initial Vercel loading performance remains the already-approved Phase 6 hardening item, and real YooKassa sandbox smoke remains optional under ADR-020.

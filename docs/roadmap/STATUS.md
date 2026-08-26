@@ -3,7 +3,7 @@
 ## Current state
 
 - Bootstrap and Phases 1–4 are complete and merged into `dev`.
-- Active delivery: Phase 5. Streams 5A and 5B are complete and user-closed. Stream 5C remediation and final review are complete at HEAD `c14fd8d` on `phase/05-admin-demo`; 5D remains pending user acceptance and authorization.
+- Active delivery: Phase 5. Streams 5A, 5B, and 5C are complete and user-closed. The user accepted 5C on 2026-08-26 after the approved final review. Stream 5D planning is authorized on `phase/05-admin-demo`.
 - Integration branch: `dev` at merge commit `da5e87e` (Phase 4 closeout PR #9).
 - Current delivery branch: `phase/05-admin-demo`, created from exact `origin/dev` commit `da5e87e`.
 - Phase 5 scope: protected production admin, furniture catalog/SKU/media administration, orders, customers, roles, coupons, dashboard, and public synthetic read-only demo admin.
@@ -58,17 +58,26 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 
 ## Current 5C closeout state
 
-- Checkpoint HEAD: `c14fd8d`; final-review range: `5f31f2d..c14fd8d`. Remediation commits: `92d1695`, `c14fd8d`.
+- Final reviewed code/docs candidate: `c14fd8d`; final-review range: `5f31f2d..c14fd8d`. Review closeout documentation: `9c0c3b0`. Remediation commits: `92d1695`, `c14fd8d`.
 - Focused typechecks passed at the 5C.3 shared-contract checkpoint and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
 - Fresh final Sol review `Avicenna` on 2026-08-26 covered exact range `5f31f2d..c14fd8d` and returned `APPROVE` with Critical 0, Important 0, Minor 0. The bounded remediation is complete. Nash's earlier `REQUEST CHANGES` result remains historical prior review evidence.
 - High-risk 5C.3 Sol review `Mill` returned `APPROVE` with Critical 0, Important 0, Minor 0 for the 5C.0 policy plus the exact 5C.3 range.
-- COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
+- COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. The user accepted the visible 5C delivery on 2026-08-26; this defect and its dependent evidence are mandatory 5D debt, not silently waived.
+
+## Phase 5D debt ledger
+
+- Fix or conclusively diagnose checkout contact-input persistence, then recover the disposable COD cancellation and stale-tab conflict evidence through the application/E2E path.
+- Reconfirm the non-self last-admin safeguard with an isolated fixture; automated coverage is not a substitute for claiming unavailable manual evidence.
+- Complete exact cross-route Evironn visual parity for protected `/admin` and public synthetic `/demo-admin`, followed by desktop/mobile user acceptance.
+- Complete the demo isolation, route/navigation parity, legacy Ritm cleanup, critical Phase 5 E2E, final functional/security review, and the single Phase 5 completion gate.
+- Initial Vercel loading performance remains an explicitly approved Phase 6 hardening item. Optional real YooKassa sandbox smoke remains governed by ADR-020 and does not block Phase 5.
+- Any newly discovered debt must be added here or to the 5D handoff with an owner and disposition. Phase 5 functional/security debt must be fixed in 5D; moving it to Phase 6 requires explicit user approval and a recorded reason.
 
 ## Next action
 
-1. Remediation is complete; final Avicenna review is approved for exact range `5f31f2d..c14fd8d` with Critical 0, Important 0, Minor 0.
-2. Await user desktop/mobile acceptance. Keep the current accepted admin presentation stable; complete exact cross-route Evironn visual parity only in 5D after authorization.
-3. Do not push, open a PR, merge, or start 5D; the consolidated gate remains a later closeout action.
+1. Prepare a bounded 5D executable plan from the approved master plan and `docs/superpowers/specs/2026-08-26-phase-5d-planning-brief.md`.
+2. Use one fresh isolated Sol Medium planner and one fresh isolated Sol Medium plan reviewer; implementation waits for user approval of the reviewed plan.
+3. Remain on `phase/05-admin-demo`. Do not push, open a PR, merge, or run the consolidated gate during planning.
 
 Database note: `.env.local` contains the expected application database variable names. The earlier 5B inventory gap came from a standalone process that did not load `.env.local`; it was not evidence that Vercel or the project lacked database variables. Never print their values.
 

@@ -2,17 +2,17 @@
 
 ## Current checkpoint
 
-- Status: 5C_FINAL_REVIEW_APPROVED; 5A and 5B are user-closed; 5C remediation and final review are complete on `phase/05-admin-demo`.
+- Status: 5C_USER_ACCEPTED; 5A, 5B, and 5C are user-closed; bounded 5D planning is authorized on `phase/05-admin-demo`.
 - Branch: `phase/05-admin-demo`.
 - Exact base: `origin/dev` at `da5e87e`.
-- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). 5C final-review HEAD is `c14fd8d`; exact review range is `5f31f2d..c14fd8d`.
+- Closed 5B documentation checkpoint: `5be199a` (`docs(phase-5b): finalize C5B final checkpoint`). 5C final-review candidate is `c14fd8d`, review closeout documentation is `9c0c3b0`, and the exact reviewed range is `5f31f2d..c14fd8d`.
 - Phase 4 is merged and closed. 5A and 5B implementation/review are complete and user-closed. The accepted shell remains frozen until the consolidated 5D parity pass.
 - 5B focused completion evidence: 39 Vitest files / 298 tests passed, typecheck passed, changed-file Prettier passed, and `git diff --check` passed. No full Phase 5 gate, build, E2E, push, PR, merge, or migration is claimed.
 - Database inventory was unavailable only to a standalone process that did not load `.env.local`; the expected application database variable names exist there. No values were read or recorded.
 - Focused typechecks passed at 5C.3 and the role-form remediation checkpoint. No full suite, gate, build, E2E, database CLI, or provider run occurred.
 - High-risk 5C.3 Sol review `Mill` covered the 5C.0 policy plus the exact 5C.3 range and returned `APPROVE`, Critical 0 / Important 0 / Minor 0.
 - Final-review remediation commits `92d1695` and `c14fd8d` completed the prior Nash findings. Fresh final Sol review `Avicenna` on 2026-08-26 covered exact range `5f31f2d..c14fd8d` and returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Nash remains historical prior review evidence.
-- COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. No push, PR, merge, or 5D work occurred.
+- The user accepted 5C on 2026-08-26. Checkout contact-input persistence and the dependent COD cancellation/stale-conflict evidence remain mandatory 5D debt. No push, PR, merge, gate, or 5D implementation occurred.
 
 ## Binding inputs
 
@@ -53,7 +53,15 @@ These are bounded sessions on one branch and one final Phase 5 PR. Do not merge 
 
 ## Stop gate
 
-Await user desktop/mobile acceptance after approved 5C final review. Do not push, open a PR, merge, start 5D, or run the full Phase 5 gate without explicit authorization.
+5D planning is authorized. Implementation still waits for user approval of a fresh reviewed executable plan. Do not push, open a PR, merge, run the full Phase 5 gate, or start Phase 6 during planning.
+
+## Phase 5D debt policy
+
+- Fix or conclusively diagnose checkout contact-input persistence and recover the disposable COD cancellation/stale-tab evidence.
+- Reconfirm the isolated non-self last-admin safeguard.
+- Complete protected/demo visual parity, demo isolation, route parity, legacy cleanup, critical E2E, final reviews, and the single Phase 5 completion gate.
+- Track every newly discovered debt with an owner and disposition. Functional/security debt remains in 5D unless the user explicitly approves a documented Phase 6 transfer.
+- Keep only the already-approved Vercel performance work in Phase 6; optional YooKassa sandbox smoke remains non-blocking under ADR-020.
 
 ## Protected local files
 

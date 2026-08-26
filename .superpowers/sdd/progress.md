@@ -211,3 +211,6 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Task 5D.3: complete (commit fd35bfa; shared presentation focused tests 34/34, Prettier, diff check clean; visual acceptance pending).
 - Boundary A: complete (final accepted range 2c5c982..e11c0b1; Critical 0 / Important 0 / Minor 0). Remediation commits: 04554f9, b1fc41d, d3e3b94, e11c0b1.
 - Task 5D.5: complete (commits `ecb349a`, `b941247`, `fba7b8c`; four bounded GREEN areas 58/45/55/39; Prettier, diff check, and typecheck pass). Confirmed admin/media defects were fixed; checkout had no reproduced production defect. Typecheck nullability blocker was fixed in the route contract. Boundary B review is now pending.
+- Boundary B: complete (initial C0/I1/M2; remediation `65658e2`; fresh Sol Medium re-review accepted exact `e11c0b1..65658e2` at Critical 0 / Important 0 / Minor 0).
+- Task 5D.6: complete pending commit; five namespaced serial browser journeys pass individually with retries disabled, owned COD stale-tab invariants pass, and cleanup probes are zero. Report: `.superpowers/sdd/phase-5d-task-6-report.md`.
+- Boundary B initial review: REQUEST CHANGES (C0/I1/M2); remediation commit 65658e2 closes Unicode Cf validation, turntable pending regression, and exact-range evidence.

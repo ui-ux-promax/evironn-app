@@ -204,3 +204,10 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Routes rendered at `1440x900` and `390x844`: orders/list and detail, customers/list and detail, marketing/list, new coupon, edit coupon. Mobile overflow false. No browser errors; existing smooth-scroll warning only.
 - Remaining defect: checkout contact-input persistence. Remaining 5D debt: exact clone visual parity and consolidated admin/demo-admin visual acceptance.
 - Final-review remediation commits `92d1695` and `c14fd8d` completed the prior Nash findings. Fresh final Sol review `Avicenna` on 2026-08-26 covered exact range `5f31f2d..c14fd8d` and returned `APPROVE`, Critical 0 / Important 0 / Minor 0. Nash remains historical prior review evidence. Stop for user acceptance; no push, PR, merge, or 5D.
+
+## Phase 5D execution tracker
+- Task 5D.1: complete (commit dcde1f3; focused fixtures/primitives 7/7, typecheck, Prettier, diff check clean). Approved 5D plan added with task. Protected Phase 2 plans remain untracked and untouched.
+- Task 5D.2: complete (commit c4ce87e; five demo routes, focused tests 17/17, typecheck, Prettier, diff check clean).
+- Task 5D.3: complete (commit fd35bfa; shared presentation focused tests 34/34, Prettier, diff check clean; visual acceptance pending).
+- Boundary A: complete (final accepted range 2c5c982..e11c0b1; Critical 0 / Important 0 / Minor 0). Remediation commits: 04554f9, b1fc41d, d3e3b94, e11c0b1.
+- Task 5D.5: complete (`ecb349a` plus verification/report commit; four bounded GREEN areas 58/45/55/39; Prettier and diff check clean). Confirmed admin/media defects were fixed; checkout had no reproduced production defect. Typecheck has one out-of-scope route-contract nullability error documented in `.superpowers/sdd/phase-5d-task-5-report.md`. Boundary B delegated review was unavailable in this session and is explicitly not claimed.

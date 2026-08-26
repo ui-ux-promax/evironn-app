@@ -64,6 +64,14 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 - High-risk 5C.3 Sol review `Mill` returned `APPROVE` with Critical 0, Important 0, Minor 0 for the 5C.0 policy plus the exact 5C.3 range.
 - COD disposable-order and stale-tab conflict evidence remain unavailable because checkout contact-input values did not persist. The user accepted the visible 5C delivery on 2026-08-26; this defect and its dependent evidence are mandatory 5D debt, not silently waived.
 
+## Phase 5D.5 closeout
+
+- Task 5D.5 implementation commit: `ecb349a` (`fix(admin): close functional and media security debt`). Verification/report commit contains the checkout regression and full Task 5D.5 report.
+- Four bounded focused areas pass: checkout 3 files/58 tests; media 7 files/45 tests; canonical catalog 7 files/55 tests; access/dashboard/history 6 files/39 tests. Touched-file Prettier and `git diff --check` pass.
+- Confirmed defects fixed: unsafe media-path characters, detached canonical-link recreation and contradictory detach handling, turntable thrown-action pending state, and uncalled anonymous warmup route retirement. Checkout production defect was not reproduced.
+- `npm run typecheck` remains blocked only by the out-of-scope nullable route/file contract error at `tests/phase-5-route-contract.test.ts:33`; no broad gate/build/E2E/Neon/provider operation ran.
+- Full evidence and G2/G4 dispositions: `.superpowers/sdd/phase-5d-task-5-report.md`. Delegated Boundary B review was unavailable in this session and is not claimed.
+
 ## Phase 5D debt ledger
 
 - Fix or conclusively diagnose checkout contact-input persistence, then recover the disposable COD cancellation and stale-tab conflict evidence through the application/E2E path.

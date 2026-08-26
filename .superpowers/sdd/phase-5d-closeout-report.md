@@ -34,4 +34,5 @@ The first gate attempt exposed historical contract drift after the Phase 5D rebr
 - Protected Phase 2 plan files remain untracked and untouched.
 - No historical orders, global admin records, provider calls, or database CLI mutations were used.
 - No push, Vercel Preview, pull request, merge, branch deletion, or Phase 6 work was performed.
-- Next action requires user visual acceptance of protected `/admin` and public `/demo-admin` at desktop and mobile sizes, followed by explicit authorization for any external delivery action.
+- User accepted protected `/admin` and public `/demo-admin` at desktop and mobile on 2026-08-26. Follow-up icon remediation `31e33bd` uses local SVG icons and passed focused tests plus live viewport checks.
+- Next action requires explicit authorization for any external delivery action; the accepted branch remains stopped.

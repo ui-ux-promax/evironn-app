@@ -89,12 +89,13 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 - Presence-only Cloudinary preflight found `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` absent. `npx prisma validate` passed after loading only the existing local database variable names into the process; no values were printed and no Prisma mutation ran.
 - Closeout sequence passed locally: `npm run format`; `npm run gate` (223 files / 1360 tests, 0 lint errors and 56 baseline warnings); `npm run build`; and `npm run e2e -- e2e/admin-phase-5.spec.ts e2e/demo-admin.spec.ts --workers=1 --retries=0` (10/10).
 - The first gate attempt exposed pre-existing contract drift in the rebranded Phase 3 probe and Phase 4 migration bytes. The closeout restores the exact additive migration bytes and updates the Phase 3 contract assertion to the current `@test.evironn.invalid` seed domain; focused contract evidence is 16/16.
-- Local state is ready for user desktop/mobile visual acceptance. Push, Vercel Preview, pull request, merge, branch deletion, and Phase 6 work remain unauthorized and are not performed.
+- User accepted the protected `/admin` and public `/demo-admin` desktop/mobile visual state on 2026-08-26. Follow-up icon remediation `31e33bd` replaced the demo font-ligature icons with local SVG icons; focused tests and live viewport checks passed.
+- Local Phase 5 state is accepted through visual review. Push, Vercel Preview, pull request, merge, branch deletion, and Phase 6 work remain unauthorized and are not performed.
 
 ## Next action
 
-1. User reviews the local protected `/admin` and public `/demo-admin` desktop/mobile visual acceptance evidence.
-2. After explicit user acceptance, authorize the separate push/Preview/PR workflow; do not merge without explicit authorization.
+1. Keep the accepted local branch stopped.
+2. Proceed only when the user explicitly authorizes the separate push/Preview/PR workflow; do not merge without explicit authorization.
 
 Database note: `.env.local` contains the expected application database variable names. The earlier 5B inventory gap came from a standalone process that did not load `.env.local`; it was not evidence that Vercel or the project lacked database variables. Never print their values.
 

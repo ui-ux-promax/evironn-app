@@ -162,6 +162,8 @@ export function CategoryTurntableBinding({
         return;
       }
       router.refresh();
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : 'Не удалось сохранить привязку 360');
     } finally {
       setIsSubmitting(false);
     }

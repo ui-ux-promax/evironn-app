@@ -121,33 +121,23 @@ Typecheck:
 
 ```text
 npm run typecheck
+passed after the bounded route-contract type annotation in fba7b8c.
 ```
 
-The task-owned code produces no typecheck error. The command remains blocked by the pre-existing/out-of-scope error:
-
-```text
-tests/phase-5-route-contract.test.ts(33,7): error TS2322:
-Type '{ route: string | null; file: string | null; primary: string | null; tab: string | null; redirect: string | null; }[]'
-is not assignable to type 'readonly Readonly<{ route: string; file: string; primary: string | null; tab: string | null; redirect: string | null; }>[]'.
-Type 'string | null' is not assignable to type 'string'.
-```
-
-The generated Next route types were refreshed after public warmup-route retirement; no build was run. The remaining error is in `tests/phase-5-route-contract.test.ts`, outside Task 5D.5 ownership, and was not expanded into a fix.
+The route-contract nullability blocker was isolated to tuple inference in `tests/phase-5-route-contract.test.ts`; the explicit `RouteRow` mapper annotation preserves runtime behavior and restores the repository typecheck. No build was run.
 
 Diff check:
 
 ```text
-git diff --check
-passed; only normal LF/CRLF conversion warnings were emitted by Git.
+git diff --check e11c0b1..HEAD
+passed after removing the extra blank EOF line from this report; only normal line-ending warnings were emitted by Git.
 ```
 
 ## Review and concerns
 
-The exact C5D4..HEAD Boundary B fresh isolated Sol Medium functional/security review was not available in this session because no reviewer-dispatch capability was exposed. This report therefore does not claim a delegated review or a Critical/Important/Minor disposition. The bounded self-review used the four RED/GREEN outputs and the exact touched diff. A fresh reviewer remains the only outstanding process concern.
+Boundary B fresh isolated Sol Medium review was run over `e11c0b1..fba7b8c`; its findings and remediation are recorded in `.superpowers/sdd/phase-5d-review-B.md` and the Boundary B remediation report.
 
 Remaining concerns are limited to:
 
-1. the unrelated route-contract typecheck error above;
-2. delegated Boundary B review availability;
-3. Task 5D.6 browser-dependent checkout order mutation/conflict evidence, intentionally outside this task.
-
+1. Boundary B media/security remediation and fresh re-review remain required before Boundary B acceptance;
+2. Task 5D.6 browser-dependent checkout order mutation/conflict evidence remains intentionally outside this task.

@@ -1,9 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
+/** @vitest-environment jsdom */
+import '@testing-library/jest-dom/vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@/lib/cloudinary/server', () => ({ deleteAsset: vi.fn() }));
+vi.mock('@/app/actions/admin/categories', async () => {
+  const actual = await vi.importActual<typeof import('@/app/actions/admin/categories')>(
+    '@/app/actions/admin/categories',
+  );
+  return { ...actual, setCategoryTurntable: vi.fn(actual.setCategoryTurntable) };
+});
 vi.mock('@/lib/prisma-client', () => ({
   prisma: {
     category: {
@@ -18,6 +28,7 @@ vi.mock('@/lib/prisma-client', () => ({
 }));
 
 import { setCategoryTurntable } from '@/app/actions/admin/categories';
+import { CategoryTurntableBinding } from '@/app/(admin)/admin/catalog/categories/_components/category-form';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma-client';
@@ -28,6 +39,7 @@ const categoryUpdate = prisma.category.update as unknown as ReturnType<typeof vi
 const productFindUnique = prisma.product.findUnique as unknown as ReturnType<typeof vi.fn>;
 const transaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 const revalidatePathMock = revalidatePath as unknown as ReturnType<typeof vi.fn>;
+const setCategoryTurntableMock = setCategoryTurntable as unknown as ReturnType<typeof vi.fn>;
 
 const turntableMedia = [{ kind: 'TURN_TABLE_VIDEO' }, { kind: 'TURN_TABLE_POSTER' }, { kind: 'TURN_TABLE_FALLBACK' }];
 
@@ -52,11 +64,32 @@ beforeEach(() => {
   mockTransaction();
 });
 
-describe('setCategoryTurntable', () => {
-  it('clears the turntable submit state when the server action throws', () => {
-    const source = readFileSync('app/(admin)/admin/catalog/categories/_components/category-form.tsx', 'utf8');
+afterEach(() => {
+  cleanup();
+});
 
-    expect(source).toContain('finally');
+describe('setCategoryTurntable', () => {
+  it('restores the submit control after the server action rejects', async () => {
+    let rejectAction!: (reason: unknown) => void;
+    const pendingAction = new Promise<never>((_resolve, reject) => {
+      rejectAction = reject;
+    });
+    setCategoryTurntableMock.mockReturnValueOnce(pendingAction);
+
+    render(
+      React.createElement(CategoryTurntableBinding, {
+        category: { id: 'c1', name: 'Living room', turntableProductId: null },
+        products: [{ id: 'p1', name: 'Lounge chair', slug: 'lounge-chair', turntableReady: true }],
+      }),
+    );
+
+    const submit = screen.getByRole('button', { name: 'Сохранить 360' });
+    fireEvent.submit(submit.closest('form')!);
+    expect(submit).toBeDisabled();
+
+    rejectAction(new Error('provider unavailable'));
+
+    await waitFor(() => expect(submit).not.toBeDisabled());
   });
 
   it('binds a product with exactly one video, poster and fallback', async () => {

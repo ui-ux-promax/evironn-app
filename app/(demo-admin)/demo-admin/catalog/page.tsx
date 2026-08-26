@@ -1,42 +1,89 @@
 import { DemoDataTable } from '@/components/demo-admin/demo-data-table';
-import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { getDemoAdminSnapshot } from '@/lib/demo-admin/fixtures';
+import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
+import { DemoPanel } from '@/components/demo-admin/demo-panel';
+import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
 import { formatPrice } from '@/lib/format';
 
+const turntableLabels = { ready: 'Готов', partial: 'Частично', none: 'Нет' } as const;
+
 export default function DemoCatalogPage() {
-  const { products } = getDemoAdminSnapshot();
-  const activeCount = products.filter((product) => product.active).length;
-  const stockValue = products.reduce((sum, product) => sum + product.price * product.stock, 0);
-
   return (
-    <div className="space-y-[24px]">
-      <AdminPageHeader
+    <div className="space-y-6">
+      <DemoPageHeader
         kicker="Каталог"
-        title="Товары"
-        subtitle="Демо-копия каталога: карточки, SKU, цены, остатки и публикация без действий изменения."
-        searchPlaceholder="Поиск товаров отключён"
+        title="Мебельный каталог"
+        subtitle="Товары, опции, SKU, остатки и медиа в одном детерминированном read-only срезе."
       />
 
-      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
-        <AdminKpiCard icon="inventory_2" label="Товаров" value={String(products.length)} tone="primary" />
-        <AdminKpiCard icon="visibility" label="Активные" value={String(activeCount)} />
-        <AdminKpiCard icon="account_balance_wallet" label="Остатки" value={formatPrice(stockValue)} />
-      </div>
+      <DemoPanel title="Товары" note="Канонические мебельные карточки">
+        <DemoDataTable
+          columns={[
+            { key: 'product', label: 'Товар' },
+            { key: 'category', label: 'Категория' },
+            { key: 'rooms', label: 'Комнаты' },
+            { key: 'skus', label: 'SKU' },
+            { key: 'price', label: 'Цена от' },
+            { key: 'stock', label: 'Остаток' },
+          ]}
+          rows={demoAdminFixtures.catalog.products.map((product) => ({
+            product: product.name,
+            category: product.category,
+            rooms: product.rooms.join(', '),
+            skus: product.skuCount,
+            price: formatPrice(product.priceFrom),
+            stock: product.totalStock,
+          }))}
+        />
+      </DemoPanel>
 
-      <DemoDataTable
-        title="Список товаров"
-        note="Read-only таблица повторяет операционный вид каталога"
-        headings={['Товар', 'SKU', 'Категория', 'Цена', 'Остаток', 'Статус']}
-        rows={products.map((product) => [
-          product.name,
-          product.sku,
-          product.category,
-          formatPrice(product.price),
-          product.stock,
-          product.active ? 'Активен' : 'Скрыт',
-        ])}
-      />
+      <DemoPanel title="Опции" note="Группы вариантов, доступные мебельным товарам">
+        <DemoDataTable
+          columns={[
+            { key: 'name', label: 'Группа' },
+            { key: 'values', label: 'Значения' },
+            { key: 'products', label: 'Товаров' },
+          ]}
+          rows={demoAdminFixtures.catalog.options.map((option) => ({
+            name: option.name,
+            values: option.values.map((value) => value.label).join(', '),
+            products: option.usedByProducts,
+          }))}
+        />
+      </DemoPanel>
+
+      <DemoPanel title="SKU и остатки" note="Конфигурации, цены и доступность">
+        <DemoDataTable
+          columns={[
+            { key: 'article', label: 'Артикул' },
+            { key: 'combination', label: 'Комбинация' },
+            { key: 'price', label: 'Цена' },
+            { key: 'stock', label: 'Остаток' },
+            { key: 'status', label: 'Статус' },
+          ]}
+          rows={demoAdminFixtures.catalog.skus.map((sku) => ({
+            article: sku.articleNumber,
+            combination: sku.combinationLabel,
+            price: formatPrice(sku.price),
+            stock: sku.stock,
+            status: sku.active ? 'Активен' : 'Скрыт',
+          }))}
+        />
+      </DemoPanel>
+
+      <DemoPanel title="Медиа и 360°" note="Состояние изображений и поворотного обзора">
+        <DemoDataTable
+          columns={[
+            { key: 'product', label: 'Товар' },
+            { key: 'media', label: 'Медиа' },
+            { key: 'turntable', label: '360° обзор' },
+          ]}
+          rows={demoAdminFixtures.catalog.products.map((product) => ({
+            product: product.name,
+            media: product.mediaCount,
+            turntable: turntableLabels[product.turntable],
+          }))}
+        />
+      </DemoPanel>
     </div>
   );
 }

@@ -1,41 +1,59 @@
 import { DemoDataTable } from '@/components/demo-admin/demo-data-table';
-import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { getDemoAdminSnapshot } from '@/lib/demo-admin/fixtures';
+import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
+import { DemoPanel } from '@/components/demo-admin/demo-panel';
+import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
 import { formatPrice } from '@/lib/format';
 
 export default function DemoOrdersPage() {
-  const { orders } = getDemoAdminSnapshot();
-  const revenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-  const processing = orders.filter((order) => order.status === 'PROCESSING' || order.status === 'PENDING').length;
-
   return (
-    <div className="space-y-[24px]">
-      <AdminPageHeader
+    <div className="space-y-6">
+      <DemoPageHeader
         kicker="Заказы"
-        title="Операции заказов"
-        subtitle="Демо-копия списка заказов: статусы, суммы и клиенты без переходов в реальные карточки."
-        searchPlaceholder="Поиск заказов отключён"
+        title="Снимок операций"
+        subtitle="Статусы, оплата и неизменяемые товарные snapshots из синтетической истории заказов."
       />
 
-      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
-        <AdminKpiCard icon="receipt_long" label="Заказов" value={String(orders.length)} tone="primary" />
-        <AdminKpiCard icon="pending_actions" label="В работе" value={String(processing)} />
-        <AdminKpiCard icon="account_balance_wallet" label="Оборот" value={formatPrice(revenue)} />
-      </div>
+      <DemoPanel title="Заказы" note="Публичная таблица без карточек, переходов и действий">
+        <DemoDataTable
+          columns={[
+            { key: 'number', label: 'Заказ' },
+            { key: 'customer', label: 'Клиент' },
+            { key: 'status', label: 'Статус' },
+            { key: 'payment', label: 'Оплата' },
+            { key: 'total', label: 'Сумма' },
+            { key: 'created', label: 'Создан' },
+          ]}
+          rows={demoAdminFixtures.orders.map((order) => ({
+            number: order.number,
+            customer: order.customerName,
+            status: order.status,
+            payment: order.paymentLabel,
+            total: formatPrice(order.totalAmount),
+            created: order.createdLabel,
+          }))}
+        />
+      </DemoPanel>
 
-      <DemoDataTable
-        title="Последние заказы"
-        note="Данные синтетические, статусы не изменяются"
-        headings={['Заказ', 'Клиент', 'Статус', 'Сумма', 'Создан']}
-        rows={orders.map((order) => [
-          order.number,
-          order.customerName,
-          order.status,
-          formatPrice(order.totalAmount),
-          order.createdLabel,
-        ])}
-      />
+      <DemoPanel title="Состав заказов" note="Товарные snapshots сохраняют мебельную конфигурацию и цену">
+        <DemoDataTable
+          columns={[
+            { key: 'order', label: 'Заказ' },
+            { key: 'product', label: 'Товар' },
+            { key: 'article', label: 'Артикул' },
+            { key: 'quantity', label: 'Кол-во' },
+            { key: 'lineTotal', label: 'Итого' },
+          ]}
+          rows={demoAdminFixtures.orders.flatMap((order) =>
+            order.lines.map((line) => ({
+              order: order.number,
+              product: line.productName,
+              article: line.articleNumber,
+              quantity: line.quantity,
+              lineTotal: formatPrice(line.lineTotal),
+            })),
+          )}
+        />
+      </DemoPanel>
     </div>
   );
 }

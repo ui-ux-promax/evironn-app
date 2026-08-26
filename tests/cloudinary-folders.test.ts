@@ -46,6 +46,16 @@ describe('Evironn Cloudinary folder ownership', () => {
       'evironn/products/a/   /chair',
       'evironn\\products\\chair',
       'evironn/products/chair\u0000',
+      ' evironn/products/chair',
+      'evironn/products/chair ',
+      'evironn/products/chair\u0080',
+      'evironn/products/chair\u009f',
+      'evironn/products/chair\u200b',
+      'evironn/products/chair\u200c',
+      'evironn/products/chair\u200d',
+      'evironn/products/chair\u2060',
+      'evironn/products/chair\u2028asset',
+      'evironn/products/chair\u2029asset',
       `evironn/products/${'a'.repeat(513)}`,
     ]) {
       expect(isSafeMediaPath(value), value).toBe(false);

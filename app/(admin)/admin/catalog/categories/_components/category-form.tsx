@@ -155,13 +155,16 @@ export function CategoryTurntableBinding({
     event.preventDefault();
     setServerError(null);
     setIsSubmitting(true);
-    const result = await setCategoryTurntable({ categoryId: category.id, productId: productId || null });
-    setIsSubmitting(false);
-    if (!result.ok) {
-      setServerError(result.error);
-      return;
+    try {
+      const result = await setCategoryTurntable({ categoryId: category.id, productId: productId || null });
+      if (!result.ok) {
+        setServerError(result.error);
+        return;
+      }
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
     }
-    router.refresh();
   }
 
   return (

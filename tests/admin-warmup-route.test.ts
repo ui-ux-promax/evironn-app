@@ -11,13 +11,25 @@ function adminRoutes(directory: string): string[] {
     .map((entry) => join((entry as Dirent & { parentPath?: string }).parentPath ?? resolve(directory), entry.name));
 }
 
+function repositoryWarmupCallers(): string[] {
+  const roots = ['app', 'components', 'lib', 'services', 'scripts', 'e2e'];
+  return roots.flatMap((directory) =>
+    (readdirSync(resolve(directory), { recursive: true, withFileTypes: true }) as Dirent[])
+      .filter((entry) => entry.isFile() && /\.(?:ts|tsx|js|mjs)$/.test(entry.name))
+      .map((entry) => join((entry as Dirent & { parentPath?: string }).parentPath ?? resolve(directory), entry.name))
+      .filter((file) => readFileSync(file, 'utf8').includes('/api/health/warmup')),
+  );
+}
+
 describe('warmup route boundary contract', () => {
-  it('keeps anonymous database warmup outside the admin namespace', () => {
-    expect(existsSync(publicRoute)).toBe(true);
-    expect(readFileSync(publicRoute, 'utf8')).toContain('export async function GET');
-    expect(readFileSync(publicRoute, 'utf8')).toContain('prisma.$queryRaw');
-    expect(readFileSync(publicRoute, 'utf8')).not.toContain('requireAdminApi');
+  it('retires the uncalled anonymous database warmup route outside the admin namespace', () => {
+    expect(existsSync(publicRoute)).toBe(false);
     expect(existsSync(adminRoute)).toBe(false);
+  });
+
+  it('retires the public warmup route only after proving it has no repository callers', () => {
+    expect(repositoryWarmupCallers()).toEqual([]);
+    expect(existsSync(publicRoute)).toBe(false);
   });
 
   it('keeps every admin API route protected', () => {

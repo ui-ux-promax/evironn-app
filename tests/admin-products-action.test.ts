@@ -215,6 +215,46 @@ describe('canonical furniture product actions', () => {
     expect(p.skuOptionValue.deleteMany).not.toHaveBeenCalled();
   });
 
+  it('does not recreate a detached value on a later ordinary save', async () => {
+    const retainedAfterDetach = canonicalState({
+      optionGroups: [{ optionGroupId: 'og1', optionGroup: furnitureGroup, values: [] }],
+      skus: [{ ...canonicalState().skus[0], active: false, cartItems: [{ id: 'cart1' }] }],
+    });
+    prepareCanonicalMocks(retainedAfterDetach);
+
+    const result = await saveFurnitureProduct({
+      product: furnitureDraft({
+        active: false,
+        optionGroups: [{ ...furnitureGroup, values: [] }],
+        skus: [{ ...furnitureDraft().skus[0], active: false, selectedOptions: [] }],
+      }),
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    expect(p.productOptionValue.createMany).not.toHaveBeenCalled();
+  });
+
+  it('refuses contradictory detach and submitted value before any write', async () => {
+    prepareCanonicalMocks(
+      canonicalState({
+        skus: [{ ...canonicalState().skus[0], active: false, cartItems: [{ id: 'cart1' }] }],
+      }),
+    );
+
+    const result = await saveFurnitureProduct({
+      product: furnitureDraft({
+        active: false,
+        skus: [{ ...furnitureDraft().skus[0], active: false, selectedOptions: [] }],
+      }),
+      detachOptionValueIds: ['ov1'],
+    });
+
+    expect(result).toMatchObject({ ok: false, code: 'VALIDATION_ERROR' });
+    expect(p.$transaction).not.toHaveBeenCalled();
+    expect(p.product.update).not.toHaveBeenCalled();
+    expect(p.productOptionValue.deleteMany).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['articleNumber', 'ARTICLE_NUMBER_TAKEN'],
     ['slug', 'SLUG_TAKEN'],

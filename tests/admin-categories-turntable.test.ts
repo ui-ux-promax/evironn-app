@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
@@ -52,6 +53,12 @@ beforeEach(() => {
 });
 
 describe('setCategoryTurntable', () => {
+  it('clears the turntable submit state when the server action throws', () => {
+    const source = readFileSync('app/(admin)/admin/catalog/categories/_components/category-form.tsx', 'utf8');
+
+    expect(source).toContain('finally');
+  });
+
   it('binds a product with exactly one video, poster and fallback', async () => {
     mockCategory();
     mockProduct();

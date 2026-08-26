@@ -20,12 +20,13 @@ const MAX_SAFE_MEDIA_PATH_LENGTH = 512;
 export function isSafeMediaPath(value: string): boolean {
   if (typeof value !== 'string' || value.trim() === '') return false;
   if (value.length > MAX_SAFE_MEDIA_PATH_LENGTH) return false;
+  if (value !== value.trim()) return false;
   if (value.startsWith('/') || value.includes('//') || value.includes('\\')) return false;
-  if (/[\u0000-\u001f\u007f]/.test(value)) return false;
+  if (/[\u0000-\u001f\u007f-\u009f\u200b\u200c\u200d\u2060\u2028\u2029\ufeff]/.test(value)) return false;
 
   return value.split('/').every((segment) => {
     const trimmed = segment.trim();
-    return trimmed !== '' && trimmed !== '.' && trimmed !== '..';
+    return segment === trimmed && trimmed !== '' && trimmed !== '.' && trimmed !== '..';
   });
 }
 

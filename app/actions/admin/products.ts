@@ -718,6 +718,36 @@ export async function saveFurnitureProduct(input: unknown): Promise<AdminActionR
     throw error;
   }
 
+  const submittedGroups = arrayOf(rawProduct?.optionGroups)
+    .map(recordOf)
+    .filter((group): group is Record<string, unknown> => Boolean(group));
+  const submittedGroup = (group: ResolvedOptionGroup) =>
+    submittedGroups.some((rawGroup) => rawGroup.id === group.id || rawGroup.slug === group.slug);
+  const submittedValue = (group: ResolvedOptionGroup, value: ResolvedOptionGroup['values'][number]) =>
+    submittedGroups.some(
+      (rawGroup) =>
+        (rawGroup.id === group.id || rawGroup.slug === group.slug) &&
+        arrayOf(rawGroup.values).some((rawValue) => {
+          const record = recordOf(rawValue);
+          return record?.id === value.id || record?.slug === value.slug;
+        }),
+    );
+  const contradictoryDetach =
+    envelope.detachOptionValueIds.some((id) =>
+      groups.some((group) => group.values.some((value) => value.id === id && submittedValue(group, value))),
+    ) ||
+    envelope.detachOptionGroupIds.some((id) =>
+      groups.some(
+        (group) =>
+          group.id === id &&
+          submittedGroups.some(
+            (rawGroup) =>
+              (rawGroup.id === group.id || rawGroup.slug === group.slug) && arrayOf(rawGroup.values).length > 0,
+          ),
+      ),
+    );
+  if (contradictoryDetach) return adminError('VALIDATION_ERROR', 'Detach intent contradicts submitted option links');
+
   const nextProductId = productId ?? 'new-product';
   const existingRoomIds = new Set((current?.rooms ?? []).map((room) => room.roomId));
   const nextRoomIds = new Set(roomIds);
@@ -728,7 +758,12 @@ export async function saveFurnitureProduct(input: unknown): Promise<AdminActionR
   const detachedValueIds = new Set(envelope.detachOptionValueIds);
   const addedGroupIds = groups
     .map((group) => group.id)
-    .filter((id) => !existingGroupIds.has(id) && !detachedGroupIds.has(id));
+    .filter(
+      (id) =>
+        !existingGroupIds.has(id) &&
+        !detachedGroupIds.has(id) &&
+        groups.some((group) => group.id === id && submittedGroup(group)),
+    );
   const existingValueKeys = new Set(
     (current?.optionGroups ?? []).flatMap((group) =>
       group.values.map((value) => `${group.optionGroupId}:${value.optionValueId}`),
@@ -740,7 +775,8 @@ export async function saveFurnitureProduct(input: unknown): Promise<AdminActionR
         (value) =>
           !existingValueKeys.has(`${group.id}:${value.id}`) &&
           !detachedGroupIds.has(group.id) &&
-          !detachedValueIds.has(value.id),
+          !detachedValueIds.has(value.id) &&
+          submittedValue(group, value),
       )
       .map((value) => ({ productId: nextProductId, optionGroupId: group.id, optionValueId: value.id })),
   );

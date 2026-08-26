@@ -67,8 +67,10 @@ describe('demo-admin presentation boundary', () => {
   it('uses local SVG icons for demo navigation instead of font ligatures', () => {
     const source = readPrimitive('demo-icon.tsx');
 
-    expect(source).toContain('LayoutDashboard');
+    expect(source).toContain('<svg');
+    expect(source).toContain('space_dashboard');
     expect(source).toContain('className="demo-admin-icon"');
     expect(source).not.toContain('material-symbols-outlined');
+    expect(source).not.toContain('lucide-react');
   });
 });

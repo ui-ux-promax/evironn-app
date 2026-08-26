@@ -173,6 +173,7 @@ describe('Phase 5 route contract', () => {
   it('locks every protected primary, catalog tab, and redirect row', () => {
     for (const row of expectedProtectedRows) {
       const actualRoute = row.route.replaceAll(':id', 'fixture-id');
+      const source = readFileSync(resolve(root, row.file), 'utf8');
       const primary = ADMIN_NAV.find((item) => item.href === row.primary);
       expect(primary?.href ?? null, row.route).toBe(row.primary);
       if (primary) expect(isActiveAdminHref(primary, actualRoute), row.route).toBe(true);
@@ -182,11 +183,17 @@ describe('Phase 5 route contract', () => {
         if (tab) expect(isActiveAdminHref(tab, actualRoute), row.route).toBe(true);
       }
       if (row.redirect) {
-        const source = readFileSync(resolve(root, row.file), 'utf8');
         expect(source, row.route).toMatch(new RegExp(`redirect\\(['"]${row.redirect.replaceAll('/', '\\/')}['"]\\)`));
-      }
+      } else expect(source, row.route).not.toMatch(/\bredirect\s*\(/);
     }
     expect(expectedProtectedRows.filter((row) => row.redirect)).toHaveLength(1);
+
+    const catalogIndexSource = readFileSync(resolve(root, 'app/(admin)/admin/catalog/page.tsx'), 'utf8')
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(catalogIndexSource).toBe(
+      "import { redirect } from 'next/navigation'; export default function CatalogIndex() { redirect('/admin/catalog/products'); }",
+    );
   });
 
   it('keeps demo navigation labels and order equal to protected navigation after prefix normalization', () => {

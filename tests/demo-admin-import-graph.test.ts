@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { builtinModules } from 'node:module';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -14,6 +15,7 @@ export const DEMO_ENTRYPOINTS = [
 ] as const;
 
 const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx'] as const;
+const allowedBareImports = new Set(['next', 'next/link', 'next/navigation', 'react']);
 const localImportPattern = /\b(?:import|export)\s+(?:[^'";\n]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 const dynamicImportPattern = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 const requirePattern = /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
@@ -52,11 +54,13 @@ function importedSpecifiers(source: string): { specifier: string; dynamic: boole
 
 export function findDemoBoundaryViolations(file: string, source: string): string[] {
   const violations: string[] = [];
-  const forbiddenBareModules =
-    /^(?:node:)?(?:fs|path|os|crypto|http|https|net|tls|child_process|stream|worker_threads)$|^(?:next\/cache|next\/headers|next\/cookies|@prisma\/client|auth\.js|next-auth|cloudinary|yookassa|stripe|resend)$/i;
+  const nodeBuiltins = new Set(builtinModules.map((specifier) => specifier.replace(/^node:/, '')));
 
   for (const { specifier } of importedSpecifiers(source)) {
-    if (forbiddenBareModules.test(specifier)) violations.push(`${file}: forbidden import ${specifier}`);
+    if (nodeBuiltins.has(specifier.replace(/^node:/, '')))
+      violations.push(`${file}: forbidden Node built-in import ${specifier}`);
+    else if (!specifier.startsWith('.') && !specifier.startsWith('@/') && !allowedBareImports.has(specifier))
+      violations.push(`${file}: disallowed bare import ${specifier}`);
   }
   for (const match of source.matchAll(requirePattern)) violations.push(`${file}: require(${match[1]})`);
   if (/\bimport\s*\(\s*([^'"\s][^)]*)\)/.test(source)) violations.push(`${file}: non-literal dynamic import`);
@@ -73,7 +77,10 @@ export function findDemoBoundaryViolations(file: string, source: string): string
   return violations;
 }
 
-export function scanDemoClosure(entrypoints: readonly string[] = DEMO_ENTRYPOINTS): ReadonlySet<string> {
+export function scanDemoClosure(
+  entrypoints: readonly string[] = DEMO_ENTRYPOINTS,
+  readSource: (file: string) => string = (file) => readFileSync(resolve(root, file), 'utf8'),
+): ReadonlySet<string> {
   const visited = new Set<string>();
   const visiting = new Set<string>();
 
@@ -83,7 +90,7 @@ export function scanDemoClosure(entrypoints: readonly string[] = DEMO_ENTRYPOINT
     if (visiting.has(normalized)) return;
 
     visiting.add(normalized);
-    const source = readFileSync(resolve(root, normalized), 'utf8');
+    const source = readSource(normalized);
     for (const { specifier } of importedSpecifiers(source)) {
       if (!specifier.startsWith('.') && !specifier.startsWith('@/')) continue;
       const local = resolveLocalImport(normalized, specifier);
@@ -139,7 +146,12 @@ describe('demo admin recursive import closure', () => {
   it('rejects each promised forbidden boundary in focused negative fixtures', () => {
     const fixtures = [
       ["import fs from 'node:fs';", 'filesystem'],
+      ["import { readFile } from 'node:fs/promises';", 'filesystem subpath'],
+      ["import { createServer } from 'node:http2';", 'server builtin subpath'],
       ["fetch('https://example.invalid');", 'network'],
+      ["import axios from 'axios';", 'alternate network client axios'],
+      ["import { request } from 'undici';", 'alternate network client undici'],
+      ["import got from 'got';", 'alternate network client got'],
       ["import { unstable_cache } from 'next/cache';", 'cache'],
       ['process.env.DEMO_SECRET;', 'environment'],
       ["import { v2 as cloudinary } from 'cloudinary';", 'provider'],
@@ -151,6 +163,12 @@ describe('demo admin recursive import closure', () => {
     for (const [source, label] of fixtures) {
       expect(findDemoBoundaryViolations(`fixture-${label}.ts`, source), label).not.toEqual([]);
     }
+  });
+
+  it('rejects unresolved local imports in recursive closure fixtures', () => {
+    expect(() => scanDemoClosure(['fixture-unresolved.ts'], () => "import './missing-local-fixture';")).toThrow(
+      'fixture-unresolved.ts: unresolved local import ./missing-local-fixture',
+    );
   });
 
   it('uses one closure scanner for every demo entrypoint and never crosses into protected admin links', () => {

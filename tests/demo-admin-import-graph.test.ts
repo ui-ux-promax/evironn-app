@@ -18,7 +18,7 @@ const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx'] as const;
 const allowedBareImports = new Set(['next', 'next/link', 'next/navigation', 'react']);
 const localImportPattern = /\b(?:import|export)\s+(?:[^'";\n]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 const dynamicImportPattern = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-const requirePattern = /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+const requirePattern = /\brequire\s*\(([\s\S]*?)\)/g;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(resolve(root, directory), { withFileTypes: true }).flatMap((entry) => {
@@ -62,7 +62,11 @@ export function findDemoBoundaryViolations(file: string, source: string): string
     else if (!specifier.startsWith('.') && !specifier.startsWith('@/') && !allowedBareImports.has(specifier))
       violations.push(`${file}: disallowed bare import ${specifier}`);
   }
-  for (const match of source.matchAll(requirePattern)) violations.push(`${file}: require(${match[1]})`);
+  for (const match of source.matchAll(requirePattern)) {
+    const argument = match[1].trim();
+    const literal = argument.match(/^(['"])([\s\S]*)\1$/)?.[2];
+    violations.push(`${file}: require(${(literal ?? argument) || 'non-literal'})`);
+  }
   if (/\bimport\s*\(\s*([^'"\s][^)]*)\)/.test(source)) violations.push(`${file}: non-literal dynamic import`);
 
   const forbiddenPatterns: readonly [RegExp, string][] = [
@@ -157,6 +161,8 @@ describe('demo admin recursive import closure', () => {
       ["import { v2 as cloudinary } from 'cloudinary';", 'provider'],
       ['deleteDemoRecord();', 'mutation'],
       ["require('node:fs');", 'require'],
+      ['require(moduleName);', 'require identifier'],
+      ['require(`node:${moduleName}`);', 'require template literal'],
       ['import(`./${name}`);', 'dynamic import'],
     ] as const;
 

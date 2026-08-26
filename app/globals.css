@@ -1077,7 +1077,7 @@ html body[data-scroll-locked] {
 }
 
 .demo-admin-frame > .demo-admin-readonly-banner {
-  display: none;
+  display: block;
 }
 
 .demo-admin-content {

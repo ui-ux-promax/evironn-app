@@ -42,9 +42,13 @@ describe('demo admin render boundary', () => {
 
   it('composes order snapshots, customer roles, and coupon detail rows', () => {
     const orders = readFileSync(join(root, 'app/(demo-admin)/demo-admin/orders/page.tsx'), 'utf8');
+    const dashboard = readFileSync(join(root, 'app/(demo-admin)/demo-admin/page.tsx'), 'utf8');
     const customers = readFileSync(join(root, 'app/(demo-admin)/demo-admin/customers/page.tsx'), 'utf8');
     const coupons = readFileSync(join(root, 'app/(demo-admin)/demo-admin/marketing/page.tsx'), 'utf8');
 
+    expect(dashboard).toContain("import { DemoStatus } from '@/components/demo-admin/demo-status';");
+    expect(dashboard).toContain('status: <DemoStatus status={order.status} />');
+    expect(orders).toContain('status: <DemoStatus status={order.status} />');
     expect(orders).toContain('paymentLabel');
     expect(orders).toContain('lines');
     expect(customers).toContain('role');

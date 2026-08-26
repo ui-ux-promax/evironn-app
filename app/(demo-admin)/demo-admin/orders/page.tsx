@@ -27,7 +27,7 @@ export default function DemoOrdersPage() {
           rows={demoAdminFixtures.orders.map((order) => ({
             number: order.number,
             customer: order.customerName,
-            status: order.status,
+            status: <DemoStatus status={order.status} />,
             payment: order.paymentLabel,
             total: formatDemoPrice(order.totalAmount),
             created: order.createdLabel,

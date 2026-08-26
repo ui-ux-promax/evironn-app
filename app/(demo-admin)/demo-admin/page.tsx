@@ -5,6 +5,7 @@ import { DemoIcon } from '@/components/demo-admin/demo-icon';
 import { DemoKpiGrid } from '@/components/demo-admin/demo-kpi-grid';
 import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
 import { DemoPanel } from '@/components/demo-admin/demo-panel';
+import { DemoStatus } from '@/components/demo-admin/demo-status';
 import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
 import { formatDemoPrice } from '@/lib/demo-admin/format-price';
 
@@ -64,7 +65,7 @@ export default function DemoDashboardPage() {
           rows={demoAdminFixtures.orders.slice(0, 5).map((order) => ({
             number: order.number,
             customer: order.customerName,
-            status: order.status,
+            status: <DemoStatus status={order.status} />,
             total: formatDemoPrice(order.totalAmount),
           }))}
         />

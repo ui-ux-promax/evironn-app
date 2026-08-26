@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 export type DemoDataTableColumn = Readonly<{ key: string; label: string }>;
-export type DemoDataTableRow = Readonly<Record<string, string | number | null>>;
+export type DemoDataTableRow = Readonly<Record<string, ReactNode>>;
 
 export function DemoPanel({
   title,

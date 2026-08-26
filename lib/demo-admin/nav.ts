@@ -1,9 +1,9 @@
 export const DEMO_ADMIN_NAV = [
-  { href: '/demo-admin', label: 'Обзор', icon: 'space_dashboard' },
+  { href: '/demo-admin', label: 'Дашборд', icon: 'space_dashboard' },
   { href: '/demo-admin/catalog', label: 'Каталог', icon: 'chair' },
   { href: '/demo-admin/orders', label: 'Заказы', icon: 'shopping_bag' },
   { href: '/demo-admin/customers', label: 'Клиенты', icon: 'group' },
-  { href: '/demo-admin/marketing', label: 'Маркетинг', icon: 'local_offer' },
+  { href: '/demo-admin/marketing', label: 'Промокоды', icon: 'local_offer' },
 ] as const;
 
 export type DemoAdminNavItem = (typeof DEMO_ADMIN_NAV)[number];

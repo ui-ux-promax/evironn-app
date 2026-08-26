@@ -16,7 +16,7 @@ export const DEMO_ENTRYPOINTS = [
 const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx'] as const;
 const localImportPattern = /\b(?:import|export)\s+(?:[^'";\n]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 const dynamicImportPattern = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-const dynamicLocalImportPattern = /\bimport\s*\(\s*([^'"\s][^)]*)\)/g;
+const requirePattern = /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(resolve(root, directory), { withFileTypes: true }).flatMap((entry) => {
@@ -48,6 +48,29 @@ function importedSpecifiers(source: string): { specifier: string; dynamic: boole
     dynamic: true,
   }));
   return [...imports, ...dynamicImports];
+}
+
+export function findDemoBoundaryViolations(file: string, source: string): string[] {
+  const violations: string[] = [];
+  const forbiddenBareModules =
+    /^(?:node:)?(?:fs|path|os|crypto|http|https|net|tls|child_process|stream|worker_threads)$|^(?:next\/cache|next\/headers|next\/cookies|@prisma\/client|auth\.js|next-auth|cloudinary|yookassa|stripe|resend)$/i;
+
+  for (const { specifier } of importedSpecifiers(source)) {
+    if (forbiddenBareModules.test(specifier)) violations.push(`${file}: forbidden import ${specifier}`);
+  }
+  for (const match of source.matchAll(requirePattern)) violations.push(`${file}: require(${match[1]})`);
+  if (/\bimport\s*\(\s*([^'"\s][^)]*)\)/.test(source)) violations.push(`${file}: non-literal dynamic import`);
+
+  const forbiddenPatterns: readonly [RegExp, string][] = [
+    [/\b(?:readFile|writeFile|appendFile|readdir|stat|unlink|mkdir|rm)(?:Sync)?\s*\(/i, 'filesystem API'],
+    [/\b(?:fetch|XMLHttpRequest)\s*\(/i, 'network API'],
+    [/\b(?:unstable_cache|cache)\s*\(/i, 'cache API'],
+    [/\bprocess\.env\b/i, 'environment access'],
+    [/cloudinary|yookassa|stripe|resend|@prisma\/client|next-auth|auth\.js/i, 'provider or auth boundary'],
+    [/\b(?:create|update|delete|remove|save|mutate|submit|toggle|reset)\w*\s*\(/i, 'mutation boundary'],
+  ];
+  for (const [pattern, label] of forbiddenPatterns) if (pattern.test(source)) violations.push(`${file}: ${label}`);
+  return violations;
 }
 
 export function scanDemoClosure(entrypoints: readonly string[] = DEMO_ENTRYPOINTS): ReadonlySet<string> {
@@ -107,10 +130,27 @@ describe('demo admin recursive import closure', () => {
     for (const file of closure) {
       const source = readFileSync(resolve(root, file), 'utf8');
       for (const pattern of forbiddenClosurePatterns) if (pattern.test(source)) violations.push(`${file}: ${pattern}`);
-      if (dynamicLocalImportPattern.test(source)) violations.push(`${file}: non-literal dynamic import`);
+      violations.push(...findDemoBoundaryViolations(file, source));
     }
 
     expect(violations).toEqual([]);
+  });
+
+  it('rejects each promised forbidden boundary in focused negative fixtures', () => {
+    const fixtures = [
+      ["import fs from 'node:fs';", 'filesystem'],
+      ["fetch('https://example.invalid');", 'network'],
+      ["import { unstable_cache } from 'next/cache';", 'cache'],
+      ['process.env.DEMO_SECRET;', 'environment'],
+      ["import { v2 as cloudinary } from 'cloudinary';", 'provider'],
+      ['deleteDemoRecord();', 'mutation'],
+      ["require('node:fs');", 'require'],
+      ['import(`./${name}`);', 'dynamic import'],
+    ] as const;
+
+    for (const [source, label] of fixtures) {
+      expect(findDemoBoundaryViolations(`fixture-${label}.ts`, source), label).not.toEqual([]);
+    }
   });
 
   it('uses one closure scanner for every demo entrypoint and never crosses into protected admin links', () => {

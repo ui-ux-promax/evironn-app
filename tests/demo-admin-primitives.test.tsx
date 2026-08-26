@@ -44,6 +44,8 @@ describe('demo-admin presentation boundary', () => {
 
     expect(source).toContain('DemoDataTableColumn');
     expect(source).toContain('readonly');
+    expect(source).not.toContain('import { DemoPanel }');
+    expect(source).not.toContain('<DemoPanel');
     expect(source).not.toMatch(/action|onClick|onSubmit|button/i);
   });
 
@@ -54,5 +56,11 @@ describe('demo-admin presentation boundary', () => {
     expect(source).toContain('DemoReadonlyBanner');
     expect(source).toContain('DEMO_ADMIN_NAV');
     expect(source).toContain('DemoIcon');
+  });
+
+  it('keeps the shared read-only banner visible at the default desktop breakpoint', () => {
+    const css = readFileSync(join(root, 'app/globals.css'), 'utf8');
+
+    expect(css).not.toMatch(/\.demo-admin-frame\s*>\s*\.demo-admin-readonly-banner\s*\{\s*display:\s*none\s*;/);
   });
 });

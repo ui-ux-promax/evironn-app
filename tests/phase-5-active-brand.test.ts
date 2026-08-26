@@ -26,7 +26,6 @@ const activeBrandFiles = [
   'emails/welcome.tsx',
 ] as const;
 
-const compatibilityFiles = new Set(['lib/cloudinary/folders.ts', 'lib/demo-data/reset-lock.ts']);
 const textExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.svg', '.json']);
 
 function collectTextFiles(directory: string): string[] {
@@ -52,16 +51,30 @@ describe('Phase 5 active Evironn brand contract', () => {
       .concat(
         collectTextFiles('components'),
         collectTextFiles('lib'),
+        collectTextFiles('services'),
         collectTextFiles('emails'),
         collectTextFiles('prisma'),
         collectTextFiles('public'),
       )
-      .filter((file) => !compatibilityFiles.has(file))
       .flatMap((file) => {
         const source = readFileSync(resolve(root, file), 'utf8');
-        return /ritm/i.test(source) ? [file] : [];
+        return source
+          .split(/\r?\n/)
+          .map((line, index) => ({ file, line, lineNumber: index + 1 }))
+          .filter(({ line }) => /ritm/i.test(line));
       });
-    expect(productionHits).toEqual([]);
+    expect(productionHits).toEqual([
+      {
+        file: 'lib/cloudinary/folders.ts',
+        line: "export const LEGACY_MEDIA_PREFIX = 'ritm/';",
+        lineNumber: 17,
+      },
+      {
+        file: 'lib/demo-data/reset-lock.ts',
+        line: "  const lockKey = 'ritm:demo-reset-lock';",
+        lineNumber: 9,
+      },
+    ]);
   });
 
   it('removes retired Ritm logos and every source reference to them', () => {

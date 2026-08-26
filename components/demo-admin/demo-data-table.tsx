@@ -1,42 +1,61 @@
 import type { ReactNode } from 'react';
-import { AdminPanel } from '@/components/admin/admin-panel';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
+import type { DemoDataTableColumn, DemoDataTableRow } from './demo-panel';
+import { DemoPanel } from './demo-panel';
 
-export function DemoDataTable({
-  title,
-  note,
-  headings,
-  rows,
-}: {
+export type { DemoDataTableColumn, DemoDataTableRow };
+
+type DemoDataTableProps = {
   title?: string;
   note?: string;
-  headings: readonly string[];
-  rows: ReadonlyArray<readonly ReactNode[]>;
-}) {
+  columns?: readonly DemoDataTableColumn[];
+  headings?: readonly string[];
+  rows: readonly DemoDataTableRow[] | ReadonlyArray<readonly ReactNode[]>;
+};
+
+function normalizeRows(rows: DemoDataTableProps['rows']): readonly DemoDataTableRow[] {
+  const normalized: DemoDataTableRow[] = [];
+  for (const row of rows) {
+    if (!Array.isArray(row)) {
+      normalized.push(row as DemoDataTableRow);
+      continue;
+    }
+    normalized.push(
+      Object.fromEntries(
+        row.map((cell, index) => [String(index), typeof cell === 'string' || typeof cell === 'number' ? cell : null]),
+      ) as DemoDataTableRow,
+    );
+  }
+  return normalized;
+}
+
+export function DemoDataTable({ title, note, columns: inputColumns, headings, rows }: DemoDataTableProps) {
+  const columns = inputColumns ?? (headings ?? []).map((label, index) => ({ key: String(index), label }));
+  const normalizedRows = normalizeRows(rows);
+
   return (
-    <AdminPanel title={title} note={note}>
-      <div className="overflow-hidden rounded-[20px] border border-admin-outline-variant">
-        <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow>
-              {headings.map((heading) => (
-                <TableHead key={heading}>{heading}</TableHead>
+    <DemoPanel title={title} note={note}>
+      <div className="demo-admin-table-wrap">
+        <table className="demo-admin-table">
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th key={column.key} scope="col">
+                  {column.label}
+                </th>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((cells, rowIndex) => (
-              <TableRow key={rowIndex}>
-                {cells.map((cell, cellIndex) => (
-                  <TableCell key={cellIndex} className="font-medium">
-                    {cell}
-                  </TableCell>
+            </tr>
+          </thead>
+          <tbody>
+            {normalizedRows.map((row, rowIndex) => (
+              <tr key={String(row.id ?? rowIndex)}>
+                {columns.map((column) => (
+                  <td key={column.key}>{row[column.key] ?? '—'}</td>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
-    </AdminPanel>
+    </DemoPanel>
   );
 }

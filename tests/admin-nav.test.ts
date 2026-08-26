@@ -31,6 +31,30 @@ describe('admin navigation contract', () => {
     expect(ADMIN_NAV.every((item) => Object.keys(item).sort().join(',') === 'href,label,match')).toBe(true);
   });
 
+  it('uses visible Russian labels for the operational sidebar', () => {
+    expect(ADMIN_NAV.map((item) => item.label)).toEqual(['Сводка', 'Каталог', 'Заказы', 'Клиенты', 'Промокоды']);
+  });
+
+  it('keeps the real logo, utility search copy, and store destination in the shell', () => {
+    const shell = readFileSync(resolve('components/admin/admin-shell.tsx'), 'utf8');
+
+    expect(shell).toContain('src="/assets/evironn-logo.svg"');
+    expect(shell).toContain('Поиск заказов, клиентов, товаров');
+    expect(shell).toContain('href="/"');
+    expect(shell).toContain('Открыть магазин');
+  });
+
+  it('exposes labelled, keyboard-reachable mobile navigation', () => {
+    const shell = readFileSync(resolve('components/admin/admin-shell.tsx'), 'utf8');
+    const mobileMenu = readFileSync(resolve('components/admin/admin-mobile-menu.tsx'), 'utf8');
+
+    expect(shell).toContain('aria-label="Основная навигация"');
+    expect(mobileMenu).toContain('aria-controls="admin-mobile-navigation"');
+    expect(mobileMenu).toContain('aria-expanded');
+    expect(mobileMenu).toContain('Основная навигация');
+    expect(mobileMenu).toContain('DialogClose');
+  });
+
   it('exposes only existing product, category, option, room, and stock catalog tabs', () => {
     expect(ADMIN_CATALOG_TABS).toBeDefined();
     if (!ADMIN_CATALOG_TABS) return;

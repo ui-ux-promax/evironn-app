@@ -1,21 +1,25 @@
 'use client';
 
+import { useState } from 'react';
+import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Icon } from '@/components/admin/icon';
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/admin/ui/dropdown-menu';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/admin/ui/dialog';
+import { ADMIN_NAV, ADMIN_NAV_ICON_NAMES, isActiveAdminHref } from '@/lib/admin/nav';
+import { cn } from '@/lib/utils';
+import styles from './admin-shell.module.css';
 
 interface AdminMobileMenuProps {
   user: { name?: string | null; email?: string | null; role: string; image?: string | null };
+  pathname: string;
 }
-
-const ROLE_LABELS: Record<string, string> = { ADMIN: 'Администратор', CUSTOMER: 'Клиент' };
 
 function getInitials(name?: string | null, email?: string | null): string {
   if (name)
@@ -28,62 +32,78 @@ function getInitials(name?: string | null, email?: string | null): string {
   return (email?.[0] ?? '?').toUpperCase();
 }
 
-/** Mobile profile menu. */
-export function AdminMobileMenu({ user }: AdminMobileMenuProps) {
+/** Accessible mobile navigation and account actions. */
+export function AdminMobileMenu({ user, pathname }: AdminMobileMenuProps) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <button
           type="button"
-          aria-label="Меню профиля"
-          className="md:hidden shrink-0 w-9 h-9 rounded-full bg-admin-primary text-admin-on-primary font-admin-head font-bold text-[13px] grid place-items-center"
+          className={styles.mobileMenuTrigger}
+          aria-label={open ? 'Закрыть меню навигации' : 'Открыть меню навигации'}
+          aria-controls="admin-mobile-navigation"
+          aria-expanded={open}
         >
-          {user.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.image} alt="" className="w-full h-full rounded-full object-cover" />
-          ) : (
-            getInitials(user.name, user.email)
-          )}
+          <Icon name={open ? 'close' : 'menu'} aria-hidden="true" />
         </button>
-      </DropdownMenuTrigger>
+      </DialogTrigger>
 
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="flex items-center gap-3 normal-case tracking-normal">
-          <span className="w-9 h-9 rounded-full bg-admin-primary text-admin-on-primary font-admin-head font-bold grid place-items-center">
-            {getInitials(user.name, user.email)}
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-bold text-admin-on-surface truncate">
-              {user.name ?? user.email ?? 'Admin'}
-            </span>
-            <span className="block text-xs text-admin-on-surface-variant truncate">
-              {ROLE_LABELS[user.role] ?? user.role}
-            </span>
-          </span>
-        </DropdownMenuLabel>
+      <DialogContent id="admin-mobile-navigation" className={styles.mobileMenuPanel}>
+        <div className={styles.mobileMenuHandle} aria-hidden="true" />
+        <DialogTitle className={styles.mobileMenuHeading}>Навигация</DialogTitle>
+        <DialogDescription className={styles.visuallyHidden}>
+          Переход между разделами защищённой админки и выход из аккаунта.
+        </DialogDescription>
 
-        <DropdownMenuItem
-          aria-disabled="true"
-          className="text-admin-on-surface-variant opacity-55"
-          onSelect={(e) => e.preventDefault()}
-        >
-          <Icon name="help" className="text-[18px]" /> Помощь
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          aria-disabled="true"
-          className="text-admin-on-surface-variant opacity-55"
-          onSelect={(e) => e.preventDefault()}
-        >
-          <Icon name="settings" className="text-[18px]" /> Настройки
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => signOut({ callbackUrl: '/login' })}
-          className="text-admin-error focus:text-admin-error"
-        >
-          <Icon name="logout" className="text-[18px]" /> Выйти
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <nav aria-label="Основная навигация" className={styles.mobileNavigation}>
+          {ADMIN_NAV.map((item) => {
+            const active = isActiveAdminHref(item, pathname);
+            return (
+              <DialogClose key={item.href} asChild>
+                <Link
+                  href={item.href}
+                  className={cn(styles.mobileNavigationLink, active && styles.active)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <Icon name={ADMIN_NAV_ICON_NAMES[item.href]} filled={active} aria-hidden="true" />
+                  <span>{item.label}</span>
+                  <Icon name="chevron_right" aria-hidden="true" />
+                </Link>
+              </DialogClose>
+            );
+          })}
+        </nav>
+
+        <DialogClose asChild>
+          <Link href="/" className={styles.mobileStoreLink}>
+            <Icon name="storefront" aria-hidden="true" />
+            <span>Открыть магазин</span>
+            <Icon name="open_in_new" aria-hidden="true" />
+          </Link>
+        </DialogClose>
+
+        <div className={styles.mobileAccount}>
+          <span className={styles.avatar} aria-hidden="true">
+            {user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.image} alt="" className={styles.avatarImage} />
+            ) : (
+              getInitials(user.name, user.email)
+            )}
+          </span>
+          <span className={styles.mobileAccountName}>{user.name ?? user.email ?? 'Администратор'}</span>
+          <button
+            type="button"
+            className={styles.mobileSignOut}
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            aria-label="Выйти"
+          >
+            <Icon name="logout" aria-hidden="true" />
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

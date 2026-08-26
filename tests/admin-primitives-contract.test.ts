@@ -65,7 +65,7 @@ describe('admin primitive contract', () => {
     expect(source('app/globals.css')).toContain('.admin-root');
   });
 
-  it('pins the shared presentation pass to the clone shell and primitive geometry', () => {
+  it('pins the shared presentation pass to the labelled operational shell', () => {
     const shell = source('components/admin/admin-shell.module.css');
     const header = source('components/admin/admin-page-header.tsx');
     const panel = source('components/admin/admin-panel.tsx');
@@ -75,7 +75,7 @@ describe('admin primitive contract', () => {
     const table = source('components/admin/ui/table.tsx');
     const styles = source('app/globals.css');
 
-    expect(shell).toContain('grid-template-columns: 76px minmax(0, 1fr)');
+    expect(shell).toContain('.sidebar');
     expect(shell).toContain('@media (max-width: 820px)');
     expect(shell).toContain('@media (prefers-reduced-motion: reduce)');
     expect(header).toContain('admin-page-header');

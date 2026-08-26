@@ -72,6 +72,14 @@ describe('admin dashboard composition', () => {
     expect(kpiValue).not.toContain('Fraunces');
   });
 
+  it('keeps visible dashboard typography in the Golos admin system', () => {
+    const styles = readFileSync('app/(admin)/admin/_components/dashboard-view.module.css', 'utf8');
+    const title = styles.match(/\.title\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+
+    expect(title).toContain('font-family: var(--ev-font-body);');
+    expect(title).not.toMatch(/Fraunces|Georgia|serif/i);
+  });
+
   it('uses real status distribution data for the cancellations KPI', () => {
     const markup = renderToStaticMarkup(
       createElement(DashboardView, {
@@ -121,14 +129,16 @@ describe('admin dashboard composition', () => {
     expect(dashboard).not.toContain('searchPlaceholder');
     expect(dashboard).not.toContain('DashboardUser');
     expect(shell).not.toContain('w-[286px]');
-    expect(shell).toContain('className={styles.rail}');
+    expect(shell).toContain('className={styles.sidebar}');
   });
 
-  it('uses a narrow responsive shell rail with clone tooltips', () => {
+  it('uses a labelled responsive shell with mobile navigation', () => {
     const shellStyles = readFileSync('components/admin/admin-shell.module.css', 'utf8');
 
-    expect(shellStyles).toContain('grid-template-columns: 76px minmax(0, 1fr)');
-    expect(shellStyles).toContain('.railLink:hover .tooltip');
+    expect(shellStyles).toContain('.sidebar');
+    expect(shellStyles).toContain('.mobileNavigation');
+    expect(shellStyles).toContain('--admin-sidebar-width: clamp(210px, 15vw, 220px);');
+    expect(shellStyles).toContain('grid-template-columns: var(--admin-sidebar-width) minmax(0, 1fr);');
     expect(shellStyles).toContain('@media (max-width: 820px)');
   });
 

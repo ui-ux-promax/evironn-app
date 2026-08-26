@@ -19,14 +19,14 @@ const OAUTH_ERRORS: Record<string, string> = {
 const COPY = {
   login: {
     title: 'С возвращением',
-    subtitle: 'Войдите в аккаунт Ritm, чтобы продолжить покупки.',
+    subtitle: 'Войдите в аккаунт Evironn, чтобы продолжить покупки.',
     submit: 'Войти',
     foot: 'Ещё нет аккаунта?',
     footBtn: 'Зарегистрироваться',
   },
   register: {
     title: 'Создайте аккаунт',
-    subtitle: 'Присоединяйтесь к Ritm Club — это займёт минуту.',
+    subtitle: 'Присоединяйтесь к Evironn Club — это займёт минуту.',
     submit: 'Создать аккаунт',
     foot: 'Уже с нами?',
     footBtn: 'Войти',

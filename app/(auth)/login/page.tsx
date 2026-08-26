@@ -2,7 +2,7 @@ import { AuthVariantBController } from '@/components/evironn/auth/auth-variant-b
 import { safeCallbackUrl } from '@/lib/safe-redirect';
 import { readPending } from '@/lib/verification/pending-cookie';
 
-export const metadata = { title: 'Вход — Ritm' };
+export const metadata = { title: 'Вход — Evironn' };
 
 export default async function LoginPage({
   searchParams,

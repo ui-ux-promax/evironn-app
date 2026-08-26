@@ -5,7 +5,7 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cloudd3r.eu.cc';
 
 export function WelcomeEmail({ name }: { name?: string }) {
   return (
-    <EmailLayout preview="Добро пожаловать в Ritm">
+    <EmailLayout preview="Добро пожаловать в Evironn">
       <Text
         style={{
           color: '#2f8f66',
@@ -19,7 +19,7 @@ export function WelcomeEmail({ name }: { name?: string }) {
         Добро пожаловать
       </Text>
       <Heading style={{ color: '#171717', fontSize: 26, lineHeight: '32px', margin: '0 0 12px' }}>
-        {name ? `Рады видеть вас, ${name}!` : 'Рады видеть вас в Ritm!'}
+        {name ? `Рады видеть вас, ${name}!` : 'Рады видеть вас в Evironn!'}
       </Heading>
       <Text style={{ color: '#5f5a53', fontSize: 15, lineHeight: '23px', margin: '0 0 24px' }}>
         Почта подтверждена — аккаунт готов. Сохраняйте избранное, следите за новыми поступлениями и оформляйте заказы

@@ -16,9 +16,9 @@ export type SendResult = { ok: true; id: string } | { ok: false; error: string }
 
 function fromFor(kind: EmailKind): string {
   if (kind === 'newsletter') {
-    return process.env.EMAIL_FROM_NEWSLETTER ?? 'Ritm <hello@cloudd3r.eu.cc>';
+    return process.env.EMAIL_FROM_NEWSLETTER ?? 'Evironn <hello@cloudd3r.eu.cc>';
   }
-  return process.env.EMAIL_FROM_TRANSACTIONAL ?? 'Ritm <no-reply@cloudd3r.eu.cc>';
+  return process.env.EMAIL_FROM_TRANSACTIONAL ?? 'Evironn <no-reply@cloudd3r.eu.cc>';
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<SendResult> {

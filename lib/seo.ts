@@ -4,7 +4,7 @@ export const defaultSeoDescription =
   'Evironn: мебель для дома с выбором конфигурации, материалов и вариантов исполнения. Доставка по Москве и области.';
 export const catalogSeoDescription =
   'Каталог Evironn: мебель для гостиной, спальни, столовой и кабинета с фильтрами по категории, комнате и цене.';
-export const defaultOgImage = '/products/ritm-white-tee.png';
+export const defaultOgImage = '/assets/products/03-ivory-lounge-cutout.png';
 
 export function getSiteUrl(): URL {
   return new URL(process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'http://localhost:3000');

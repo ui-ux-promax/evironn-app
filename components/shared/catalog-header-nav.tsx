@@ -77,7 +77,7 @@ export function CatalogHeaderNav() {
         <Chip href="/catalog?gender=KIDS" expected={{ gender: 'KIDS' }}>
           Дети
         </Chip>
-        <Chip href="/catalog?brand=RITM" expected={{ brand: 'RITM' }}>
+        <Chip href="/catalog?brand=Evironn" expected={{ brand: 'Evironn' }}>
           Бренд
         </Chip>
       </div>

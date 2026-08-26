@@ -2,7 +2,7 @@ import { DemoDataTable } from '@/components/demo-admin/demo-data-table';
 import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
 import { DemoPanel } from '@/components/demo-admin/demo-panel';
 import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
-import { formatPrice } from '@/lib/format';
+import { formatDemoPrice } from '@/lib/demo-admin/format-price';
 
 const turntableLabels = { ready: 'Готов', partial: 'Частично', none: 'Нет' } as const;
 
@@ -30,7 +30,7 @@ export default function DemoCatalogPage() {
             category: product.category,
             rooms: product.rooms.join(', '),
             skus: product.skuCount,
-            price: formatPrice(product.priceFrom),
+            price: formatDemoPrice(product.priceFrom),
             stock: product.totalStock,
           }))}
         />
@@ -63,7 +63,7 @@ export default function DemoCatalogPage() {
           rows={demoAdminFixtures.catalog.skus.map((sku) => ({
             article: sku.articleNumber,
             combination: sku.combinationLabel,
-            price: formatPrice(sku.price),
+            price: formatDemoPrice(sku.price),
             stock: sku.stock,
             status: sku.active ? 'Активен' : 'Скрыт',
           }))}

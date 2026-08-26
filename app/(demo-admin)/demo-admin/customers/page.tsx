@@ -2,7 +2,7 @@ import { DemoDataTable } from '@/components/demo-admin/demo-data-table';
 import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
 import { DemoPanel } from '@/components/demo-admin/demo-panel';
 import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
-import { formatPrice } from '@/lib/format';
+import { formatDemoPrice } from '@/lib/demo-admin/format-price';
 
 export default function DemoCustomersPage() {
   return (
@@ -28,7 +28,7 @@ export default function DemoCustomersPage() {
             email: customer.email,
             role: customer.role === 'ADMIN' ? 'Администратор' : 'Клиент',
             orders: customer.orderCount,
-            spent: formatPrice(customer.totalSpent),
+            spent: formatDemoPrice(customer.totalSpent),
             registered: customer.registeredLabel,
           }))}
         />

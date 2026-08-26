@@ -6,7 +6,7 @@ import { DemoKpiGrid } from '@/components/demo-admin/demo-kpi-grid';
 import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
 import { DemoPanel } from '@/components/demo-admin/demo-panel';
 import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
-import { formatPrice } from '@/lib/format';
+import { formatDemoPrice } from '@/lib/demo-admin/format-price';
 
 export default function DemoDashboardPage() {
   const lowStock = demoAdminFixtures.catalog.skus.filter((sku) => sku.stock <= 3);
@@ -65,7 +65,7 @@ export default function DemoDashboardPage() {
             number: order.number,
             customer: order.customerName,
             status: order.status,
-            total: formatPrice(order.totalAmount),
+            total: formatDemoPrice(order.totalAmount),
           }))}
         />
       </DemoPanel>

@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma-client';
 import type { OrderStatus } from '@prisma/client';
 
-const TEST_EMAIL_DOMAIN = '@test.ritm.invalid';
+const TEST_EMAIL_DOMAIN = '@test.evironn.invalid';
 
 type OrderFixture = {
   daysAgo: number;

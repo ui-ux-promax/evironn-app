@@ -74,7 +74,7 @@ export function Hero() {
         />
 
         <div className="relative z-10 w-full max-w-[280px] px-6 pt-8 text-white sm:max-w-[340px] sm:pt-10 md:max-w-[680px] md:px-16 md:pt-0">
-          <h1 className="font-display text-[40px] font-bold leading-[1.05] text-white md:text-[64px]">Ritm.</h1>
+          <h1 className="font-display text-[40px] font-bold leading-[1.05] text-white md:text-[64px]">Evironn.</h1>
           <p className="mt-3 max-w-[560px] text-[14px] font-medium leading-[1.5] text-white/88 sm:text-[15px] sm:leading-[1.6] md:mt-4">
             Откройте широкий выбор актуальных вещей для повседневного гардероба. Подберите любимый комплект, который
             отражает ваш стиль и настроение.

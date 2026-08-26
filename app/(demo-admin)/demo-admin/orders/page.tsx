@@ -1,8 +1,9 @@
 import { DemoDataTable } from '@/components/demo-admin/demo-data-table';
 import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
 import { DemoPanel } from '@/components/demo-admin/demo-panel';
+import { DemoStatus } from '@/components/demo-admin/demo-status';
 import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
-import { formatPrice } from '@/lib/format';
+import { formatDemoPrice } from '@/lib/demo-admin/format-price';
 
 export default function DemoOrdersPage() {
   return (
@@ -28,10 +29,24 @@ export default function DemoOrdersPage() {
             customer: order.customerName,
             status: order.status,
             payment: order.paymentLabel,
-            total: formatPrice(order.totalAmount),
+            total: formatDemoPrice(order.totalAmount),
             created: order.createdLabel,
           }))}
         />
+      </DemoPanel>
+
+      <DemoPanel title="Статусы" note="Синтетическая классификация без действий">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {demoAdminFixtures.orders.map((order) => (
+            <div
+              key={order.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--admin-border)] px-3 py-2"
+            >
+              <span className="text-sm">{order.number}</span>
+              <DemoStatus status={order.status} />
+            </div>
+          ))}
+        </div>
       </DemoPanel>
 
       <DemoPanel title="Состав заказов" note="Товарные snapshots сохраняют мебельную конфигурацию и цену">
@@ -49,7 +64,7 @@ export default function DemoOrdersPage() {
               product: line.productName,
               article: line.articleNumber,
               quantity: line.quantity,
-              lineTotal: formatPrice(line.lineTotal),
+              lineTotal: formatDemoPrice(line.lineTotal),
             })),
           )}
         />

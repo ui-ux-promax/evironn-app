@@ -34,7 +34,7 @@ const TILES: Tile[] = [
     title: 'Футболки',
     subtitle: 'Плотная база на каждый день',
     span: 'col-span-2 row-span-2',
-    ariaLabel: 'Футболки RITM',
+    ariaLabel: 'Диваны Evironn',
   },
   {
     key: 'hoodies',
@@ -46,7 +46,7 @@ const TILES: Tile[] = [
     title: 'Худи и слои',
     subtitle: 'Мягкий футер, спокойный объем',
     span: 'col-span-2 row-span-1',
-    ariaLabel: 'Худи RITM',
+    ariaLabel: 'Кресла Evironn',
   },
   {
     key: 'limited',
@@ -58,7 +58,7 @@ const TILES: Tile[] = [
     title: 'Сезонный дроп',
     subtitle: '',
     span: 'col-span-1 row-span-1',
-    ariaLabel: 'Сезонный дроп RITM',
+    ariaLabel: 'Новая коллекция Evironn',
   },
   {
     key: 'outerwear',
@@ -70,7 +70,7 @@ const TILES: Tile[] = [
     title: 'Верхняя одежда',
     subtitle: 'Легкие куртки на межсезонье',
     span: 'col-span-1 row-span-1',
-    ariaLabel: 'Верхняя одежда RITM',
+    ariaLabel: 'Мебель Evironn',
   },
 ];
 

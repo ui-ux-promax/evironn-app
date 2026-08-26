@@ -19,7 +19,7 @@ const DESKTOP_DOUBLE_SIZES = '(max-width: 639px) 50vw, (max-width: 1240px) calc(
 const items: BentoItem[] = [
   {
     src: '/home/hero-slide-3.png',
-    alt: 'Мужской образ RITM в свободном силуэте',
+    alt: 'Кресло Evironn в спокойном интерьере',
     className: 'col-span-2 h-[220px] min-[640px]:col-start-1 min-[640px]:row-start-1 min-[640px]:h-auto',
     sizes: FIRST_CARD_SIZES,
     x: 22,
@@ -27,7 +27,7 @@ const items: BentoItem[] = [
   },
   {
     src: '/home/collection-rail.png',
-    alt: 'Рейл новой коллекции RITM',
+    alt: 'Коллекция мебели Evironn',
     className: 'h-[250px] min-[640px]:col-start-3 min-[640px]:row-start-1 min-[640px]:h-auto',
     sizes: DESKTOP_SINGLE_SIZES,
     x: -22,
@@ -35,7 +35,7 @@ const items: BentoItem[] = [
   },
   {
     src: '/home/coming-card.png',
-    alt: 'Женский образ RITM в стёганой куртке',
+    alt: 'Мебель Evironn в мягком свете',
     className: 'h-[250px] min-[640px]:col-start-4 min-[640px]:row-start-1 min-[640px]:row-span-2 min-[640px]:h-auto',
     sizes: DESKTOP_SINGLE_SIZES,
     x: 14,
@@ -43,7 +43,7 @@ const items: BentoItem[] = [
   },
   {
     src: '/home/blog-wardrobe.png',
-    alt: 'Детали базового гардероба RITM',
+    alt: 'Детали мебели Evironn',
     className: 'h-[250px] min-[640px]:col-start-1 min-[640px]:row-start-2 min-[640px]:row-span-2 min-[640px]:h-auto',
     sizes: DESKTOP_SINGLE_SIZES,
     x: -16,
@@ -51,7 +51,7 @@ const items: BentoItem[] = [
   },
   {
     src: '/home/blog-chic.png',
-    alt: 'Повседневный многослойный образ RITM',
+    alt: 'Мебель Evironn для повседневной жизни',
     className: 'h-[250px] min-[640px]:col-span-2 min-[640px]:col-start-2 min-[640px]:row-start-2 min-[640px]:h-auto',
     sizes: DESKTOP_DOUBLE_SIZES,
     x: 24,
@@ -59,7 +59,7 @@ const items: BentoItem[] = [
   },
   {
     src: '/home/season-collage.png',
-    alt: 'Фактура и крой сезонной коллекции RITM',
+    alt: 'Фактура и материалы коллекции Evironn',
     className: 'h-[250px] min-[640px]:col-span-2 min-[640px]:col-start-2 min-[640px]:row-start-3 min-[640px]:h-auto',
     sizes: DESKTOP_DOUBLE_SIZES,
     x: -20,
@@ -67,7 +67,7 @@ const items: BentoItem[] = [
   },
   {
     src: '/home/blog-arrival.png',
-    alt: 'Новый образ из коллекции RITM',
+    alt: 'Новая мебель из коллекции Evironn',
     className: 'h-[250px] min-[640px]:col-span-1 min-[640px]:col-start-4 min-[640px]:row-start-3 min-[640px]:h-auto',
     sizes: DESKTOP_SINGLE_SIZES,
     x: 18,

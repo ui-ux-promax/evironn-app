@@ -891,36 +891,46 @@ html body[data-scroll-locked] {
 
 /* ===== Synthetic demo-admin primitives; all rules stay inside the demo namespace. ===== */
 .demo-admin-shell {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
   min-height: 100vh;
   background: var(--admin-bg);
   color: var(--admin-on-bg);
 }
 
 .demo-admin-sidebar {
-  position: fixed;
-  inset: 0 auto 0 0;
+  position: sticky;
+  top: 0;
   z-index: 40;
   display: flex;
-  width: 286px;
+  width: auto;
   flex-direction: column;
-  gap: 14px;
-  overflow-y: auto;
-  padding: 28px 20px 22px;
+  align-items: center;
+  gap: 26px;
+  height: 100dvh;
+  overflow: visible;
+  padding: 20px 0;
   background: var(--admin-sidebar);
   color: var(--admin-on-primary);
 }
 
 .demo-admin-wordmark {
-  color: inherit;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--admin-surface);
+  color: var(--admin-sidebar);
   font-family: var(--font-fraunces), Georgia, serif;
-  font-size: 28px;
+  font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.02em;
   text-decoration: none;
 }
 
 .demo-admin-sidebar-caption {
-  margin: -8px 0 8px;
+  display: none;
   color: rgb(255 255 255 / 0.48);
   font-size: 12px;
   font-weight: 700;
@@ -946,20 +956,19 @@ html body[data-scroll-locked] {
   display: grid;
   flex: 1;
   align-content: start;
-  gap: 4px;
+  gap: 6px;
 }
 
 .demo-admin-nav-link,
 .demo-admin-store-link {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 12px;
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  flex: 0 0 auto;
   border-radius: 13px;
   color: rgb(255 255 255 / 0.64);
-  font-size: 14px;
-  font-weight: 700;
-  padding: 0 13px;
   text-decoration: none;
   transition:
     background-color 160ms ease,
@@ -973,17 +982,53 @@ html body[data-scroll-locked] {
   color: #fff;
 }
 
+.demo-admin-nav-label {
+  display: none;
+}
+
+.demo-admin-tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  z-index: 40;
+  padding: 6px 11px;
+  color: var(--admin-surface);
+  background: hsl(30 8% 22%);
+  border-radius: 9px;
+  box-shadow: var(--admin-shadow-tight);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.demo-admin-nav-link:hover .demo-admin-tooltip,
+.demo-admin-nav-link:focus-visible .demo-admin-tooltip,
+.demo-admin-store-link:hover .demo-admin-tooltip,
+.demo-admin-store-link:focus-visible .demo-admin-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.demo-admin-nav-link:focus-visible,
+.demo-admin-store-link:focus-visible,
+.demo-admin-wordmark:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--admin-sidebar),
+    0 0 0 5px rgb(255 255 255 / 40%);
+}
+
 .demo-admin-store-link {
   margin-top: auto;
 }
 
 .demo-admin-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 16px;
-  background: rgb(255 255 255 / 0.08);
-  padding: 12px;
+  display: grid;
+  place-items: center;
 }
 
 .demo-admin-avatar {
@@ -1000,10 +1045,7 @@ html body[data-scroll-locked] {
 }
 
 .demo-admin-user-copy {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-  gap: 3px;
+  display: none;
 }
 
 .demo-admin-user-copy strong,
@@ -1024,8 +1066,9 @@ html body[data-scroll-locked] {
 
 .demo-admin-main {
   min-height: 100vh;
-  margin-left: 286px;
-  padding: 32px 28px 52px;
+  min-width: 0;
+  margin-left: 0;
+  padding: clamp(26px, 3.4vw, 44px) 0 clamp(48px, 6vw, 76px);
 }
 
 .demo-admin-frame {
@@ -1306,7 +1349,11 @@ html body[data-scroll-locked] {
   line-height: 1;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 820px) {
+  .demo-admin-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .demo-admin-sidebar {
     display: none;
   }
@@ -1397,7 +1444,213 @@ html body[data-scroll-locked] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .demo-admin-nav-link {
+  .demo-admin-nav-link,
+  .demo-admin-tooltip,
+  .demo-admin-tab {
+    transition: none;
+  }
+}
+
+/* ===== Shared Evironn admin presentation pass =====
+   These semantic hooks keep protected and synthetic routes on the same clone-derived
+   hierarchy without coupling visual primitives to reads, actions, or fixture data. */
+.admin-root .admin-page-header {
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.admin-root .admin-page-header__body {
+  min-width: 0;
+}
+
+.admin-root .admin-eyebrow,
+.admin-root .admin-page-header__body > div:first-child {
+  color: var(--admin-on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.admin-root .admin-page-header__title {
+  margin-top: 10px;
+  color: var(--admin-on-surface);
+  font-family: var(--ev-font-display), Georgia, serif;
+  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.admin-root .admin-page-header__subtitle {
+  margin-top: 10px;
+  color: var(--admin-on-surface-variant);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.admin-root .admin-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-root .admin-header-search {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-root .admin-header-search:focus-within,
+.admin-root .admin-input:focus-visible,
+.admin-root .admin-select-trigger:focus-visible,
+.admin-root .admin-button:focus-visible,
+.admin-root .admin-switch:focus-visible,
+.admin-root .admin-table a:focus-visible,
+.admin-root .admin-table button:focus-visible {
+  outline: none;
+  box-shadow: var(--admin-focus-ring, 0 0 0 3px color-mix(in srgb, var(--admin-primary) 28%, transparent));
+}
+
+.admin-root .admin-panel {
+  border-radius: 24px;
+  box-shadow: var(--admin-shadow-tight);
+}
+
+.admin-root .admin-panel__head {
+  margin-bottom: 18px;
+}
+
+.admin-root .admin-panel__title {
+  color: var(--admin-on-surface);
+  font-family: var(--ev-font-display), Georgia, serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.admin-root .admin-panel__note {
+  color: var(--admin-on-surface-variant);
+  font-size: 12px;
+}
+
+.admin-root .admin-kpi-card {
+  min-height: 166px;
+  border-radius: 24px;
+}
+
+.admin-root .admin-kpi-card__value {
+  color: inherit;
+  font-family: var(--ev-font-display), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
+
+.admin-root .admin-control {
+  min-height: 36px;
+  border-radius: 10px;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-root .admin-button {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-root .admin-input,
+.admin-root .admin-select-trigger {
+  border-color: var(--admin-outline-variant);
+  background: var(--admin-surface);
+  color: var(--admin-on-surface);
+  font-size: 13px;
+}
+
+.admin-root .admin-input:hover,
+.admin-root .admin-select-trigger:hover {
+  border-color: var(--admin-outline);
+}
+
+.admin-root .admin-select-content {
+  border-radius: 10px;
+  box-shadow: var(--admin-shadow-tight);
+}
+
+.admin-root .admin-select-item {
+  min-height: 36px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.admin-root .admin-status-badge {
+  min-height: 29px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-root .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--admin-on-surface);
+  font-size: 13px;
+}
+
+.admin-root .admin-table__head-cell {
+  height: 40px;
+  padding: 0 14px 11px;
+  color: var(--admin-on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-root .admin-table__row {
+  border-bottom: 1px solid var(--admin-outline-variant);
+  transition: background-color 180ms ease;
+}
+
+.admin-root .admin-table__row:hover {
+  background: var(--admin-surface-low);
+}
+
+.admin-root .admin-table__cell {
+  padding: 15px 14px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.admin-root .admin-switch {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+@media (max-width: 760px) {
+  .admin-root .admin-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-root .admin-page-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-root .admin-header-search,
+  .admin-root .admin-control,
+  .admin-root .admin-table__row,
+  .admin-root .admin-switch {
     transition: none;
   }
 }

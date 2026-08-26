@@ -43,7 +43,7 @@ export function AdminToneBadge({ tone, className, children, ...props }: AdminTon
   return (
     <span
       className={cn(
-        'inline-flex min-h-[29px] w-fit items-center rounded-full border px-[10px] text-[12px] font-bold leading-none',
+        'admin-status-badge inline-flex min-h-[29px] w-fit items-center rounded-full border px-[10px] text-[12px] font-bold leading-none',
         TONE_CLASS[tone],
         className,
       )}

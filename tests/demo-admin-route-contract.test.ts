@@ -36,10 +36,11 @@ describe('demo admin route contract', () => {
     expect(source).toContain('demo-admin-sidebar');
     expect(source).toContain('demo-admin-main');
     expect(source).toContain('demo-admin-tabbar');
-    expect(styles).toContain('width: 286px');
-    expect(styles).toContain('margin-left: 286px');
+    expect(source).toContain('demo-admin-tooltip');
+    expect(styles).toContain('grid-template-columns: 76px minmax(0, 1fr)');
+    expect(styles).toContain('margin-left: 0');
     expect(styles).toContain('inset: auto 12px 12px');
-    expect(styles).not.toContain('lg:grid-cols-[230px_minmax(0,1fr)]');
+    expect(styles).toContain('@media (max-width: 820px)');
   });
 
   it('keeps the dashboard nav item exact while nested items use prefix matching', () => {

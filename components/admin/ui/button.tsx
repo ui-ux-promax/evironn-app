@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 // Admin-кнопка: токены через CSS-переменные .admin-root, dark: варианты НЕ используются
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-[7px] whitespace-nowrap rounded-[10px] text-xs font-bold transition-[background-color,color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2 focus-visible:ring-offset-admin-surface disabled:pointer-events-none disabled:opacity-50',
+  'admin-control admin-button inline-flex items-center justify-center gap-[7px] whitespace-nowrap rounded-[10px] text-xs font-bold transition-[background-color,color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2 focus-visible:ring-offset-admin-surface disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {

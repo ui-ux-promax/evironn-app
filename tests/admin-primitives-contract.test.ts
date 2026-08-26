@@ -64,4 +64,28 @@ describe('admin primitive contract', () => {
     );
     expect(source('app/globals.css')).toContain('.admin-root');
   });
+
+  it('pins the shared presentation pass to the clone shell and primitive geometry', () => {
+    const shell = source('components/admin/admin-shell.module.css');
+    const header = source('components/admin/admin-page-header.tsx');
+    const panel = source('components/admin/admin-panel.tsx');
+    const kpi = source('components/admin/admin-kpi-card.tsx');
+    const button = source('components/admin/ui/button.tsx');
+    const input = source('components/admin/ui/input.tsx');
+    const table = source('components/admin/ui/table.tsx');
+    const styles = source('app/globals.css');
+
+    expect(shell).toContain('grid-template-columns: 76px minmax(0, 1fr)');
+    expect(shell).toContain('@media (max-width: 820px)');
+    expect(shell).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(header).toContain('admin-page-header');
+    expect(panel).toContain('admin-panel');
+    expect(kpi).toContain('admin-kpi-card');
+    expect(button).toContain('admin-control');
+    expect(input).toContain('admin-control');
+    expect(table).toContain('admin-table');
+    expect(styles).toContain('.admin-root .admin-page-header');
+    expect(styles).toContain('.admin-root .admin-panel');
+    expect(styles).toContain('.admin-root .admin-table');
+  });
 });

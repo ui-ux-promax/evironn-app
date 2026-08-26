@@ -29,10 +29,8 @@ export function DemoAdminShell({ children }: { children: ReactNode }) {
     <div className="demo-admin-shell">
       <aside className="demo-admin-sidebar">
         <Link href="/demo-admin" className="demo-admin-wordmark" aria-label="Evironn demo admin">
-          Evironn
+          E
         </Link>
-        <p className="demo-admin-sidebar-caption">демо-админка магазина</p>
-        <DemoReadonlyBanner />
         <nav className="demo-admin-rail" aria-label="Разделы демо-админки">
           {DEMO_ADMIN_NAV.map((item) => {
             const active = isDemoNavActive(item, pathname);
@@ -44,18 +42,24 @@ export function DemoAdminShell({ children }: { children: ReactNode }) {
                 className={classes('demo-admin-nav-link', active && 'is-active')}
               >
                 <DemoIcon name={item.icon} filled={active} />
-                <span>{item.label}</span>
+                <span className="demo-admin-nav-label">{item.label}</span>
+                <span className="demo-admin-tooltip" role="tooltip">
+                  {item.label}
+                </span>
               </Link>
             );
           })}
         </nav>
         <Link href="/" className="demo-admin-store-link">
           <DemoIcon name="storefront" />
-          <span>Открыть магазин</span>
+          <span className="demo-admin-nav-label">Открыть магазин</span>
+          <span className="demo-admin-tooltip" role="tooltip">
+            Открыть магазин
+          </span>
         </Link>
         <div className="demo-admin-user">
           <span className="demo-admin-avatar">{getInitials(demoUser.name)}</span>
-          <span className="demo-admin-user-copy">
+          <span className="demo-admin-user-copy" aria-hidden="true">
             <strong>{demoUser.name}</strong>
             <small>{demoUser.email}</small>
           </span>

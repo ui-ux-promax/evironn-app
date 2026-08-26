@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 describe('demo admin fixtures', () => {
   it('exports deterministic furniture fixtures with complete domain sections', async () => {
-    const module = await import('@/lib/demo-admin/fixtures');
-    const a = module.demoAdminFixtures;
-    const b = module.demoAdminFixtures;
+    const fixturesModule = await import('@/lib/demo-admin/fixtures');
+    const a = fixturesModule.demoAdminFixtures;
+    const b = fixturesModule.demoAdminFixtures;
 
     expect(a).toBeDefined();
     expect(a).toEqual(b);

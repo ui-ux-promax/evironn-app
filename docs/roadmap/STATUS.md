@@ -81,11 +81,20 @@ Preserve these pre-existing untracked Phase 2 plans without modification or clea
 - Initial Vercel loading performance remains an explicitly approved Phase 6 hardening item. Optional real YooKassa sandbox smoke remains governed by ADR-020 and does not block Phase 5.
 - Any newly discovered debt must be added here or to the 5D handoff with an owner and disposition. Phase 5 functional/security debt must be fixed in 5D; moving it to Phase 6 requires explicit user approval and a recorded reason.
 
+## Phase 5D.8 local closeout
+
+- Tasks 5D.1–5D.7 and Boundaries A–C are complete. Boundary C exact range `2c5c982..188fb35` was accepted by fresh functional and security re-reviews at Critical 0 / Important 0 / Minor 0.
+- Task 5D.6 evidence: five namespaced serial browser journeys passed with retries disabled; owned COD cancellation/stale-tab invariants and cleanup probes passed.
+- Task 5D.7 evidence: 12 representative templates captured at `1440x900` and `390x844` (24 PNGs); all overflow probes were false, all cleanup probes were zero, and the focused visual/render contract passed 31/31. Six known hydration summaries are constrained by a narrow route/viewport allowlist; all other console-error observations are required to be empty.
+- Presence-only Cloudinary preflight found `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` absent. `npx prisma validate` passed after loading only the existing local database variable names into the process; no values were printed and no Prisma mutation ran.
+- Closeout sequence passed locally: `npm run format`; `npm run gate` (223 files / 1360 tests, 0 lint errors and 56 baseline warnings); `npm run build`; and `npm run e2e -- e2e/admin-phase-5.spec.ts e2e/demo-admin.spec.ts --workers=1 --retries=0` (10/10).
+- The first gate attempt exposed pre-existing contract drift in the rebranded Phase 3 probe and Phase 4 migration bytes. The closeout restores the exact additive migration bytes and updates the Phase 3 contract assertion to the current `@test.evironn.invalid` seed domain; focused contract evidence is 16/16.
+- Local state is ready for user desktop/mobile visual acceptance. Push, Vercel Preview, pull request, merge, branch deletion, and Phase 6 work remain unauthorized and are not performed.
+
 ## Next action
 
-1. Prepare a bounded 5D executable plan from the approved master plan and `docs/superpowers/specs/2026-08-26-phase-5d-planning-brief.md`.
-2. Use one fresh isolated Sol Medium planner and one fresh isolated Sol Medium plan reviewer; implementation waits for user approval of the reviewed plan.
-3. Remain on `phase/05-admin-demo`. Do not push, open a PR, merge, or run the consolidated gate during planning.
+1. User reviews the local protected `/admin` and public `/demo-admin` desktop/mobile visual acceptance evidence.
+2. After explicit user acceptance, authorize the separate push/Preview/PR workflow; do not merge without explicit authorization.
 
 Database note: `.env.local` contains the expected application database variable names. The earlier 5B inventory gap came from a standalone process that did not load `.env.local`; it was not evidence that Vercel or the project lacked database variables. Never print their values.
 

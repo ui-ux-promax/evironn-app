@@ -22,11 +22,13 @@
 ### Task 1: Admin save-envelope contract and strict validation projection
 
 **Files:**
+
 - Modify: `app/actions/admin/products.ts`
 - Modify: `lib/admin/catalog.ts` only if the draft needs a serializable retained-inactive projection
 - Test: `tests/admin-products-action.test.ts`
 
 **Interfaces:**
+
 - Consumes: `furnitureProductSchema`, current canonical SKU selections/reference counts, `AdminActionResult`.
 - Produces: an internal admin input parser for `{ product: unknown; detachOptionGroupIds?: string[]; detachOptionValueIds?: string[] }` and a strict normalized product projection passed to `furnitureProductSchema` before any transaction write.
 
@@ -54,6 +56,7 @@ This amendment is part of the single 5B.6 commit; do not create a separate produ
 ### Task 2: Rule V transaction integration and form transport
 
 **Files:**
+
 - Modify: `app/actions/admin/products.ts`
 - Modify: `app/(admin)/admin/catalog/products/_components/product-form.tsx`
 - Modify: `app/(admin)/admin/catalog/products/new/page.tsx`
@@ -61,6 +64,7 @@ This amendment is part of the single 5B.6 commit; do not create a separate produ
 - Test: `tests/admin-products-action.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 admin envelope/projection, `buildSkuMatrix`, real room props, existing product action result.
 - Produces: `saveFurnitureProduct(input: unknown)`, `setProductActive(input: unknown)`, and `deleteFurnitureProduct(input: unknown)` with the approved 5B.6 output types and explicit Rule V behavior.
 

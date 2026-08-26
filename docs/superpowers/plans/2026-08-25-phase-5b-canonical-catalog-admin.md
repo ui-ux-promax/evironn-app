@@ -2,17 +2,17 @@
 
 Target file: `docs/superpowers/plans/2026-08-25-phase-5b-canonical-catalog-admin.md`
 
-| Field | Value |
-| --- | --- |
-| Repository | `D:\Projects\evironn` (production, write target) |
-| Branch | `phase/05-admin-demo` |
-| Delivery base | `da5e87e` (`origin/dev`, read without fetch) |
-| Accepted predecessor | `C5A_ACCEPTED = 42ec908` (`feat(admin): align dashboard with Evironn shell`) |
-| Technical source | `D:\Projects\fashion-shop` (read-only, symbol/file-level patterns only) |
-| Visual source | `D:\Новая папка (2)\evironn-clone` (read-only, presentation reference only) |
-| Master plan | `docs/superpowers/plans/2026-08-20-phase-5-admin-demo.md`, Stream 5B, tasks 5B.1-5B.11 |
-| Scope | Canonical catalog reads, Cloudinary ownership, option groups/values, rooms, SKU matrix, canonical product/SKU actions, ProductMedia/SkuMedia, category turntable binding, guarded stock console, legacy admin-write retirement, functional checkpoint |
-| Out of scope | Prisma schema changes, package scripts, CI, env names, providers, storefront routes, Phase 5C, Phase 5D, Phase 6, push, PR, merge, full gate/build/E2E |
+| Field                | Value                                                                                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository           | `D:\Projects\evironn` (production, write target)                                                                                                                                                                                                      |
+| Branch               | `phase/05-admin-demo`                                                                                                                                                                                                                                 |
+| Delivery base        | `da5e87e` (`origin/dev`, read without fetch)                                                                                                                                                                                                          |
+| Accepted predecessor | `C5A_ACCEPTED = 42ec908` (`feat(admin): align dashboard with Evironn shell`)                                                                                                                                                                          |
+| Technical source     | `D:\Projects\fashion-shop` (read-only, symbol/file-level patterns only)                                                                                                                                                                               |
+| Visual source        | `D:\Новая папка (2)\evironn-clone` (read-only, presentation reference only)                                                                                                                                                                           |
+| Master plan          | `docs/superpowers/plans/2026-08-20-phase-5-admin-demo.md`, Stream 5B, tasks 5B.1-5B.11                                                                                                                                                                |
+| Scope                | Canonical catalog reads, Cloudinary ownership, option groups/values, rooms, SKU matrix, canonical product/SKU actions, ProductMedia/SkuMedia, category turntable binding, guarded stock console, legacy admin-write retirement, functional checkpoint |
+| Out of scope         | Prisma schema changes, package scripts, CI, env names, providers, storefront routes, Phase 5C, Phase 5D, Phase 6, push, PR, merge, full gate/build/E2E                                                                                                |
 
 ## 0. Source-parity summary
 
@@ -197,9 +197,7 @@ export function getAdminProductDraft(productId: string): Promise<AdminProductDra
 export function listAdminOptionGroupsForCatalog(): Promise<AdminOptionGroupRow[]>;
 export function listAdminRoomsForCatalog(): Promise<AdminRoomRow[]>;
 export function listAdminCategoriesForCatalog(): Promise<AdminCategoryRow[]>;
-export function listAdminSkuStock(
-  params: AdminSkuStockListParams,
-): Promise<AdminPagedResult<AdminSkuStockRow>>;
+export function listAdminSkuStock(params: AdminSkuStockListParams): Promise<AdminPagedResult<AdminSkuStockRow>>;
 ```
 
 Rules: `lib/admin/catalog.ts` performs reads only, never calls guards (callers guard), never returns Prisma model instances, and always feeds `page`/`limit` through `lib/admin/pagination.ts`. `getAdminProductDraft(...).values` must satisfy `furnitureProductSchema.safeParse(...).success === true`; identity fields live in `identity`, never inside `values`. All six functions above are implemented in 5B.1 so later tasks consume a frozen contract; `listAdminSkuStock` is consumed by 5B.9, `getAdminProductDraft` by 5B.6, `listAdminOptionGroupsForCatalog`/`listAdminRoomsForCatalog` by 5B.3/5B.4/5B.6, `listAdminCategoriesForCatalog` by 5B.8.
@@ -217,10 +215,10 @@ export const EVIRONN_MEDIA_FOLDERS = [
 export type EvironnMediaFolder = (typeof EVIRONN_MEDIA_FOLDERS)[number];
 export const LEGACY_MEDIA_PREFIX = 'ritm/';
 
-export function isSafeMediaPath(value: string): boolean;          // rejects '', whitespace-only, leading '/', '..', '//', '\\', control chars
+export function isSafeMediaPath(value: string): boolean; // rejects '', whitespace-only, leading '/', '..', '//', '\\', control chars
 export function isEvironnMediaFolder(value: string): value is EvironnMediaFolder;
-export function isEvironnPublicId(value: string): boolean;        // safe path AND starts with `${folder}/` for one allowed folder
-export function isLegacyPublicId(value: string): boolean;         // safe path AND startsWith LEGACY_MEDIA_PREFIX
+export function isEvironnPublicId(value: string): boolean; // safe path AND starts with `${folder}/` for one allowed folder
+export function isLegacyPublicId(value: string): boolean; // safe path AND startsWith LEGACY_MEDIA_PREFIX
 export function assertSignableFolder(value: string): EvironnMediaFolder; // throws on non-allowlisted folder
 ```
 
@@ -292,7 +290,7 @@ Stock semantics: `SkuMatrixRow.stock` carries the persisted value for `state ===
 
 ```ts
 export type AdminMediaInput = {
-  id: string | null;                 // existing row id when editing
+  id: string | null; // existing row id when editing
   kind: 'IMAGE' | 'TURN_TABLE_VIDEO' | 'TURN_TABLE_POSTER' | 'TURN_TABLE_FALLBACK';
   url: string;
   publicId: string | null;
@@ -311,19 +309,19 @@ Ownership rule: a `publicId` that is new or changed for its row must satisfy `is
 
 ## 3. Gap resolution map (evidence bundle, "5B task gaps")
 
-| Gap | Resolution | Owning task |
-| --- | --- | --- |
-| 1 no canonical read module | `lib/admin/catalog.ts` per 2.2 with `incomplete-zero-sku` flag; list surface cut over, edit surface deferred to 5B.6 per 3.1 rule A | 5B.1 |
-| 2 no folder module / ownership | `lib/cloudinary/folders.ts` + sign allowlist + delete ownership resolver | 5B.2 |
-| 3 no option DTO/action/result | `lib/admin/action-result.ts`, `services/dto/option-group.dto.ts`, `app/actions/admin/option-groups.ts` | 5B.3 |
-| 4 Room CRUD missing | `services/dto/room.dto.ts`, `app/actions/admin/rooms.ts`, rooms routes, product-form assignment control (unrendered until 5B.6) | 5B.4 |
-| 5 legacy-only matrix | `lib/admin/sku-matrix.ts` + client matrix component (mounted in 5B.6) | 5B.5 |
-| 6 legacy product write path | canonical single-transaction write with fixed ordering, migration-on-save, reference-aware delete policy (rule R) and split stock authority (rule S) | 5B.6 |
-| 7 no canonical media persistence | in-transaction media write + post-commit destroy | 5B.7 |
-| 8 no turntable binding action | `setCategoryTurntable` with typed conflict/holder result | 5B.8 |
-| 9 no stock console | `setSkuStock` with expected-current guard; sole existing-SKU stock mutation path | 5B.9 |
-| 10 legacy writes remain | static scan, importer enumeration, bounded removal, named exemption preserved | 5B.10 |
-| 11 no functional checkpoint | desktop/mobile functional pass, visual debt log, consolidated focused batch, durable handoff | 5B.11 |
+| Gap                              | Resolution                                                                                                                                           | Owning task |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1 no canonical read module       | `lib/admin/catalog.ts` per 2.2 with `incomplete-zero-sku` flag; list surface cut over, edit surface deferred to 5B.6 per 3.1 rule A                  | 5B.1        |
+| 2 no folder module / ownership   | `lib/cloudinary/folders.ts` + sign allowlist + delete ownership resolver                                                                             | 5B.2        |
+| 3 no option DTO/action/result    | `lib/admin/action-result.ts`, `services/dto/option-group.dto.ts`, `app/actions/admin/option-groups.ts`                                               | 5B.3        |
+| 4 Room CRUD missing              | `services/dto/room.dto.ts`, `app/actions/admin/rooms.ts`, rooms routes, product-form assignment control (unrendered until 5B.6)                      | 5B.4        |
+| 5 legacy-only matrix             | `lib/admin/sku-matrix.ts` + client matrix component (mounted in 5B.6)                                                                                | 5B.5        |
+| 6 legacy product write path      | canonical single-transaction write with fixed ordering, migration-on-save, reference-aware delete policy (rule R) and split stock authority (rule S) | 5B.6        |
+| 7 no canonical media persistence | in-transaction media write + post-commit destroy                                                                                                     | 5B.7        |
+| 8 no turntable binding action    | `setCategoryTurntable` with typed conflict/holder result                                                                                             | 5B.8        |
+| 9 no stock console               | `setSkuStock` with expected-current guard; sole existing-SKU stock mutation path                                                                     | 5B.9        |
+| 10 legacy writes remain          | static scan, importer enumeration, bounded removal, named exemption preserved                                                                        | 5B.10       |
+| 11 no functional checkpoint      | desktop/mobile functional pass, visual debt log, consolidated focused batch, durable handoff                                                         | 5B.11       |
 
 ### 3.1 Binding decision rules (resolve the four review blockers; no other reading is permitted)
 
@@ -353,9 +351,9 @@ Ownership rule: a `publicId` that is new or changed for its row must satisfy `is
 
 ```ts
 type ProductReferenceCounts = {
-  referencedSkuCount: number;           // Sku rows of this product with >= 1 CartItem or >= 1 OrderItem
+  referencedSkuCount: number; // Sku rows of this product with >= 1 CartItem or >= 1 OrderItem
   referencedLegacyVariantCount: number; // legacy ProductVariant rows of this product with >= 1 CartItem or >= 1 OrderItem via productVariantId
-  referencedWishlistCount: number;      // WishlistItem rows pointing at this product or its SKUs, when such a relation exists
+  referencedWishlistCount: number; // WishlistItem rows pointing at this product or its SKUs, when such a relation exists
 };
 ```
 
@@ -413,7 +411,8 @@ export type MediaDeleteDecision =
 export function resolveMediaDeleteDecision(publicId: string): Promise<MediaDeleteDecision>;
 ```
 
-  The resolver checks, in order: `isSafeMediaPath`, `isEvironnPublicId`, then exact-value existence in `Category.coverImagePublicId`, `ProductMedia.publicId`, `SkuMedia.publicId` and any legacy public-ID column confirmed to exist.
+The resolver checks, in order: `isSafeMediaPath`, `isEvironnPublicId`, then exact-value existence in `Category.coverImagePublicId`, `ProductMedia.publicId`, `SkuMedia.publicId` and any legacy public-ID column confirmed to exist.
+
 - **Write ordering**: sign route: `requireAdminApi()` -> config presence check -> parse body -> `assertSignableFolder` -> signature. Delete route: `requireAdminApi()` -> config presence check -> parse body -> `resolveMediaDeleteDecision` -> idempotent destroy -> typed response. Refusals use the existing error envelope with no secret material.
 - **RED**: `npm test -- tests/cloudinary-folders.test.ts tests/admin-media-routes.test.ts` (fails). Tests assert the exact five folders, `LEGACY_MEDIA_PREFIX`, traversal/leading-slash/empty-segment rejection, `ritm/*` sign refusal, Evironn-ID delete acceptance, database-referenced legacy delete acceptance, foreign-ID delete refusal, guard-before-config-before-body ordering, and absence of secret values in responses.
 - **GREEN**: `npm test -- tests/cloudinary-folders.test.ts tests/admin-media-routes.test.ts tests/media-sign-route.test.ts tests/media-delete-route.test.ts tests/admin-media.test.ts tests/categories-action.test.ts`; `npm run typecheck`; prettier check on touched files; `git diff --check`.
@@ -433,10 +432,18 @@ export function resolveMediaDeleteDecision(publicId: string): Promise<MediaDelet
 ```ts
 // services/dto/option-group.dto.ts
 export const optionValueSchema: z.ZodType<{
-  id?: string; name: string; slug: string; swatchHex: string | null; sortOrder: number;
+  id?: string;
+  name: string;
+  slug: string;
+  swatchHex: string | null;
+  sortOrder: number;
 }>;
 export const optionGroupSchema: z.ZodType<{
-  id?: string; name: string; slug: string; sortOrder: number; values: OptionValueValues[];
+  id?: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+  values: OptionValueValues[];
 }>;
 export type OptionGroupValues = z.infer<typeof optionGroupSchema>;
 
@@ -446,7 +453,8 @@ export async function deleteOptionGroup(input: unknown): Promise<AdminActionResu
 export async function reorderOptionGroups(input: unknown): Promise<AdminActionResult<null>>;
 ```
 
-  DTO rules: trimmed non-empty names, kebab slugs unique within the payload, optional `swatchHex` as `#rrggbb`, non-negative integer `sortOrder`, at least one value per group.
+DTO rules: trimmed non-empty names, kebab slugs unique within the payload, optional `swatchHex` as `#rrggbb`, non-negative integer `sortOrder`, at least one value per group.
+
 - **Write ordering**: guard -> parse -> uniqueness precheck (`OptionGroup.slug`, `(optionGroupId, slug)`) -> `$transaction`: upsert group scalars -> delete removed values only when unreferenced by `ProductOptionValue`/`SkuOptionValue` -> update kept values -> create new values -> normalize `sortOrder`. Deletion refuses with `OPTION_GROUP_IN_USE` / `OPTION_VALUE_IN_USE` plus `details.referencedBy` counts. Revalidate `/admin/catalog/options` and `/admin/catalog/products`.
 - **Scope note (rule V)**: this task owns **global** option-group and option-value deletion, which stays strict - any `ProductOptionValue` or `SkuOptionValue` reference refuses, because the schema FKs are restrictive. The weaker per-product detach rule lives only in 5B.6 and must not be copied here.
 - **RED**: `npm test -- tests/option-group-dto.test.ts tests/admin-option-groups.test.ts`.
@@ -577,7 +585,8 @@ export async function setCategoryTurntable(
 ): Promise<AdminActionResult<{ categoryId: string; productId: string | null }>>;
 ```
 
-  Zod input `{ categoryId: string; productId: string | null }`; `null` performs an explicit unbind.
+Zod input `{ categoryId: string; productId: string | null }`; `null` performs an explicit unbind.
+
 - **Write ordering**: guard -> parse -> load category and product -> when binding, verify the product owns exactly one `TURN_TABLE_VIDEO`, one `TURN_TABLE_POSTER` and one `TURN_TABLE_FALLBACK` (`TURNTABLE_MEDIA_REQUIRED` otherwise) -> check the unique FK: if another category already holds the product, refuse `TURNTABLE_BINDING_CONFLICT` with `details.holderCategoryId`, `details.holderCategoryName`, `details.holderCategorySlug` -> `$transaction` single `Category.update` of `turntableProductId` -> revalidate `/admin/catalog/categories` and `/admin/catalog/categories/${categoryId}/edit`.
 - **RED**: `npm test -- tests/admin-categories-turntable.test.ts`.
 - **GREEN**: `npm test -- tests/admin-categories-turntable.test.ts tests/categories-action.test.ts tests/category-dto.test.ts tests/admin-products-action.test.ts`; typecheck; prettier; `git diff --check`.
@@ -593,12 +602,11 @@ export async function setCategoryTurntable(
 - **Interfaces**:
 
 ```ts
-export async function setSkuStock(
-  input: unknown,
-): Promise<AdminActionResult<{ skuId: string; stock: number }>>;
+export async function setSkuStock(input: unknown): Promise<AdminActionResult<{ skuId: string; stock: number }>>;
 ```
 
-  Zod: `skuId` non-empty string, `expectedStock` integer `>= 0`, `nextStock` integer `>= 0`.
+Zod: `skuId` non-empty string, `expectedStock` integer `>= 0`, `nextStock` integer `>= 0`.
+
 - **Write ordering**: guard -> parse -> `prisma.sku.updateMany({ where: { id: skuId, stock: expectedStock }, data: { stock: nextStock } })` -> when `count === 0`, read the current row and return `STALE_VALUE` with `details.currentStock` (or `NOT_FOUND` when the SKU is absent) -> revalidate `/admin/catalog/stock` and `/admin/catalog/products`. No order, payment, cart, wishlist or snapshot write. No `Product.salesCount` write.
 - **Authority statement (rule S)**: `setSkuStock` is the only path in 5B that mutates `Sku.stock` on an existing SKU. `saveFurnitureProduct` sets stock only when creating a new SKU row.
 - **RED**: `npm test -- tests/admin-stock-action.test.ts`.
@@ -642,7 +650,8 @@ npm test -- tests/admin-catalog-read.test.ts tests/cloudinary-folders.test.ts te
 npm run typecheck
 ```
 
-  Plus prettier check on all files changed in 5B and `git diff --check`. No gate, no build, no E2E.
+Plus prettier check on all files changed in 5B and `git diff --check`. No gate, no build, no E2E.
+
 - **Closeout record**: per-task commit SHAs, checkpoint SHAs (`C5B_MEDIA`, `C5B_CANONICAL`, `C5B_FINAL`), batch result, legacy inventory, `WishlistItem` reference finding from rule R, 5D visual-debt list, and 5C carry-over items (`cancelOrderByAdmin` exemption until 5C.3, `lib/admin/analytics.ts` canonical aggregates).
 - **Commit**: `docs(phase-5b): record 5B functional checkpoint evidence`.
 - **Review checkpoint 3** follows this commit (see 5).
@@ -673,12 +682,12 @@ No paid review for the mechanical DTO/UI tasks 5B.1, 5B.3, 5B.4, 5B.5, 5B.8 and 
 
 Four Important review findings were resolved in place; scope, task count and checkpoint count are unchanged.
 
-| Finding | Correction |
-| --- | --- |
-| 5B.1 interim product read/form contract | Rule A in 3.1, the 5B.1 "explicitly not touched" list, the list-only file scope, and the corrected 5B.1 handoff wording; the edit/new cutover moved into the single 5B.6 commit, with 5B.4 optional props and the unwired 5B.5 component covered by the same rule; checkpoint 1 and 2 focus updated. |
+| Finding                                                      | Correction                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 5B.1 interim product read/form contract                      | Rule A in 3.1, the 5B.1 "explicitly not touched" list, the list-only file scope, and the corrected 5B.1 handoff wording; the edit/new cutover moved into the single 5B.6 commit, with 5B.4 optional props and the unwired 5B.5 component covered by the same rule; checkpoint 1 and 2 focus updated.                                             |
 | 5B.6 option-value removal versus referenced-SKU deactivation | Rule V in 3.1 with exact `retained` / `sellable` / `retained inactive referenced` definitions, transaction reordered so SKU reconciliation (step 5/6) precedes subtractive link removal (step 7), non-cascade statement, separation from the stricter global 5B.3 rule, and required focused cases 1-3 in `tests/admin-products-action.test.ts`. |
-| 5B.6 delete/deactivate ignores legacy references | Rule R in 3.1 with `ProductReferenceCounts`, the new `PRODUCT_HAS_REFERENCES` code, child-first delete order only for zero-reference products, deactivation-never-deletes statement, bounded `WishlistItem` schema read, and required focused cases 4-6 including the zero-write invariant. |
-| 5B.6 absolute SKU stock write bypasses the 5B.9 guard | Rule S in 3.1 plus the 5B.6 step 5 restriction, read-only existing-stock UI in 2.4 and 5B.5, the fixed `existing-sku-stock-ignored` warning literal, the 5B.9 sole-authority statement, required focused cases 7-8, checkpoint 2 focus, the 5B.11 functional step and a definition-of-done bullet. |
+| 5B.6 delete/deactivate ignores legacy references             | Rule R in 3.1 with `ProductReferenceCounts`, the new `PRODUCT_HAS_REFERENCES` code, child-first delete order only for zero-reference products, deactivation-never-deletes statement, bounded `WishlistItem` schema read, and required focused cases 4-6 including the zero-write invariant.                                                      |
+| 5B.6 absolute SKU stock write bypasses the 5B.9 guard        | Rule S in 3.1 plus the 5B.6 step 5 restriction, read-only existing-stock UI in 2.4 and 5B.5, the fixed `existing-sku-stock-ignored` warning literal, the 5B.9 sole-authority statement, required focused cases 7-8, checkpoint 2 focus, the 5B.11 functional step and a definition-of-done bullet.                                               |
 
 ## 8. 5B closeout evidence
 

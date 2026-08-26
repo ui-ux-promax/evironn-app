@@ -21,10 +21,12 @@
 ### Task 1: Add pure phone formatting helpers
 
 **Files:**
+
 - Create: `lib/phone.ts`
 - Test: `tests/phone.test.ts`
 
 **Interfaces:**
+
 - Produce `normalizeRuPhone(value: string): string`, returning digits in `7XXXXXXXXXX` form when input contains a Russian number.
 - Produce `formatRuPhone(value: string): string`, returning an editing value in `+7 (___) ___-__-__` form.
 
@@ -53,11 +55,13 @@ Run `git add lib/phone.ts tests/phone.test.ts; git commit -m "feat: add russian 
 ### Task 2: Integrate the mask into checkout
 
 **Files:**
+
 - Modify: `components/evironn/checkout/checkout-primitives.tsx`
 - Modify: `components/evironn/checkout/use-checkout-variant-a.ts`
 - Test: `tests/evironn-checkout-variant-a.test.tsx`
 
 **Interfaces:**
+
 - Consume `formatRuPhone` and `normalizeRuPhone` from `lib/phone.ts`.
 - Preserve the existing `actions.setContactPhone(value: string)` controller interface and existing server DTOs.
 
@@ -86,6 +90,7 @@ Run `git add components/evironn/checkout/checkout-primitives.tsx components/evir
 ### Task 3: Verify the delivery
 
 **Files:**
+
 - Modify: `tests/evironn-checkout-source-contract.test.ts` only if the existing source contract needs an explicit formatter boundary assertion.
 
 - [ ] **Step 1: Run focused regression tests**

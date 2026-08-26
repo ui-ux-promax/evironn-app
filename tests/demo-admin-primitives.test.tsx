@@ -63,4 +63,12 @@ describe('demo-admin presentation boundary', () => {
 
     expect(css).not.toMatch(/\.demo-admin-frame\s*>\s*\.demo-admin-readonly-banner\s*\{\s*display:\s*none\s*;/);
   });
+
+  it('uses local SVG icons for demo navigation instead of font ligatures', () => {
+    const source = readPrimitive('demo-icon.tsx');
+
+    expect(source).toContain('LayoutDashboard');
+    expect(source).toContain('className="demo-admin-icon"');
+    expect(source).not.toContain('material-symbols-outlined');
+  });
 });

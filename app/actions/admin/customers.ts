@@ -47,3 +47,16 @@ export async function changeUserRole(input: unknown): Promise<RoleActionResult> 
   revalidatePath(`${LIST_PATH}/${userId}`);
   return { ok: true };
 }
+
+export async function changeUserRoleFromForm(
+  _previous: RoleActionResult,
+  formData: FormData,
+): Promise<RoleActionResult> {
+  const gate = await requireAdminAction();
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  return changeUserRole({
+    userId: formData.get('userId'),
+    role: formData.get('role'),
+  });
+}

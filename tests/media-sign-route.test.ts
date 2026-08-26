@@ -34,20 +34,20 @@ beforeEach(() => {
 describe('POST /api/admin/media/sign', () => {
   it('anon → 401', async () => {
     authMock.mockResolvedValue(null);
-    const res = await POST(req({ folder: 'ritm/uploads' }));
+    const res = await POST(req({ folder: 'evironn/uploads' }));
     expect(res.status).toBe(401);
   });
 
   it('CUSTOMER → 403', async () => {
     authMock.mockResolvedValue({ user: { role: 'CUSTOMER' } });
-    const res = await POST(req({ folder: 'ritm/uploads' }));
+    const res = await POST(req({ folder: 'evironn/uploads' }));
     expect(res.status).toBe(403);
   });
 
   it('ADMIN but not configured → 503', async () => {
     authMock.mockResolvedValue({ user: { role: 'ADMIN' } });
     configuredMock.mockReturnValue(false);
-    const res = await POST(req({ folder: 'ritm/uploads' }));
+    const res = await POST(req({ folder: 'evironn/uploads' }));
     expect(res.status).toBe(503);
   });
 
@@ -59,28 +59,26 @@ describe('POST /api/admin/media/sign', () => {
 
   it('ADMIN + valid → 200 with signature payload', async () => {
     authMock.mockResolvedValue({ user: { role: 'ADMIN' } });
-    const res = await POST(req({ folder: 'ritm/uploads' }));
+    const res = await POST(req({ folder: 'evironn/uploads' }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toMatchObject({ apiKey: 'k', cloudName: 'c', folder: 'ritm/uploads' });
+    expect(body).toMatchObject({ apiKey: 'k', cloudName: 'c', folder: 'evironn/uploads' });
     expect(typeof body.signature).toBe('string');
     expect(body.signature).toMatch(/^[0-9a-f]{40}$/);
     expect(typeof body.timestamp).toBe('number');
   });
 
-  it('ADMIN + empty body → defaults to ritm/uploads → 200', async () => {
+  it('ADMIN + empty body → defaults to evironn/uploads → 200', async () => {
     authMock.mockResolvedValue({ user: { role: 'ADMIN' } });
     const res = await POST(req({}));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.folder).toBe('ritm/uploads');
+    expect(body.folder).toBe('evironn/uploads');
   });
 
-  it('ADMIN + ritm/categories folder → 200 (3.2 consumer)', async () => {
+  it('ADMIN + ritm/categories folder → 400', async () => {
     authMock.mockResolvedValue({ user: { role: 'ADMIN' } });
     const res = await POST(req({ folder: 'ritm/categories' }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.folder).toBe('ritm/categories');
+    expect(res.status).toBe(400);
   });
 });

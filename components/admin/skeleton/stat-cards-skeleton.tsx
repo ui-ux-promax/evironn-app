@@ -22,11 +22,11 @@ export function StatCardsSkeleton({ count = 3 }: StatCardsSkeletonProps) {
   const n = Math.max(1, count);
   const cols = COLS[n] ?? 'md:grid-cols-3';
   return (
-    <div aria-hidden className={`grid grid-cols-1 ${cols} gap-6`}>
+    <div aria-hidden className={`grid grid-cols-1 ${cols} gap-3.5`}>
       {Array.from({ length: n }).map((_, i) => {
         const delay = ((i % 5) + 1) as 1 | 2 | 3 | 4 | 5;
         return (
-          <div key={i} className="bg-admin-surface p-6 rounded-xl border border-admin-outline-variant">
+          <div key={i} className="rounded-2xl border border-admin-outline-variant bg-admin-surface p-[18px]">
             <div className="flex justify-between items-start mb-4">
               <Skeleton rounded="box" delay={delay} className="w-10 h-10 rounded-lg" />
               <Skeleton rounded="line" delay={delay} className="h-3.5 w-12" />

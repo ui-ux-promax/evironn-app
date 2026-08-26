@@ -3,26 +3,14 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { OrderStatus } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Icon } from '@/components/admin/icon';
-import { formatPrice } from '@/lib/format';
+import { formatDateTime, formatPrice } from '@/lib/format';
+import type { AdminOrderRow } from '@/lib/admin/orders';
 import { orderStatusView } from '@/lib/order';
 import { paymentStatusView } from '@/lib/order-admin';
 
-export interface OrderRow {
-  id: string;
-  orderNumber: number;
-  status: OrderStatus;
-  paymentStatus: string | null;
-  paymentMethod: string;
-  contactName: string;
-  contactEmail: string;
-  itemCount: number;
-  totalAmount: number;
-  coverImage: string | null;
-  createdLabel: string;
-}
+export type OrderRow = AdminOrderRow;
 
 export interface OrderTableProps {
   rows: OrderRow[];
@@ -65,6 +53,7 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
             {rows.map((row) => {
               const sv = orderStatusView(row.status, row.paymentStatus);
               const pv = paymentStatusView(row.paymentStatus);
+              const createdLabel = formatDateTime(row.createdAt);
               return (
                 <tr
                   key={row.id}
@@ -80,7 +69,7 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
                     >
                       #{row.orderNumber}
                     </Link>
-                    <div className="text-xs text-admin-on-surface-variant tabular-nums">{row.createdLabel}</div>
+                    <div className="text-xs text-admin-on-surface-variant tabular-nums">{createdLabel}</div>
                   </td>
                   {/* Покупатель */}
                   <td className="border-b border-admin-outline-variant px-4 py-[15px]">
@@ -130,6 +119,7 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
         {rows.map((row) => {
           const sv = orderStatusView(row.status, row.paymentStatus);
           const pv = paymentStatusView(row.paymentStatus);
+          const createdLabel = formatDateTime(row.createdAt);
           return (
             <div
               key={row.id}
@@ -153,7 +143,7 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
                   >
                     #{row.orderNumber}
                   </Link>
-                  <div className="text-xs text-admin-on-surface-variant tabular-nums">{row.createdLabel}</div>
+                  <div className="text-xs text-admin-on-surface-variant tabular-nums">{createdLabel}</div>
                 </div>
                 <span className="font-bold text-admin-on-surface tabular-nums whitespace-nowrap">
                   {formatPrice(row.totalAmount)}

@@ -5,8 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { requireAdminAction } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { deleteAsset } from '@/lib/cloudinary/server';
+import { adminError, adminOk, type AdminActionResult } from '@/lib/admin/action-result';
 import { slugify } from '@/lib/slugify';
-import { categorySchema } from '@/services/dto/category.dto';
+import { categorySchema, categoryTurntableSchema } from '@/services/dto/category.dto';
 
 export type CategoryActionResult = { ok: true } | { ok: false; error: string };
 
@@ -141,4 +142,60 @@ export async function moveCategory(id: string, dir: 'up' | 'down'): Promise<Cate
   ]);
   revalidatePath(LIST_PATH);
   return { ok: true };
+}
+
+const TURNTABLE_KINDS = ['TURN_TABLE_VIDEO', 'TURN_TABLE_POSTER', 'TURN_TABLE_FALLBACK'] as const;
+type CategoryTurntableResult = { categoryId: string; productId: string | null };
+
+function validationMessage(error: import('zod').ZodError): string {
+  return error.issues[0]?.message ?? 'Проверьте поля';
+}
+
+export async function setCategoryTurntable(input: unknown): Promise<AdminActionResult<CategoryTurntableResult>> {
+  const gate = await requireAdminAction();
+  if (!gate.ok) return adminError('UNEXPECTED', gate.error);
+
+  const parsed = categoryTurntableSchema.safeParse(input);
+  if (!parsed.success) return adminError('VALIDATION_ERROR', validationMessage(parsed.error));
+  const value = parsed.data;
+
+  const category = await prisma.category.findUnique({ where: { id: value.categoryId }, select: { id: true } });
+  if (!category) return adminError('NOT_FOUND', 'Категория не найдена');
+
+  if (value.productId) {
+    const product = await prisma.product.findUnique({
+      where: { id: value.productId },
+      select: { id: true, media: { select: { kind: true } } },
+    });
+    if (!product) return adminError('NOT_FOUND', 'Товар не найден');
+
+    const hasExactlyOneOfEachKind = TURNTABLE_KINDS.every(
+      (kind) => product.media.filter((media) => media.kind === kind).length === 1,
+    );
+    if (!hasExactlyOneOfEachKind) {
+      return adminError('TURNTABLE_MEDIA_REQUIRED', 'Товар должен иметь ровно один видеофайл, постер и fallback');
+    }
+
+    const holder = await prisma.category.findUnique({
+      where: { turntableProductId: value.productId },
+      select: { id: true, name: true, slug: true },
+    });
+    if (holder && holder.id !== category.id) {
+      return adminError('TURNTABLE_BINDING_CONFLICT', 'Товар уже привязан к другой категории', {
+        holderCategoryId: holder.id,
+        holderCategoryName: holder.name,
+        holderCategorySlug: holder.slug,
+      });
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.category.update({
+      where: { id: value.categoryId },
+      data: { turntableProductId: value.productId },
+    }),
+  ]);
+  revalidatePath(LIST_PATH);
+  revalidatePath(`${LIST_PATH}/${value.categoryId}/edit`);
+  return adminOk({ categoryId: value.categoryId, productId: value.productId });
 }

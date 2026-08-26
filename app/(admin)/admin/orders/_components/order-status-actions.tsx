@@ -15,20 +15,37 @@ import {
 } from '@/components/admin/ui/dialog';
 import { nextOrderStatus, canCancelOrder, FORWARD_ACTION_LABEL } from '@/lib/order-admin';
 import { advanceOrderStatus, cancelOrderByAdmin } from '@/app/actions/admin/orders';
+import type { AdminOrderCancelInput, OrderStatusUpdateInput } from '@/services/dto/order-admin.dto';
+import type { AdminCancelBlockReason } from '@/lib/order-admin';
 
-export function OrderStatusActions({ orderId, status }: { orderId: string; status: OrderStatus }) {
+export function OrderStatusActions({
+  orderId,
+  status,
+  nextStatus,
+  cancelDecision,
+}: {
+  orderId: string;
+  status: OrderStatus;
+  nextStatus: OrderStatus | null;
+  cancelDecision: { ok: true } | { ok: false; reason: AdminCancelBlockReason };
+}) {
   const router = useRouter();
   const [busy, setBusy] = React.useState(false);
   const [confirmCancel, setConfirmCancel] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const forward = nextOrderStatus(status);
-  const cancellable = canCancelOrder(status);
+  const forward = nextStatus ?? nextOrderStatus(status);
+  const cancellable = cancelDecision.ok && canCancelOrder(status);
+  const showCancelControl = cancellable || (!cancelDecision.ok && canCancelOrder(status));
 
   async function handleForward() {
     if (!forward) return;
     setBusy(true);
-    const res = await advanceOrderStatus({ orderId, toStatus: forward });
+    const res = await advanceOrderStatus({
+      orderId,
+      expectedStatus: status as OrderStatusUpdateInput['expectedStatus'],
+      nextStatus: forward as OrderStatusUpdateInput['nextStatus'],
+    });
     setBusy(false);
     if (res.ok) router.refresh();
     else setError(res.error);
@@ -36,16 +53,19 @@ export function OrderStatusActions({ orderId, status }: { orderId: string; statu
 
   async function handleCancel() {
     setBusy(true);
-    const res = await cancelOrderByAdmin(orderId);
+    const res = await cancelOrderByAdmin({
+      orderId,
+      expectedStatus: status as AdminOrderCancelInput['expectedStatus'],
+    });
     setBusy(false);
     setConfirmCancel(false);
     if (res.ok) router.refresh();
     else setError(res.error);
   }
 
-  if (!forward && !cancellable) {
+  if (!forward && !showCancelControl) {
     return (
-      <p className="text-sm text-admin-on-surface-variant">
+      <p className="text-sm text-admin-on-surface-variant" data-testid="admin-conflict-alert" role="status">
         {status === 'CANCELLED' ? 'Заказ отменён.' : 'Заказ завершён.'}
       </p>
     );
@@ -54,15 +74,30 @@ export function OrderStatusActions({ orderId, status }: { orderId: string; statu
   return (
     <div className="flex flex-wrap items-center gap-3">
       {forward && (
-        <Button onClick={handleForward} loading={busy}>
+        <Button
+          data-testid="admin-order-transition"
+          data-expected-status={status}
+          onClick={handleForward}
+          loading={busy}
+        >
           <Icon name="arrow_forward" className="text-[18px]" /> {FORWARD_ACTION_LABEL[status]}
         </Button>
       )}
-      {cancellable && (
-        <Button variant="outline" onClick={() => setConfirmCancel(true)} disabled={busy}>
+      {showCancelControl && (
+        <Button
+          data-testid="admin-order-cancel"
+          data-expected-status={status}
+          variant="outline"
+          onClick={() => setConfirmCancel(true)}
+          disabled={busy || !cancellable}
+        >
           <Icon name="cancel" className="text-[18px]" /> Отменить заказ
         </Button>
       )}
+
+      <div data-testid="admin-conflict-alert" aria-live="polite" className="sr-only">
+        {error ?? ''}
+      </div>
 
       {/* Подтверждение отмены (своё, т.к. AlertModal хардкодит «Удалить»). */}
       <Dialog open={confirmCancel} onOpenChange={(open) => !open && setConfirmCancel(false)}>
@@ -70,8 +105,8 @@ export function OrderStatusActions({ orderId, status }: { orderId: string; statu
           <DialogHeader>
             <DialogTitle>Отменить заказ?</DialogTitle>
             <DialogDescription>
-              Сток вернётся на склад, популярность товаров скорректируется. Если заказ был оплачен онлайн — верните
-              деньги вручную в кабинете ЮKassa (автоматический рефанд не выполняется).
+              Сток вернётся на склад, а популярность товаров скорректируется. Платёжные признаки заказа будут проверены
+              перед отменой.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 pt-2">

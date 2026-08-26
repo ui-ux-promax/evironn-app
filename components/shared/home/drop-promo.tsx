@@ -11,7 +11,7 @@ export function DropPromo() {
         <div className="relative h-64 md:h-[420px]">
           <Image
             src="/products/product-pink-outer.png"
-            alt="Куртка RITM Pink Cloud из лимитированного дропа"
+            alt="Кресло Evironn Forma из лимитированной коллекции"
             fill
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-contain p-8 drop-shadow-2xl"
@@ -25,7 +25,7 @@ export function DropPromo() {
             уже близко
           </h2>
           <p className="opacity-90 mt-3 max-w-sm">
-            Куртка Pink Cloud и мягкие слои RITM. Подпишись — напомним о старте и рестоках.
+            Кресло Forma и спокойные материалы Evironn. Подпишитесь — напомним о новых поступлениях.
           </p>
           <form
             className="flex flex-wrap gap-2 mt-5 max-w-sm"

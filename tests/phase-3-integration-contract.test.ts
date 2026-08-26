@@ -183,7 +183,7 @@ describe('Phase 3 producer/consumer integration boundary', () => {
 
     const probe = read('app/api/e2e/phase3-probe/route.ts');
     expect(probe).toContain("process.env.E2E_DATABASE_ALLOW_WRITES !== '1'");
-    expect(probe).toContain("const SEEDED_ORDER_EMAIL_SUFFIX = '@test.ritm.invalid'");
+    expect(probe).toContain("const SEEDED_ORDER_EMAIL_SUFFIX = '@test.evironn.invalid'");
     expect(probe).toContain('findFirst');
     expect(probe).not.toMatch(/\.(create|update|upsert|delete|deleteMany)\s*\(/);
   });

@@ -49,7 +49,7 @@ describe('issueCode', () => {
       }),
     );
     expect(send).toHaveBeenCalledOnce();
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ subject: 'Код подтверждения Ritm' }));
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ subject: 'Код подтверждения Evironn' }));
   });
 });
 

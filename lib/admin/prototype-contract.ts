@@ -1,7 +1,7 @@
 export const ADMIN_PRIMARY_ROUTE_ORDER = [
   '/admin',
-  '/admin/orders',
   '/admin/catalog',
+  '/admin/orders',
   '/admin/customers',
   '/admin/marketing',
 ] as const;

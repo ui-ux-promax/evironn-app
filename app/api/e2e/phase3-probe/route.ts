@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma-client';
 
-const SEEDED_ORDER_EMAIL_SUFFIX = '@test.ritm.invalid';
+const SEEDED_ORDER_EMAIL_SUFFIX = '@test.evironn.invalid';
 
 export const dynamic = 'force-dynamic';
 

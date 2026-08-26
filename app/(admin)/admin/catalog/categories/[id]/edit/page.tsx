@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { CategoryForm } from '../../_components/category-form';
 
@@ -8,6 +9,7 @@ export const metadata = { title: 'Редактирование категори�
 export const dynamic = 'force-dynamic';
 
 export default async function EditCategoryPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage();
   const { id } = await params;
   const category = await prisma.category.findUnique({
     where: { id },

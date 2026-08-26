@@ -81,7 +81,7 @@ export function MobileNav() {
 
           <div className="relative flex h-full flex-col px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))]">
             <div className="flex items-center justify-between">
-              <Image src="/ritm-logo-light.svg" alt="Ritm" width={98} height={28} className="h-auto w-[98px]" />
+              <Image src="/assets/evironn-logo.svg" alt="Evironn" width={98} height={28} className="h-auto w-[98px]" />
               <Dialog.Close
                 className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20"
                 aria-label="Закрыть меню"
@@ -91,7 +91,7 @@ export function MobileNav() {
             </div>
 
             <div className="mt-8 flex items-center justify-between border-y border-white/25 py-3 text-[11px] font-bold tracking-[.14em] text-white/70">
-              <Dialog.Title>RITM / SS26</Dialog.Title>
+              <Dialog.Title>EVIRONN / SS26</Dialog.Title>
               <span>МЕНЮ</span>
             </div>
 

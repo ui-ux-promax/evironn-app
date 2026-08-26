@@ -13,9 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/admin/ui/dialog';
-import { changeUserRole } from '@/app/actions/admin/customers';
+import { changeUserRoleFromForm, type RoleActionResult } from '@/app/actions/admin/customers';
 
-export function RoleToggle({ userId, currentRole }: { userId: string; currentRole: UserRole }) {
+type RoleToggleProps = {
+  userId: string;
+  currentRole: UserRole;
+  isSelf?: boolean;
+  isLastAdmin?: boolean;
+};
+
+export function RoleToggle({ userId, currentRole, isSelf = false, isLastAdmin = false }: RoleToggleProps) {
   const router = useRouter();
   const [busy, setBusy] = React.useState(false);
   const [confirm, setConfirm] = React.useState(false);
@@ -23,14 +30,41 @@ export function RoleToggle({ userId, currentRole }: { userId: string; currentRol
 
   const target: UserRole = currentRole === 'ADMIN' ? 'CUSTOMER' : 'ADMIN';
   const promoting = target === 'ADMIN';
+  const blocked = !promoting && (isSelf || isLastAdmin);
+  const blockedMessage = isSelf
+    ? 'Нельзя снять роль администратора с самого себя'
+    : 'Нельзя разжаловать последнего администратора';
 
-  async function handleConfirm() {
+  async function submitRoleChange(formData: FormData) {
     setBusy(true);
-    const res = await changeUserRole({ userId, role: target });
+    const res: RoleActionResult = await changeUserRoleFromForm({ ok: true }, formData);
     setBusy(false);
     setConfirm(false);
     if (res.ok) router.refresh();
     else setError(res.error);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await submitRoleChange(new FormData(event.currentTarget));
+  }
+
+  if (blocked) {
+    return (
+      <div className="space-y-2">
+        <form action={submitRoleChange}>
+          <input type="hidden" name="userId" value={userId} />
+          <input type="hidden" name="role" value={target} />
+          <Button type="submit" variant="outline" className="w-full" disabled>
+            <Icon name="lock" className="text-[18px]" />
+            Снять роль администратора
+          </Button>
+        </form>
+        <p className="text-xs text-admin-error" aria-live="polite">
+          {blockedMessage}
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -45,7 +79,6 @@ export function RoleToggle({ userId, currentRole }: { userId: string; currentRol
         {promoting ? 'Назначить администратором' : 'Снять роль администратора'}
       </Button>
 
-      {/* Подтверждение */}
       <Dialog open={confirm} onOpenChange={(open) => !open && setConfirm(false)}>
         <DialogContent>
           <DialogHeader>
@@ -56,23 +89,26 @@ export function RoleToggle({ userId, currentRole }: { userId: string; currentRol
                 : 'Пользователь потеряет доступ к админ-панели и станет обычным клиентом.'}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 pt-2">
-            <Button variant="outline" onClick={() => setConfirm(false)} disabled={busy}>
-              Назад
-            </Button>
-            <Button variant={promoting ? 'primary' : 'danger'} onClick={handleConfirm} loading={busy}>
-              {promoting ? 'Назначить' : 'Снять роль'}
-            </Button>
-          </DialogFooter>
+          <form action={submitRoleChange} onSubmit={handleSubmit}>
+            <input type="hidden" name="userId" value={userId} />
+            <input type="hidden" name="role" value={target} />
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setConfirm(false)} disabled={busy}>
+                Назад
+              </Button>
+              <Button type="submit" variant={promoting ? 'primary' : 'danger'} loading={busy}>
+                {promoting ? 'Назначить' : 'Снять роль'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
-      {/* Ошибка (в т.ч. текст guard: «себя» / «последнего администратора»). */}
       <Dialog open={error !== null} onOpenChange={(open) => !open && setError(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Не удалось изменить роль</DialogTitle>
-            <DialogDescription>{error}</DialogDescription>
+            <DialogDescription aria-live="polite">{error}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setError(null)}>

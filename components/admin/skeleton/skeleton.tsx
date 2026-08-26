@@ -16,7 +16,7 @@ const ROUNDED: Record<SkeletonRounded, string> = {
   line: 'h-3 rounded-full',
   pill: 'rounded-full',
   circle: 'rounded-full',
-  box: 'rounded-xl',
+  box: 'rounded-[10px]',
 };
 
 export interface SkeletonProps {

@@ -3,7 +3,7 @@ import { EmailLayout } from './_layout';
 
 export function VerificationCodeEmail({ code }: { code: string }) {
   return (
-    <EmailLayout preview={`Код подтверждения Ritm: ${code}`}>
+    <EmailLayout preview={`Код подтверждения Evironn: ${code}`}>
       <Text
         style={{
           color: '#2f8f66',
@@ -14,7 +14,7 @@ export function VerificationCodeEmail({ code }: { code: string }) {
           textTransform: 'uppercase',
         }}
       >
-        Ritm account
+        Evironn account
       </Text>
       <Heading style={{ color: '#171717', fontSize: 26, lineHeight: '32px', margin: '0 0 12px' }}>
         Подтвердите почту
@@ -38,7 +38,7 @@ export function VerificationCodeEmail({ code }: { code: string }) {
         {code}
       </Text>
       <Text style={{ color: '#746f67', fontSize: 13, lineHeight: '20px', margin: 0 }}>
-        Код действует 10 минут. Если вы не создавали аккаунт в Ritm, просто проигнорируйте это письмо.
+        Код действует 10 минут. Если вы не создавали аккаунт в Evironn, просто проигнорируйте это письмо.
       </Text>
     </EmailLayout>
   );

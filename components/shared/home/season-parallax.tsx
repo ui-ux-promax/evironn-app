@@ -64,13 +64,13 @@ export function SeasonParallax() {
       <Image
         ref={imageRef}
         src="/home/season-collage.png"
-        alt="Коллаж сезона RITM"
+        alt="Коллаж коллекции Evironn"
         fill
         sizes="100vw"
         className="season-parallax-image object-cover"
       />
       <div className="absolute bottom-7 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/35 bg-ink/72 px-4 py-2 text-white shadow-xl backdrop-blur-md">
-        <span className="font-mono text-[10px] font-bold tracking-[.18em]">RITM / SS26</span>
+        <span className="font-mono text-[10px] font-bold tracking-[.18em]">EVIRONN / SS26</span>
         <span className="h-1 w-1 rounded-full bg-accent" />
         <span className="hidden text-[11px] text-white/72 sm:inline">Лимитированная коллекция</span>
       </div>

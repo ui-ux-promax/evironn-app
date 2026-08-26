@@ -8,22 +8,20 @@ import { cn } from '@/lib/utils';
 
 // Admin-кнопка: токены через CSS-переменные .admin-root, dark: варианты НЕ используются
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary disabled:pointer-events-none disabled:opacity-50',
+  'admin-control admin-button inline-flex items-center justify-center gap-[7px] whitespace-nowrap rounded-[10px] text-xs font-bold transition-[background-color,color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2 focus-visible:ring-offset-admin-surface disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        primary: 'bg-admin-primary text-admin-on-primary hover:opacity-90 rounded-full',
-        secondary:
-          'bg-admin-surface border border-admin-outline text-admin-on-surface hover:bg-admin-surface-high rounded-lg',
-        ghost: 'bg-transparent text-admin-on-surface hover:bg-admin-surface-high rounded-lg',
-        outline:
-          'border border-admin-outline-variant bg-transparent text-admin-on-surface hover:bg-admin-surface-high rounded-lg',
-        danger: 'bg-admin-error text-admin-on-error hover:opacity-90 rounded-lg',
+        primary: 'bg-admin-primary text-admin-on-primary hover:bg-admin-on-surface',
+        secondary: 'border border-admin-outline bg-admin-surface text-admin-on-surface hover:bg-admin-surface-high',
+        ghost: 'bg-transparent text-admin-on-surface hover:bg-admin-surface-high',
+        outline: 'border border-admin-outline-variant bg-transparent text-admin-on-surface hover:bg-admin-surface-high',
+        danger: 'border border-transparent text-admin-error hover:border-admin-error/30 hover:bg-admin-error/10',
       },
       size: {
-        sm: 'h-8 px-3 text-xs',
-        md: 'h-10 px-4',
-        lg: 'h-12 px-6 text-base',
+        sm: 'min-h-8 px-3 text-xs',
+        md: 'min-h-9 px-3.5',
+        lg: 'min-h-10 px-4 text-sm',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

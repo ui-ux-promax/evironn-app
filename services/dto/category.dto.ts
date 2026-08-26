@@ -25,3 +25,12 @@ export const categorySchema = z
   });
 
 export type CategoryValues = z.infer<typeof categorySchema>;
+
+export const categoryTurntableSchema = z
+  .object({
+    categoryId: z.string().trim().min(1, 'Укажите категорию'),
+    productId: z.string().trim().min(1, 'Укажите товар').nullable(),
+  })
+  .strict();
+
+export type CategoryTurntableValues = z.infer<typeof categoryTurntableSchema>;

@@ -20,7 +20,7 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
         <Container style={{ maxWidth: 560, margin: '0 auto', padding: '28px 20px 36px' }}>
           <Section style={{ padding: '0 8px 18px' }}>
             <Text style={{ color: colors.ink, fontSize: 30, fontWeight: 800, letterSpacing: '-1.8px', margin: 0 }}>
-              Ritm
+              Evironn
             </Text>
           </Section>
           <Section
@@ -36,7 +36,7 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
           </Section>
           <Section style={{ padding: '18px 8px 0' }}>
             <Text style={{ color: colors.muted, fontSize: 12, lineHeight: '18px', margin: 0 }}>
-              © 2026 Ritm · {SITE.replace(/^https?:\/\//, '')}
+              © 2026 Evironn · {SITE.replace(/^https?:\/\//, '')}
             </Text>
             <Text style={{ color: colors.muted, fontSize: 12, lineHeight: '18px', margin: '2px 0 0' }}>
               Одежда для вашего ритма.

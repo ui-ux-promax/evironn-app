@@ -6,6 +6,7 @@ import { Icon } from '@/components/admin/icon';
 import { validateImageFile } from '@/lib/cloudinary/validate';
 import type { UploadedImage } from '@/lib/cloudinary/types';
 import { shouldDeleteImmediately } from '@/lib/cloudinary/admin-media';
+import { EVIRONN_UPLOADS_FOLDER } from '@/lib/cloudinary/folders';
 import { ImagePreviewCard } from './image-preview-card';
 
 interface ImageUploaderProps {
@@ -17,7 +18,7 @@ interface ImageUploaderProps {
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-export function ImageUploader({ value, onChange, folder = 'ritm/uploads', max = 8 }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, folder = EVIRONN_UPLOADS_FOLDER, max = 8 }: ImageUploaderProps) {
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);

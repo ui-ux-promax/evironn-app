@@ -12,7 +12,7 @@ export function EngineeredFeature() {
     <section className="mx-auto max-w-[1240px] px-4 sm:px-6 pt-16 sm:pt-20">
       <div className="rounded-[28px] bg-footer text-white overflow-hidden grid md:grid-cols-2 items-center">
         <div className="p-8 sm:p-12 min-w-0">
-          <p className="label !text-primary">RITM Essential</p>
+          <p className="label !text-primary">Evironn Essential</p>
           <h2 className="font-display font-bold text-[28px] sm:text-[40px] leading-tight mt-2">
             Собраны для
             <br />
@@ -37,7 +37,7 @@ export function EngineeredFeature() {
         <div className="relative h-64 md:h-[420px]">
           <Image
             src="/products/product-soft-hoodie.png"
-            alt="Худи RITM Soft Loop крупным планом"
+            alt="Кресло Evironn Forma крупным планом"
             fill
             className="object-contain p-8 drop-shadow-2xl"
           />

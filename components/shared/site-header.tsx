@@ -20,10 +20,10 @@ export function SiteHeader() {
             <HeaderTopLinks />
           </div>
 
-          <Link href="/" className="flex items-center justify-self-center" aria-label="Ritm">
+          <Link href="/" className="flex items-center justify-self-center" aria-label="Evironn">
             <Image
-              src="/ritm-logo.svg"
-              alt="Ritm"
+              src="/assets/evironn-logo.svg"
+              alt="Evironn"
               width={98}
               height={28}
               priority

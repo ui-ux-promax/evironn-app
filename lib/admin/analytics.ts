@@ -3,9 +3,23 @@ import { Prisma, type OrderStatus } from '@prisma/client';
 import { prisma as defaultPrisma } from '@/lib/prisma-client';
 import { ORDER_STATUS_META } from '@/lib/order';
 import { ORDER_STATUS_VALUES } from '@/lib/order-admin';
-import { PERIOD_VALUES, DEFAULT_PERIOD, type Period } from './analytics-config';
+import {
+  DASHBOARD_LOW_STOCK_DISPLAY_MAX,
+  DASHBOARD_LOW_STOCK_LIMIT,
+  DASHBOARD_RECENT_ORDERS_LIMIT,
+  PERIOD_VALUES,
+  DEFAULT_PERIOD,
+  type Period,
+} from './analytics-config';
 
-export { PERIOD_VALUES, DEFAULT_PERIOD, type Period } from './analytics-config';
+export {
+  DASHBOARD_LOW_STOCK_DISPLAY_MAX,
+  DASHBOARD_LOW_STOCK_LIMIT,
+  DASHBOARD_RECENT_ORDERS_LIMIT,
+  PERIOD_VALUES,
+  DEFAULT_PERIOD,
+  type Period,
+} from './analytics-config';
 
 // ─────────────────────────── Period ───────────────────────────
 
@@ -77,6 +91,98 @@ export type DashboardKpis = {
   newCustomers: Kpi;
   unitsSold: Kpi;
 };
+
+export type AdminCatalogKpis = {
+  activeProducts: number;
+  totalSkus: number;
+  activeSkus: number;
+  lowStockSkus: number;
+  outOfStockSkus: number;
+  categories: number;
+  rooms: number;
+  turntableBoundCategories: number;
+  turntableCoverageRatio: number;
+};
+
+export type AdminLowStockSku = {
+  skuId: string;
+  articleNumber: string;
+  productId: string;
+  productName: string;
+  combinationLabel: string;
+  stock: number;
+};
+
+export async function getAdminCatalogKpis(db: Db = defaultPrisma): Promise<AdminCatalogKpis> {
+  const [activeProducts, totalSkus, activeSkus, lowStockSkus, outOfStockSkus, categories, rooms, turntableBoundCategories] =
+    await Promise.all([
+      db.product.count({ where: { active: true } }),
+      db.sku.count(),
+      db.sku.count({ where: { active: true } }),
+      db.sku.count({ where: { stock: { gt: 0, lte: LOW_STOCK_THRESHOLD } } }),
+      db.sku.count({ where: { stock: { equals: 0 } } }),
+      db.category.count(),
+      db.room.count(),
+      db.category.count({ where: { turntableProductId: { not: null } } }),
+    ]);
+
+  return {
+    activeProducts,
+    totalSkus,
+    activeSkus,
+    lowStockSkus,
+    outOfStockSkus,
+    categories,
+    rooms,
+    turntableBoundCategories,
+    turntableCoverageRatio: categories === 0 ? 0 : turntableBoundCategories / categories,
+  };
+}
+
+export function getAdminLowStockSkus(db?: Db, limit?: number): Promise<AdminLowStockSku[]>;
+export function getAdminLowStockSkus(limit?: number, db?: Db): Promise<AdminLowStockSku[]>;
+export async function getAdminLowStockSkus(
+  dbOrLimit: Db | number = defaultPrisma,
+  limitOrDb: number | Db = DASHBOARD_LOW_STOCK_LIMIT,
+): Promise<AdminLowStockSku[]> {
+  const db = typeof dbOrLimit === 'number' ? (typeof limitOrDb === 'number' ? defaultPrisma : limitOrDb) : dbOrLimit;
+  const limit = typeof dbOrLimit === 'number' ? dbOrLimit : typeof limitOrDb === 'number' ? limitOrDb : undefined;
+  const requestedLimit = typeof limit === 'number' && Number.isFinite(limit) ? Math.trunc(limit) : DASHBOARD_LOW_STOCK_LIMIT;
+  const boundedLimit = Math.min(Math.max(requestedLimit, 0), DASHBOARD_LOW_STOCK_LIMIT);
+  if (boundedLimit === 0) return [];
+
+  const skus = await db.sku.findMany({
+    where: {
+      active: true,
+      product: { active: true },
+      stock: { gt: 0, lte: DASHBOARD_LOW_STOCK_DISPLAY_MAX },
+    },
+    orderBy: [{ stock: 'asc' }, { articleNumber: 'asc' }],
+    take: boundedLimit,
+    select: {
+      id: true,
+      articleNumber: true,
+      productId: true,
+      stock: true,
+      product: { select: { name: true } },
+      selections: {
+        orderBy: { optionGroup: { sortOrder: 'asc' } },
+        select: { optionGroup: { select: { name: true } }, optionValue: { select: { name: true } } },
+      },
+    },
+  });
+
+  return skus.map((sku) => ({
+    skuId: sku.id,
+    articleNumber: sku.articleNumber,
+    productId: sku.productId,
+    productName: sku.product.name,
+    combinationLabel:
+      sku.selections.map((selection) => `${selection.optionGroup.name}: ${selection.optionValue.name}`).join(' · ') ||
+      'Configuration',
+    stock: sku.stock,
+  }));
+}
 
 const notCancelled = { not: 'CANCELLED' as OrderStatus };
 
@@ -324,62 +430,19 @@ export type LowStockRow = {
 };
 
 export async function getLowStock(db: Db = defaultPrisma): Promise<LowStockRow[]> {
-  const [skus, variants] = await Promise.all([
-    db.sku.findMany({
-      where: { active: true, product: { active: true }, stock: { gt: 0, lte: 10 } },
-      orderBy: { stock: 'asc' },
-      take: 12,
-      select: {
-        id: true,
-        stock: true,
-        articleNumber: true,
-        product: { select: { name: true } },
-        selections: {
-          orderBy: { optionGroup: { sortOrder: 'asc' } },
-          select: { optionGroup: { select: { name: true } }, optionValue: { select: { name: true } } },
-        },
-      },
-    }),
-    db.productVariant.findMany({
-      where: { active: true, stock: { gt: 0, lte: 10 } },
-      orderBy: { stock: 'asc' },
-      take: 12,
-      select: {
-        id: true,
-        stock: true,
-        sku: true,
-        size: true,
-        colorway: { select: { name: true, product: { select: { name: true } } } },
-      },
-    }),
-  ]);
-
-  const canonicalRows = skus.map((sku) => {
-    const labels = sku.selections.map((selection) => `${selection.optionGroup.name}: ${selection.optionValue.name}`);
+  const rows = await getAdminLowStockSkus(db, DASHBOARD_LOW_STOCK_LIMIT);
+  return rows.map((row) => {
+    const labels = row.combinationLabel === 'Configuration' ? [] : row.combinationLabel.split(' · ');
     return {
-      id: sku.id,
-      productName: sku.product.name,
+      id: row.skuId,
+      productName: row.productName,
       colorwayName: labels[0] ?? 'Configuration',
       size: labels.slice(1).join(' · ') || '—',
-      sku: sku.articleNumber,
-      stock: sku.stock,
-      tier: classifyStockTier(sku.stock),
+      sku: row.articleNumber,
+      stock: row.stock,
+      tier: classifyStockTier(row.stock),
     } satisfies LowStockRow;
   });
-  const legacyRows = variants.map(
-    (variant) =>
-      ({
-        id: variant.id,
-        productName: variant.colorway.product.name,
-        colorwayName: variant.colorway.name,
-        size: variant.size,
-        sku: variant.sku,
-        stock: variant.stock,
-        tier: classifyStockTier(variant.stock),
-      }) satisfies LowStockRow,
-  );
-
-  return [...canonicalRows, ...legacyRows].sort((a, b) => a.stock - b.stock).slice(0, 12);
 }
 
 // ── Recent orders (current state) ──
@@ -401,7 +464,7 @@ export type RecentOrderRow = {
 export async function getRecentOrders(db: Db = defaultPrisma): Promise<RecentOrderRow[]> {
   const orders = await db.order.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 10,
+    take: DASHBOARD_RECENT_ORDERS_LIMIT,
     select: {
       id: true,
       orderNumber: true,

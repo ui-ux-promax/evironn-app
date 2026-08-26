@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
+import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
 import { normalizeCouponCode } from '@/lib/coupon';
@@ -20,6 +21,7 @@ type SP = Record<string, string | string[] | undefined>;
 const STATUS_VALUES = ['active', 'inactive', 'expired'] as const;
 
 export default async function MarketingPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const q = readSearchQuery(sp);
   const status = readEnumParam(sp, 'status', STATUS_VALUES);
@@ -30,7 +32,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
     ...(status === 'active'
       ? { active: true, OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] }
       : status === 'inactive'
-        ? { active: false }
+        ? { active: false, OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] }
         : status === 'expired'
           ? { expiresAt: { lt: now } }
           : {}),
@@ -50,7 +52,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
   const activeCount = rows.filter((row) => row.status === 'active').length;
   const inactiveCount = rows.filter((row) => row.status === 'inactive').length;
   const expiredCount = rows.filter((row) => row.status === 'expired').length;
-  const avgPercent = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length) : 0;
+  const averagePercent = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length) : 0;
 
   return (
     <div className="space-y-[24px]">
@@ -81,7 +83,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
           value={expiredCount.toLocaleString('ru-RU')}
           tone={expiredCount > 0 ? 'danger' : 'default'}
         />
-        <AdminKpiCard icon="percent" label="Средняя скидка" value={`${avgPercent}%`} />
+        <AdminKpiCard icon="percent" label="Средняя скидка" value={`${averagePercent}%`} />
       </div>
 
       <AdminPanel

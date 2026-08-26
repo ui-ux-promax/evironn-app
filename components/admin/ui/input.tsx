@@ -9,10 +9,10 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
         type={type}
         ref={ref}
         className={cn(
-          'flex h-10 w-full rounded-xl bg-admin-surface border border-admin-outline-variant',
-          'px-3 py-2 text-sm text-admin-on-surface',
+          'admin-control admin-input flex min-h-9 w-full rounded-[10px] border border-admin-outline-variant bg-admin-surface',
+          'px-3 py-2 text-[13px] text-admin-on-surface transition-[border-color,box-shadow]',
           'placeholder:text-admin-on-surface-variant',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2 focus-visible:ring-offset-admin-surface',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}

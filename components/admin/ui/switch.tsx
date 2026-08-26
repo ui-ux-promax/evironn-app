@@ -12,7 +12,7 @@ const Switch = React.forwardRef<
   <SwitchPrimitives.Root
     ref={ref}
     className={cn(
-      'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-admin-outline-variant shadow-inner transition-colors',
+      'admin-switch peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-admin-outline-variant shadow-inner transition-colors',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary',
       'disabled:cursor-not-allowed disabled:opacity-50',
       'data-[state=checked]:border-admin-primary data-[state=checked]:bg-admin-primary data-[state=unchecked]:bg-admin-outline',

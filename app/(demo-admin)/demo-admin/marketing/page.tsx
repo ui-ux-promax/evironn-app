@@ -1,39 +1,37 @@
 import { DemoDataTable } from '@/components/demo-admin/demo-data-table';
-import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { getDemoAdminSnapshot } from '@/lib/demo-admin/fixtures';
+import { DemoPageHeader } from '@/components/demo-admin/demo-page-header';
+import { DemoPanel } from '@/components/demo-admin/demo-panel';
+import { demoAdminFixtures } from '@/lib/demo-admin/fixtures';
+
+const couponTypeLabels = { PERCENT: 'Процент' } as const;
 
 export default function DemoMarketingPage() {
-  const { coupons } = getDemoAdminSnapshot();
-  const activeCount = coupons.filter((coupon) => coupon.active).length;
-  const maxPercent = Math.max(...coupons.map((coupon) => coupon.percent));
-
   return (
-    <div className="space-y-[24px]">
-      <AdminPageHeader
+    <div className="space-y-6">
+      <DemoPageHeader
         kicker="Маркетинг"
         title="Промокоды"
-        subtitle="Демо-копия маркетингового раздела: коды, скидки, статусы, сроки без создания и редактирования."
-        searchPlaceholder="Поиск промокодов отключён"
+        subtitle="Тип, значение, окно действия и статус синтетических предложений без создания и редактирования."
       />
 
-      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
-        <AdminKpiCard icon="confirmation_number" label="Промокодов" value={String(coupons.length)} tone="primary" />
-        <AdminKpiCard icon="check_circle" label="Активные" value={String(activeCount)} />
-        <AdminKpiCard icon="percent" label="Макс. скидка" value={`${maxPercent}%`} />
-      </div>
-
-      <DemoDataTable
-        title="Промокоды"
-        note="Read-only режим: создание и изменение отключены"
-        headings={['Код', 'Скидка', 'Статус', 'Действует до']}
-        rows={coupons.map((coupon) => [
-          coupon.code,
-          `${coupon.percent}%`,
-          coupon.active ? 'Активен' : 'Отключён',
-          coupon.expiresLabel,
-        ])}
-      />
+      <DemoPanel title="Промокоды" note="Read-only список маркетинговых условий">
+        <DemoDataTable
+          columns={[
+            { key: 'code', label: 'Код' },
+            { key: 'type', label: 'Тип' },
+            { key: 'value', label: 'Значение' },
+            { key: 'window', label: 'Окно действия' },
+            { key: 'status', label: 'Статус' },
+          ]}
+          rows={demoAdminFixtures.coupons.map((coupon) => ({
+            code: coupon.code,
+            type: couponTypeLabels[coupon.type],
+            value: `${coupon.value}%`,
+            window: coupon.windowLabel,
+            status: coupon.active ? 'Активен' : 'Отключён',
+          }))}
+        />
+      </DemoPanel>
     </div>
   );
 }

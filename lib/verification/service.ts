@@ -22,7 +22,7 @@ export async function issueCode(email: string): Promise<void> {
 
   await sendEmail({
     to: email,
-    subject: 'Код подтверждения Ritm',
+    subject: 'Код подтверждения Evironn',
     react: createElement(VerificationCodeEmail, { code }),
   });
 }

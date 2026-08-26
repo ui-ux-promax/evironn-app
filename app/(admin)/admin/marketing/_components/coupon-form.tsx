@@ -10,15 +10,12 @@ import { Switch } from '@/components/admin/ui/switch';
 import { couponSchema, type CouponValues } from '@/services/dto/coupon-admin.dto';
 import { createCoupon, updateCoupon } from '@/app/actions/admin/coupons';
 
-export interface CouponFormInitial {
-  id: string;
-  code: string;
-  percent: number;
-  active: boolean;
-  expiresAt: string | null; // ISO; срезаем до YYYY-MM-DD для <input type="date">
-}
+export type CouponFormProps = {
+  mode: 'create' | 'edit';
+  coupon?: { id: string; code: string; percent: number; active: boolean; expiresAt: string };
+};
 
-export function CouponForm({ initial }: { initial?: CouponFormInitial }) {
+export function CouponForm({ mode, coupon }: CouponFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = React.useState<string | null>(null);
 
@@ -31,10 +28,10 @@ export function CouponForm({ initial }: { initial?: CouponFormInitial }) {
   } = useForm<CouponValues>({
     resolver: zodResolver(couponSchema),
     defaultValues: {
-      code: initial?.code ?? '',
-      percent: initial?.percent ?? 10,
-      active: initial?.active ?? true,
-      expiresAt: initial?.expiresAt ? initial.expiresAt.slice(0, 10) : '',
+      code: coupon?.code ?? '',
+      percent: coupon?.percent ?? 10,
+      active: coupon?.active ?? true,
+      expiresAt: coupon?.expiresAt ?? '',
     },
   });
 
@@ -42,7 +39,7 @@ export function CouponForm({ initial }: { initial?: CouponFormInitial }) {
 
   async function onSubmit(values: CouponValues) {
     setServerError(null);
-    const res = initial ? await updateCoupon(initial.id, values) : await createCoupon(values);
+    const res = mode === 'edit' && coupon ? await updateCoupon(coupon.id, values) : await createCoupon(values);
     if (!res.ok) {
       setServerError(res.error);
       return;
@@ -61,7 +58,7 @@ export function CouponForm({ initial }: { initial?: CouponFormInitial }) {
             // Косметический uppercase на клиенте; сервер повторно нормализует код перед валидацией.
             onBlur: (e) => setValue('code', e.target.value.trim().toUpperCase()),
           })}
-          placeholder="RITM10"
+          placeholder="EVIRONN15"
           autoCapitalize="characters"
         />
         {errors.code && <p className="text-sm text-admin-error">{errors.code.message}</p>}
@@ -85,7 +82,7 @@ export function CouponForm({ initial }: { initial?: CouponFormInitial }) {
       </div>
 
       <div className="flex items-center gap-3 rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-4">
-        <Switch checked={active} onCheckedChange={(v) => setValue('active', v)} />
+        <Switch aria-label="Промокод активен" checked={active} onCheckedChange={(v) => setValue('active', v)} />
         <span className="text-sm font-bold text-admin-on-surface">Активен</span>
       </div>
 
@@ -93,7 +90,7 @@ export function CouponForm({ initial }: { initial?: CouponFormInitial }) {
 
       <div className="flex flex-wrap gap-3 border-t border-admin-outline-variant pt-[22px]">
         <Button type="submit" loading={isSubmitting}>
-          {initial ? 'Сохранить' : 'Создать'}
+          {mode === 'edit' ? 'Сохранить' : 'Создать'}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push('/admin/marketing')}>
           Отмена

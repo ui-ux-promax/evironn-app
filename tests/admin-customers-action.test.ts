@@ -9,7 +9,7 @@ vi.mock('@/lib/prisma-client', () => {
   return { prisma };
 });
 
-import { changeUserRole } from '@/app/actions/admin/customers';
+import { changeUserRole, changeUserRoleFromForm } from '@/app/actions/admin/customers';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma-client';
 
@@ -97,5 +97,20 @@ describe('changeUserRole', () => {
     const r = await changeUserRole({ userId: '', role: 'SUPERUSER' });
     expect(r.ok).toBe(false);
     expect(p.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('adapts FormData to the unchanged role action contract', async () => {
+    p.user.findUnique.mockResolvedValue({ role: 'CUSTOMER' });
+    const formData = new FormData();
+    formData.set('userId', 'u2');
+    formData.set('role', 'ADMIN');
+
+    const r = await changeUserRoleFromForm({ ok: false, error: 'stale' }, formData);
+
+    expect(r.ok).toBe(true);
+    expect(p.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'u2', role: 'CUSTOMER' },
+      data: { role: 'ADMIN' },
+    });
   });
 });

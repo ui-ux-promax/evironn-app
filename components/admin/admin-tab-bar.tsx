@@ -4,17 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Icon } from '@/components/admin/icon';
-import { ADMIN_NAV, resolveActiveIndex } from '@/lib/admin/nav';
+import { ADMIN_NAV, ADMIN_NAV_ICON_NAMES, isActiveAdminHref } from '@/lib/admin/nav';
 
 /**
  * Мобильный нижний таб-бар (5 разделов). Виден только <md (десктоп — сайдбар).
  * Активный таб подсвечивается скользящей лайм-пилюлей — механика тоггла темы:
  * 5 равных сегментов → пилюля шириной 1/5 двигается translateX(index*100%),
- * без JS-замеров. Позиция берётся из usePathname через resolveActiveIndex.
+ * без JS-замеров. Позиция берётся из usePathname через isActiveAdminHref.
  */
 export function AdminTabBar() {
   const pathname = usePathname();
-  const active = resolveActiveIndex(pathname);
+  const active = ADMIN_NAV.findIndex((item) => isActiveAdminHref(item, pathname));
 
   return (
     <nav
@@ -48,7 +48,7 @@ export function AdminTabBar() {
                 isActive ? 'text-admin-on-primary' : 'text-admin-on-surface-variant',
               )}
             >
-              <Icon name={item.icon} filled={isActive} className="text-[26px]" />
+              <Icon name={ADMIN_NAV_ICON_NAMES[item.href]} filled={isActive} className="text-[26px]" />
             </Link>
           );
         })}

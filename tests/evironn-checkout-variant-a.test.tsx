@@ -320,6 +320,41 @@ describe('Checkout Variant A', () => {
     expect(mocks.placeOrder).toHaveBeenCalledWith(expect.objectContaining({ contactPhone: '79231445566' }));
   });
 
+  it('preserves edited contact fields through quote recalculation and payment changes', async () => {
+    mocks.placeOrder.mockResolvedValue({ ok: false, code: 'ORDER_FAILED', error: 'Stop after payload assertion' });
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Имя и фамилия' }), {
+      target: { value: 'Ivan Ivanov' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Телефон' }), {
+      target: { value: '8 (923) 144-55-66' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'E-mail' }), {
+      target: { value: 'ivan@example.com' },
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Московская область' }));
+    await waitFor(() => expect(mocks.quote).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('radio', { name: /При получении/ }));
+
+    expect(screen.getByRole('textbox', { name: 'Имя и фамилия' })).toHaveValue('Ivan Ivanov');
+    expect(screen.getByRole('textbox', { name: 'Телефон' })).toHaveValue('+7 (923) 144-55-66');
+    expect(screen.getByRole('textbox', { name: 'E-mail' })).toHaveValue('ivan@example.com');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Оформить заказ/ })[0]);
+    await waitFor(() => expect(mocks.placeOrder).toHaveBeenCalledTimes(1));
+    expect(mocks.placeOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contactName: 'Ivan Ivanov',
+        contactPhone: '79231445566',
+        contactEmail: 'ivan@example.com',
+        paymentMethod: 'cod',
+      }),
+    );
+  });
+
   it('shows DaData address suggestions and selects a Moscow address', async () => {
     vi.stubGlobal(
       'fetch',

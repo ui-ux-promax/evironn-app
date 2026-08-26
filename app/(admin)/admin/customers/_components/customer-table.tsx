@@ -2,21 +2,13 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { UserRole } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Icon } from '@/components/admin/icon';
 import { formatPrice, formatDateTime } from '@/lib/format';
 import { roleView } from '@/lib/customer-admin';
+import type { AdminCustomerRow } from '@/lib/admin/customers';
 
-export interface CustomerRow {
-  id: string;
-  name: string | null;
-  email: string;
-  role: UserRole;
-  orderCount: number;
-  totalSpent: number;
-  createdAt: Date;
-}
+export type CustomerRow = AdminCustomerRow;
 
 export interface CustomerTableProps {
   rows: CustomerRow[];
@@ -74,6 +66,7 @@ export function CustomerTable({ rows, page, totalPages, total, limit }: Customer
                       {row.name?.trim() || 'Без имени'}
                     </a>
                     <div className="text-xs text-admin-on-surface-variant truncate max-w-[240px]">{row.email}</div>
+                    {row.phone && <div className="text-xs text-admin-on-surface-variant truncate">{row.phone}</div>}
                   </td>
                   {/* Роль */}
                   <td className="px-6 py-4">
@@ -116,6 +109,7 @@ export function CustomerTable({ rows, page, totalPages, total, limit }: Customer
                     {row.name?.trim() || 'Без имени'}
                   </a>
                   <div className="text-xs text-admin-on-surface-variant truncate">{row.email}</div>
+                  {row.phone && <div className="text-xs text-admin-on-surface-variant truncate">{row.phone}</div>}
                 </div>
                 <span className={cn('shrink-0', rv.badge)}>{rv.label}</span>
               </div>

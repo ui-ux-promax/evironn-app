@@ -5,9 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PERIOD_VALUES, DEFAULT_PERIOD } from '@/lib/admin/analytics-config';
 
-const LABELS: Record<number, string> = { 7: 'Неделя', 30: 'Месяц', 90: 'Сезон' };
+const LABELS: Record<number, string> = { 7: '7 дней', 30: '30 дней', 90: '90 дней' };
 
-export function PeriodToggle() {
+export function PeriodToggle({ staticView = false }: { staticView?: boolean }) {
+  if (staticView) return <PeriodToggleView active={DEFAULT_PERIOD} />;
+  return <InteractivePeriodToggle />;
+}
+
+function InteractivePeriodToggle() {
   const router = useRouter();
   const params = useSearchParams();
   const raw = Number(params.get('period'));
@@ -20,13 +25,17 @@ export function PeriodToggle() {
     router.push(`/admin?${next.toString()}`);
   }
 
+  return <PeriodToggleView active={active} onChange={setPeriod} />;
+}
+
+function PeriodToggleView({ active, onChange }: { active: number; onChange?: (value: number) => void }) {
   return (
     <div className="flex gap-1 rounded-full border border-admin-outline-variant bg-admin-surface-low p-[5px]">
       {PERIOD_VALUES.map((value) => (
         <button
           key={value}
           type="button"
-          onClick={() => setPeriod(value)}
+          onClick={onChange ? () => onChange(value) : undefined}
           className={cn(
             'min-h-[31px] rounded-full px-[11px] text-[12px] font-extrabold transition-colors',
             value === active

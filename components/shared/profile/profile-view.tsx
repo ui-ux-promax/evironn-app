@@ -181,7 +181,7 @@ export function ProfileView({ user, initial, isAdmin, orders, wishlist, addresse
   const [favorites, setFavorites] = useState<ProductCardData[]>(wishlist);
   const [toast, setToast] = useState<string | null>(null);
 
-  const name = user.name.trim() || user.email.split('@')[0] || 'Покупатель Ritm';
+  const name = user.name.trim() || user.email.split('@')[0] || 'Покупатель Evironn';
   const totalSpent = useMemo(
     () => orders.filter((o) => o.status !== 'CANCELLED').reduce((s, o) => s + o.totalAmount, 0),
     [orders],
@@ -205,7 +205,7 @@ export function ProfileView({ user, initial, isAdmin, orders, wishlist, addresse
     return orders.filter((o) => {
       const matchStatus = filter === 'all' || toFilter(o.status) === filter;
       const searchText = [
-        `ritm-${o.orderNumber}`,
+        `evironn-${o.orderNumber}`,
         ORDER_STATUS_META[o.status].label,
         o.city,
         o.addressLine,
@@ -291,7 +291,7 @@ export function ProfileView({ user, initial, isAdmin, orders, wishlist, addresse
             <div className="mt-[9px] flex flex-wrap items-center gap-2.5 text-[13.5px] text-ink-muted">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(151_35%_38%_/_0.12)] px-3 py-1 text-xs font-bold text-[hsl(151_45%_26%)]">
                 <span className="[&>svg]:h-[13px] [&>svg]:w-[13px]">{ICONS.star}</span>
-                Ritm Club · Gold
+                Evironn Club · Gold
               </span>
               <span className="h-[3px] w-[3px] rounded-full bg-ink-muted/55" />
               <span className="min-w-0 break-all">{user.email}</span>
@@ -501,18 +501,18 @@ function Loyalty({ name, createdAt }: { name: string; createdAt: string }) {
   const p = Math.min(100, Math.round((POINTS / 2000) * 100));
   return (
     <div className="relative isolate grid gap-3.5 overflow-hidden rounded-[24px] bg-footer px-[22px] py-5 text-primary-foreground shadow-[0_22px_70px_hsl(var(--color-text)/.08)] max-[980px]:max-w-[460px]">
-      {/* Watermark — Ritm wordmark */}
+      {/* Watermark — Evironn wordmark */}
       <span
         aria-hidden="true"
         className="pointer-events-none absolute -right-1 -bottom-4 select-none font-display text-[124px] font-extrabold leading-none tracking-[-0.11em] text-primary-foreground opacity-[.08]"
       >
-        Ritm
+        Evironn
       </span>
 
       {/* Top: eyebrow + gold badge */}
       <div className="z-[1] flex justify-between">
         <span className="text-[10.5px] font-extrabold uppercase tracking-[.18em] text-primary-foreground/70">
-          Ritm Club
+          Evironn Club
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-warm/40 bg-warm/15 px-[11px] py-[3px] text-[11px] font-bold text-[hsl(42_92%_72%)]">
           <span className="[&>svg]:h-3 [&>svg]:w-3">{ICONS.star}</span>
@@ -532,7 +532,7 @@ function Loyalty({ name, createdAt }: { name: string; createdAt: string }) {
       <div className="z-[1] flex flex-wrap items-center gap-2.5 text-[12.5px] text-primary-foreground/82">
         <b className="text-primary-foreground">{name}</b>
         <span className="h-[3px] w-[3px] rounded-full bg-primary-foreground/40" />
-        <span>в Ritm с {fmtDate.format(new Date(createdAt))}</span>
+        <span>в Evironn с {fmtDate.format(new Date(createdAt))}</span>
       </div>
 
       {/* Progress bar */}
@@ -576,7 +576,7 @@ function Overview({
         <Stat icon={ICONS.orders} n={orders.length} t="Заказов" />
         <Stat icon={ICONS.money} n={formatPrice(totalSpent)} t="Потрачено" />
         <Stat icon={ICONS.favorites} n={favs} t="В избранном" />
-        <Stat icon={ICONS.star} n={POINTS.toLocaleString('ru-RU')} t="Баллов Ritm Club" />
+        <Stat icon={ICONS.star} n={POINTS.toLocaleString('ru-RU')} t="Баллов Evironn Club" />
       </div>
 
       {/* Columns: recent orders + profile summary */}
@@ -742,7 +742,7 @@ function OrderCard({ order, open, toggle }: { order: ProfileOrder; open: boolean
         {/* Meta */}
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="font-display text-base font-extrabold tracking-tight">RITM-{order.orderNumber}</span>
+            <span className="font-display text-base font-extrabold tracking-tight">EVN-{order.orderNumber}</span>
             <OrderStatusBadge status={order.status} paymentStatus={order.paymentStatus} />
           </div>
           <p className="mt-[5px] text-[12.5px] text-ink-muted">
@@ -1414,7 +1414,7 @@ function MiniOrder({ order }: { order: ProfileOrder }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-bold">RITM-{order.orderNumber}</div>
+        <div className="text-[13px] font-bold">EVN-{order.orderNumber}</div>
         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
           <span>
             {fmtDate.format(new Date(order.createdAt))} · {order.items.length} поз.

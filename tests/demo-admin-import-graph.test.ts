@@ -18,7 +18,7 @@ const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx'] as const;
 const allowedBareImports = new Set(['next', 'next/link', 'next/navigation', 'react']);
 const localImportPattern = /\b(?:import|export)\s+(?:[^'";\n]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 const dynamicImportPattern = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-const requirePattern = /\brequire\s*\(([\s\S]*?)\)/g;
+const requireTokenPattern = /\brequire\b/g;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(resolve(root, directory), { withFileTypes: true }).flatMap((entry) => {
@@ -62,10 +62,15 @@ export function findDemoBoundaryViolations(file: string, source: string): string
     else if (!specifier.startsWith('.') && !specifier.startsWith('@/') && !allowedBareImports.has(specifier))
       violations.push(`${file}: disallowed bare import ${specifier}`);
   }
-  for (const match of source.matchAll(requirePattern)) {
-    const argument = match[1].trim();
-    const literal = argument.match(/^(['"])([\s\S]*)\1$/)?.[2];
-    violations.push(`${file}: require(${(literal ?? argument) || 'non-literal'})`);
+  for (const match of source.matchAll(requireTokenPattern)) {
+    const index = match.index ?? 0;
+    const suffix = source.slice(index + match[0].length);
+    const call = suffix.match(/^(?:(?:\s+|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*(?:\r\n?|\n|$)))*(?:\?\.\s*)?\(([\s\S]*?)\)/);
+    const parenthesizedCall = suffix.match(/^\s*\)\s*(?:\?\.\s*)?\(([\s\S]*?)\)/);
+    const argument = (call ?? parenthesizedCall)?.[1]?.trim();
+    const literal = argument?.match(/^(['"])([\s\S]*)\1$/)?.[2];
+    const detail = argument === undefined ? 'reference' : `(${(literal ?? argument) || 'non-literal'})`;
+    violations.push(`${file}: require${detail}`);
   }
   if (/\bimport\s*\(\s*([^'"\s][^)]*)\)/.test(source)) violations.push(`${file}: non-literal dynamic import`);
 
@@ -163,6 +168,9 @@ describe('demo admin recursive import closure', () => {
       ["require('node:fs');", 'require'],
       ['require(moduleName);', 'require identifier'],
       ['require(`node:${moduleName}`);', 'require template literal'],
+      ["require /* comment */ ('node:fs');", 'require comment-separated call'],
+      ["require?.('node:fs');", 'require optional call'],
+      ["(require)('node:fs');", 'require parenthesized callee'],
       ['import(`./${name}`);', 'dynamic import'],
     ] as const;
 

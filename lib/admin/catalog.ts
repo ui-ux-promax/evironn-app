@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma-client';
 import { buildPaginationMeta, parsePaginationParams } from '@/lib/admin/pagination';
+import { absoluteUrl } from '@/lib/seo';
 import { furnitureProductSchema, type FurnitureProductValues } from '@/services/dto/product.dto';
 
 export type AdminPagedResult<T> = { rows: T[]; total: number; page: number; limit: number; pageCount: number };
@@ -84,6 +85,10 @@ export type AdminProductDraft = {
   identity: { productId: string; slug: string; hasLegacyTree: boolean; canonicalSkuCount: number };
   values: FurnitureProductValues;
 };
+
+function normalizeMediaUrl(url: string) {
+  return absoluteUrl(url);
+}
 
 const productSelect = {
   id: true,
@@ -307,7 +312,7 @@ export async function getAdminProductDraft(productId: string): Promise<AdminProd
       media: sku.media.map((media) => ({
         id: media.id,
         kind: media.kind,
-        url: media.url,
+        url: normalizeMediaUrl(media.url),
         ...(media.publicId ? { publicId: media.publicId } : {}),
         ...(media.alt ? { alt: media.alt } : {}),
         sortOrder: media.sortOrder,
@@ -316,7 +321,7 @@ export async function getAdminProductDraft(productId: string): Promise<AdminProd
     media: product.media.map((media) => ({
       id: media.id,
       kind: media.kind,
-      url: media.url,
+      url: normalizeMediaUrl(media.url),
       ...(media.publicId ? { publicId: media.publicId } : {}),
       ...(media.alt ? { alt: media.alt } : {}),
       sortOrder: media.sortOrder,

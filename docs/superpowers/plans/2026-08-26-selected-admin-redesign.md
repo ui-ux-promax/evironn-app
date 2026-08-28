@@ -12,12 +12,12 @@
 
 - Repository: `D:\Projects\evironn`.
 - Visual sources of truth:
-  - `docs/design/admin-redesign/concepts/06-selected-evironn-admin.png` — dashboard desktop;
+  - `docs/design/admin-redesign/concepts/06-selected-evironn-admin.png` — pixel-level dashboard desktop target: match its geometry, density, spacing, surface hierarchy, borders, radii, shadows, and component presentation; only Evironn branding/Golos, navigation, and authoritative dynamic data may differ;
   - `docs/design/admin-redesign/concepts/07-catalog-products-reference.png` — catalog list desktop;
   - `docs/design/admin-redesign/concepts/08-product-form-reference-v2.png` — product/SKU/media/360 form desktop;
   - `docs/design/admin-redesign/concepts/09-order-detail-reference.png` — order detail desktop;
   - `docs/design/admin-redesign/concepts/10-mobile-catalog-reference-v2.png` — catalog mobile.
-- Functional source of truth: the completed Phase 5 implementation and its tests; image-generated text and data are never authoritative.
+- Functional source of truth: the completed Phase 5 implementation and its tests; image-generated text and data are never authoritative. Visual source fidelity is still required at component/layout level.
 - Before implementation, fetch refs, verify Phase 5 is merged into `origin/dev`, fast-forward local `dev`, and create a new branch `feat/admin-redesign` from exact `origin/dev`. Stop if histories differ, identity is not the user's configured identity, or Phase 5 is not merged.
 - Preserve the two protected untracked Phase 2 plan files and any pre-existing `docs/design/**` assets.
 - Use the real Evironn logo and `Golos Text` via existing `--ev-font-*` tokens.
@@ -78,16 +78,16 @@
 
 **Consumes:** Existing `DashboardKpis`, `KpiSeriesPoint`, `StatusDistribution`, `BestSeller`, `AdminLowStockSku`, `RecentOrderRow`, and `AdminCatalogKpis` interfaces.
 
-**Produces:** A live-data dashboard matching the selected reference's composition without invented storefront analytics.
+**Produces:** A live-data dashboard closely matching the approved reference at pixel-level component/layout fidelity while preserving authoritative production data and without invented storefront analytics.
 
 - [ ] Add focused RED assertions for the visible dashboard structure: `Выручка за период`, existing order/average/cancellation metrics, status module, furniture module, and `Последние заказы`. Preserve empty-state coverage.
 - [ ] Run `npm test -- tests/admin-dashboard-render.test.ts tests/admin-dashboard-analytics.test.ts`; expect only new composition assertions to fail.
-- [ ] Recompose the dashboard into the selected reference hierarchy: dominant revenue chart, compact KPI tiles, right-side status/funnel treatment, furniture module, category or approved fallback module, and full-width recent-orders table.
+- [ ] Recompose the dashboard into the approved reference hierarchy and proportions: dominant left sales panel, equal-height right funnel, horizontal furniture cards, circular category indicators, and full-width compact recent-orders table. Match geometry, density, spacing, borders, shadows, radii, chart treatment, and status-stage presentation; preserve only authoritative Evironn data/branding differences.
 - [ ] Build the order funnel only from existing order-status counts. Do not display visits, cart additions, checkout conversion, or any generated metric absent from authoritative projections.
-- [ ] Use `AdminCatalogKpis`, best sellers, and low-stock data already provided. Add no Prisma query merely to imitate generated artwork; if category distribution is unavailable, render the existing authoritative inventory/status information in that slot.
+- [ ] Use `AdminCatalogKpis`, best sellers, and low-stock data already provided. A bounded read-only category aggregate is allowed only when derived from existing canonical order/product/category records and covered by a focused test; never add a query merely to imitate generated artwork. If unavailable, render an honest empty or existing authoritative fallback.
 - [ ] Preserve the `?days=7|30|90` period contract, links, zero-data states, status translations, ruble formatting, and reduced-motion behavior.
 - [ ] Run the focused Task 2 command, touched-file Prettier check, and `git diff --check`.
-- [ ] Capture `/admin` at `1440×900` and `390×844`; compare macro layout, density, typography, surface hierarchy, and overflow against the approved dashboard reference.
+- [ ] Capture `/admin` at `1440×900` and `390×844`; compare side-by-side against the approved dashboard reference at component/geometry level, including panel proportions, furniture cards, category rings, funnel stages, table density, and overflow.
 - [ ] Stop for user dashboard acceptance. Remediate visual differences before proceeding.
 - [ ] Commit after acceptance: `feat(admin): redesign operational dashboard`.
 

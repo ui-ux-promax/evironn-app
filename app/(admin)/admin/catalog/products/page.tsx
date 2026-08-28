@@ -1,24 +1,16 @@
 import Link from 'next/link';
-import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { AdminPanel } from '@/components/admin/admin-panel';
-import { Button } from '@/components/admin/ui/button';
 import { Icon } from '@/components/admin/icon';
-import { prisma } from '@/lib/prisma-client';
-import { parsePaginationParams, readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
-import { formatPrice } from '@/lib/format';
-import { ProductFilters } from './_components/product-filters';
-import { ProductTable, type ProductRow } from './_components/product-table';
-import { ViewToggle } from './_components/view-toggle';
+import { parsePaginationParams, readEnumParam, readSearchQuery } from '@/lib/admin/pagination';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { listAdminCatalogProducts, listAdminCategoriesForCatalog, listAdminRoomsForCatalog } from '@/lib/admin/catalog';
+import { CatalogTabs } from '../_components/catalog-tabs';
+import { ProductFilters } from './_components/product-filters';
+import { ProductTable, type ProductRow } from './_components/product-table';
 
 export const metadata = { title: 'Товары' };
 export const dynamic = 'force-dynamic';
 
 type SP = Record<string, string | string[] | undefined>;
-
-const LOW_STOCK_TOTAL = 200; // порог для подписи «Здоровый/Низкий» на карточке остатка
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireAdminPage();
@@ -30,67 +22,67 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const status = readEnumParam(sp, 'status', ['all', 'active', 'inactive', 'incomplete'] as const) ?? 'all';
   const sort = readEnumParam(sp, 'sort', ['sortOrder', 'name', 'minPrice', 'stock'] as const) ?? 'sortOrder';
 
-  const [catalog, categories, rooms, stockAgg, topBrandRows, salesAgg] = await Promise.all([
+  const [catalog, categories, rooms] = await Promise.all([
     listAdminCatalogProducts({ page, limit, q, categoryId, roomId, status, sort }),
     listAdminCategoriesForCatalog(),
     listAdminRoomsForCatalog(),
-    prisma.sku.aggregate({ _sum: { stock: true }, where: { product: { active: true } } }),
-    prisma.product.groupBy({
-      by: ['brand'],
-      _sum: { salesCount: true },
-      orderBy: { _sum: { salesCount: 'desc' } },
-      take: 1,
-    }),
-    prisma.orderItem.aggregate({ _sum: { lineTotal: true } }),
   ]);
 
   const total = catalog.total;
   const rows: ProductRow[] = catalog.rows;
 
-  const stockTotal = stockAgg._sum.stock ?? 0;
-  const topBrand = topBrandRows[0]?.brand ?? '—';
-  const salesValue = salesAgg._sum.lineTotal ?? 0;
-
   return (
-    <div className="space-y-[24px]">
-      <AdminPageHeader
-        kicker="Каталог"
-        title={`Товары (${total})`}
-        subtitle="Управление карточками, остатками, ценами и статусами витрины."
-        action={
-          <div className="flex flex-wrap items-center gap-3">
-            <ViewToggle />
-            <Button asChild>
-              <Link href="/admin/catalog/products/new">
-                <Icon name="add" className="text-[18px]" /> Добавить товар
-              </Link>
-            </Button>
+    <div className="space-y-5">
+      <header className="flex flex-col gap-5 rounded-[28px] border border-admin-outline-variant bg-admin-surface px-6 py-6 shadow-[var(--admin-shadow-tight)] sm:px-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-admin-on-surface-variant">
+              Управление ассортиментом
+            </p>
+            <h1 className="mt-2 text-[clamp(2rem,3.2vw,2.75rem)] font-medium leading-none tracking-tight text-admin-on-surface">
+              Каталог товаров
+            </h1>
+            <p className="mt-3 max-w-[62ch] text-[13.5px] leading-6 text-admin-on-surface-variant">
+              Карточки, варианты, цены и доступность товаров в одном рабочем списке.
+            </p>
           </div>
-        }
-      />
 
-      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
-        <AdminKpiCard icon="trending_up" label="Объем продаж" value={formatPrice(salesValue)} tone="primary" />
-        <AdminKpiCard
-          icon="inventory_2"
-          label="Текущий остаток"
-          value={stockTotal.toLocaleString('ru-RU')}
-          delta={stockTotal >= LOW_STOCK_TOTAL ? 'Здоровый' : 'Низкий'}
-          tone={stockTotal >= LOW_STOCK_TOTAL ? 'default' : 'danger'}
-        />
-        <AdminKpiCard icon="workspace_premium" label="Лидер продаж" value={topBrand} delta="Топ-бренд" />
-      </div>
+          <Link
+            href="/admin/catalog/products/new"
+            className="inline-flex min-h-11 w-fit shrink-0 items-center justify-center gap-2 rounded-[14px] bg-admin-primary px-5 text-sm font-bold text-white transition-colors hover:bg-admin-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2"
+          >
+            <Icon name="add" className="text-[18px]" />
+            Добавить товар
+          </Link>
+        </div>
 
-      <AdminPanel
-        title="Каталог товаров"
-        note="Поиск работает по названию, slug и SKU. Фильтры сбрасывают пагинацию."
-        actions={
-          <div className="text-[13px] font-bold text-admin-on-surface-variant">
-            Показано <b className="font-mono text-admin-on-surface">{total}</b> товаров
-          </div>
-        }
+        <CatalogTabs embedded productCount={total} />
+      </header>
+
+      <ProductFilters options={{ categories, rooms }} />
+
+      <section
+        aria-labelledby="product-registry-heading"
+        className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface shadow-[var(--admin-shadow-tight)]"
       >
-        <ProductFilters options={{ categories, rooms }} />
+        <div className="flex flex-col gap-3 border-b border-admin-outline-variant px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="product-registry-heading" className="text-base font-medium text-admin-on-surface">
+              Товарный реестр
+            </h2>
+            <p className="mt-1 text-[13px] text-admin-on-surface-variant">
+              {total} товаров · сведения об остатках и ценах обновлены
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Экспортировать каталог"
+            className="inline-flex min-h-9 w-fit items-center justify-center gap-2 rounded-[10px] border border-admin-outline-variant px-3.5 text-xs font-bold text-admin-on-surface-variant transition-colors hover:bg-admin-surface-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2"
+          >
+            <Icon name="download" className="text-[18px]" />
+            Экспорт
+          </button>
+        </div>
 
         {rows.length > 0 ? (
           <ProductTable
@@ -101,11 +93,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             limit={catalog.limit}
           />
         ) : (
-          <div className="mt-[18px] rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-10 text-center text-sm font-bold text-admin-on-surface-variant">
-            Товары не найдены.
-          </div>
+          <div className="p-10 text-center text-sm font-bold text-admin-on-surface-variant">Товары не найдены.</div>
         )}
-      </AdminPanel>
+      </section>
     </div>
   );
 }

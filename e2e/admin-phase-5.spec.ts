@@ -30,12 +30,12 @@ test('Phase 5D protected routes remain ADMIN only', async ({ page }, testInfo) =
     await signIn(page, fixture.customerEmail);
     await page.goto('/admin');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('admin-dashboard')).toHaveCount(0);
+    await expect(page.getByTestId('admin-dashboard-reference')).toHaveCount(0);
 
     await page.context().clearCookies();
     await signIn(page, fixture.adminEmail);
     await page.goto('/admin');
-    await expect(page.getByTestId('admin-dashboard')).toBeVisible();
+    await expect(page.getByTestId('admin-dashboard-reference')).toBeVisible();
   } finally {
     const cleanup = await cleanupPhase5Fixture(fixture, []);
     expect(cleanup.allZero).toBe(true);

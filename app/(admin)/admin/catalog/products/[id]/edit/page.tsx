@@ -1,6 +1,4 @@
 import { notFound } from 'next/navigation';
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { AdminPanel } from '@/components/admin/admin-panel';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { getAdminProductDraft, listAdminRoomsForCatalog } from '@/lib/admin/catalog';
@@ -23,19 +21,11 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const initial: ProductFormInitial = { id, ...draft.values };
 
   return (
-    <div className="space-y-[24px]">
-      <AdminPageHeader kicker="Каталог" title="Редактирование товара" subtitle={draft.values.name} />
-      <AdminPanel
-        title="Данные товара"
-        note="Изменения применятся после сохранения. Существующие SKU сохраняют свои immutable selections."
-      >
-        <ProductForm
-          initial={initial}
-          categories={categories}
-          brands={brandRows.map((b) => b.brand)}
-          availableRooms={rooms}
-        />
-      </AdminPanel>
-    </div>
+    <ProductForm
+      initial={initial}
+      categories={categories}
+      brands={brandRows.map((b) => b.brand)}
+      availableRooms={rooms}
+    />
   );
 }

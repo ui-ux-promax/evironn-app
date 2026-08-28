@@ -92,6 +92,16 @@ export type DashboardKpis = {
   unitsSold: Kpi;
 };
 
+export type AdminFunnelProjection = {
+  carts: number;
+  orders: number;
+  paid: number;
+  shipped: number;
+  completed: number;
+  conversion: number | null;
+  conversionDelta: number | null;
+};
+
 export type AdminCatalogKpis = {
   activeProducts: number;
   totalSkus: number;
@@ -360,7 +370,138 @@ export type BestSeller = {
   imageUrl: string | null;
   units: number;
   revenue: number;
+  availableStock: number;
 };
+
+export type AdminCategorySummary = {
+  categoryId: string;
+  name: string;
+  value: number;
+  sharePct: number;
+};
+
+export async function getAdminCategoryDistribution(
+  db: Db = defaultPrisma,
+  range: ResolvedPeriod,
+): Promise<AdminCategorySummary[]> {
+  const rows = await db.$queryRaw<{ category_id: string | null; name: string | null; value: number }[]>(Prisma.sql`
+    WITH category_sales AS (
+      SELECT c.id AS category_id,
+             c.name,
+             SUM(oi."lineTotal")::int AS value
+      FROM "OrderItem" oi
+      JOIN "Order" o ON o.id = oi."orderId"
+      LEFT JOIN "Sku" s ON s.id = oi."skuId"
+      LEFT JOIN "ProductVariant" pv ON pv.id = oi."productVariantId"
+      LEFT JOIN "ProductColorway" pc ON pc.id = pv."colorwayId"
+      LEFT JOIN "Product" p ON p.id = COALESCE(s."productId", pc."productId")
+      LEFT JOIN "Category" c ON c.id = p."categoryId"
+      WHERE o.status::text <> 'CANCELLED'
+        AND o."createdAt" >= ${range.current.gte} AND o."createdAt" < ${range.current.lt}
+      GROUP BY c.id, c.name
+    )
+    SELECT c.id AS category_id,
+           c.name,
+           COALESCE(cs.value, 0)::int AS value,
+           c."sortOrder" AS sort_order
+    FROM "Category" c
+    LEFT JOIN category_sales cs ON cs.category_id = c.id
+    UNION ALL
+    SELECT cs.category_id,
+           cs.name,
+           cs.value,
+           2147483647 AS sort_order
+    FROM category_sales cs
+    WHERE cs.category_id IS NULL
+    ORDER BY value DESC, sort_order ASC, name ASC
+  `);
+
+  const normalized = rows.map((row) => ({
+    categoryId: row.category_id ?? '__unresolved__',
+    name: row.name ?? 'Нераспределено',
+    value: Number(row.value) || 0,
+  }));
+  const total = normalized.reduce((sum, row) => sum + row.value, 0);
+  if (total === 0) {
+    return [];
+  }
+
+  const positive = normalized.filter((row) => row.value > 0);
+  let top = positive.filter((row) => row.categoryId !== '__unresolved__').slice(0, 4);
+  const visibleIds = new Set(top.map((row) => row.categoryId));
+  const remainder = positive
+    .filter((row) => row.categoryId === '__unresolved__' || !visibleIds.has(row.categoryId))
+    .reduce((sum, row) => sum + row.value, 0);
+  if (remainder > 0) top.push({ categoryId: 'other', name: 'Другое', value: remainder });
+
+  const allocateShares = (items: typeof top) => {
+    const rawShares = items.map((row) => (row.value / total) * 100);
+    const shares = rawShares.map((share) => Math.floor(share));
+    let allocatedRemainder = 100 - shares.reduce((sum, share) => sum + share, 0);
+    const byLargestRemainder = rawShares
+      .map((share, index) => ({ index, fraction: share - Math.floor(share) }))
+      .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+    for (const { index } of byLargestRemainder) {
+      if (allocatedRemainder <= 0) break;
+      shares[index] += 1;
+      allocatedRemainder -= 1;
+    }
+    return shares;
+  };
+
+  let shares = allocateShares(top);
+  const zeroShareValue = top.reduce(
+    (sum, row, index) => sum + (shares[index] === 0 && row.categoryId !== 'other' ? row.value : 0),
+    0,
+  );
+  if (zeroShareValue > 0) {
+    const visible = top.filter((row, index) => shares[index] > 0 || row.categoryId === 'other');
+    const other = visible.find((row) => row.categoryId === 'other');
+    if (other) {
+      other.value += zeroShareValue;
+    } else {
+      visible.push({ categoryId: 'other', name: 'Другое', value: zeroShareValue });
+    }
+    top = visible;
+    shares = allocateShares(top);
+
+    const otherIndex = top.findIndex((row) => row.categoryId === 'other');
+    const donorIndex = shares.findIndex((share, index) => index !== otherIndex && share > 1);
+    if (otherIndex >= 0 && shares[otherIndex] === 0 && donorIndex >= 0) {
+      shares[otherIndex] = 1;
+      shares[donorIndex] -= 1;
+    }
+  }
+
+  return top.map((row, index) => ({ ...row, sharePct: shares[index] }));
+}
+
+export async function getAdminFunnelProjection(
+  db: Db = defaultPrisma,
+  range: ResolvedPeriod,
+): Promise<AdminFunnelProjection> {
+  const currentCreatedAt = { gte: range.current.gte, lt: range.current.lt };
+  const previousCreatedAt = { gte: range.previous.gte, lt: range.previous.lt };
+  const nonCancelled = { not: 'CANCELLED' as OrderStatus };
+  const [carts, previousCarts, orders, previousOrders, paid, shipped, completed] = await Promise.all([
+    db.cart.count({ where: { createdAt: currentCreatedAt } }),
+    db.cart.count({ where: { createdAt: previousCreatedAt } }),
+    db.order.count({ where: { createdAt: currentCreatedAt, status: nonCancelled } }),
+    db.order.count({ where: { createdAt: previousCreatedAt, status: nonCancelled } }),
+    db.order.count({
+      where: { createdAt: currentCreatedAt, status: nonCancelled, payment: { is: { status: 'succeeded' } } },
+    }),
+    db.order.count({ where: { createdAt: currentCreatedAt, status: { in: ['SHIPPED', 'DELIVERED'] } } }),
+    db.order.count({ where: { createdAt: currentCreatedAt, status: 'DELIVERED' } }),
+  ]);
+
+  const conversion = carts === 0 ? null : Math.round((orders / carts) * 1000) / 10;
+  const previousConversion = previousCarts === 0 ? null : Math.round((previousOrders / previousCarts) * 1000) / 10;
+  const conversionDelta =
+    conversion === null || previousConversion === null ? null : Math.round((conversion - previousConversion) * 10) / 10;
+
+  return { carts, orders, paid, shipped, completed, conversion, conversionDelta };
+}
 
 export async function getBestSellers(db: Db = defaultPrisma, range: ResolvedPeriod): Promise<BestSeller[]> {
   const rows = await db.$queryRaw<
@@ -400,11 +541,14 @@ export async function getBestSellers(db: Db = defaultPrisma, range: ResolvedPeri
         take: 1,
         select: { images: { take: 1, orderBy: { sortOrder: 'asc' }, select: { url: true } } },
       },
+      skus: { where: { active: true }, select: { stock: true } },
     },
   });
   const imageByProduct = new Map<string, string | null>();
+  const stockByProduct = new Map<string, number>();
   for (const prod of products) {
     imageByProduct.set(prod.id, prod.media[0]?.url ?? prod.colorways[0]?.images[0]?.url ?? null);
+    stockByProduct.set(prod.id, prod.skus.reduce((sum, sku) => sum + sku.stock, 0));
   }
 
   return rows.map((r) => ({
@@ -414,6 +558,7 @@ export async function getBestSellers(db: Db = defaultPrisma, range: ResolvedPeri
     imageUrl: imageByProduct.get(r.product_id) ?? null,
     units: r.units,
     revenue: r.revenue,
+    availableStock: stockByProduct.get(r.product_id) ?? 0,
   }));
 }
 
@@ -459,6 +604,8 @@ export type RecentOrderRow = {
   itemCount: number;
   productName: string | null;
   imageUrl: string | null;
+  shippingMethod?: string | null;
+  deliveryDate?: Date | null;
 };
 
 export async function getRecentOrders(db: Db = defaultPrisma): Promise<RecentOrderRow[]> {
@@ -472,6 +619,8 @@ export async function getRecentOrders(db: Db = defaultPrisma): Promise<RecentOrd
       totalAmount: true,
       createdAt: true,
       contactName: true,
+      shippingMethod: true,
+      deliveryDate: true,
       payment: { select: { status: true } },
       user: { select: { email: true } },
       items: {
@@ -491,6 +640,8 @@ export async function getRecentOrders(db: Db = defaultPrisma): Promise<RecentOrd
     email: o.user?.email ?? null,
     itemCount: o.items.reduce((sum, item) => sum + item.quantity, 0),
     productName: o.items[0]?.productName ?? null,
-    imageUrl: o.items.find((item) => item.imageUrl)?.imageUrl ?? null,
+    imageUrl: o.items[0]?.imageUrl ?? null,
+    shippingMethod: o.shippingMethod,
+    deliveryDate: o.deliveryDate,
   }));
 }

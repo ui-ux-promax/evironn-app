@@ -7,7 +7,6 @@
 import type { ReactNode } from 'react';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { AdminShell } from '@/components/admin/admin-shell';
-import { ScrollLock } from '@/components/admin/scroll-lock';
 
 export const metadata = {
   title: {
@@ -21,8 +20,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const session = await requireAdminPage();
 
   return (
-    <div className="admin-root font-admin-body h-screen overflow-hidden">
-      <ScrollLock />
+    <div className="admin-root font-admin-body min-h-screen overflow-visible">
       {/* Material Symbols icon font — нужен только в админке, поэтому здесь, а не в корне.
           display=block: пока шрифт не пришёл, глиф не рендерится текстом лигатуры
           (никаких «dashboard», «inventory_2» в сайдбаре) — «невидимый период» ~3s,

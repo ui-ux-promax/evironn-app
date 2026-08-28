@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,88 +8,112 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-import { DashboardView, type AdminDashboardViewProps } from '@/app/(admin)/admin/_components/dashboard-view';
-
-const emptyProjection: AdminDashboardViewProps = {
-  user: { name: 'Admin', email: 'admin@example.com', image: null },
-  periodLabel: 'Последние 30 дней, все каналы продаж',
-  kpis: {
-    revenue: { value: 0, trend: { pct: 0, dir: 'flat' } },
-    orders: { value: 0, trend: { pct: 0, dir: 'flat' } },
-    avgOrder: { value: 0, trend: { pct: 0, dir: 'flat' } },
-    newCustomers: { value: 0, trend: { pct: 0, dir: 'flat' } },
-    unitsSold: { value: 0, trend: { pct: 0, dir: 'flat' } },
-  },
-  kpiSeries: [],
-  statusDist: { segments: [], total: 0 },
-  bestSellers: [],
-  lowStock: [],
-  recentOrders: [],
-  catalog: {
-    activeProducts: 0,
-    totalSkus: 0,
-    activeSkus: 0,
-    lowStockSkus: 0,
-    outOfStockSkus: 0,
-    categories: 0,
-    rooms: 0,
-    turntableBoundCategories: 0,
-    turntableCoverageRatio: 0,
-  },
-  pendingPayments: 0,
-};
+import { DashboardReferenceView } from '@/app/(admin)/admin/_components/dashboard-reference-view';
+import type { DashboardReferenceModel } from '@/app/(admin)/admin/_components/dashboard-reference-model';
 
 describe('admin dashboard composition', () => {
-  it('renders the clone dashboard landmarks and exactly four KPI cards', () => {
-    const markup = renderToStaticMarkup(createElement(DashboardView, emptyProjection));
+  it('owns the screenshot-first dashboard behind an isolated presentation boundary', () => {
+    const model = readFileSync('app/(admin)/admin/_components/dashboard-reference-model.ts', 'utf8');
+    const view = readFileSync('app/(admin)/admin/_components/dashboard-reference-view.tsx', 'utf8');
 
-    expect(markup).toContain('data-testid="admin-dashboard"');
-    for (const heading of [
-      'Обзор',
-      'Сводка смены',
-      'Выручка по дням',
-      'Статусы',
-      'Часто покупают',
-      'Последние заказы',
-    ]) {
-      expect(markup).toContain(heading);
-    }
-
-    for (const label of ['Выручка', 'Заказы', 'Средний чек', 'Отмены']) {
-      expect(markup).toContain(label);
-    }
-    expect(markup.match(/data-testid="admin-kpi"/g)).toHaveLength(4);
-
-    expect(markup).toContain('Всё, что нужно держать в поле зрения: деньги, очередь заказов и остатки.');
-    expect(markup).not.toContain('Ritm');
+    expect(model).toContain('export type DashboardReferenceModel');
+    expect(view).toContain('export function DashboardReferenceView');
+    expect(view).toContain('DashboardReferenceModel');
+    expect(view).not.toContain('@/lib/prisma-client');
+    expect(view).not.toContain('@prisma/client');
   });
 
-  it('uses the Evironn display face for the top KPI values', () => {
-    const styles = readFileSync('app/(admin)/admin/_components/dashboard-view.module.css', 'utf8');
-    const kpiValue = styles.match(/\.kpiValue\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+  it('keeps the visual fixture out of the protected production page', () => {
+    const page = readFileSync('app/(admin)/admin/page.tsx', 'utf8');
 
-    expect(kpiValue).toContain('font-family: var(--ev-font-display);');
-    expect(kpiValue).not.toContain('Fraunces');
+    expect(page).toContain('createDashboardReferenceModel');
+    expect(page).not.toContain('DASHBOARD_REFERENCE_FIXTURE');
+    expect(page).not.toContain('screenshotFirstFixture');
   });
 
-  it('keeps visible dashboard typography in the Golos admin system', () => {
-    const styles = readFileSync('app/(admin)/admin/_components/dashboard-view.module.css', 'utf8');
-    const title = styles.match(/\.title\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+  it('renders every approved screenshot region from one presentation model', () => {
+    const model = {
+      period: 30,
+      revenue: { label: 'Выручка', value: '485 420 ₽', trend: '+12,6% к прошлому месяцу' },
+      kpis: [
+        { id: 'orders', icon: 'shopping_cart', label: 'Заказы', value: '1 248', trend: '+8,4%' },
+        { id: 'average', icon: 'sell', label: 'Средний чек', value: '388 ₽', trend: '+5,2%' },
+        { id: 'conversion', icon: 'trending_up', label: 'Конверсия', value: '3,2%', trend: '+0,6%' },
+      ],
+      revenueSeries: Array.from({ length: 30 }, (_, index) => ({
+        label: `День ${String(index + 1).padStart(2, '0')}`,
+        value: 12000 + index * 1000,
+      })),
+      funnel: {
+        stages: [
+          { id: 'views', icon: 'visibility', label: 'Просмотры', value: '18 742' },
+          { id: 'carts', icon: 'shopping_cart', label: 'Корзина', value: '3 896' },
+          { id: 'checkout', icon: 'credit_card', label: 'Оформление', value: '1 745' },
+          { id: 'orders', icon: 'payments', label: 'Заказы', value: '1 248' },
+          { id: 'completed', icon: 'check_circle', label: 'Выполненные', value: '1 156' },
+        ],
+        footerLabel: 'Конверсия в заказ',
+        footerValue: '6,2%',
+        footerTrend: '+0,8%',
+      },
+      inventory: Array.from({ length: 4 }, (_, index) => ({
+        id: `product-${index}`,
+        name: `Товар ${index + 1}`,
+        imageUrl: null,
+        availability: 'В наличии',
+        stock: String(42 - index),
+        href: '/admin/catalog/products',
+      })),
+      categories: Array.from({ length: 4 }, (_, index) => ({
+        id: `category-${index}`,
+        name: `Категория ${index + 1}`,
+        icon: 'chair',
+        share: 32 - index * 6,
+      })),
+      categoryOther: { label: 'Другое', share: 14 },
+      orders: Array.from({ length: 4 }, (_, index) => ({
+        id: `order-${index}`,
+        href: `/admin/orders/order-${index}`,
+        number: `№1254${8 - index}`,
+        date: '31 мая 2024',
+        customer: 'Иван Петров',
+        products: [{ name: 'Диван', imageUrl: null }],
+        overflowCount: index,
+        total: '142 900 ₽',
+        orderStatus: { label: 'Выполнен', tone: 'success' },
+        paymentStatus: { label: 'Оплачено', tone: 'success' },
+        fulfillmentStatus: { label: 'Отправлен', tone: 'success' },
+      })),
+    } satisfies DashboardReferenceModel;
 
-    expect(title).toContain('font-family: var(--ev-font-body);');
-    expect(title).not.toMatch(/Fraunces|Georgia|serif/i);
-  });
+    const markup = renderToStaticMarkup(createElement(DashboardReferenceView, { model }));
+    const css = readFileSync('app/(admin)/admin/_components/dashboard-reference-view.module.css', 'utf8');
 
-  it('uses real status distribution data for the cancellations KPI', () => {
-    const markup = renderToStaticMarkup(
-      createElement(DashboardView, {
-        ...emptyProjection,
-        statusDist: { segments: [{ status: 'CANCELLED', label: 'Отменён', count: 3 }], total: 3 },
-      }),
-    );
-
-    expect(markup).toContain('data-kpi="cancellations"');
-    expect(markup).toContain('>3</strong>');
+    expect(markup).toContain('data-testid="reference-sales-panel"');
+    expect(markup.match(/data-testid="reference-kpi"/g)).toHaveLength(3);
+    expect(markup).toContain('data-testid="reference-revenue-chart"');
+    expect(markup).toContain('data-testid="reference-chart-animation"');
+    expect(markup).toContain('data-testid="reference-revenue-curve"');
+    expect(markup.match(/data-testid="reference-chart-label"/g)).toHaveLength(7);
+    expect(markup).toContain('День 01');
+    expect(markup).toContain('День 30');
+    expect(markup).not.toContain('День 02');
+    expect(markup.match(/data-testid="reference-funnel-stage"/g)).toHaveLength(5);
+    expect(markup).toContain('data-testid="reference-funnel-animation"');
+    expect(markup).not.toContain('data-testid="reference-funnel-shape"');
+    expect(markup.match(/data-testid="reference-inventory-card"/g)).toHaveLength(4);
+    expect(markup.match(/data-testid="reference-category-ring"/g)).toHaveLength(4);
+    expect(markup).toContain('data-testid="reference-orders-table"');
+    expect(markup).toContain('Показатели продаж');
+    expect(markup).toContain('Товары на складе');
+    expect(markup).toContain('Популярные категории');
+    expect(markup).toContain('Последние заказы');
+    expect(css).toContain('@keyframes dashboardFunnelReveal');
+    expect(css).toContain('@keyframes dashboardChartDraw');
+    expect(css).toContain('dashboardChartDraw 1800ms');
+    expect(css).toContain('prefers-reduced-motion: reduce');
+    expect(css).toContain('.funnelStageAnimated');
+    expect(css).toContain('.chartLineAnimated');
   });
 
   it('keeps page and layout authorization source contracts before reads and shell output', () => {
@@ -98,48 +122,32 @@ describe('admin dashboard composition', () => {
 
     expect(layout.indexOf('requireAdminPage()')).toBeGreaterThanOrEqual(0);
     expect(layout.indexOf('requireAdminPage()')).toBeLessThan(layout.indexOf('<AdminShell'));
-    expect(page).toMatch(/async function DashboardPage[\s\S]*?\{\s*const session = await requireAdminPage\(\);/);
+    expect(page).toMatch(/async function DashboardPage[\s\S]*?\{\s*await requireAdminPage\(\);/);
     expect(page).not.toContain('Ritm');
   });
 
-  it('keeps the dashboard period selector interactive and URL-driven', () => {
-    const dashboard = readFileSync('app/(admin)/admin/_components/dashboard-view.tsx', 'utf8');
-
-    expect(dashboard).toContain('<PeriodToggle />');
-    expect(dashboard).not.toContain('<PeriodToggle staticView />');
-    expect(readFileSync('app/(admin)/admin/_components/period-toggle.tsx', 'utf8')).toContain('7 дней');
-  });
-
-  it('removes the old dashboard composition and search/profile header', () => {
-    const dashboard = readFileSync('app/(admin)/admin/_components/dashboard-view.tsx', 'utf8');
-    const shell = readFileSync('components/admin/admin-shell.tsx', 'utf8');
-
-    for (const oldCopy of [
-      'Главная страница',
-      'Дашборд магазина',
-      'Продажи по дням',
-      'Статусы заказов',
-      'Каталог и остатки',
-      'Категории и 360°',
-      'Операции',
-      'Низкие остатки',
+  it('does not retain superseded dashboard presentation modules', () => {
+    for (const file of [
+      'app/(admin)/admin/_components/dashboard-view.tsx',
+      'app/(admin)/admin/_components/dashboard-view.module.css',
+      'app/(admin)/admin/_components/dashboard-kpi-card.tsx',
+      'app/(admin)/admin/_components/best-sellers.tsx',
+      'app/(admin)/admin/_components/recent-orders.tsx',
+      'app/(admin)/admin/_components/revenue-chart.tsx',
+      'app/(admin)/admin/_components/period-toggle.tsx',
     ]) {
-      expect(dashboard).not.toContain(oldCopy);
+      expect(existsSync(file)).toBe(false);
     }
-    expect(dashboard).not.toContain('searchPlaceholder');
-    expect(dashboard).not.toContain('DashboardUser');
-    expect(shell).not.toContain('w-[286px]');
-    expect(shell).toContain('className={styles.sidebar}');
   });
 
   it('uses a labelled responsive shell with mobile navigation', () => {
-    const shellStyles = readFileSync('components/admin/admin-shell.module.css', 'utf8');
+    const shell = readFileSync('components/admin/admin-shell.tsx', 'utf8');
+    const mobileMenu = readFileSync('components/admin/admin-mobile-menu.tsx', 'utf8');
 
-    expect(shellStyles).toContain('.sidebar');
-    expect(shellStyles).toContain('.mobileNavigation');
-    expect(shellStyles).toContain('--admin-sidebar-width: clamp(210px, 15vw, 220px);');
-    expect(shellStyles).toContain('grid-template-columns: var(--admin-sidebar-width) minmax(0, 1fr);');
-    expect(shellStyles).toContain('@media (max-width: 820px)');
+    expect(shell).toContain('className={styles.sidebar}');
+    expect(shell).toContain('<AdminMobileMenu');
+    expect(mobileMenu).toContain('mobileNavigation');
+    expect(mobileMenu).toContain('Открыть магазин');
   });
 
   it('exposes dashboard loading semantics', () => {

@@ -333,8 +333,19 @@ describe('server-side ADMIN boundary contract', () => {
     );
     expect(catalogLayout).toBeDefined();
     const catalogLayoutCode = codeOnly(source(catalogLayout!));
-    expect(catalogLayoutCode).toContain('CatalogTabs');
     expect(firstPrivilegedRead(catalogLayoutCode)).toBe(-1);
+
+    for (const catalogPage of [
+      'app/(admin)/admin/catalog/products/page.tsx',
+      'app/(admin)/admin/catalog/categories/page.tsx',
+      'app/(admin)/admin/catalog/options/page.tsx',
+      'app/(admin)/admin/catalog/rooms/page.tsx',
+      'app/(admin)/admin/catalog/stock/page.tsx',
+    ]) {
+      const page = adminPageFiles.find((filePath) => relativePath(filePath) === catalogPage);
+      expect(page, `${catalogPage} must exist`).toBeDefined();
+      expect(codeOnly(source(page!)), `${catalogPage} must render the catalog navigation`).toContain('CatalogTabs');
+    }
 
     for (const pageFile of adminPageFiles.filter((filePath) => filePath !== redirectPage)) {
       const functions = exportedFunctionBodies(source(pageFile), false);

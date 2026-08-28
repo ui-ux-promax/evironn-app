@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "projectId": "ff24247b-3ef6-4d5a-8598-6c6bd9b26a12",
+  "brandAssets": {
+    "logo": {
+      "assetKey": "assets-evironn-logo.svg",
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/ff24247b-3ef6-4d5a-8598-6c6bd9b26a12/brand-assets/assets-evironn-logo.svg/evironn-logo.svg"
+    }
+  },
+  "components": [
+    {
+      "id": "d1af84b8-47de-4dac-963b-445382f3b6b7",
+      "name": "AdminShell",
+      "version": 2,
+      "logoAssetKey": "assets-evironn-logo.svg"
+    }
+  ],
+  "targets": {
+    "/admin/catalog/products": {
+      "baselineDraftId": "c463bb5c-677f-4024-ab61-88b367ffd810",
+      "activeDraftId": "31be6fd0-c57e-4314-9d48-c7d24bf7828e",
+      "activeDraftTitle": "Каталог товаров Evironn — операционный список",
+      "activeVersion": 1,
+      "direction": "Free operational catalog composition derived from approved Evironn dashboard language; old catalog reference excluded.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "app/(admin)/layout.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/admin/admin-shell.module.css",
+        "app/(admin)/admin/catalog/layout.tsx",
+        "app/(admin)/admin/catalog/_components/catalog-tabs.tsx",
+        "app/(admin)/admin/catalog/products/page.tsx",
+        "app/(admin)/admin/catalog/products/_components/product-filters.tsx",
+        "app/(admin)/admin/catalog/products/_components/product-table.tsx",
+        "components/admin/admin-page-header.tsx",
+        "components/admin/admin-panel.tsx",
+        "components/admin/admin-kpi-card.tsx",
+        "components/admin/ui/button.tsx",
+        "components/admin/ui/input.tsx",
+        "components/admin/ui/select.tsx",
+        "components/admin/ui/status.tsx",
+        "components/admin/icon.tsx",
+        "styles/evironn/tokens.css"
+      ]
+    },
+    "/admin/orders": {
+      "activeDraftId": "597b3048-0783-4a27-aa91-3a625ceb521c",
+      "activeDraftTitle": "Заказы Evironn — операционный реестр",
+      "activeVersion": 1,
+      "direction": "Manual no-credit visual draft using the accepted Evironn dashboard shell and design system.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    },
+    "/admin/customers": {
+      "activeDraftId": "e921a280-154e-448e-bbe6-47b2f6a10caf",
+      "activeDraftTitle": "Клиенты Evironn — клиентский реестр",
+      "activeVersion": 1,
+      "direction": "Manual no-credit visual draft using the accepted Evironn dashboard shell and design system.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    },
+    "/admin/coupons": {
+      "activeDraftId": "c36b9482-ca43-4473-91a5-3cdacea92004",
+      "activeDraftTitle": "Промокоды Evironn — реестр правил",
+      "activeVersion": 1,
+      "direction": "Manual no-credit visual draft using the accepted Evironn dashboard shell and design system.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    },
+    "/admin/catalog/products/[id]/edit": {
+      "activeDraftId": "e8099452-bb28-462b-99ef-ad53962c3b72",
+      "activeDraftTitle": "Товар Evironn — создание и редактирование",
+      "activeVersion": 2,
+      "direction": "Local contract-aligned revision for the shared product create/edit form. The local HTML supersedes the remote v1 draft for fields, option/SKU management, media/360 controls, publication settings, and responsive behavior.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    },
+    "/admin/orders/[id]": {
+      "activeDraftId": "6207cc33-109d-4c5d-886e-bac23c564326",
+      "activeDraftTitle": "Заказ Evironn — детальная карточка",
+      "activeVersion": 1,
+      "direction": "Manual no-credit visual draft for the order detail workspace.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    },
+    "/admin/customers/[id]": {
+      "activeDraftId": "955f3d92-ebf2-4d24-930f-cbcbf04d8bb0",
+      "activeDraftTitle": "Клиент Evironn — профиль и история",
+      "activeVersion": 1,
+      "direction": "Manual no-credit visual draft for the customer profile workspace.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    },
+    "/admin/coupons/[id]/edit": {
+      "activeDraftId": "3ef8e0ad-9396-4a9b-b56a-faf20cffbb5c",
+      "activeDraftTitle": "Промокод Evironn — создание и редактирование",
+      "activeVersion": 1,
+      "direction": "Manual no-credit visual draft for the shared coupon create/edit form.",
+      "referenceNodeIds": ["7f1792d8-69d2-4b64-b6ee-a7fa94929adb", "assets-evironn-logo.svg"]
+    }
+  }
+}

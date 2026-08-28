@@ -88,4 +88,16 @@ describe('admin primitive contract', () => {
     expect(styles).toContain('.admin-root .admin-panel');
     expect(styles).toContain('.admin-root .admin-table');
   });
+
+  it('keeps the utility bar in document flow with the desktop sidebar gap', () => {
+    const shell = source('components/admin/admin-shell.module.css');
+    const topbarDeclarations = [...shell.matchAll(/\.topbar\s*\{([^{}]*)\}/g)].map((match) => match[1]);
+
+    expect(shell).toMatch(/@media\s*\(max-width: 820px\)\s*\{[\s\S]*?\.topbar\s*\{/);
+    expect(topbarDeclarations.length).toBeGreaterThan(1);
+    for (const declarations of topbarDeclarations) {
+      expect(declarations).not.toMatch(/position:\s*(?:sticky|fixed)/);
+    }
+    expect(topbarDeclarations[0]).toContain('margin: 10px 16px 0');
+  });
 });

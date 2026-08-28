@@ -1,8 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import Link from 'next/link';
-import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { AdminPanel } from '@/components/admin/admin-panel';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
@@ -14,7 +12,7 @@ import { Icon } from '@/components/admin/icon';
 import { CouponFilters } from './_components/coupon-filters';
 import { CouponTable, type CouponRow } from './_components/coupon-table';
 
-export const metadata = { title: 'Купоны' };
+export const metadata = { title: 'Промокоды' };
 export const dynamic = 'force-dynamic';
 
 type SP = Record<string, string | string[] | undefined>;
@@ -55,11 +53,12 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
   const averagePercent = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length) : 0;
 
   return (
-    <div className="space-y-[24px]">
+    <div className="space-y-5">
       <AdminPageHeader
-        kicker="Маркетинг"
-        title={`Промокоды (${rows.length})`}
-        subtitle="Процентные промокоды на сумму товаров, статусы и сроки действия."
+        className="rounded-[28px] border border-admin-outline-variant bg-admin-surface px-6 py-6 shadow-[var(--admin-shadow-tight)] sm:px-7"
+        kicker="Маркетинговые правила"
+        title="Промокоды"
+        subtitle="Скидки, условия активации и эффективность предложений."
         action={
           <Button asChild>
             <Link href="/admin/marketing/new">
@@ -69,65 +68,58 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
         }
       />
 
-      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2 xl:grid-cols-4">
-        <AdminKpiCard
-          icon="confirmation_number"
-          label="Активных кодов"
-          value={activeCount.toLocaleString('ru-RU')}
-          tone="primary"
-        />
-        <AdminKpiCard icon="pause_circle" label="Выключены" value={inactiveCount.toLocaleString('ru-RU')} />
-        <AdminKpiCard
-          icon="event_busy"
-          label="Истекли"
-          value={expiredCount.toLocaleString('ru-RU')}
-          tone={expiredCount > 0 ? 'danger' : 'default'}
-        />
-        <AdminKpiCard icon="percent" label="Средняя скидка" value={`${averagePercent}%`} />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Ключевые показатели промокодов">
+        <CouponKpi label="Активные" value={activeCount.toLocaleString('ru-RU')} detail="В действии" />
+        <CouponKpi label="Всего правил" value={rows.length.toLocaleString('ru-RU')} detail="Текущий результат" />
+        <CouponKpi label="Средняя скидка" value={`${averagePercent}%`} detail="По текущей выборке" />
+        <CouponKpi label="Истекли" value={expiredCount.toLocaleString('ru-RU')} detail="Остаются в истории" />
       </div>
 
-      <AdminPanel
-        title="Управление промокодами"
-        note="Коды нормализуются в верхний регистр. Истекшие промокоды остаются в истории."
-        actions={
-          <div className="text-[13px] font-bold text-admin-on-surface-variant">
-            Показано <b className="font-mono text-admin-on-surface">{rows.length}</b> кодов
-          </div>
-        }
+      <CouponFilters />
+
+      <section
+        aria-labelledby="coupon-registry-heading"
+        className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface shadow-[var(--admin-shadow-tight)]"
       >
-        <div className="mb-[18px] flex flex-wrap gap-[10px]">
-          <CouponStatusPill label="Активные" value={activeCount} className="bg-[#dff1e8] text-[#20724f]" />
-          <CouponStatusPill
-            label="Выключены"
-            value={inactiveCount}
-            className="bg-admin-surface-low text-admin-on-surface-variant"
-          />
-          <CouponStatusPill label="Истекли" value={expiredCount} className="bg-[#fee6e5] text-[#c64238]" />
+        <div className="flex flex-col gap-3 border-b border-admin-outline-variant px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="coupon-registry-heading" className="text-base font-medium text-admin-on-surface">
+              Реестр промокодов
+            </h2>
+            <p className="mt-1 text-xs text-admin-on-surface-variant">
+              {rows.length} правил · данные обновлены недавно
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            className="inline-flex min-h-9 w-fit items-center rounded-[10px] border border-admin-outline-variant px-3.5 text-xs font-bold text-admin-on-surface-variant"
+          >
+            Экспорт
+          </button>
         </div>
 
-        <CouponFilters />
-
         {rows.length > 0 ? (
-          <CouponTable rows={rows} />
+          <CouponTable rows={rows} page={1} totalPages={1} total={rows.length} limit={Math.max(rows.length, 1)} />
         ) : (
-          <div className="mt-[18px] rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-10 text-center text-sm font-bold text-admin-on-surface-variant">
-            Промокоды не найдены.
-          </div>
+          <div className="p-10 text-center text-sm font-bold text-admin-on-surface-variant">Промокоды не найдены.</div>
         )}
-      </AdminPanel>
+      </section>
     </div>
   );
 }
 
-function CouponStatusPill({ label, value, className }: { label: string; value: number; className: string }) {
+function CouponKpi({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-admin-outline-variant bg-admin-surface px-[10px] py-1.5 shadow-[var(--admin-shadow-tight)]">
-      <span className={`inline-flex min-h-[32px] items-center rounded-full px-3 text-[13px] font-bold ${className}`}>
-        {label}
-      </span>
-      <b className="pr-1 font-admin-head text-[18px] font-extrabold leading-none tracking-[-.04em] text-admin-on-surface tabular-nums">
+    <article className="rounded-[20px] border border-admin-outline-variant bg-admin-surface p-5 shadow-[var(--admin-shadow-tight)]">
+      <p className="text-xs font-semibold text-admin-on-surface-variant">{label}</p>
+      <p className="mt-2 font-admin-head text-3xl font-medium tracking-tight text-admin-on-surface tabular-nums">
         {value}
-      </b>
-    </div>
+      </p>
+      <span className="mt-3 inline-flex rounded-full bg-admin-surface-low px-2.5 py-1 text-[11px] font-bold text-admin-on-surface-variant">
+        {detail}
+      </span>
+    </article>
   );
 }

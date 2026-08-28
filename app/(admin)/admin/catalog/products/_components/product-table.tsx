@@ -9,10 +9,10 @@ import { Button } from '@/components/admin/ui/button';
 import { AlertModal } from '@/components/admin/ui/alert-modal';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/admin/ui/dropdown-menu';
 import {
   Dialog,
@@ -65,20 +65,27 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
   const to = Math.min(page * limit, total);
 
   return (
-    <div className="mt-[18px] overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface">
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[980px] border-collapse text-left text-[14px]">
+    <>
+      <div className="overflow-x-auto">
+        <table aria-label="Товарный реестр" className="w-full min-w-[1110px] border-collapse text-left text-[13px]">
           <thead className="bg-admin-surface-low">
             <tr>
-              {['Товар', 'Бренд', 'Категория', 'Остаток', 'Цена', 'Статус'].map((h) => (
+              <th className="w-12 border-b border-admin-outline-variant px-4 py-3.5">
+                <input
+                  type="checkbox"
+                  aria-label="Выбрать все товары"
+                  className="h-[18px] w-[18px] rounded-md border-admin-outline-variant accent-admin-primary"
+                />
+              </th>
+              {['Товар', 'Категория', 'Варианты / SKU', 'Артикул', 'Цена', 'Остаток', 'Статус'].map((heading) => (
                 <th
-                  key={h}
-                  className="border-b border-admin-outline-variant px-4 py-[14px] text-[11px] font-extrabold uppercase tracking-[.06em] text-admin-on-surface-variant"
+                  key={heading}
+                  className="border-b border-admin-outline-variant px-3 py-3.5 text-[10px] font-bold uppercase tracking-[.08em] text-admin-on-surface-variant"
                 >
-                  {h}
+                  {heading}
                 </th>
               ))}
-              <th className="border-b border-admin-outline-variant px-4 py-[14px] text-right text-[11px] font-extrabold uppercase tracking-[.06em] text-admin-on-surface-variant">
+              <th className="w-16 border-b border-admin-outline-variant px-4 py-3.5 text-right text-[10px] font-bold uppercase tracking-[.08em] text-admin-on-surface-variant">
                 Действия
               </th>
             </tr>
@@ -86,82 +93,88 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="group transition-colors hover:bg-admin-surface-low">
-                {/* Товар */}
-                <td className="border-b border-admin-outline-variant px-4 py-[14px]">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-admin-outline-variant bg-admin-surface-low p-1">
-                      <Icon name="image" className="text-admin-on-surface-variant" />
+                <td className="border-b border-admin-outline-variant px-4 py-3 align-middle">
+                  <input
+                    type="checkbox"
+                    aria-label={`Выбрать товар ${row.name}`}
+                    className="h-[18px] w-[18px] rounded-md border-admin-outline-variant accent-admin-primary"
+                  />
+                </td>
+                <td className="min-w-[300px] border-b border-admin-outline-variant px-3 py-3 align-middle">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-14 w-[72px] shrink-0 place-items-center overflow-hidden rounded-[14px] border border-admin-outline-variant bg-admin-surface-low text-admin-on-surface-variant">
+                      <Icon name={productIcon(row.categoryName)} className="text-[28px]" />
                     </div>
                     <div className="min-w-0">
                       <Link
                         href={`/admin/catalog/products/${row.id}/edit`}
-                        className="font-bold text-admin-on-surface hover:underline block truncate"
+                        className="block truncate text-sm font-bold text-admin-on-surface hover:underline"
                       >
                         {row.name}
                       </Link>
-                      <div className="text-xs text-admin-on-surface-variant">{row.slug}</div>
+                      <div className="mt-1 truncate text-xs text-admin-on-surface-variant">
+                        {row.roomNames.join(' · ') || row.slug}
+                      </div>
                     </div>
                   </div>
                 </td>
-                {/* Бренд */}
-                <td className="border-b border-admin-outline-variant px-4 py-[14px] text-admin-on-surface-variant">
-                  {row.brand}
-                </td>
-                {/* Категория */}
-                <td className="border-b border-admin-outline-variant px-4 py-[14px]">
-                  <span className="rounded-full bg-admin-surface-low px-3 py-1 text-xs font-bold text-admin-on-surface">
+                <td className="border-b border-admin-outline-variant px-3 py-3 align-middle">
+                  <span className="whitespace-nowrap rounded-full bg-admin-surface-low px-3 py-1.5 text-xs font-medium text-admin-on-surface">
                     {row.categoryName}
                   </span>
                 </td>
-                {/* Остаток */}
-                <td className="border-b border-admin-outline-variant px-4 py-[14px]">
+                <td className="border-b border-admin-outline-variant px-3 py-3 align-middle">
+                  <b className="tabular-nums">{row.skuCount}</b>
+                  <span className="ml-1 text-admin-on-surface-variant">SKU</span>
+                </td>
+                <td className="border-b border-admin-outline-variant px-3 py-3 align-middle text-admin-on-surface-variant">
+                  {row.slug}
+                </td>
+                <td className="whitespace-nowrap border-b border-admin-outline-variant px-3 py-3 align-middle font-bold tabular-nums text-admin-on-surface">
+                  {row.minPrice == null ? '—' : formatPrice(row.minPrice)}
+                </td>
+                <td className="border-b border-admin-outline-variant px-3 py-3 align-middle">
                   {row.totalStock === 0 ? (
                     <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-admin-error" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-admin-error" />
                       <span className="font-bold text-admin-error">Нет в наличии</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          'w-1.5 h-1.5 rounded-full',
+                          'h-1.5 w-1.5 rounded-full',
                           row.totalStock <= LOW_STOCK ? 'bg-admin-on-secondary-container' : 'bg-admin-primary',
                         )}
                       />
-                      <span className="font-bold text-admin-on-surface tabular-nums">{row.totalStock}</span>
+                      <span className="font-bold tabular-nums text-admin-on-surface">{row.totalStock}</span>
                     </div>
                   )}
                 </td>
-                {/* Цена */}
-                <td className="whitespace-nowrap border-b border-admin-outline-variant px-4 py-[14px] font-bold tabular-nums text-admin-on-surface">
-                  {row.minPrice == null ? '—' : formatPrice(row.minPrice)}
-                </td>
-                {/* Статус */}
-                <td className="border-b border-admin-outline-variant px-4 py-[14px]">
+                <td className="border-b border-admin-outline-variant px-3 py-3 align-middle">
                   <StatusPill active={row.active} />
                 </td>
-                {/* Действия */}
-                <td className="border-b border-admin-outline-variant px-4 py-[14px] text-right">
+                <td className="border-b border-admin-outline-variant px-4 py-3 text-right align-middle">
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        aria-label="Действия"
-                        className="p-2 rounded-full text-admin-on-surface-variant hover:bg-admin-surface-container transition-colors"
+                        aria-label={`Действия для ${row.name}`}
+                        className="rounded-full p-2 text-admin-on-surface-variant transition-colors hover:bg-admin-surface-container"
                       >
-                        <Icon name="more_vert" />
+                        <Icon name="more_vert" className="text-[20px]" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => router.push(`/admin/catalog/products/${row.id}/edit`)}>
-                        <Icon name="edit" className="text-[18px] mr-2" /> Изменить
+                        <Icon name="edit" className="mr-2 text-[18px]" /> Изменить
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setToDelete(row)}
                         className="text-admin-error focus:text-admin-error"
                       >
-                        <Icon name="delete" className="text-[18px] mr-2" /> Удалить
+                        <Icon name="delete" className="mr-2 text-[18px]" /> Удалить
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -172,116 +185,36 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
         </table>
       </div>
 
-      {/* Мобильная раскладка: карточки вместо таблицы (<md) */}
-      <div className="divide-y divide-admin-outline-variant md:hidden">
-        {rows.map((row) => (
-          <div key={row.id} className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-lg bg-admin-surface-high border border-admin-outline-variant p-1 overflow-hidden flex items-center justify-center shrink-0">
-                <Icon name="image" className="text-admin-on-surface-variant" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/admin/catalog/products/${row.id}/edit`}
-                  className="font-bold text-admin-on-surface hover:underline block truncate"
-                >
-                  {row.name}
-                </Link>
-                <div className="text-xs text-admin-on-surface-variant truncate">
-                  {row.brand} · {row.categoryName}
-                </div>
-              </div>
-
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Действия"
-                    className="shrink-0 p-2 -mr-1 rounded-full text-admin-on-surface-variant hover:bg-admin-surface-container transition-colors"
-                  >
-                    <Icon name="more_vert" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push(`/admin/catalog/products/${row.id}/edit`)}>
-                    <Icon name="edit" className="text-[18px] mr-2" /> Изменить
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setToDelete(row)}
-                    className="text-admin-error focus:text-admin-error"
-                  >
-                    <Icon name="delete" className="text-[18px] mr-2" /> Удалить
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between gap-2">
-              {/* Остаток */}
-              {row.totalStock === 0 ? (
-                <span className="flex items-center gap-1.5 text-sm font-bold text-admin-error">
-                  <span className="w-1.5 h-1.5 rounded-full bg-admin-error" /> Нет в наличии
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5 text-sm">
-                  <span
-                    className={cn(
-                      'w-1.5 h-1.5 rounded-full',
-                      row.totalStock <= LOW_STOCK ? 'bg-admin-on-secondary-container' : 'bg-admin-primary',
-                    )}
-                  />
-                  <span className="font-bold text-admin-on-surface tabular-nums">{row.totalStock}</span>
-                  <span className="text-admin-on-surface-variant">в наличии</span>
-                </span>
-              )}
-
-              {/* Цена */}
-              <span className="font-bold text-admin-on-surface tabular-nums whitespace-nowrap">
-                {row.minPrice == null ? '—' : formatPrice(row.minPrice)}
-              </span>
-            </div>
-
-            <div className="mt-2">
-              <StatusPill active={row.active} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Пагинация (в подвале карточки, как в прототипе) */}
-      <div className="flex items-center justify-between gap-4 border-t border-admin-outline-variant px-6 py-4 max-[640px]:justify-center">
+      <div className="flex flex-col gap-4 border-t border-admin-outline-variant px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-admin-on-surface-variant">
           Показано {from}–{to} из {total}
         </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <PagerBtn disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
-            {pageItems(page, totalPages).map((it, i) =>
-              it === '…' ? (
-                <span key={`e${i}`} className="text-admin-on-surface-variant mx-1">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={it}
-                  type="button"
-                  onClick={() => goPage(it)}
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-[12px] font-bold transition-colors',
-                    it === page
-                      ? 'bg-[var(--admin-sidebar)] text-white'
-                      : 'border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-low',
-                  )}
-                >
-                  {it}
-                </button>
-              ),
-            )}
-            <PagerBtn disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
-          </div>
-        )}
+        <div className="flex items-center gap-2 max-[640px]:self-center">
+          <PagerBtn disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
+          {pageItems(page, totalPages).map((item, index) =>
+            item === '…' ? (
+              <span key={`ellipsis-${index}`} className="mx-1 text-admin-on-surface-variant">
+                …
+              </span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                onClick={() => goPage(item)}
+                aria-current={item === page ? 'page' : undefined}
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-[12px] font-bold transition-colors',
+                  item === page
+                    ? 'bg-admin-primary text-white'
+                    : 'border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-low',
+                )}
+              >
+                {item}
+              </button>
+            ),
+          )}
+          <PagerBtn disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
+        </div>
       </div>
 
       <AlertModal
@@ -306,21 +239,32 @@ export function ProductTable({ rows, page, totalPages, total, limit }: ProductTa
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
+}
+
+function productIcon(categoryName: string) {
+  const category = categoryName.toLocaleLowerCase('ru-RU');
+  if (category.includes('свет') || category.includes('ламп')) return 'lightbulb';
+  if (category.includes('декор') || category.includes('аксесс')) return 'potted_plant';
+  if (category.includes('стол')) return 'table_restaurant';
+  if (category.includes('крес') || category.includes('диван')) return 'weekend';
+  return 'chair';
 }
 
 function StatusPill({ active }: { active: boolean }) {
   if (active) {
     return (
-      <span className="flex min-h-[29px] w-fit items-center gap-1 rounded-full border border-[hsl(var(--color-success)/.22)] bg-[hsl(var(--color-success)/.12)] px-[10px] text-xs font-extrabold text-[var(--admin-money)]">
-        <span className="h-[7px] w-[7px] rounded-full bg-current" /> Активен
+      <span className="inline-flex min-h-[29px] items-center gap-1.5 rounded-full border border-green-700/20 bg-green-700/10 px-3 text-xs font-bold text-[var(--admin-money)]">
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        Активен
       </span>
     );
   }
   return (
-    <span className="flex min-h-[29px] w-fit items-center gap-1 rounded-full border border-admin-outline-variant bg-admin-surface-low px-[10px] text-xs font-extrabold text-admin-on-surface-variant">
-      <span className="h-[7px] w-[7px] rounded-full bg-current" /> Черновик
+    <span className="inline-flex min-h-[29px] items-center gap-1.5 rounded-full border border-admin-outline-variant bg-admin-surface-low px-3 text-xs font-bold text-admin-on-surface-variant">
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      Черновик
     </span>
   );
 }
@@ -331,6 +275,7 @@ function PagerBtn({ disabled, onClick, icon }: { disabled: boolean; onClick: () 
       type="button"
       disabled={disabled}
       onClick={onClick}
+      aria-label={icon === 'chevron_left' ? 'Предыдущая страница' : 'Следующая страница'}
       className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-admin-outline-variant text-admin-on-surface-variant transition-colors hover:bg-admin-surface-low disabled:opacity-30"
     >
       <Icon name={icon} />
@@ -338,7 +283,6 @@ function PagerBtn({ disabled, onClick, icon }: { disabled: boolean; onClick: () 
   );
 }
 
-// 1 … c-1 c c+1 … last
 function pageItems(current: number, totalPages: number): (number | '…')[] {
   const set = new Set<number>([1, totalPages, current, current - 1, current + 1]);
   const sorted = [...set].filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);

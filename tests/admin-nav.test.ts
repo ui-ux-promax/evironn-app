@@ -49,9 +49,11 @@ describe('admin navigation contract', () => {
     const mobileMenu = readFileSync(resolve('components/admin/admin-mobile-menu.tsx'), 'utf8');
 
     expect(shell).toContain('aria-label="Основная навигация"');
+    expect(shell).toContain("aria-current={active ? 'page' : undefined}");
     expect(mobileMenu).toContain('aria-controls="admin-mobile-navigation"');
     expect(mobileMenu).toContain('aria-expanded');
     expect(mobileMenu).toContain('Основная навигация');
+    expect(mobileMenu).toContain("aria-current={active ? 'page' : undefined}");
     expect(mobileMenu).toContain('DialogClose');
   });
 

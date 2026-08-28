@@ -1,4 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+/** @vitest-environment jsdom */
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { createElement } from 'react';
+
+const navigation = vi.hoisted(() => ({
+  push: vi.fn(),
+  searchParams: new URLSearchParams(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: navigation.push, refresh: vi.fn() }),
+  useSearchParams: () => navigation.searchParams,
+  usePathname: () => '/admin/catalog/products',
+}));
 
 vi.mock('@/lib/prisma-client', () => ({
   prisma: {
@@ -13,6 +29,7 @@ vi.mock('@/lib/prisma-client', () => ({
 import { prisma } from '@/lib/prisma-client';
 import { getAdminProductDraft, listAdminCatalogProducts, listAdminSkuStock } from '@/lib/admin/catalog';
 import { furnitureProductSchema } from '@/services/dto/product.dto';
+import { ProductFilters } from '@/app/(admin)/admin/catalog/products/_components/product-filters';
 
 const p = prisma as unknown as {
   product: Record<string, ReturnType<typeof vi.fn>>;
@@ -23,7 +40,61 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(() => cleanup());
+
 describe('canonical admin catalog reads', () => {
+  it('uses the approved catalog register composition without legacy dashboard blocks', () => {
+    const page = readFileSync('app/(admin)/admin/catalog/products/page.tsx', 'utf8');
+    const filters = readFileSync('app/(admin)/admin/catalog/products/_components/product-filters.tsx', 'utf8');
+    const table = readFileSync('app/(admin)/admin/catalog/products/_components/product-table.tsx', 'utf8');
+    const tabs = readFileSync('app/(admin)/admin/catalog/_components/catalog-tabs.tsx', 'utf8');
+
+    expect(page).toContain('<CatalogTabs embedded productCount={total} />');
+    expect(page).not.toContain('AdminKpiCard');
+    expect(page).not.toContain('ViewToggle');
+    expect(page).not.toContain('<AdminPanel');
+    expect(page).toContain('Экспортировать каталог');
+    expect(filters).toContain('lg:grid-cols-[minmax(280px,1fr)_190px_180px_180px_auto]');
+    expect(filters).toContain('Дополнительные фильтры');
+    expect(filters).toContain('aria-expanded={advancedOpen}');
+    expect(filters).toContain('onClick={() => setAdvancedOpen((open) => !open)}');
+    expect(table).toContain('Выбрать все товары');
+    expect(table).toContain('Артикул');
+    expect(table).toContain('whitespace-nowrap rounded-full bg-admin-surface-low');
+    expect(table).not.toContain('{totalPages > 1 &&');
+    expect(table).not.toContain('Бренд');
+    expect(table).not.toContain('md:hidden');
+    expect(tabs).toContain('embedded?: boolean');
+  });
+
+  it('keeps the approved product register composition bound to existing routes and filters', () => {
+    const page = readFileSync('app/(admin)/admin/catalog/products/page.tsx', 'utf8');
+    const filters = readFileSync('app/(admin)/admin/catalog/products/_components/product-filters.tsx', 'utf8');
+    const table = readFileSync('app/(admin)/admin/catalog/products/_components/product-table.tsx', 'utf8');
+    const tabs = readFileSync('app/(admin)/admin/catalog/_components/catalog-tabs.tsx', 'utf8');
+
+    expect(page).toContain('Управление ассортиментом');
+    expect(page).toContain('Каталог товаров');
+    expect(page).toContain('href="/admin/catalog/products/new"');
+    expect(filters).toContain('aria-label="Поиск и фильтры"');
+    expect(filters).toContain('Название, артикул или SKU');
+    expect(table).toContain('aria-label="Товарный реестр"');
+    expect(table).toContain('Варианты / SKU');
+    expect(table).toContain('href={`/admin/catalog/products/${row.id}/edit`}');
+    expect(tabs).toContain("aria-current={active ? 'page' : undefined}");
+  });
+
+  it('preserves product filters and resets pagination when search is submitted', () => {
+    navigation.searchParams = new URLSearchParams('categoryId=cat-1&roomId=room-1&page=4');
+    render(createElement(ProductFilters, { options: { categories: [], rooms: [] } }));
+
+    const search = screen.getByPlaceholderText('Название, артикул или SKU');
+    fireEvent.change(search, { target: { value: 'oak' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+
+    expect(navigation.push).toHaveBeenCalledWith('/admin/catalog/products?categoryId=cat-1&roomId=room-1&q=oak');
+  });
+
   it('clamps product pagination, uses deterministic ordering, and marks zero-SKU products incomplete', async () => {
     p.product.count.mockResolvedValue(2);
     p.product.findMany.mockResolvedValue([
@@ -218,5 +289,61 @@ describe('canonical admin catalog reads', () => {
     });
     expect(draft?.values).not.toHaveProperty('id');
     expect(furnitureProductSchema.safeParse(draft?.values).success).toBe(true);
+  });
+
+  it('normalizes legacy relative media URLs before canonical validation', async () => {
+    p.product.findUnique.mockResolvedValue({
+      id: 'product-legacy-media',
+      name: 'Legacy Chair',
+      slug: 'legacy-chair',
+      brand: 'Evironn',
+      categoryId: 'category-chair',
+      description: '',
+      specs: [],
+      isBestseller: false,
+      active: true,
+      sortOrder: 0,
+      rooms: [{ room: { id: 'room-living', slug: 'living', name: 'Гостиная' } }],
+      optionGroups: [
+        {
+          optionGroup: { id: 'group-finish', name: 'Отделка', slug: 'finish', sortOrder: 1 },
+          values: [
+            {
+              optionValue: {
+                id: 'value-oak',
+                name: 'Дуб',
+                slug: 'oak',
+                sortOrder: 0,
+              },
+            },
+          ],
+        },
+      ],
+      skus: [
+        {
+          id: 'sku-legacy',
+          articleNumber: 'LEGACY-OAK',
+          combinationKey: 'finish=oak',
+          price: 120000,
+          oldPrice: null,
+          stock: 2,
+          active: true,
+          selections: [
+            {
+              optionGroup: { name: 'Отделка', slug: 'finish', sortOrder: 1 },
+              optionValue: { name: 'Дуб', slug: 'oak' },
+            },
+          ],
+          media: [{ id: 'sku-media-legacy', kind: 'IMAGE', url: '/assets/products/legacy.jpg', sortOrder: 0 }],
+        },
+      ],
+      media: [{ id: 'media-legacy', kind: 'IMAGE', url: '/assets/products/legacy.jpg', sortOrder: 0 }],
+      colorways: [],
+    });
+
+    const draft = await getAdminProductDraft('product-legacy-media');
+
+    expect(draft?.values.media[0]?.url).toBe('http://localhost:3000/assets/products/legacy.jpg');
+    expect(draft?.values.skus[0]?.media?.[0]?.url).toBe('http://localhost:3000/assets/products/legacy.jpg');
   });
 });

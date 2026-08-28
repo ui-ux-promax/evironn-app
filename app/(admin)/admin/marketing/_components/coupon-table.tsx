@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/admin/ui/table';
 import { Button } from '@/components/admin/ui/button';
 import { Switch } from '@/components/admin/ui/switch';
@@ -44,8 +44,21 @@ const STATUS_META: Record<CouponStatus, { label: string; cls: string }> = {
   },
 };
 
-export function CouponTable({ rows }: { rows: CouponRow[] }) {
+export function CouponTable({
+  rows,
+  page = 1,
+  totalPages = 1,
+  total = rows.length,
+  limit = Math.max(rows.length, 1),
+}: {
+  rows: CouponRow[];
+  page?: number;
+  totalPages?: number;
+  total?: number;
+  limit?: number;
+}) {
   const router = useRouter();
+  const params = useSearchParams();
   const [pending, setPending] = React.useState<string | null>(null);
   const [toDelete, setToDelete] = React.useState<CouponRow | null>(null);
   const [deleting, setDeleting] = React.useState(false);
@@ -69,11 +82,20 @@ export function CouponTable({ rows }: { rows: CouponRow[] }) {
     else router.refresh();
   }
 
+  function goPage(nextPage: number) {
+    const next = new URLSearchParams(params.toString());
+    next.set('page', String(nextPage));
+    router.push(`/admin/marketing?${next.toString()}`);
+  }
+
+  const from = total === 0 ? 0 : (page - 1) * limit + 1;
+  const to = Math.min(page * limit, total);
+
   return (
     <div className="space-y-3">
       <div className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface">
         <div className="hidden md:block">
-          <Table>
+          <Table aria-label="Реестр промокодов">
             <TableHeader>
               <TableRow>
                 <TableHead>Код</TableHead>
@@ -167,6 +189,28 @@ export function CouponTable({ rows }: { rows: CouponRow[] }) {
         </div>
       </div>
 
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-admin-outline-variant px-1 pt-1 sm:px-2">
+        <p className="text-xs text-admin-on-surface-variant">
+          Показано {from}–{to} из {total} промокодов
+        </p>
+        <div className="flex items-center gap-2">
+          <PagerButton disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
+          <button
+            type="button"
+            aria-current={page === 1 ? 'page' : undefined}
+            onClick={() => goPage(1)}
+            className={
+              page === 1
+                ? 'grid h-10 w-10 place-items-center rounded-[12px] bg-admin-primary text-sm font-bold text-white'
+                : 'grid h-10 w-10 place-items-center rounded-[12px] border border-admin-outline-variant text-sm font-bold text-admin-on-surface-variant'
+            }
+          >
+            1
+          </button>
+          <PagerButton disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
+        </div>
+      </footer>
+
       <AlertModal
         isOpen={toDelete !== null}
         onClose={() => setToDelete(null)}
@@ -190,5 +234,19 @@ export function CouponTable({ rows }: { rows: CouponRow[] }) {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PagerButton({ disabled, onClick, icon }: { disabled: boolean; onClick: () => void; icon: string }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={icon === 'chevron_left' ? 'Предыдущая страница' : 'Следующая страница'}
+      className="grid h-10 w-10 place-items-center rounded-[12px] border border-admin-outline-variant text-admin-on-surface-variant transition-colors hover:bg-admin-surface-low disabled:cursor-not-allowed disabled:opacity-30"
+    >
+      <span aria-hidden="true">{icon === 'chevron_left' ? '‹' : '›'}</span>
+    </button>
   );
 }

@@ -24,9 +24,9 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
   const router = useRouter();
   const params = useSearchParams();
 
-  function goPage(n: number) {
+  function goPage(nextPage: number) {
     const next = new URLSearchParams(params.toString());
-    next.set('page', String(n));
+    next.set('page', String(nextPage));
     router.push(`/admin/orders?${next.toString()}`);
   }
 
@@ -34,78 +34,92 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
   const to = Math.min(page * limit, total);
 
   return (
-    <div className="mt-[18px] overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface">
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[1000px] border-collapse text-left text-[14px]">
-          <thead className="bg-admin-surface-low">
+    <div className="overflow-hidden border border-admin-outline-variant bg-admin-surface">
+      <div className="overflow-x-auto">
+        <table aria-label="Реестр заказов" className="w-full min-w-[1180px] border-collapse text-left text-[13px]">
+          <thead className="bg-admin-surface-low text-[10px] uppercase tracking-[.08em] text-admin-on-surface-variant">
             <tr>
-              {['Заказ', 'Покупатель', 'Позиции', 'Сумма', 'Оплата', 'Статус'].map((h) => (
-                <th
-                  key={h}
-                  className="border-b border-admin-outline-variant px-4 py-[15px] text-[11px] font-extrabold uppercase tracking-[.06em] text-admin-on-surface-variant"
-                >
-                  {h}
-                </th>
-              ))}
+              <th className="border-b border-admin-outline-variant px-5 py-3.5">Заказ</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Дата</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Клиент</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Состав</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Сумма</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Статус</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Оплата</th>
+              <th className="border-b border-admin-outline-variant px-3 py-3.5">Доставка</th>
+              <th className="border-b border-admin-outline-variant px-5 py-3.5 text-right">Действия</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => {
-              const sv = orderStatusView(row.status, row.paymentStatus);
-              const pv = paymentStatusView(row.paymentStatus);
-              const createdLabel = formatDateTime(row.createdAt);
+              const status = orderStatusView(row.status, row.paymentStatus);
+              const payment = paymentStatusView(row.paymentStatus);
+
               return (
                 <tr
                   key={row.id}
                   onClick={() => router.push(`/admin/orders/${row.id}`)}
-                  className="group cursor-pointer transition-colors hover:bg-admin-surface-low"
+                  className="group cursor-pointer transition-colors hover:bg-admin-bg"
                 >
-                  {/* Заказ */}
-                  <td className="border-b border-admin-outline-variant px-4 py-[15px]">
+                  <td className="border-b border-admin-outline-variant px-5 py-4 font-bold tabular-nums text-admin-on-surface">
                     <Link
                       href={`/admin/orders/${row.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="font-bold text-admin-on-surface hover:underline tabular-nums"
+                      onClick={(event) => event.stopPropagation()}
+                      className="hover:underline"
                     >
                       #{row.orderNumber}
                     </Link>
-                    <div className="text-xs text-admin-on-surface-variant tabular-nums">{createdLabel}</div>
                   </td>
-                  {/* Покупатель */}
-                  <td className="border-b border-admin-outline-variant px-4 py-[15px]">
-                    <div className="font-bold text-admin-on-surface truncate max-w-[200px]">{row.contactName}</div>
-                    <div className="text-xs text-admin-on-surface-variant truncate max-w-[200px]">
+                  <td className="border-b border-admin-outline-variant px-3 py-4 text-admin-on-surface-variant tabular-nums">
+                    {formatDateTime(row.createdAt)}
+                  </td>
+                  <td className="border-b border-admin-outline-variant px-3 py-4">
+                    <b className="block max-w-[190px] truncate text-admin-on-surface">{row.contactName}</b>
+                    <small className="mt-1 block max-w-[190px] truncate text-admin-on-surface-variant">
                       {row.contactEmail}
-                    </div>
+                    </small>
                   </td>
-                  {/* Позиции */}
-                  <td className="border-b border-admin-outline-variant px-4 py-[15px]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center overflow-hidden rounded-[13px] border border-admin-outline-variant bg-admin-surface-low p-1">
+                  <td className="border-b border-admin-outline-variant px-3 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-admin-surface-low">
                         {row.coverImage ? (
-                          /* eslint-disable-next-line @next/next/no-img-element -- admin thumb */
-                          <img src={row.coverImage} alt="" className="object-contain w-full h-full" />
+                          /* eslint-disable-next-line @next/next/no-img-element -- admin thumbnail */
+                          <img src={row.coverImage} alt="" className="h-full w-full rounded-[10px] object-contain" />
                         ) : (
-                          <Icon name="image" className="text-admin-on-surface-variant" />
+                          <Icon name="inventory_2" className="text-[18px] text-admin-on-surface-variant" />
                         )}
-                      </div>
-                      <span className="text-admin-on-surface-variant text-sm tabular-nums">{row.itemCount} шт.</span>
+                      </span>
+                      <span className="whitespace-nowrap text-admin-on-surface-variant">
+                        {row.itemCount} {pluralize(row.itemCount, 'позиция', 'позиции', 'позиций')}
+                      </span>
                     </div>
                   </td>
-                  {/* Сумма */}
-                  <td className="border-b border-admin-outline-variant px-4 py-[15px] font-bold tabular-nums text-admin-on-surface">
+                  <td className="border-b border-admin-outline-variant px-3 py-4 font-bold tabular-nums text-admin-on-surface">
                     {formatPrice(row.totalAmount)}
                   </td>
-                  {/* Оплата */}
-                  <td className="border-b border-admin-outline-variant px-4 py-[15px]">
-                    <span className={pv.badge}>{pv.label}</span>
-                    <div className="text-[11px] text-admin-on-surface-variant mt-1 uppercase tracking-wider">
-                      {row.paymentMethod === 'online' ? 'Онлайн' : 'При получении'}
-                    </div>
+                  <td className="border-b border-admin-outline-variant px-3 py-4">
+                    <span className={status.badge}>{status.label}</span>
                   </td>
-                  {/* Статус */}
-                  <td className="border-b border-admin-outline-variant px-4 py-[15px]">
-                    <span className={sv.badge}>{sv.label}</span>
+                  <td className="border-b border-admin-outline-variant px-3 py-4">
+                    <span className={payment.badge}>{payment.label}</span>
+                  </td>
+                  <td className="border-b border-admin-outline-variant px-3 py-4">
+                    <span
+                      className="inline-flex rounded-full bg-admin-surface-low px-3 py-1.5 text-xs font-bold text-admin-on-surface-variant"
+                      title="Способ доставки отсутствует в списочной проекции"
+                    >
+                      —
+                    </span>
+                  </td>
+                  <td className="border-b border-admin-outline-variant px-5 py-4 text-right">
+                    <Link
+                      href={`/admin/orders/${row.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                      aria-label={`Открыть заказ №${row.orderNumber}`}
+                      className="inline-grid h-9 w-9 place-items-center rounded-[10px] text-admin-on-surface-variant transition-colors hover:bg-admin-surface-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2"
+                    >
+                      <Icon name="more_vert" />
+                    </Link>
                   </td>
                 </tr>
               );
@@ -114,122 +128,82 @@ export function OrderTable({ rows, page, totalPages, total, limit }: OrderTableP
         </table>
       </div>
 
-      {/* Мобильная раскладка: карточки вместо таблицы (<md) */}
-      <div className="divide-y divide-admin-outline-variant md:hidden">
-        {rows.map((row) => {
-          const sv = orderStatusView(row.status, row.paymentStatus);
-          const pv = paymentStatusView(row.paymentStatus);
-          const createdLabel = formatDateTime(row.createdAt);
-          return (
-            <div
-              key={row.id}
-              onClick={() => router.push(`/admin/orders/${row.id}`)}
-              className="cursor-pointer p-4 transition-colors hover:bg-admin-surface-low"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center overflow-hidden rounded-[13px] border border-admin-outline-variant bg-admin-surface-low p-1">
-                  {row.coverImage ? (
-                    /* eslint-disable-next-line @next/next/no-img-element -- admin thumb */
-                    <img src={row.coverImage} alt="" className="object-contain w-full h-full" />
-                  ) : (
-                    <Icon name="image" className="text-admin-on-surface-variant" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/admin/orders/${row.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-bold text-admin-on-surface hover:underline tabular-nums"
-                  >
-                    #{row.orderNumber}
-                  </Link>
-                  <div className="text-xs text-admin-on-surface-variant tabular-nums">{createdLabel}</div>
-                </div>
-                <span className="font-bold text-admin-on-surface tabular-nums whitespace-nowrap">
-                  {formatPrice(row.totalAmount)}
-                </span>
-              </div>
-
-              <div className="mt-3">
-                <div className="truncate font-bold text-admin-on-surface">{row.contactName}</div>
-                <div className="text-xs text-admin-on-surface-variant truncate">{row.contactEmail}</div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={sv.badge}>{sv.label}</span>
-                  <span className={pv.badge}>{pv.label}</span>
-                  <span className="text-[11px] uppercase tracking-wider text-admin-on-surface-variant">
-                    {row.paymentMethod === 'online' ? 'Онлайн' : 'При получении'}
-                  </span>
-                </div>
-                <span className="text-xs text-admin-on-surface-variant tabular-nums">{row.itemCount} шт.</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Пагинация */}
-      <div className="flex items-center justify-between gap-4 border-t border-admin-outline-variant px-6 py-4 max-[640px]:justify-center">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-admin-outline-variant px-5 py-4">
         <p className="text-xs text-admin-on-surface-variant">
-          Показано {from}–{to} из {total}
+          Показано {from}–{to} из {total} заказов
         </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <PagerBtn disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
-            {pageItems(page, totalPages).map((it, i) =>
-              it === '…' ? (
-                <span key={`e${i}`} className="text-admin-on-surface-variant mx-1">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={it}
-                  type="button"
-                  onClick={() => goPage(it)}
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-[12px] font-bold transition-colors',
-                    it === page
-                      ? 'bg-[var(--admin-sidebar)] text-white'
-                      : 'border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-low',
-                  )}
-                >
-                  {it}
-                </button>
-              ),
-            )}
-            <PagerBtn disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
-          </div>
-        )}
-      </div>
+        <div className="flex gap-2">
+          <PagerButton disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
+          {pageItems(page, totalPages).map((item, index) =>
+            item === '…' ? (
+              <span
+                key={`ellipsis-${index}`}
+                className="grid h-10 w-5 place-items-center text-admin-on-surface-variant"
+              >
+                …
+              </span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                onClick={() => goPage(item)}
+                aria-current={item === page ? 'page' : undefined}
+                className={cn(
+                  'grid h-10 w-10 place-items-center rounded-[12px] text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary focus-visible:ring-offset-2',
+                  item === page
+                    ? 'bg-admin-primary text-white'
+                    : 'border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-low',
+                )}
+              >
+                {item}
+              </button>
+            ),
+          )}
+          <PagerButton disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
+        </div>
+      </footer>
     </div>
   );
 }
 
-function PagerBtn({ disabled, onClick, icon }: { disabled: boolean; onClick: () => void; icon: string }) {
+function PagerButton({ disabled, onClick, icon }: { disabled: boolean; onClick: () => void; icon: string }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-admin-outline-variant text-admin-on-surface-variant transition-colors hover:bg-admin-surface-low disabled:opacity-30"
+      aria-label={icon === 'chevron_left' ? 'Предыдущая страница' : 'Следующая страница'}
+      className="grid h-10 w-10 place-items-center rounded-[12px] border border-admin-outline-variant text-admin-on-surface-variant transition-colors hover:bg-admin-surface-low disabled:cursor-not-allowed disabled:opacity-30"
     >
       <Icon name={icon} />
     </button>
   );
 }
 
-// 1 … c-1 c c+1 … last
+function pluralize(value: number, one: string, few: string, many: string) {
+  const remainder = value % 100;
+  if (remainder >= 11 && remainder <= 14) return many;
+  switch (value % 10) {
+    case 1:
+      return one;
+    case 2:
+    case 3:
+    case 4:
+      return few;
+    default:
+      return many;
+  }
+}
+
 function pageItems(current: number, totalPages: number): (number | '…')[] {
   const set = new Set<number>([1, totalPages, current, current - 1, current + 1]);
-  const sorted = [...set].filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
-  const out: (number | '…')[] = [];
-  let prev = 0;
-  for (const n of sorted) {
-    if (n - prev > 1) out.push('…');
-    out.push(n);
-    prev = n;
+  const sorted = [...set].filter((item) => item >= 1 && item <= totalPages).sort((a, b) => a - b);
+  const result: (number | '…')[] = [];
+  let previous = 0;
+  for (const item of sorted) {
+    if (item - previous > 1) result.push('…');
+    result.push(item);
+    previous = item;
   }
-  return out;
+  return result;
 }

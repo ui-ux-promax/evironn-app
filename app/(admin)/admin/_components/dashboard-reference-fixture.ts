@@ -1,0 +1,95 @@
+import type { DashboardReferenceModel } from './dashboard-reference-model';
+
+// Visual-only fixture. Never import from production data modules.
+export const DASHBOARD_REFERENCE_FIXTURE: DashboardReferenceModel = {
+  period: 30,
+  revenue: { label: 'Выручка', value: '485 420 ₽', trend: '↑ 12,6% к прошлому месяцу' },
+  kpis: [
+    { id: 'orders', icon: 'shopping_cart', label: 'Заказы', value: '1 248', trend: '+8,4%' },
+    { id: 'average', icon: 'sell', label: 'Средний чек', value: '388 ₽', trend: '+5,2%' },
+    { id: 'conversion', icon: 'trending_up', label: 'Конверсия', value: '3,2%', trend: '+0,6%' },
+  ],
+  revenueSeries: [
+    { label: '1 мая', value: 12000 },
+    { label: '6 мая', value: 23500 },
+    { label: '11 мая', value: 28500 },
+    { label: '16 мая', value: 31500 },
+    { label: '21 мая', value: 47000 },
+    { label: '26 мая', value: 42500 },
+    { label: '31 мая', value: 60000 },
+  ],
+  funnel: {
+    stages: [
+      { id: 'views', icon: 'visibility', label: 'Просмотры', value: '18 742' },
+      { id: 'carts', icon: 'shopping_cart', label: 'Добавлено в корзину', value: '3 896' },
+      { id: 'checkout', icon: 'credit_card', label: 'Оформление', value: '1 745' },
+      { id: 'orders', icon: 'payments', label: 'Заказы', value: '1 248' },
+      { id: 'completed', icon: 'check_circle', label: 'Выполненные', value: '1 156' },
+    ],
+    footerLabel: 'Конверсия в заказ',
+    footerValue: '6,2%',
+    footerTrend: '+0,8%',
+  },
+  inventory: [
+    {
+      id: 'sofa',
+      name: 'Льняной диван',
+      imageUrl: '/assets/editorial/images/category-sofa.png',
+      availability: 'В наличии',
+      stock: '42',
+      href: '/admin/catalog/products',
+    },
+    {
+      id: 'armchair',
+      name: 'Кресло «Олива»',
+      imageUrl: '/assets/editorial/images/category-reading-chair.png',
+      availability: 'В наличии',
+      stock: '28',
+      href: '/admin/catalog/products',
+    },
+    {
+      id: 'table',
+      name: 'Журнальный стол «Дуб»',
+      imageUrl: '/assets/editorial/images/category-console.png',
+      availability: 'В наличии',
+      stock: '36',
+      href: '/admin/catalog/products',
+    },
+    {
+      id: 'chairs',
+      name: 'Стулья обеденные',
+      imageUrl: '/assets/products/01-bar-stool-idle.webp',
+      availability: 'В наличии',
+      stock: '64',
+      href: '/admin/catalog/products',
+    },
+  ],
+  categories: [
+    { id: 'sofas', name: 'Диваны', icon: 'weekend', share: 32 },
+    { id: 'chairs', name: 'Кресла', icon: 'chair', share: 24 },
+    { id: 'tables', name: 'Столы', icon: 'table_restaurant', share: 18 },
+    { id: 'lighting', name: 'Освещение', icon: 'light', share: 12 },
+  ],
+  categoryOther: { label: 'Другое', share: 14 },
+  orders: [
+    ['12548', '31 мая 2024', 'Иван Петров', '142 900 ₽', 'Выполнен', 'Оплачено', 'Отправлен'],
+    ['12547', '30 мая 2024', 'Сергей Смирнов', '218 650 ₽', 'В обработке', 'Оплачено', 'Готовится'],
+    ['12546', '30 мая 2024', 'Елена Кузнецова', '87 400 ₽', 'Ожидает оплаты', 'Ожидает оплаты', 'Ожидает'],
+    ['12545', '29 мая 2024', 'Дмитрий Волков', '325 675 ₽', 'Выполнен', 'Оплачено', 'Отправлен'],
+  ].map(([number, date, customer, total, order, payment, fulfillment], index) => ({
+    id: `fixture-${number}`,
+    href: '/admin/orders',
+    number: `№${number}`,
+    date,
+    customer,
+    products: [
+      { name: 'Диван', imageUrl: '/assets/editorial/images/category-sofa.png' },
+      { name: 'Кресло', imageUrl: '/assets/editorial/images/category-reading-chair.png' },
+    ],
+    overflowCount: index + 1,
+    total,
+    orderStatus: { label: order, tone: order === 'Ожидает оплаты' ? 'warning' : 'success' },
+    paymentStatus: { label: payment, tone: payment === 'Ожидает оплаты' ? 'warning' : 'success' },
+    fulfillmentStatus: { label: fulfillment, tone: fulfillment === 'Ожидает' ? 'warning' : 'success' },
+  })),
+};

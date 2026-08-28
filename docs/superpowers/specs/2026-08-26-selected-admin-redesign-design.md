@@ -9,15 +9,17 @@
 - `docs/design/admin-redesign/concepts/09-order-detail-reference.png` — protected order detail desktop.
 - `docs/design/admin-redesign/concepts/10-mobile-catalog-reference-v2.png` — protected catalog mobile.
 
-**Scope:** Presentation-only redesign of protected `/admin` and public read-only `/demo-admin`.
+**Scope:** Screenshot-first replacement of the protected `/admin` presentation, followed by the same visual language for public read-only `/demo-admin`.
 
 ## Intent
 
-Replace the accepted Phase 5 presentation with the selected light operational dashboard language while preserving every completed Phase 5 route, authorization boundary, read/write contract, DTO, action, fixture, and integration. The selected image is a composition reference, not a source of business truth: generated copy, logo artwork, metrics, statuses, and furniture names must be replaced by the real Evironn assets and existing application projections.
+Replace the accepted Phase 5 presentation with the selected light operational dashboard language while preserving every completed Phase 5 route, authorization boundary, read/write contract, DTO, action, fixture, and integration. `06-selected-evironn-admin.png` is a pixel-level visual target: reproduce its geometry, component presentation, density, spacing, borders, radii, shadows, and surface hierarchy. Only Evironn branding/Golos, navigation labels, and authoritative dynamic data may intentionally differ; structural similarity alone is insufficient. Generated copy, logo artwork, metrics, statuses, and furniture names must be replaced by real Evironn assets and existing application projections.
+
+The dashboard is implemented screenshot-first rather than by incrementally restyling the Phase 5 dashboard. First build an isolated presentational replica against a deterministic visual fixture and accept it at the reference's native `1536x1024` viewport. Only after that checkpoint may an adapter replace fixture values with existing authoritative Evironn projections. The adapter may change content, but it must not change the accepted component tree, grid, geometry, or visual hierarchy.
 
 ## Design direction
 
-- Preserve the reference's macro composition: a full-height labelled sidebar, a top utility/search bar, a dominant revenue panel, an order funnel/status panel, furniture inventory cards, category distribution, and a recent-orders table.
+- Preserve the reference's exact dashboard composition and proportions: a full-height labelled sidebar, a top utility/search bar, a dominant left sales panel, an equal-height right funnel/status panel, horizontal furniture inventory cards, circular category distribution, and a full-width compact recent-orders table.
 - Use the real `/assets/evironn-logo.svg`; never reproduce the generated lowercase leaf mark.
 - Use `Golos Text` through the existing `--ev-font-*` tokens for headings, body copy, controls, and numeric values.
 - Use the existing Evironn palette: warm off-white page, white surfaces, near-black warm text, muted forest green for primary/positive states, and restrained warm amber/terracotta for warnings.
@@ -52,10 +54,10 @@ Visible UI is Russian. Ruble formatting, status labels, order numbers, customer 
 The protected dashboard uses current live projections and maps them into the selected composition:
 
 - `Выручка за период`: existing KPI and daily series.
-- Compact metrics: orders, average order value, and cancellations.
-- `Заказы`: existing status distribution rendered as a compact funnel or ordered status stack. Do not introduce storefront visit/cart conversion numbers because Phase 5 has no authoritative analytics source for them.
-- `Товары на складе`: existing best-seller/low-stock/catalog projections with real product media and stock counts.
-- `Популярные категории`: derive only from existing canonical category/product/order data. If the current projection cannot supply it without new backend work, retain the current best-seller/status module rather than fabricate data.
+- Compact metrics: orders, average order value, and conversion. Orders and average order value remain live; conversion is `—` until a persisted analytics source exists.
+- `Заказы`: reference-shaped five-step funnel — `Просмотры`, `Корзина`, `Оформление`, `Заказы`, `Выполненные`. Carts, orders, and delivered orders may use persisted records; views and checkout render `—` because the schema has no event source.
+- `Товары на складе`: existing best-seller/low-stock/catalog projections with real product media and authoritative stock counts.
+- `Популярные категории`: derive only from existing canonical category/product/order data, render actual furniture icons, and keep `Другое` compact. If unavailable, render an honest empty state rather than fabricate data.
 - `Последние заказы`: existing recent-order projection and links.
 
 ## Remaining protected routes
@@ -84,10 +86,12 @@ Equivalent demo tokens may mirror protected values, but demo code remains indepe
 
 ## Responsive and accessibility behavior
 
-- Desktop reference viewport: `1440×900`; selected dashboard composition is the visual source of truth.
+- Native pixel-parity viewport: `1536×1024`, matching the approved reference asset.
+- Delivery desktop viewport: `1440×900`; the accepted composition scales without changing its hierarchy or density.
 - Mobile acceptance viewport: `390×844`; content becomes a single-column flow with no horizontal page overflow.
 - The labelled desktop sidebar collapses into the existing accessible mobile menu pattern.
 - Tables use their existing bounded responsive treatment instead of shrinking text below readable sizes.
+- Recent-orders tables keep an internal horizontal scroll when needed; the admin workspace keeps vertical scroll so the full panel is reachable.
 - Preserve keyboard access, focus-visible rings, labels, semantic headings, reduced-motion behavior, dialogs, and status text independent of color.
 
 ## Verification policy
@@ -95,21 +99,22 @@ Equivalent demo tokens may mirror protected values, but demo code remains indepe
 - Focused render/contract checks only during implementation tasks.
 - No tests for static pixel values or individual Tailwind class lists.
 - One full `npm run format`, `npm run gate`, `npm run build`, and critical admin/demo E2E sequence after the complete redesign.
-- Visual acceptance is required twice: shell/dashboard first, then representative protected/demo route templates on desktop and mobile.
+- Dashboard visual acceptance is required twice: first for the isolated fixture-backed replica, then after authoritative data integration. Representative protected/demo route acceptance remains a later gate.
 - No push, PR, or merge without separate user authorization.
 
 ## Non-goals
 
 - No Prisma migration, seed change, provider call, environment-variable change, authorization change, route addition, business-rule change, or new dependency.
 - No redesign of the storefront.
-- No implementation of global search or new analytics tracking.
+- No implementation of global search or new analytics tracking; unsupported funnel stages remain unavailable rather than fabricated.
 - No regeneration of product media.
 - No modification of payment, stock, order snapshot, Cloudinary, or role-management semantics.
 
 ## Acceptance criteria
 
-1. `/admin` matches the selected reference's macro layout and density while using real Evironn branding, Russian copy, `Golos Text`, and live existing data.
-2. All protected admin routes share the selected shell and component language without functional regression.
-3. All five demo routes share the same visual direction while remaining public, deterministic, read-only, and technically isolated.
-4. Desktop and mobile representative captures have no page overflow, broken controls, missing states, or generated-placeholder content.
-5. Focused checks, the single final quality gate, build, and critical E2E pass before delivery.
+1. The fixture-backed dashboard matches the selected reference at its native `1536×1024` viewport before backend integration.
+2. `/admin` preserves the accepted component tree and geometry at `1536×1024` and `1440×900` after switching to real Evironn branding, Russian copy, `Golos Text`, and live existing data.
+3. All protected admin routes share the selected shell and component language without functional regression.
+4. All five demo routes share the same visual direction while remaining public, deterministic, read-only, and technically isolated.
+5. Desktop and mobile representative captures have no page overflow, broken controls, missing states, or generated-placeholder content.
+6. Focused checks, the single final quality gate, build, and critical E2E pass before delivery.

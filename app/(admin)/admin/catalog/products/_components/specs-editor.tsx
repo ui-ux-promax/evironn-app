@@ -16,14 +16,14 @@ export function SpecsEditor({
 }) {
   const { fields, append, remove } = useFieldArray({ control, name: 'specs' });
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {fields.map((f, i) => (
-        <div key={f.id} className="flex gap-2 items-center">
+        <div key={f.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] items-center gap-2">
           <Input placeholder="Характеристика" {...register(`specs.${i}.key`)} />
           <Input placeholder="Значение" {...register(`specs.${i}.value`)} />
           <button
             type="button"
-            aria-label="Удалить"
+            aria-label="Удалить характеристику"
             onClick={() => remove(i)}
             className="text-admin-on-surface-variant hover:text-admin-error"
           >
@@ -31,8 +31,8 @@ export function SpecsEditor({
           </button>
         </div>
       ))}
-      <Button type="button" variant="outline" size="sm" onClick={() => append({ key: '', value: '' })}>
-        Добавить характеристику
+      <Button type="button" variant="ghost" size="sm" onClick={() => append({ key: '', value: '' })}>
+        + Добавить характеристику
       </Button>
     </div>
   );

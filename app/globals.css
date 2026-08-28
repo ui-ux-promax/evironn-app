@@ -623,13 +623,12 @@ html body[data-scroll-locked] {
     color: var(--admin-on-bg);
     min-height: 100vh;
   }
-  /* На admin-страницах скроллит main, а не документ (модель прототипа): глушим скролл
-     И html (documentElement — на нём обычно вьюпорт-скроллбар), И body. Иначе два скроллбара
-     + при открытии Radix-поповеров react-remove-scroll сдвигает контент и видна lime-полоса.
-     :has() не трогает витрину (там нет .admin-root). */
+  /* Admin workspace scrolls with the document so the complete recent-orders panel remains
+     reachable; the table itself owns horizontal scrolling on narrow screens. */
   html:has(.admin-root),
   body:has(.admin-root) {
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: auto;
   }
   .admin-root.dark {
     /* dark (admin-main-dark.html) */

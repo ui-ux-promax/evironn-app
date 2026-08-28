@@ -164,4 +164,16 @@ describe('SkuMatrix', () => {
       existsSync(resolve(process.cwd(), 'app/(admin)/admin/catalog/products/_components/variant-matrix.tsx')),
     ).toBe(false);
   });
+
+  it('uses readable option labels and a bounded SKU media control', () => {
+    const matrix = readFileSync(
+      resolve(process.cwd(), 'app/(admin)/admin/catalog/products/_components/sku-matrix.tsx'),
+      'utf8',
+    );
+    const uploader = readFileSync(resolve(process.cwd(), 'components/admin/media/image-uploader.tsx'), 'utf8');
+
+    expect(matrix).toContain('optionValueName');
+    expect(matrix).toContain('compact');
+    expect(uploader).toContain('whitespace-nowrap');
+  });
 });

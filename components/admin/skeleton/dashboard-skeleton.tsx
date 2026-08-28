@@ -1,176 +1,217 @@
+import type { CSSProperties, ReactNode } from 'react';
 import { Skeleton } from './skeleton';
 
-/**
- * Тело дашборда (`admin/page.tsx`): шапка (title + period-toggle справа),
- * ряд 5 KPI-карточек (`xl:grid-cols-5`), `grid-cols-12` → area-chart `xl:col-span-8`
- * + donut `xl:col-span-4`, нижний ряд: топ-продаж `lg:col-span-5` +
- * (низкий сток + последние заказы) `lg:col-span-7`.
- * Корень (role/aria) задаёт DashboardSkeleton-обёртка ниже.
- */
-function KpiCardSkeleton({ delay }: { delay: 1 | 2 | 3 | 4 | 5 }) {
+type Delay = 1 | 2 | 3 | 4 | 5;
+
+function Panel({ children, className = '', testId }: { children: ReactNode; className?: string; testId: string }) {
   return (
-    <div className="bg-admin-surface border border-admin-outline-variant rounded-xl p-6">
-      <div className="flex justify-between items-start mb-4">
-        <Skeleton rounded="box" delay={delay} className="w-10 h-10 rounded-lg" />
-        <Skeleton rounded="line" delay={delay} className="h-3.5 w-12" />
-      </div>
-      <Skeleton rounded="line" delay={delay} className="h-2.5 w-20 mb-2" />
-      <Skeleton rounded="line" delay={delay} className="h-6 w-24" />
+    <section
+      data-skeleton={testId}
+      className={`min-w-0 overflow-hidden rounded-[18px] border border-admin-outline-variant bg-admin-surface shadow-[0_7px_24px_hsl(30_10%_25%_/_0.045)] ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
+
+function PanelHeader({ action = false }: { action?: boolean }) {
+  return (
+    <div className="flex min-h-[34px] items-center justify-between gap-4">
+      <Skeleton rounded="line" className="h-[17px] w-40" />
+      {action ? <Skeleton rounded="pill" delay={1} className="h-[34px] w-24 shrink-0" /> : null}
     </div>
   );
 }
 
-function CardSkeleton({ className, children }: { className?: string; children: React.ReactNode }) {
+function KpiSkeleton({ delay }: { delay: Delay }) {
   return (
-    <div className={`bg-admin-surface border border-admin-outline-variant rounded-xl p-6 ${className ?? ''}`}>
-      {children}
+    <div
+      data-skeleton="dashboard-kpi"
+      className="grid min-h-[76px] grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[10px] bg-admin-surface-low px-3.5 py-3"
+    >
+      <Skeleton rounded="box" delay={delay} className="h-[34px] w-[34px] rounded-lg" />
+      <div className="min-w-0">
+        <Skeleton rounded="line" delay={delay} className="h-3 w-20" />
+        <Skeleton rounded="line" delay={delay} className="mt-1.5 h-[19px] w-16" />
+      </div>
     </div>
+  );
+}
+
+function ChartSkeleton() {
+  return (
+    <div className="relative mt-3 h-[228px] overflow-hidden">
+      <div className="absolute inset-x-0 top-4 grid gap-10">
+        {[1, 2, 3, 4, 5].map((row) => (
+          <Skeleton
+            key={row}
+            rounded="line"
+            delay={(((row - 1) % 5) + 1) as Delay}
+            className="h-px w-full rounded-none"
+          />
+        ))}
+      </div>
+      <Skeleton
+        rounded="line"
+        delay={2}
+        className="absolute bottom-12 left-[8%] h-24 w-[55%] -rotate-6 rounded-full opacity-70"
+      />
+      <Skeleton
+        rounded="line"
+        delay={3}
+        className="absolute bottom-14 left-[43%] h-16 w-[48%] rotate-6 rounded-full opacity-70"
+      />
+      <div className="absolute inset-x-[7%] bottom-0 flex justify-between">
+        {[1, 2, 3, 4, 5, 6, 7].map((label) => (
+          <Skeleton key={label} rounded="line" className="h-2.5 w-8" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SalesSkeleton() {
+  return (
+    <Panel testId="dashboard-sales" className="min-h-[406px] p-[20px_26px_16px] max-[620px]:p-[18px]">
+      <PanelHeader action />
+      <div className="mt-4 grid grid-cols-[190px_minmax(0,1fr)] items-end gap-5 max-[1180px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1">
+        <div className="grid min-h-[78px] content-end gap-1">
+          <Skeleton rounded="line" className="h-3 w-20" />
+          <Skeleton rounded="line" className="h-7 w-32" />
+          <Skeleton rounded="line" className="h-3 w-28" />
+        </div>
+        <div className="grid grid-cols-3 gap-3.5 max-[1180px]:gap-2 max-[620px]:grid-cols-1">
+          {[1, 2, 3].map((delay) => (
+            <KpiSkeleton key={delay} delay={delay as Delay} />
+          ))}
+        </div>
+      </div>
+      <ChartSkeleton />
+    </Panel>
+  );
+}
+
+function FunnelSkeleton() {
+  const widths = ['100%', '93%', '86%', '79%', '72%'];
+
+  return (
+    <Panel testId="dashboard-funnel" className="flex min-h-[406px] flex-col p-[20px_24px_14px] max-[620px]:p-[18px]">
+      <PanelHeader />
+      <div className="mt-2 grid">
+        {widths.map((width, index) => (
+          <div key={width} className="grid justify-items-center">
+            <div
+              data-skeleton="dashboard-funnel-stage"
+              style={{ '--stage-width': width } as CSSProperties}
+              className="relative grid min-h-[49px] w-[var(--stage-width)] grid-cols-[25px_minmax(0,1fr)_auto] items-center gap-2.5 px-6 max-[620px]:px-4"
+            >
+              <Skeleton rounded="box" delay={((index % 5) + 1) as Delay} className="h-5 w-5 rounded-md" />
+              <Skeleton rounded="line" delay={((index % 5) + 1) as Delay} className="h-3 w-24" />
+              <Skeleton rounded="line" delay={((index % 5) + 1) as Delay} className="h-3 w-10" />
+            </div>
+            {index < widths.length - 1 ? <Skeleton rounded="line" className="my-0.5 h-1.5 w-2 rounded-full" /> : null}
+          </div>
+        ))}
+      </div>
+      <Skeleton rounded="box" delay={2} className="mt-auto h-9 w-full rounded-[10px]" />
+    </Panel>
+  );
+}
+
+function InventorySkeleton() {
+  return (
+    <Panel testId="dashboard-inventory" className="min-h-[212px] p-[16px_22px_14px] max-[620px]:p-[18px]">
+      <PanelHeader action />
+      <div className="mt-2.5 grid grid-cols-4 gap-3.5 max-[620px]:grid-cols-2">
+        {[1, 2, 3, 4].map((delay) => (
+          <div key={delay} data-skeleton="dashboard-inventory-card" className="grid min-w-0">
+            <Skeleton rounded="box" delay={delay as Delay} className="h-[98px] w-full rounded-xl" />
+            <Skeleton rounded="line" delay={delay as Delay} className="mt-2 h-3 w-4/5 max-w-full" />
+            <div className="mt-1 flex justify-between gap-2">
+              <Skeleton rounded="line" delay={delay as Delay} className="h-2.5 w-16" />
+              <Skeleton rounded="line" delay={delay as Delay} className="h-3 w-5" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function CategoriesSkeleton() {
+  return (
+    <Panel testId="dashboard-categories" className="min-h-[212px] p-[16px_22px_14px] max-[620px]:p-[18px]">
+      <PanelHeader action />
+      <div className="mt-2.5 grid grid-cols-4 gap-2 max-[620px]:grid-cols-2 max-[620px]:gap-y-4">
+        {[1, 2, 3, 4].map((delay) => (
+          <div key={delay} data-skeleton="dashboard-category" className="grid justify-items-center gap-1.5">
+            <Skeleton
+              rounded="circle"
+              delay={delay as Delay}
+              className="h-[82px] w-[82px] p-1.5 max-[1180px]:h-[68px] max-[1180px]:w-[68px] max-[620px]:h-[82px] max-[620px]:w-[82px]"
+            />
+            <Skeleton rounded="line" delay={delay as Delay} className="h-2.5 w-16" />
+          </div>
+        ))}
+      </div>
+      <Skeleton rounded="line" delay={2} className="mt-1.5 h-2.5 w-24" />
+    </Panel>
+  );
+}
+
+function OrdersSkeleton() {
+  return (
+    <Panel testId="dashboard-orders" className="col-span-full overflow-hidden p-[9px_0_0]">
+      <div className="px-[22px] pb-2">
+        <PanelHeader action />
+      </div>
+      <div className="overflow-x-auto">
+        <div className="min-w-[1000px]">
+          <div className="grid h-9 grid-cols-[1fr_1fr_1.4fr_1fr_1fr_1fr_1fr_1fr] items-center gap-3 border-y border-admin-outline-variant bg-admin-surface-low px-3">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((column) => (
+              <Skeleton key={column} rounded="line" className="h-2.5 w-16" />
+            ))}
+          </div>
+          <div className="divide-y divide-admin-outline-variant">
+            {[1, 2, 3, 4].map((delay) => (
+              <div
+                key={delay}
+                data-skeleton="dashboard-order-row"
+                className="grid h-[52px] grid-cols-[1fr_1fr_1.4fr_1fr_1fr_1fr_1fr_1fr] items-center gap-3 px-3"
+              >
+                <Skeleton rounded="line" delay={delay as Delay} className="h-3 w-16" />
+                <Skeleton rounded="line" delay={delay as Delay} className="h-3 w-20" />
+                <Skeleton rounded="line" delay={delay as Delay} className="h-3 w-28" />
+                <div className="flex gap-1">
+                  <Skeleton rounded="box" delay={delay as Delay} className="h-7 w-8 rounded-md" />
+                  <Skeleton rounded="box" delay={delay as Delay} className="h-7 w-8 rounded-md" />
+                </div>
+                <Skeleton rounded="line" delay={delay as Delay} className="h-3 w-20" />
+                <Skeleton rounded="pill" delay={delay as Delay} className="h-6 w-16" />
+                <Skeleton rounded="pill" delay={delay as Delay} className="h-6 w-16" />
+                <Skeleton rounded="pill" delay={delay as Delay} className="h-6 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Panel>
   );
 }
 
 export function DashboardBody() {
   return (
-    <div aria-hidden className="space-y-8">
-      {/* Шапка: title + period-toggle */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Skeleton rounded="line" className="h-8 w-64 mb-2" />
-          <Skeleton rounded="line" delay={1} className="h-3.5 w-72" />
-        </div>
-        <Skeleton rounded="pill" delay={1} className="h-9 w-48" />
-      </div>
-
-      {/* 5 KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
-        {[1, 2, 3, 4, 5].map((d) => (
-          <KpiCardSkeleton key={d} delay={d as 1 | 2 | 3 | 4 | 5} />
-        ))}
-      </div>
-
-      {/* Графики: area (8) + donut (4) */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-12">
-        <CardSkeleton className="col-span-12 xl:col-span-8">
-          <Skeleton rounded="line" className="h-5 w-44 mb-4" />
-          <Skeleton rounded="box" delay={1} className="w-full h-72 rounded-2xl" />
-        </CardSkeleton>
-        <CardSkeleton className="col-span-12 xl:col-span-4 flex flex-col">
-          <Skeleton rounded="line" className="h-5 w-40 mb-6" />
-          <Skeleton rounded="circle" delay={1} className="w-44 h-44 mx-auto mb-8" />
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((d) => (
-              <div key={d} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Skeleton rounded="circle" delay={d as 1 | 2 | 3 | 4} className="w-3 h-3" />
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-3 w-20" />
-                </div>
-                <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-3 w-9" />
-              </div>
-            ))}
-          </div>
-        </CardSkeleton>
-      </div>
-
-      {/* Каталог, остатки и покрытие 360° */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-2">
-        {[1, 2].map((d) => (
-          <CardSkeleton key={d}>
-            <Skeleton rounded="line" className="mb-4 h-5 w-48" />
-            <Skeleton rounded="line" delay={d as 1 | 2} className="mb-6 h-3.5 w-64" />
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[1, 2, 3, 4].map((metric) => (
-                <div key={metric} className="rounded-[18px] border border-admin-outline-variant p-4">
-                  <Skeleton rounded="line" delay={metric as 1 | 2 | 3 | 4} className="mb-3 h-2.5 w-20" />
-                  <Skeleton rounded="line" delay={metric as 1 | 2 | 3 | 4} className="h-6 w-12" />
-                </div>
-              ))}
-            </div>
-          </CardSkeleton>
-        ))}
-      </div>
-
-      {/* Нижний ряд: топ-продаж (5) + низкий сток / последние заказы (7) */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-12">
-        {/* Топ продаж */}
-        <CardSkeleton className="col-span-12 lg:col-span-5">
-          <Skeleton rounded="line" className="h-5 w-48 mb-4" />
-          <div className="space-y-3">
-            {[1, 2, 3].map((d) => (
-              <div
-                key={d}
-                className="flex items-center gap-4 p-3 rounded-xl bg-admin-surface-low border border-admin-outline-variant"
-              >
-                <Skeleton rounded="box" delay={d as 1 | 2 | 3} className="w-14 h-14 rounded-lg shrink-0" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3} className="h-3 w-32" />
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3} className="h-2.5 w-20" />
-                </div>
-                <div className="text-right space-y-2 shrink-0">
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3} className="h-3 w-16 ml-auto" />
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3} className="h-2.5 w-12 ml-auto" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardSkeleton>
-
-        {/* Низкий сток + последние заказы */}
-        <div className="min-w-0 col-span-12 lg:col-span-7 space-y-6">
-          {/* Низкий сток: сетка 2× */}
-          <CardSkeleton>
-            <div className="flex justify-between items-center mb-4">
-              <Skeleton rounded="line" className="h-5 w-36" />
-              <Skeleton rounded="pill" delay={1} className="h-6 w-16" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[1, 2, 3, 4].map((d) => (
-                <div
-                  key={d}
-                  className="p-3 rounded-xl border border-admin-outline-variant flex justify-between items-center gap-2"
-                >
-                  <div className="min-w-0 space-y-2">
-                    <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-3 w-24" />
-                    <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-2.5 w-32" />
-                  </div>
-                  <div className="text-right space-y-1.5 shrink-0">
-                    <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-5 w-7 ml-auto" />
-                    <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-2 w-14 ml-auto" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardSkeleton>
-
-          {/* Последние заказы: мини-таблица */}
-          <div className="bg-admin-surface border border-admin-outline-variant rounded-xl overflow-hidden">
-            <div className="p-6 pb-3">
-              <Skeleton rounded="line" className="h-5 w-40" />
-            </div>
-            <div className="hidden bg-admin-surface-high border-y border-admin-outline-variant px-6 py-3 gap-6 sm:flex">
-              {['w-16', 'w-20', 'w-16', 'w-14'].map((w, i) => (
-                <Skeleton key={i} rounded="line" className={`h-2.5 ${w}`} />
-              ))}
-            </div>
-            <div className="divide-y divide-admin-outline-variant">
-              {[1, 2, 3, 4].map((d) => (
-                <div
-                  key={d}
-                  className="px-4 py-3 grid grid-cols-2 gap-3 sm:px-6 sm:flex sm:items-center sm:justify-between sm:gap-4"
-                >
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-3 w-16" />
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-3 w-28" />
-                  <Skeleton rounded="pill" delay={d as 1 | 2 | 3 | 4} className="h-5 w-20" />
-                  <Skeleton rounded="line" delay={d as 1 | 2 | 3 | 4} className="h-3 w-16" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div aria-hidden className="grid grid-cols-1 gap-3.5 min-[901px]:grid-cols-[minmax(0,1.76fr)_minmax(400px,1fr)]">
+      <SalesSkeleton />
+      <FunnelSkeleton />
+      <InventorySkeleton />
+      <CategoriesSkeleton />
+      <OrdersSkeleton />
     </div>
   );
 }
 
-/** Публичный композит дашборда — без пропов. Корень несёт role="status". */
+/** Public dashboard loading composite; the root carries the loading semantics. */
 export function DashboardSkeleton() {
   return (
     <div role="status" aria-busy="true" aria-label="Загрузка…">

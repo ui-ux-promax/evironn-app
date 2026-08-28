@@ -1,12 +1,10 @@
-import { AdminKpiCard } from '@/components/admin/admin-kpi-card';
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { AdminPanel } from '@/components/admin/admin-panel';
+import { Icon } from '@/components/admin/icon';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { parsePaginationParams, readSearchQuery, readEnumParam } from '@/lib/admin/pagination';
 import { listAdminOrders } from '@/lib/admin/orders';
-import { ORDER_STATUS_META } from '@/lib/order';
 import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from '@/lib/order-admin';
 import { formatPrice } from '@/lib/format';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { OrderFilters } from './_components/order-filters';
 import { OrderTable } from './_components/order-table';
 
@@ -25,58 +23,73 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const status = readEnumParam(sp, 'status', ORDER_STATUS_VALUES);
   const payment = readEnumParam(sp, 'payment', PAYMENT_FILTER_VALUES);
   const result = await listAdminOrders({ page, limit, query: q, status, payment });
-  const { rows, total, pagination, statusCounts, filteredRevenue } = result;
-  const processingCount = statusCounts.PROCESSING;
-  const shippedCount = statusCounts.SHIPPED;
-  const deliveredCount = statusCounts.DELIVERED;
+  const { rows, total, pagination, statusCounts } = result;
+  const awaitingPayment = rows.filter(
+    (row) => row.paymentStatus === 'pending' || row.paymentStatus === 'waiting_for_capture',
+  ).length;
 
   return (
-    <div className="space-y-[24px]">
+    <div className="space-y-5">
       <AdminPageHeader
-        kicker="Операции"
-        title={`Заказы (${total})`}
-        subtitle="Просмотр заказов, платежей, состава и операционных статусов."
-      />
-
-      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2 xl:grid-cols-4">
-        <AdminKpiCard
-          icon="shopping_bag"
-          label="Заказов в выборке"
-          value={total.toLocaleString('ru-RU')}
-          tone="primary"
-        />
-        <AdminKpiCard icon="sync" label="В обработке" value={processingCount.toLocaleString('ru-RU')} />
-        <AdminKpiCard icon="local_shipping" label="В пути" value={shippedCount.toLocaleString('ru-RU')} />
-        <AdminKpiCard
-          icon="payments"
-          label="Оборот выборки"
-          value={formatPrice(filteredRevenue)}
-          delta={`${deliveredCount} доставлено`}
-        />
-      </div>
-
-      <AdminPanel
-        title="Журнал заказов"
-        note="Числовой поиск ищет точный номер заказа. Текстовый поиск ищет по имени, телефону и email."
-        actions={
-          <div className="text-[13px] font-bold text-admin-on-surface-variant">
-            Показано <b className="font-mono text-admin-on-surface">{total}</b> заказов
+        className="rounded-[28px] border border-admin-outline-variant bg-admin-surface px-6 py-6 shadow-[var(--admin-shadow-tight)] sm:px-7"
+        kicker="Операции магазина"
+        title="Заказы"
+        subtitle="Статусы, оплата и доставка — в одном рабочем реестре."
+        action={
+          <div className="flex shrink-0 gap-3">
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[14px] border border-admin-outline-variant px-4 text-sm font-bold text-admin-on-surface-variant"
+            >
+              <Icon name="download" className="text-[19px]" />
+              Экспорт
+            </button>
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-admin-primary px-5 text-sm font-bold text-white"
+            >
+              <Icon name="add" className="text-[19px]" />
+              Создать заказ
+            </button>
           </div>
         }
-      >
-        <div className="mb-4 flex flex-wrap gap-3">
-          {ORDER_STATUS_VALUES.map((s) => (
-            <div
-              key={s}
-              className="flex items-center gap-2 rounded-full border border-admin-outline-variant bg-admin-surface px-4 py-2"
-            >
-              <span className={ORDER_STATUS_META[s].badge}>{ORDER_STATUS_META[s].label}</span>
-              <span className="font-bold tabular-nums text-admin-on-surface">{statusCounts[s]}</span>
-            </div>
-          ))}
-        </div>
+      />
 
-        <OrderFilters />
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Ключевые показатели заказов">
+        <KpiCard label="Новые заказы" value={statusCounts.PENDING.toLocaleString('ru-RU')} detail="Текущий статус" />
+        <KpiCard label="В обработке" value={statusCounts.PROCESSING.toLocaleString('ru-RU')} detail="Текущий статус" />
+        <KpiCard label="В пути" value={statusCounts.SHIPPED.toLocaleString('ru-RU')} detail="Текущий статус" />
+        <KpiCard label="Ожидает оплаты" value={awaitingPayment.toLocaleString('ru-RU')} detail="На текущей странице" />
+      </section>
+
+      <OrderFilters />
+
+      <section
+        aria-labelledby="orders-table-title"
+        className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface shadow-[var(--admin-shadow-tight)]"
+      >
+        <div className="flex flex-col gap-3 border-b border-admin-outline-variant px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="orders-table-title" className="text-base font-medium text-admin-on-surface">
+              Реестр заказов
+            </h2>
+            <p className="mt-1 text-xs text-admin-on-surface-variant">
+              {total.toLocaleString('ru-RU')} заказов · данные по текущей выборке
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            className="inline-flex min-h-9 w-fit items-center rounded-[10px] border border-admin-outline-variant px-3.5 text-xs font-bold text-admin-on-surface-variant"
+          >
+            Настроить колонки
+          </button>
+        </div>
 
         {rows.length > 0 ? (
           <OrderTable
@@ -87,11 +100,23 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             limit={pagination.limit}
           />
         ) : (
-          <div className="mt-[18px] rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-10 text-center text-sm font-bold text-admin-on-surface-variant">
-            Заказы не найдены.
-          </div>
+          <div className="p-10 text-center text-sm font-bold text-admin-on-surface-variant">Заказы не найдены.</div>
         )}
-      </AdminPanel>
+      </section>
     </div>
+  );
+}
+
+function KpiCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <article className="rounded-[20px] border border-admin-outline-variant bg-admin-surface p-5 shadow-[var(--admin-shadow-tight)]">
+      <p className="text-xs font-semibold text-admin-on-surface-variant">{label}</p>
+      <p className="mt-2 font-admin-head text-3xl font-medium tracking-tight text-admin-on-surface tabular-nums">
+        {value}
+      </p>
+      <span className="mt-3 inline-flex rounded-full bg-admin-surface-low px-2.5 py-1 text-[11px] font-bold text-admin-on-surface-variant">
+        {detail}
+      </span>
+    </article>
   );
 }

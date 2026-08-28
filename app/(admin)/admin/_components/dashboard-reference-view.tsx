@@ -188,6 +188,38 @@ function RevenueChart({ data }: { data: DashboardReferenceModel['revenueSeries']
             data-testid="reference-revenue-curve"
           />
         ) : null}
+        {points.map((point) => {
+          const tooltip = chartTooltipPosition(point, { width, top });
+          const value = formatChartCurrency(point.value);
+
+          return (
+            <g
+              key={`point-${point.label}`}
+              data-testid="reference-chart-point"
+              className={styles.chartPoint}
+              tabIndex={0}
+              role="img"
+              aria-label={`${point.label}: ${value}`}
+            >
+              <line x1={point.x} x2={point.x} y1={top} y2={height - bottom} className={styles.chartHoverGuide} />
+              <circle cx={point.x} cy={point.y} r="15" className={styles.chartPointHit} />
+              <circle cx={point.x} cy={point.y} r="5" className={styles.chartActiveDot} />
+              <g
+                data-testid="reference-chart-tooltip"
+                className={styles.chartTooltip}
+                transform={`translate(${point.x + tooltip.x} ${point.y + tooltip.y})`}
+              >
+                <rect width="116" height="34" rx="8" />
+                <text x="10" y="14" className={styles.chartTooltipLabel}>
+                  {point.label}
+                </text>
+                <text x="10" y="26" className={styles.chartTooltipValue}>
+                  {value}
+                </text>
+              </g>
+            </g>
+          );
+        })}
         {points.map((point, index) =>
           visibleChartLabelIndexes(points.length).has(index) ? (
             <text
@@ -213,6 +245,20 @@ function RevenueChart({ data }: { data: DashboardReferenceModel['revenueSeries']
       </svg>
     </div>
   );
+}
+
+function chartTooltipPosition(
+  point: { x: number; y: number },
+  dimensions: { width: number; top: number },
+): { x: number; y: number } {
+  return {
+    x: point.x > dimensions.width - 132 ? -124 : 12,
+    y: point.y < dimensions.top + 42 ? 12 : -42,
+  };
+}
+
+function formatChartCurrency(value: number): string {
+  return `${new Intl.NumberFormat('ru-RU').format(value)} ₽`;
 }
 
 function visibleChartLabelIndexes(length: number): Set<number> {
@@ -270,10 +316,10 @@ function OrdersTable({ rows }: { rows: DashboardReferenceOrder[] }) {
       <table data-testid="reference-orders-table" className={styles.ordersTable}>
         <thead>
           <tr>
-            <th>№ заказа</th>
+            <th>Заказ</th>
             <th>Дата</th>
             <th>Клиент</th>
-            <th>Товары</th>
+            <th>Состав</th>
             <th>Сумма</th>
             <th>Статус</th>
             <th>Оплата</th>
@@ -287,19 +333,29 @@ function OrdersTable({ rows }: { rows: DashboardReferenceOrder[] }) {
                 <Link href={row.href}>{row.number}</Link>
               </td>
               <td>{row.date}</td>
-              <td>{row.customer}</td>
               <td>
-                <span className={styles.productStack}>
-                  {row.products.slice(0, 3).map((product, index) => (
-                    <span key={`${product.name}-${index}`} className={styles.productThumb}>
-                      {product.imageUrl ? (
-                        <img src={product.imageUrl} alt="" />
-                      ) : (
-                        <Icon name="chair" aria-hidden="true" />
-                      )}
-                    </span>
-                  ))}
-                  {row.overflowCount > 0 ? <b>+{row.overflowCount}</b> : null}
+                <b className={styles.orderCustomer}>{row.customer}</b>
+                <small data-testid="reference-order-email" className={styles.orderEmail}>
+                  {row.email ?? '—'}
+                </small>
+              </td>
+              <td>
+                <span data-testid="reference-order-composition" className={styles.productStack}>
+                  <span className={styles.productThumb}>
+                    {row.products[0]?.imageUrl ? (
+                      <img src={row.products[0].imageUrl} alt="" />
+                    ) : (
+                      <Icon name="inventory_2" aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className={styles.compositionText}>
+                    {pluralize(
+                      row.itemCount ?? row.products.length + row.overflowCount,
+                      'позиция',
+                      'позиции',
+                      'позиций',
+                    )}
+                  </span>
                 </span>
               </td>
               <td className={styles.total}>{row.total}</td>
@@ -310,7 +366,9 @@ function OrdersTable({ rows }: { rows: DashboardReferenceOrder[] }) {
                 <StatusPill status={row.paymentStatus} />
               </td>
               <td>
-                <StatusPill status={row.fulfillmentStatus} />
+                <span className={styles.deliveryPlaceholder} title="Способ доставки отсутствует в списочной проекции">
+                  —
+                </span>
               </td>
             </tr>
           ))}
@@ -321,9 +379,20 @@ function OrdersTable({ rows }: { rows: DashboardReferenceOrder[] }) {
 }
 
 function StatusPill({ status }: { status: DashboardReferenceStatus }) {
-  return (
-    <span className={styles.status} data-tone={status.tone}>
-      <i /> {status.label}
-    </span>
-  );
+  return <span className={`badge ${statusClass(status.tone)}`}>{status.label}</span>;
+}
+
+function statusClass(tone: DashboardReferenceStatus['tone']): string {
+  if (tone === 'success') return 'badge-success';
+  if (tone === 'warning') return 'badge-warning';
+  if (tone === 'danger') return 'badge-danger';
+  return 'badge-info';
+}
+
+function pluralize(value: number, one: string, few: string, many: string): string {
+  const remainder = value % 100;
+  if (remainder >= 11 && remainder <= 14) return `${value} ${many}`;
+  if (value % 10 === 1) return `${value} ${one}`;
+  if (value % 10 >= 2 && value % 10 <= 4) return `${value} ${few}`;
+  return `${value} ${many}`;
 }

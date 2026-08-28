@@ -20,6 +20,8 @@ describe('admin dashboard loading state', () => {
     expect(markup.match(/data-skeleton="dashboard-inventory-card"/g)).toHaveLength(4);
     expect(markup.match(/data-skeleton="dashboard-category"/g)).toHaveLength(4);
     expect(markup.match(/data-skeleton="dashboard-order-row"/g)).toHaveLength(4);
+    expect(markup).not.toContain('-rotate-6');
+    expect(markup).not.toContain('rotate-6');
   });
 
   it('does not carry the retired dashboard layout contract', () => {

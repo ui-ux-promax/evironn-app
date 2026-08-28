@@ -1,5 +1,5 @@
-import { ListPageSkeleton } from '@/components/admin/skeleton';
+import { CustomerRegisterSkeleton } from '../_components/admin-list-register-skeleton';
 
 export default function CustomersLoading() {
-  return <ListPageSkeleton filterCount={3} tableCols={5} />;
+  return <CustomerRegisterSkeleton />;
 }

@@ -173,6 +173,62 @@
   stroke-width: 2.4;
 }
 
+.chartPoint {
+  cursor: crosshair;
+  outline: none;
+}
+
+.chartPointHit {
+  fill: transparent;
+}
+
+.chartHoverGuide,
+.chartActiveDot,
+.chartTooltip {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+}
+
+.chartHoverGuide {
+  stroke: var(--admin-money);
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.45;
+}
+
+.chartActiveDot {
+  fill: var(--admin-money);
+  stroke: var(--admin-surface);
+  stroke-width: 2.5;
+}
+
+.chartTooltip rect {
+  fill: var(--admin-surface);
+  stroke: var(--admin-outline-variant);
+  filter: drop-shadow(0 5px 9px hsl(30 10% 25% / 0.13));
+}
+
+.chartTooltipLabel,
+.chartTooltipValue {
+  fill: var(--admin-on-surface-variant);
+  font-size: 9px;
+}
+
+.chartTooltipValue {
+  fill: var(--admin-on-surface);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.chartPoint:hover .chartHoverGuide,
+.chartPoint:hover .chartActiveDot,
+.chartPoint:hover .chartTooltip,
+.chartPoint:focus-visible .chartHoverGuide,
+.chartPoint:focus-visible .chartActiveDot,
+.chartPoint:focus-visible .chartTooltip {
+  opacity: 1;
+}
+
 @keyframes dashboardChartDraw {
   from {
     opacity: 0.35;
@@ -539,45 +595,76 @@
 
 .ordersTable {
   width: 100%;
-  min-width: 1000px;
+  min-width: 1080px;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .ordersTable th,
 .ordersTable td {
-  height: 52px;
-  padding: 5px 12px;
   text-align: left;
   white-space: nowrap;
   border-top: 1px solid var(--admin-outline-variant);
 }
 
 .ordersTable th {
+  padding: 14px 12px;
   color: var(--admin-on-surface-variant);
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--admin-surface-low);
+}
+
+.ordersTable td {
+  padding: 14px 12px;
+}
+
+.ordersTable th:first-child,
+.ordersTable td:first-child {
+  padding-left: 20px;
 }
 
 .ordersTable td:first-child a {
   color: var(--admin-on-surface);
-  font-weight: 560;
+  font-weight: 700;
   text-decoration: none;
+}
+
+.orderCustomer,
+.orderEmail {
+  display: block;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.orderCustomer {
+  color: var(--admin-on-surface);
+  font-weight: 700;
+}
+
+.orderEmail {
+  margin-top: 4px;
+  color: var(--admin-on-surface-variant);
+  font-size: 11px;
 }
 
 .productStack {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 8px;
 }
 
 .productThumb {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   overflow: hidden;
   background: var(--admin-surface-low);
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 .productThumb img {
@@ -590,52 +677,26 @@
   font-size: 16px;
 }
 
-.productStack b {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  font-size: 10px;
-  font-weight: 500;
-  background: var(--admin-surface-low);
-  border-radius: 50%;
+.compositionText {
+  color: var(--admin-on-surface-variant);
 }
 
 .total {
-  font-weight: 560;
+  color: var(--admin-on-surface);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.status {
+.deliveryPlaceholder {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  gap: 6px;
-  padding: 0 9px;
+  min-height: 29px;
+  padding: 0 12px;
   color: var(--admin-on-surface-variant);
-  font-size: 10px;
-  font-weight: 550;
+  font-size: 12px;
+  font-weight: 700;
   background: var(--admin-surface-low);
-  border-radius: 7px;
-}
-
-.status i {
-  width: 6px;
-  height: 6px;
-  background: currentColor;
-  border-radius: 50%;
-}
-
-.status[data-tone='success'] {
-  color: var(--admin-money);
-}
-
-.status[data-tone='warning'] {
-  color: var(--admin-warning);
-}
-
-.status[data-tone='danger'] {
-  color: var(--admin-error);
+  border-radius: 999px;
 }
 
 @media (max-width: 1180px) {

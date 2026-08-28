@@ -77,8 +77,10 @@ describe('admin dashboard composition', () => {
         number: `№1254${8 - index}`,
         date: '31 мая 2024',
         customer: 'Иван Петров',
+        email: 'ivan@example.ru',
         products: [{ name: 'Диван', imageUrl: null }],
         overflowCount: index,
+        itemCount: index + 1,
         total: '142 900 ₽',
         orderStatus: { label: 'Выполнен', tone: 'success' },
         paymentStatus: { label: 'Оплачено', tone: 'success' },
@@ -94,16 +96,22 @@ describe('admin dashboard composition', () => {
     expect(markup).toContain('data-testid="reference-revenue-chart"');
     expect(markup).toContain('data-testid="reference-chart-animation"');
     expect(markup).toContain('data-testid="reference-revenue-curve"');
+    expect(markup.match(/data-testid="reference-chart-point"/g)).toHaveLength(30);
+    expect(markup.match(/data-testid="reference-chart-tooltip"/g)).toHaveLength(30);
+    expect(markup).toMatch(/14\s000\s₽/);
     expect(markup.match(/data-testid="reference-chart-label"/g)).toHaveLength(7);
     expect(markup).toContain('День 01');
     expect(markup).toContain('День 30');
-    expect(markup).not.toContain('День 02');
     expect(markup.match(/data-testid="reference-funnel-stage"/g)).toHaveLength(5);
     expect(markup).toContain('data-testid="reference-funnel-animation"');
     expect(markup).not.toContain('data-testid="reference-funnel-shape"');
     expect(markup.match(/data-testid="reference-inventory-card"/g)).toHaveLength(4);
     expect(markup.match(/data-testid="reference-category-ring"/g)).toHaveLength(4);
     expect(markup).toContain('data-testid="reference-orders-table"');
+    expect(markup.match(/data-testid="reference-order-email"/g)).toHaveLength(4);
+    expect(markup.match(/data-testid="reference-order-composition"/g)).toHaveLength(4);
+    expect(markup).toContain('1 позиция');
+    expect(markup).not.toContain('Действия');
     expect(markup).toContain('Показатели продаж');
     expect(markup).toContain('Товары на складе');
     expect(markup).toContain('Популярные категории');
@@ -114,6 +122,7 @@ describe('admin dashboard composition', () => {
     expect(css).toContain('prefers-reduced-motion: reduce');
     expect(css).toContain('.funnelStageAnimated');
     expect(css).toContain('.chartLineAnimated');
+    expect(css).toContain('.chartPoint:hover .chartTooltip');
   });
 
   it('keeps page and layout authorization source contracts before reads and shell output', () => {

@@ -42,8 +42,10 @@ export type DashboardReferenceOrder = {
   number: string;
   date: string;
   customer: string;
+  email?: string | null;
   products: { name: string; imageUrl: string | null }[];
   overflowCount: number;
+  itemCount?: number;
   total: string;
   orderStatus: DashboardReferenceStatus;
   paymentStatus: DashboardReferenceStatus;

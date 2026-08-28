@@ -51,16 +51,6 @@ function ChartSkeleton() {
           />
         ))}
       </div>
-      <Skeleton
-        rounded="line"
-        delay={2}
-        className="absolute bottom-12 left-[8%] h-24 w-[55%] -rotate-6 rounded-full opacity-70"
-      />
-      <Skeleton
-        rounded="line"
-        delay={3}
-        className="absolute bottom-14 left-[43%] h-16 w-[48%] rotate-6 rounded-full opacity-70"
-      />
       <div className="absolute inset-x-[7%] bottom-0 flex justify-between">
         {[1, 2, 3, 4, 5, 6, 7].map((label) => (
           <Skeleton key={label} rounded="line" className="h-2.5 w-8" />

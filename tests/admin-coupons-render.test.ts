@@ -125,7 +125,7 @@ describe('admin coupon composition', () => {
     expect(newPage).toContain('mode="create"');
     expect(editPage).toContain('mode="edit"');
     expect(editPage.indexOf('requireAdminPage()')).toBeLessThan(editPage.indexOf('prisma.coupon.findUnique'));
-    expect(loading).toContain('ListPageSkeleton');
+    expect(loading).toContain('CouponRegisterSkeleton');
     expect([form, table, listPage, newPage, editPage].join('\n')).not.toMatch(
       /usage|used|использован|orderCount|usageCount/i,
     );

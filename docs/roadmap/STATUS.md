@@ -61,9 +61,9 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 
 ## Next action
 
-1. Produce a bounded Phase 6 evidence inventory comparing current Evironn code with the reusable `fashion-shop` hardening foundation.
-2. Create and review an executable Phase 6 plan with explicit task boundaries, environment requirements, smoke scenarios, and performance evidence.
-3. Stop for user approval of the reviewed plan before implementation.
+1. In a new session, follow `docs/superpowers/specs/2026-08-29-phase-6a-planning-brief.md` and `.superpowers/sdd/phase-6-handoff.md`.
+2. Produce the required source-parity matrix and the executable plan at `docs/superpowers/plans/2026-08-29-phase-6a-hardening-foundation.md`.
+3. Complete fresh Sol Medium plan review, resolve all Critical/Important findings, and stop for user approval before implementation.
 
 ## Protected local files
 

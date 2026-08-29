@@ -516,3 +516,12 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - The five funnel stages reveal top-to-bottom with staggered delays; arrows and conversion footer follow. The revenue curve draws with `stroke-dashoffset`, while the area fill fades in. Existing model mapping, SVG path generation, labels, layout, and data behavior remain unchanged.
 - Added `prefers-reduced-motion: reduce` overrides that expose the final state immediately. No client boundary, animation dependency, API, action, or data source was introduced.
 - TDD evidence: dashboard animation assertions were observed RED before JSX/CSS changes, then GREEN. Focused dashboard checks passed 2 files / 20 tests. Touched-file Prettier and `git diff --check` remain required final checks; no reviewer, full gate, build, E2E, or commit was run.
+
+# Phase 6 preparation — 2026-08-29
+
+- Phase 5 merged through PR #10 at `b40b125`; the accepted admin redesign merged through PR #11 at `e06ae9c`. Current `origin/dev` is exact `e06ae9c`.
+- Created `phase/06-hardening-release` from exact `origin/dev` and recorded preparation commit `4316f05` (`docs: prepare phase 6 delivery`). Phase 6 implementation has not started.
+- Added the bounded Phase 6A planning brief and handoff. The next session owns source-parity inventory, one fresh Sol Medium plan, one fresh Sol Medium plan review, remediation of Critical/Important findings, and a stop for user approval.
+- Initial evidence confirms that Evironn already contains the inherited rate-limit, CSRF, CSP/security headers, Sentry, readiness, demo reset, production smoke, CI, and Vercel cron foundation. `fashion-shop` remains the read-only technical comparison source; broad rewrites are forbidden.
+- Presence-only local environment inventory found DB/Auth/Resend/YooKassa/DaData/Cloudinary/Upstash variables and found Google OAuth/Sentry/demo-reset/smoke variables absent. Values were not read or printed. Local absence is not Vercel evidence.
+- No application code, tests, build, E2E, database, external provider, Vercel configuration, push, PR, or merge operation occurred during Phase 6A preparation.

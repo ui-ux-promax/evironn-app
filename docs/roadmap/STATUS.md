@@ -7,7 +7,7 @@
 - The accepted Evironn admin redesign follow-up merged through PR #11 at merge commit `e06ae9c` on 2026-08-29.
 - Current integration branch: `origin/dev` at exact commit `e06ae9c`.
 - Current local delivery branch: `phase/06-hardening-release`, created from exact `origin/dev` commit `e06ae9c`.
-- Phase 6 implementation has not started. The branch is a preparation point only until its executable plan is reviewed and approved by the user.
+- Phase 6A implementation is complete on the local branch after user-approved execution of the reviewed plan. Phase 6B and later work have not started.
 - Current release branch: `origin/main` at `162a35e`. The final `dev` to `main` release remains pending.
 
 ## Completed merges
@@ -59,11 +59,20 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 - Use focused verification during implementation. Run the complete gate once at Phase 6 closeout unless cross-cutting remediation invalidates it.
 - Do not open the Phase 6 pull request, merge it, or open the final `dev` to `main` release pull request without explicit user authorization.
 
+## Phase 6A focused checkpoint — 2026-08-29
+
+- Approved plan: `docs/superpowers/plans/2026-08-29-phase-6a-hardening-foundation.md`; implementation baseline `4f4503c`.
+- Task 1 commit: `4c3c6d3` (`fix: clean stale hardening identifiers`). Updated active rate-limit/logger/reset-lock/CI identifiers and authorized `e2e/a11y.spec.ts` showcase route references. Task review approved after one E2E-flow remediation; the focused checkout E2E attempt stalled and was interrupted without green evidence.
+- Task 2 commit: `2e83b0f` (`fix: close critical hardening defects`). Added compact Redis, CSRF, middleware, CSP, logger/Sentry, health, and DaData boundary coverage; fixed mixed Redis alias handling. Task review approved after deterministic environment stubbing and spy cleanup.
+- Task 3 commit: `f0867df` (`fix: close demo operations defects`). Added reset-lock, reset-guard, environment, CI, cron, smoke, and operations-document coverage; fixed mixed Redis alias handling and strengthened canonical SKU/global temporary cleanup assertions. Task review approved after remediation.
+- Task 4 checkpoint passed: 8 files / 24 tests; manual changed-file Prettier check passed; `git diff --check` passed. Typecheck was not run because no shared TypeScript contract changed. Path-only secret scan listed only known dummy fixture/config paths: `.github/workflows/ci.yml`, `tests/phase-5-active-brand.test.ts`, and `vitest.config.ts`; no unexplained secret-bearing path and no matched values were printed.
+- Final Sol functional/security review passed with Critical 0, Important 0, Minor 0; no remediation required. The review confirmed Redis fail-open/fail-closed behavior, CSRF/CSP, Sentry/PII/ADMIN controls, reset guards/lock/idempotency, CI/cron/smoke contracts, scope exclusions, and preservation of Phase 4/5 boundaries.
+- Full Phase 6 gate, build, broad E2E, deployed smoke, provider checks/mutations, database commands/mutations, Vercel/GitHub changes, push, pull request, merge, performance work, and Phase 6B remain unexecuted and require later authorized scope.
+
 ## Next action
 
-1. In a new session, follow `docs/superpowers/specs/2026-08-29-phase-6a-planning-brief.md` and `.superpowers/sdd/phase-6-handoff.md`.
-2. Produce the required source-parity matrix and the executable plan at `docs/superpowers/plans/2026-08-29-phase-6a-hardening-foundation.md`.
-3. Complete fresh Sol Medium plan review, resolve all Critical/Important findings, and stop for user approval before implementation.
+1. User acceptance of the Phase 6A focused checkpoint.
+2. Later user authorization for the next Phase 6 delivery; do not begin Phase 6B automatically.
 
 ## Protected local files
 

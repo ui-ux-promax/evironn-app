@@ -504,6 +504,54 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - TDD evidence: `tests/admin-dashboard-loading.test.ts` was observed RED against the old skeleton, then GREEN after the replacement. Focused dashboard loading/render checks passed 2 files / 9 tests. Touched-file Prettier passed and `git diff --check` passed with only existing LF/CRLF conversion warnings.
 - No dashboard data, live presentation, shared shell, DTO, action, API, provider, full gate, build, complete Vitest suite, E2E, reviewer, or commit operation was performed.
 
+## Phase 6A implementation baseline — 2026-08-29
+
+- Approved-plan baseline: `4f4503caf0a812226d6f195e155e09e7504bd499` (`4f4503c`).
+- Branch verified: `phase/06-hardening-release`; approved plan present at the baseline commit.
+- Protected untracked Phase 2 plan files preserved unchanged.
+- Pre-flight plan scan found no internal task/global-constraint contradiction; one marker check used wording not present verbatim (`provider operation` versus the plan's equivalent provider-mutation language), with no substantive conflict.
+
+## Phase 6A Task 1 — 2026-08-29
+
+- Base `4f4503c`; implementation commit `4c3c6d3` (`fix: clean stale hardening identifiers`).
+- Changed active hardening identifiers to Evironn namespaces, updated CI dummy database names, and added focused active-brand assertions. User-authorized narrow expansion updated `e2e/a11y.spec.ts` to use `SHOWCASE_PRODUCT_PATH` and current cart-count state.
+- Focused Vitest: `npx vitest run tests/phase-5-active-brand.test.ts tests/admin-warmup-route.test.ts tests/ci-workflow.test.ts` — exit 0, 3 files / 8 tests passed.
+- Prettier and `git diff --check` passed. Focused checkout E2E was attempted after explicit user authorization, stalled at approximately 60 seconds, was interrupted, and has no green evidence; no background processes remained.
+- Task reviewer re-review: Spec Compliance approved; Code Quality approved; Critical 0, Important 0, Minor 1 (stale test title wording). Task accepted with E2E limitation recorded.
+- Task 1: complete (commits `4f4503c..4c3c6d3`, review clean).
+
+## Phase 6A Task 2 — 2026-08-29
+
+- Base `4c3c6d3`; implementation commit `2e83b0f` (`fix: close critical hardening defects`).
+- Added compact Redis alias/runtime-error characterization, CSRF/middleware ordering coverage, critical CSP/header assertions, logger/Sentry bridge coverage, coarse health-route coverage, and DaData missing-token ordering coverage. Fixed owner-local mixed-alias detection.
+- Focused union: 16 files / 63 tests passed. Remediation checks: `npx vitest run tests/rate-limit.test.ts tests/logger-sentry-bridge.test.ts` — exit 0, 2 files / 5 tests; Prettier and `git diff --check` passed.
+- Task reviewer initial finding: Important ambient Redis environment dependence; Minor console spy cleanup. Implementer amended the single commit, explicitly neutralized all Redis aliases per test and restored mocks in `afterEach`.
+- Task reviewer re-review: Spec Compliance approved; Code Quality approved; Critical 0, Important 0, Minor 0.
+- Task 2: complete (commits `4c3c6d3..2e83b0f`, review clean).
+
+## Phase 6A Task 3 — 2026-08-29
+
+- Base `2e83b0f`; implementation commit `f0867df` (`fix: close demo operations defects`). Original Task 3 commit was amended; no second Task 3 commit exists.
+- Added compact demo-reset lock/configuration coverage, environment guard matrix, CI/cron/smoke contract assertions, and one short operations document. Fixed owner-local mixed Redis alias handling and, after review, strengthened reset tests for the canonical `sku` path and all global temporary-data cleanup predicates.
+- Focused command: `npx vitest run tests/demo-data-canonical.test.ts tests/demo-data-reset.test.ts tests/demo-reset-lock.test.ts tests/demo-reset-route.test.ts tests/ci-workflow.test.ts tests/vercel-cron.test.ts tests/smoke-script.test.ts` — exit 0, 7 files / 18 tests passed.
+- Focused Prettier passed for changed Task 3 files; `git diff --check` exit 0. Path-only secret scan listed only known dummy fixture/config paths: `.github/workflows/ci.yml`, `tests/phase-5-active-brand.test.ts`, `vitest.config.ts`; no unexplained secret-bearing path.
+- Task reviewer initial findings: Important canonical reset-path and cleanup assertion gaps; Minor test-title wording. Remediation added exact coverage; original implementer unavailable, so bounded Luna remediation amended the existing commit. Same Sol reviewer re-review: Spec Compliance approved; Code Quality approved; Critical 0, Important 0, Minor 1 (test-title wording).
+- Task 3: complete (commits `2e83b0f..f0867df`, review clean).
+
+## Phase 6A Task 4 checkpoint — 2026-08-29
+
+- Tasks 1–3 confirmed complete; no stop condition fired.
+- Cross-boundary checkpoint: `npx vitest run tests/phase-5-active-brand.test.ts tests/admin-warmup-route.test.ts tests/rate-limit.test.ts tests/logger-sentry-bridge.test.ts tests/demo-reset-lock.test.ts tests/demo-reset-route.test.ts tests/ci-workflow.test.ts tests/smoke-script.test.ts` — exit 0, 8 files / 24 tests passed.
+- Manual changed-file Prettier check covered all Prettier-supported Task 1–3 files, including authorized `e2e/a11y.spec.ts`; exit 0. `git diff --check` exit 0; only existing LF/CRLF conversion warning.
+- Conditional typecheck: NOT RUN — final diff changes literals, local logic, tests, YAML, Markdown, and E2E route references; no shared TypeScript contract, exported DTO, route signature, Prisma/schema boundary, or framework configuration changed.
+- Task 3 path-only secret scan evidence retained: only known dummy fixture/config paths appeared (`.github/workflows/ci.yml`, `tests/phase-5-active-brand.test.ts`, `vitest.config.ts`); no unexplained secret-bearing path and no matched values printed.
+
+## Phase 6A final review — 2026-08-29
+
+- Single final Sol Medium functional/security review covered exact range `4f4503c..f0867df` and the recorded focused evidence. Verdict: PASS; Critical 0, Important 0, Minor 0; no remediation required.
+- Final review confirmed no high-confidence vulnerabilities, no scope regression, and preservation of Phase 4 payment/stock and Phase 5 ADMIN/demo-admin isolation. Focused checkout E2E remains an explicitly documented limitation because its authorized attempt stalled and was interrupted.
+- Phase 6A local checkpoint complete. Full gate/build/broad E2E/deployed smoke/provider/database operations, performance work, push, PR, merge, and Phase 6B remain excluded.
+
 ## Admin dashboard chart animation timing refinement — 2026-08-28
 
 - User requested a slower revenue-chart entrance so the drawing is observable. Increased only `dashboardChartDraw` duration from `1200ms` to `1800ms`; funnel cascade, data mapping, chart geometry, and reduced-motion behavior remain unchanged.

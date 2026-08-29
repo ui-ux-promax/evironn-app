@@ -10,14 +10,24 @@ export interface RateLimitResult {
   reset: number;
 }
 
-function getEnv(primary: string, fallback: string): string | undefined {
-  return process.env[primary] || process.env[fallback] || undefined;
+function getRedisCredentials(): { url: string; token: string } | undefined {
+  const preferred = {
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
+  };
+  if (preferred.url && preferred.token) return preferred as { url: string; token: string };
+
+  const fallback = {
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  };
+  if (fallback.url && fallback.token) return fallback as { url: string; token: string };
+
+  return undefined;
 }
 
 export function isRateLimitConfigured(): boolean {
-  return Boolean(
-    getEnv('KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL') && getEnv('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN'),
-  );
+  return Boolean(getRedisCredentials());
 }
 
 export function extractClientIp(req: { headers: Headers }): string {
@@ -38,16 +48,15 @@ let loginLimiter:
 
 async function getLoginLimiter(): Promise<typeof loginLimiter> {
   if (loginLimiter !== null) return loginLimiter;
-  if (!isRateLimitConfigured()) {
+  const credentials = getRedisCredentials();
+  if (!credentials) {
     loginLimiter = false;
     return loginLimiter;
   }
-  const url = getEnv('KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL')!;
-  const token = getEnv('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN')!;
   const { Ratelimit } = await import('@upstash/ratelimit');
   const { Redis } = await import('@upstash/redis');
   loginLimiter = new Ratelimit({
-    redis: new Redis({ url, token }),
+    redis: new Redis(credentials),
     limiter: Ratelimit.slidingWindow(5, '5 m'),
     prefix: 'evironn-app:login',
   });
@@ -75,16 +84,15 @@ async function makeLimiter(
   prefix: string,
 ): Promise<Limiter> {
   if (slot.v !== null) return slot.v;
-  if (!isRateLimitConfigured()) {
+  const credentials = getRedisCredentials();
+  if (!credentials) {
     slot.v = false;
     return slot.v;
   }
-  const url = getEnv('KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL')!;
-  const token = getEnv('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN')!;
   const { Ratelimit } = await import('@upstash/ratelimit');
   const { Redis } = await import('@upstash/redis');
   slot.v = new Ratelimit({
-    redis: new Redis({ url, token }),
+    redis: new Redis(credentials),
     limiter: Ratelimit.slidingWindow(points, window),
     prefix,
   });

@@ -107,6 +107,7 @@ describe('POST /api/dadata/suggest', () => {
     const res = await POST(req({ query: 'Москва' }));
 
     await expect(res.json()).resolves.toEqual({ suggestions: [] });
+    expect(limitMock).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 });

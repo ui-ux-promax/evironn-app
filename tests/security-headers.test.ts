@@ -23,4 +23,21 @@ describe('security headers', () => {
     expect(csp).toContain('connect-src');
     expect(csp).toContain('https://*.ingest.de.sentry.io');
   });
+
+  it('keeps required external sources and browser boundary directives', async () => {
+    const { buildContentSecurityPolicy, buildSecurityHeaders } = await import('../lib/security/headers.mjs');
+    const csp = buildContentSecurityPolicy({ allowVercelLive: false });
+    const headers = buildSecurityHeaders({ includeHsts: true, allowVercelLive: false });
+
+    expect(csp).toContain("img-src 'self' data: blob: https://res.cloudinary.com");
+    expect(csp).toContain("frame-src 'self' https://yoomoney.ru https://*.yookassa.ru");
+    expect(csp).toContain('https://suggestions.dadata.ru');
+    expect(csp).toContain('https://*.ingest.sentry.io');
+    expect(csp).toContain('https://*.ingest.de.sentry.io');
+    expect(csp).toContain('https://fonts.googleapis.com');
+    expect(csp).toContain('https://fonts.gstatic.com');
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(headers).toContainEqual({ key: 'X-Frame-Options', value: 'DENY' });
+    expect(csp).not.toContain('https://vercel.live');
+  });
 });

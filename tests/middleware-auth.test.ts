@@ -20,6 +20,35 @@ vi.mock('next-auth', () => ({
 }));
 
 describe('middleware auth composition', () => {
+  it('blocks cross-site state changes before invoking Auth.js', async () => {
+    const { default: middleware } = await import('../middleware');
+    authMock.mockClear();
+    const req = new NextRequest('http://test.local/api/cart', {
+      method: 'POST',
+      headers: { origin: 'https://evil.example', 'sec-fetch-site': 'cross-site' },
+    });
+
+    const res = (await middleware(req, {} as NextFetchEvent)) as Response;
+
+    expect(res.status).toBe(403);
+    expect(authMock).not.toHaveBeenCalled();
+  });
+
+  it('delegates same-origin state changes to Auth.js', async () => {
+    const { default: middleware } = await import('../middleware');
+    authMock.mockClear();
+    const req = new NextRequest('http://test.local/api/cart', {
+      method: 'POST',
+      headers: { origin: 'http://test.local', 'sec-fetch-site': 'same-origin' },
+    });
+
+    const res = (await middleware(req, {} as NextFetchEvent)) as Response;
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get('x-auth-mode')).toBe('inline');
+    expect(authMock).toHaveBeenCalledTimes(1);
+  });
+
   it('calls Auth.js inline so callbacks.authorized can redirect protected anonymous routes', async () => {
     const { default: middleware } = await import('../middleware');
     const req = new NextRequest('http://test.local/profile');

@@ -38,16 +38,23 @@ export function OptionGroupTable({ rows }: { rows: AdminOptionGroupRow[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface">
-      <div className="divide-y divide-admin-outline-variant">
+    <section
+      aria-label="Реестр групп опций"
+      className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface"
+    >
+      <div role="list" className="divide-y divide-admin-outline-variant">
         {rows.map((row, index) => (
-          <div key={row.id} className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+          <div
+            key={row.id}
+            role="listitem"
+            className="flex flex-col gap-4 p-5 transition-colors hover:bg-admin-surface-low md:flex-row md:items-center md:justify-between"
+          >
             <div className="min-w-0">
               <div className="font-bold text-admin-on-surface">{row.name}</div>
               <div className="text-xs text-admin-on-surface-variant">
                 {row.slug} · {row.values.length} значений · {row.productCount} товаров
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Значения опции">
                 {row.values.map((value) => (
                   <span
                     key={value.id}
@@ -103,6 +110,6 @@ export function OptionGroupTable({ rows }: { rows: AdminOptionGroupRow[] }) {
         title="Удалить группу опций?"
         description={toDelete ? `«${toDelete.name}» будет удалена безвозвратно.` : undefined}
       />
-    </div>
+    </section>
   );
 }

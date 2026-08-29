@@ -32,15 +32,31 @@ export function CustomerTable({ rows, page, totalPages, total, limit }: Customer
   const to = Math.min(page * limit, total);
 
   return (
-    <div className="bg-admin-surface border border-admin-outline-variant rounded-xl overflow-hidden">
+    <div className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface shadow-[var(--admin-shadow-tight)]">
+      <div className="flex flex-col gap-3 border-b border-admin-outline-variant px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base font-medium text-admin-on-surface">Реестр клиентов</h2>
+          <p className="mt-1 text-xs text-admin-on-surface-variant">
+            {total.toLocaleString('ru-RU')} клиента · данные обновлены недавно
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          className="inline-flex min-h-9 w-fit items-center rounded-[10px] border border-admin-outline-variant px-3.5 text-xs font-bold text-admin-on-surface-variant"
+        >
+          Экспорт
+        </button>
+      </div>
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left">
+        <table aria-label="Реестр клиентов" className="w-full min-w-[880px] border-collapse text-left text-[13px]">
           <thead className="bg-admin-surface-high">
             <tr>
               {['Клиент', 'Роль', 'Заказов', 'Потрачено', 'Регистрация'].map((h) => (
                 <th
                   key={h}
-                  className="px-6 py-4 text-[12px] font-semibold uppercase tracking-widest text-admin-on-surface-variant"
+                  className="border-b border-admin-outline-variant bg-admin-surface-low px-3 py-3.5 text-[10px] font-bold uppercase tracking-[.08em] text-admin-on-surface-variant first:px-5"
                 >
                   {h}
                 </th>
@@ -137,33 +153,32 @@ export function CustomerTable({ rows, page, totalPages, total, limit }: Customer
         <p className="text-xs text-admin-on-surface-variant">
           Показано {from}–{to} из {total}
         </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <PagerBtn disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
-            {pageItems(page, totalPages).map((it, i) =>
-              it === '…' ? (
-                <span key={`e${i}`} className="text-admin-on-surface-variant mx-1">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={it}
-                  type="button"
-                  onClick={() => goPage(it)}
-                  className={cn(
-                    'w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-colors',
-                    it === page
-                      ? 'bg-admin-primary text-admin-on-primary'
-                      : 'text-admin-on-surface-variant hover:bg-admin-surface-high',
-                  )}
-                >
-                  {it}
-                </button>
-              ),
-            )}
-            <PagerBtn disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <PagerBtn disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
+          {pageItems(page, totalPages).map((it, i) =>
+            it === '…' ? (
+              <span key={`e${i}`} className="text-admin-on-surface-variant mx-1">
+                …
+              </span>
+            ) : (
+              <button
+                key={it}
+                type="button"
+                onClick={() => goPage(it)}
+                aria-current={it === page ? 'page' : undefined}
+                className={cn(
+                  'w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-colors',
+                  it === page
+                    ? 'bg-admin-primary text-admin-on-primary'
+                    : 'text-admin-on-surface-variant hover:bg-admin-surface-high',
+                )}
+              >
+                {it}
+              </button>
+            ),
+          )}
+          <PagerBtn disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
+        </div>
       </div>
     </div>
   );
@@ -175,6 +190,7 @@ function PagerBtn({ disabled, onClick, icon }: { disabled: boolean; onClick: () 
       type="button"
       disabled={disabled}
       onClick={onClick}
+      aria-label={icon === 'chevron_left' ? 'Предыдущая страница' : 'Следующая страница'}
       className="w-8 h-8 flex items-center justify-center rounded-lg border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-high transition-colors disabled:opacity-30"
     >
       <Icon name={icon} />

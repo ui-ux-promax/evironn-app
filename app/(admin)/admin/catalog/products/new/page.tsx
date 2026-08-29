@@ -1,5 +1,3 @@
-import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { AdminPanel } from '@/components/admin/admin-panel';
 import { requireAdminPage } from '@/lib/admin/require-admin';
 import { prisma } from '@/lib/prisma-client';
 import { listAdminOptionGroupsForCatalog, listAdminRoomsForCatalog } from '@/lib/admin/catalog';
@@ -46,20 +44,11 @@ export default async function NewProductPage() {
     turntable: false,
   };
   return (
-    <div className="space-y-[24px]">
-      <AdminPageHeader
-        kicker="Каталог"
-        title="Новый товар"
-        subtitle="Создание карточки товара, расцветок и размерной сетки."
-      />
-      <AdminPanel title="Данные товара" note="Заполните базовые поля и настройте каноническую матрицу SKU.">
-        <ProductForm
-          initialValues={initialValues}
-          categories={categories}
-          brands={brandRows.map((b) => b.brand)}
-          availableRooms={rooms}
-        />
-      </AdminPanel>
-    </div>
+    <ProductForm
+      initialValues={initialValues}
+      categories={categories}
+      brands={brandRows.map((b) => b.brand)}
+      availableRooms={rooms}
+    />
   );
 }

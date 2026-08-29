@@ -1,5 +1,5 @@
-import { ListPageSkeleton } from '@/components/admin/skeleton';
+import { OrderRegisterSkeleton } from './_components/order-register-skeleton';
 
 export default function OrdersLoading() {
-  return <ListPageSkeleton withStatusChips filterCount={3} tableCols={6} withThumb />;
+  return <OrderRegisterSkeleton />;
 }

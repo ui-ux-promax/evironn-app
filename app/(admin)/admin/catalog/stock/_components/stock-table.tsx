@@ -44,45 +44,50 @@ export function StockTable({ rows, page, totalPages, total, limit }: StockTableP
 
   return (
     <div>
-      <div className="mb-[18px] flex flex-wrap items-center gap-3 max-[640px]:grid">
-        <div className="relative min-w-[240px] flex-1">
-          <Icon
-            name="search"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-admin-on-surface-variant"
-          />
-          <Input
-            className="h-12 rounded-full pl-10 pr-4"
-            placeholder="Поиск SKU, артикула или товара…"
-            defaultValue={params.get('q') ?? ''}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') setParam('q', event.currentTarget.value.trim() || undefined);
-            }}
-          />
+      <section
+        aria-label="Поиск и фильтры остатков"
+        className="mb-[18px] rounded-[20px] border border-admin-outline-variant bg-admin-surface-low p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-center gap-3 max-[640px]:grid">
+          <div className="relative min-w-[240px] flex-1">
+            <Icon
+              name="search"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-admin-on-surface-variant"
+            />
+            <Input
+              className="h-12 rounded-[14px] border-admin-outline-variant bg-admin-surface pl-10 pr-4"
+              placeholder="Поиск SKU, артикула или товара…"
+              defaultValue={params.get('q') ?? ''}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') setParam('q', event.currentTarget.value.trim() || undefined);
+              }}
+            />
+          </div>
+          <Select value={params.get('status') ?? ALL} onValueChange={(value) => setParam('status', value)}>
+            <SelectTrigger className="h-12 rounded-[14px] border-admin-outline-variant px-4 text-[14px] font-medium">
+              <SelectValue placeholder="Статус" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Все SKU</SelectItem>
+              <SelectItem value="active">Активные</SelectItem>
+              <SelectItem value="inactive">Неактивные</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={params.get('sort') ?? 'stock'} onValueChange={(value) => setParam('sort', value)}>
+            <SelectTrigger className="h-12 rounded-[14px] border-admin-outline-variant px-4 text-[14px] font-medium">
+              <SelectValue placeholder="Сортировка" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stock">По остатку</SelectItem>
+              <SelectItem value="articleNumber">По артикулу</SelectItem>
+              <SelectItem value="productName">По товару</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={params.get('status') ?? ALL} onValueChange={(value) => setParam('status', value)}>
-          <SelectTrigger className="h-12 rounded-full px-4 text-[14px] font-bold">
-            <SelectValue placeholder="Статус" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Все SKU</SelectItem>
-            <SelectItem value="active">Активные</SelectItem>
-            <SelectItem value="inactive">Неактивные</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={params.get('sort') ?? 'stock'} onValueChange={(value) => setParam('sort', value)}>
-          <SelectTrigger className="h-12 rounded-full px-4 text-[14px] font-bold">
-            <SelectValue placeholder="Сортировка" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="stock">По остатку</SelectItem>
-            <SelectItem value="articleNumber">По артикулу</SelectItem>
-            <SelectItem value="productName">По товару</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      </section>
 
       <div className="overflow-x-auto rounded-[20px] border border-admin-outline-variant bg-admin-surface">
-        <table className="w-full min-w-[980px] border-collapse text-left text-[14px]">
+        <table aria-label="Реестр остатков" className="w-full min-w-[980px] border-collapse text-left text-[13px]">
           <thead className="bg-admin-surface-low">
             <tr>
               {['Товар', 'Артикул', 'Конфигурация', 'Цена', 'Остаток', 'Статус'].map((heading) => (
@@ -138,33 +143,32 @@ export function StockTable({ rows, page, totalPages, total, limit }: StockTableP
         <p className="text-xs text-admin-on-surface-variant">
           Показано {from}–{to} из {total}
         </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <PagerButton disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
-            {pageItems(page, totalPages).map((item, index) =>
-              item === '…' ? (
-                <span key={`ellipsis-${index}`} className="mx-1 text-admin-on-surface-variant">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => goPage(item)}
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-[12px] font-bold transition-colors',
-                    item === page
-                      ? 'bg-[var(--admin-sidebar)] text-white'
-                      : 'border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-low',
-                  )}
-                >
-                  {item}
-                </button>
-              ),
-            )}
-            <PagerButton disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <PagerButton disabled={page <= 1} onClick={() => goPage(page - 1)} icon="chevron_left" />
+          {pageItems(page, totalPages).map((item, index) =>
+            item === '…' ? (
+              <span key={`ellipsis-${index}`} className="mx-1 text-admin-on-surface-variant">
+                …
+              </span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                onClick={() => goPage(item)}
+                aria-current={item === page ? 'page' : undefined}
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-[12px] font-bold transition-colors',
+                  item === page
+                    ? 'bg-[var(--admin-sidebar)] text-white'
+                    : 'border border-admin-outline-variant text-admin-on-surface-variant hover:bg-admin-surface-low',
+                )}
+              >
+                {item}
+              </button>
+            ),
+          )}
+          <PagerButton disabled={page >= totalPages} onClick={() => goPage(page + 1)} icon="chevron_right" />
+        </div>
       </div>
     </div>
   );

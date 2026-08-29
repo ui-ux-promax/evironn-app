@@ -1,11 +1,19 @@
+/** @vitest-environment jsdom */
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+
+const navigation = vi.hoisted(() => ({
+  push: vi.fn(),
+  searchParams: new URLSearchParams(),
+}));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: navigation.push, refresh: vi.fn() }),
+  useSearchParams: () => navigation.searchParams,
 }));
 
 vi.mock('@/app/actions/admin/coupons', () => ({
@@ -16,6 +24,7 @@ vi.mock('@/app/actions/admin/coupons', () => ({
 }));
 
 import { CouponForm, type CouponFormProps } from '@/app/(admin)/admin/marketing/_components/coupon-form';
+import { CouponFilters } from '@/app/(admin)/admin/marketing/_components/coupon-filters';
 import { CouponTable, type CouponRow } from '@/app/(admin)/admin/marketing/_components/coupon-table';
 import { couponStatus } from '@/lib/coupon-status';
 
@@ -52,6 +61,12 @@ const rows: CouponRow[] = [
 ];
 
 describe('admin coupon composition', () => {
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => cleanup());
+
   it('renders list rows with expired status taking precedence over inactive', () => {
     const markup = renderToStaticMarkup(createElement(CouponTable, { rows }));
 
@@ -110,9 +125,47 @@ describe('admin coupon composition', () => {
     expect(newPage).toContain('mode="create"');
     expect(editPage).toContain('mode="edit"');
     expect(editPage.indexOf('requireAdminPage()')).toBeLessThan(editPage.indexOf('prisma.coupon.findUnique'));
-    expect(loading).toContain('ListPageSkeleton');
+    expect(loading).toContain('CouponRegisterSkeleton');
     expect([form, table, listPage, newPage, editPage].join('\n')).not.toMatch(
       /usage|used|использован|orderCount|usageCount/i,
     );
+  });
+
+  it('uses the approved coupon register heading, filter region, and semantic table', () => {
+    const listPage = readFileSync('app/(admin)/admin/marketing/page.tsx', 'utf8');
+    const filters = readFileSync('app/(admin)/admin/marketing/_components/coupon-filters.tsx', 'utf8');
+    const table = readFileSync('app/(admin)/admin/marketing/_components/coupon-table.tsx', 'utf8');
+
+    expect(listPage).toContain('kicker="Маркетинговые правила"');
+    expect(listPage).toContain('title="Промокоды"');
+    expect(listPage).toContain('href="/admin/marketing/new"');
+    expect(filters).toContain('aria-label="Поиск и фильтры промокодов"');
+    expect(filters).toContain('Тип скидки');
+    expect(filters).toContain('Сортировка');
+    expect(filters).toContain('Быстрый фильтр:');
+    expect(table).toContain('aria-label="Реестр промокодов"');
+    expect(table).toContain('href={`/admin/marketing/${row.id}/edit`}');
+  });
+
+  it('keeps real coupon pagination visible for a one-page result', () => {
+    const table = readFileSync('app/(admin)/admin/marketing/_components/coupon-table.tsx', 'utf8');
+
+    expect(table).toContain('Показано');
+    expect(table).toContain('disabled={page <= 1}');
+    expect(table).toContain('disabled={page >= totalPages}');
+  });
+
+  it('preserves coupon status and resets pagination for Enter and select controls', async () => {
+    navigation.searchParams = new URLSearchParams('status=active&page=4');
+    render(createElement(CouponFilters));
+
+    const search = screen.getByPlaceholderText('Название или код');
+    fireEvent.change(search, { target: { value: 'welcome' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(navigation.push).toHaveBeenCalledWith('/admin/marketing?status=active&q=welcome');
+
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Истёкшие' }));
+    expect(navigation.push).toHaveBeenLastCalledWith('/admin/marketing?status=expired');
   });
 });

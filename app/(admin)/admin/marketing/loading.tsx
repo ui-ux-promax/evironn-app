@@ -1,5 +1,5 @@
-import { ListPageSkeleton } from '@/components/admin/skeleton';
+import { CouponRegisterSkeleton } from '../_components/admin-list-register-skeleton';
 
 export default function MarketingLoading() {
-  return <ListPageSkeleton withAction filterCount={2} tableCols={5} />;
+  return <CouponRegisterSkeleton />;
 }

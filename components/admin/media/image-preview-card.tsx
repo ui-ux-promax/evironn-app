@@ -16,21 +16,26 @@ interface ImagePreviewCardProps {
 
 export function ImagePreviewCard({ image, index, total, onRemove, onAltChange, onMove }: ImagePreviewCardProps) {
   return (
-    <div className="bg-admin-surface border border-admin-outline-variant rounded-xl p-2 flex flex-col gap-2">
+    <div className="group relative flex min-w-0 flex-col gap-2 rounded-xl border border-admin-outline-variant bg-admin-surface p-1.5">
       {/* eslint-disable-next-line @next/next/no-img-element -- preview only, not LCP */}
       <img
         src={buildImageUrl(image.publicId, 'thumb')}
         alt={image.alt ?? ''}
-        width={160}
-        height={160}
-        className="w-full aspect-square object-cover rounded-lg bg-admin-surface-high"
+        width={240}
+        height={180}
+        className="aspect-[4/3] w-full rounded-lg bg-admin-surface-high object-cover"
       />
+      {index === 0 && (
+        <span className="absolute left-3 top-3 rounded-full bg-admin-surface/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-admin-on-surface">
+          Обложка
+        </span>
+      )}
       <input
         type="text"
         value={image.alt ?? ''}
         onChange={(e) => onAltChange(index, e.target.value)}
-        placeholder="alt-текст"
-        className="w-full text-xs bg-admin-surface border border-admin-outline-variant rounded-md px-2 py-1 text-admin-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary"
+        placeholder="Описание изображения"
+        className="w-full rounded-md border border-admin-outline-variant bg-admin-surface px-2 py-1.5 text-xs text-admin-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary"
       />
       <div className="flex items-center justify-between">
         <div className="flex gap-1">
@@ -39,7 +44,7 @@ export function ImagePreviewCard({ image, index, total, onRemove, onAltChange, o
             onClick={() => onMove(index, -1)}
             disabled={index === 0}
             aria-label="Сдвинуть влево"
-            className="text-admin-on-surface-variant hover:text-admin-on-surface disabled:opacity-30"
+            className="rounded p-0.5 text-admin-on-surface-variant hover:text-admin-on-surface disabled:opacity-30"
           >
             <Icon name="chevron_left" />
           </button>
@@ -48,7 +53,7 @@ export function ImagePreviewCard({ image, index, total, onRemove, onAltChange, o
             onClick={() => onMove(index, 1)}
             disabled={index === total - 1}
             aria-label="Сдвинуть вправо"
-            className="text-admin-on-surface-variant hover:text-admin-on-surface disabled:opacity-30"
+            className="rounded p-0.5 text-admin-on-surface-variant hover:text-admin-on-surface disabled:opacity-30"
           >
             <Icon name="chevron_right" />
           </button>
@@ -56,8 +61,8 @@ export function ImagePreviewCard({ image, index, total, onRemove, onAltChange, o
         <button
           type="button"
           onClick={() => onRemove(index)}
-          aria-label="Удалить"
-          className="text-admin-error hover:opacity-80"
+          aria-label="Удалить изображение"
+          className="rounded p-0.5 text-admin-error hover:opacity-80"
         >
           <Icon name="delete" />
         </button>

@@ -14,11 +14,18 @@ interface ImageUploaderProps {
   onChange: (images: UploadedImage[]) => void;
   folder?: string;
   max?: number;
+  compact?: boolean;
 }
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-export function ImageUploader({ value, onChange, folder = EVIRONN_UPLOADS_FOLDER, max = 8 }: ImageUploaderProps) {
+export function ImageUploader({
+  value,
+  onChange,
+  folder = EVIRONN_UPLOADS_FOLDER,
+  max = 8,
+  compact = false,
+}: ImageUploaderProps) {
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -120,7 +127,7 @@ export function ImageUploader({ value, onChange, folder = EVIRONN_UPLOADS_FOLDER
 
   if (disabled) {
     return (
-      <div className="bg-admin-surface border border-admin-outline-variant rounded-xl p-6 text-admin-on-surface-variant text-sm">
+      <div className="rounded-xl border border-dashed border-admin-outline-variant bg-admin-surface-low px-4 py-3 text-sm text-admin-on-surface-variant">
         Cloudinary не настроен. Задайте NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY и CLOUDINARY_API_SECRET,
         чтобы включить загрузку изображений.
       </div>
@@ -129,52 +136,59 @@ export function ImageUploader({ value, onChange, folder = EVIRONN_UPLOADS_FOLDER
 
   return (
     <div className="space-y-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        multiple
+        hidden
+        onChange={(e) => handleFiles(e.target.files)}
+      />
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
           if (!uploading && !full) handleFiles(e.dataTransfer.files);
         }}
-        className="border-2 border-dashed border-admin-outline-variant rounded-xl p-6 flex flex-col items-center gap-3 text-admin-on-surface-variant"
+        className={compact ? 'grid min-w-0 grid-cols-1 gap-2' : 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'}
       >
-        <Icon name="cloud_upload" className="text-4xl" />
-        <p className="text-sm">Перетащите изображения сюда или выберите файлы</p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/avif"
-          multiple
-          hidden
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-        <Button
+        {value.map((img, i) => (
+          <ImagePreviewCard
+            key={img.publicId}
+            image={img}
+            index={i}
+            total={value.length}
+            onRemove={handleRemove}
+            onAltChange={handleAltChange}
+            onMove={handleMove}
+          />
+        ))}
+        <button
           type="button"
-          variant="secondary"
-          size="sm"
-          loading={uploading}
-          disabled={full}
+          disabled={full || uploading}
           onClick={() => inputRef.current?.click()}
+          className={
+            compact
+              ? 'flex h-9 min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-[10px] border border-dashed border-admin-outline-variant bg-admin-surface-low px-2 text-[11px] font-medium text-admin-on-surface-variant transition-colors hover:border-admin-primary hover:text-admin-primary disabled:cursor-not-allowed disabled:opacity-50'
+              : 'flex aspect-[4/3] min-h-0 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-admin-outline-variant bg-admin-surface-low text-admin-on-surface-variant transition-colors hover:border-admin-primary hover:text-admin-primary disabled:cursor-not-allowed disabled:opacity-50'
+          }
         >
-          {full ? `Достигнут лимит (${max})` : 'Выбрать файлы'}
-        </Button>
+          <Icon name="add_photo_alternate" className={compact ? 'shrink-0 text-base' : 'text-2xl'} aria-hidden="true" />
+          <span className="truncate whitespace-nowrap">
+            {uploading ? 'Загрузка…' : full ? `Лимит ${max}` : 'Добавить фото'}
+          </span>
+        </button>
       </div>
 
       {error && <p className="text-sm text-admin-error">{error}</p>}
-
-      {value.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {value.map((img, i) => (
-            <ImagePreviewCard
-              key={img.publicId}
-              image={img}
-              index={i}
-              total={value.length}
-              onRemove={handleRemove}
-              onAltChange={handleAltChange}
-              onMove={handleMove}
-            />
-          ))}
-        </div>
+      {!full && value.length === 0 && (
+        <p
+          className={
+            compact ? 'truncate text-[10px] text-admin-on-surface-variant' : 'text-xs text-admin-on-surface-variant'
+          }
+        >
+          {compact ? 'Перетащите или добавьте.' : 'Перетащите изображения в эту область или добавьте их кнопкой.'}
+        </p>
       )}
     </div>
   );

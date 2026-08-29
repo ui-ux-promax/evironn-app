@@ -118,8 +118,12 @@ const adminOrderDetailSelect = {
   },
 } satisfies Prisma.OrderSelect;
 
-const SHIPPING_METHOD_LABEL: Record<string, string> = { courier: 'Курьер', pickup: 'Самовывоз' };
+export const SHIPPING_METHOD_LABEL: Record<string, string> = { courier: 'Курьер', pickup: 'Самовывоз' };
 const PAYMENT_METHOD_LABEL: Record<string, string> = { online: 'Онлайн', cod: 'При получении' };
+
+export function shippingMethodView(method?: string | null): string {
+  return SHIPPING_METHOD_LABEL[method ?? ''] ?? method ?? '—';
+}
 
 function buildSearchWhere(query: string): Prisma.OrderWhereInput {
   if (!query) return {};

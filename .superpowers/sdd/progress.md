@@ -218,3 +218,301 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Task 5D.8: complete locally; `npm run format`, `npm run gate`, `npm run build`, and the critical admin/demo E2E set passed. Durable closeout report is `.superpowers/sdd/phase-5d-closeout-report.md`; stop for local visual acceptance.
 - Visual acceptance: accepted by user on 2026-08-26 for protected `/admin` and public `/demo-admin` at desktop/mobile. Follow-up icon fix `31e33bd` is verified; remain stopped before push/Preview/PR/merge.
 - Boundary B initial review: REQUEST CHANGES (C0/I1/M2); remediation commit 65658e2 closes Unicode Cf validation, turntable pending regression, and exact-range evidence.
+
+## Task 2 dashboard parity checkpoint — 2026-08-26
+
+- Branch: `feat/admin-redesign`; HEAD remains `dc85280` (`feat(admin): apply selected Evironn shell`). Task2 changes are intentionally uncommitted and unpushed. Task3 has not started.
+- Task2 worktree includes the protected dashboard recompose, category/stock read-only projections, recent-order snapshot presentation, shell proportion refinement, focused tests, and explicit pixel-level wording corrections in the selected admin spec/plan.
+- Fresh evidence: `npm test -- tests/admin-dashboard-render.test.ts tests/admin-dashboard-analytics.test.ts` passed 2 files / 20 tests; `npm run typecheck` passed; `git diff --check` passed; touched-file Prettier passed. No full gate, build, or E2E run.
+- Fresh browser evidence: `/admin` at 1440x900 and 390x844; desktop page overflow false, mobile document width 390px with no page overflow. Reference and captures: `docs/design/admin-redesign/concepts/06-selected-evironn-admin.png`, `C:\Users\010726Admin\AppData\Local\Temp\evironn-admin-dashboard-1440x900.png`, `C:\Users\010726Admin\AppData\Local\Temp\evironn-admin-dashboard-390x844.png`.
+- Fresh Sol Medium reviewer `Confucius` completed bounded review: `CHANGES REQUESTED`, Critical 0 / Important 6 / Minor 1. Findings are not remediated by user instruction; resume tomorrow from this list. No files were edited by the reviewer.
+- Open findings: use canonical `orderStatusView`; translate persisted `shippingMethod`; keep recent-order product name/image from the same snapshot item; render cancelled zero state explicitly; prevent mobile KPI value wrapping; limit recent table to four reference-density rows; normalize rounded category shares.
+- Stop state: wait for user visual acceptance after remediation. Do not commit, push, open PR, merge, start Task3, or run the full gate until explicitly authorized.
+
+## Task 2 dashboard parity remediation checkpoint — 2026-08-27
+
+- Fresh Sol Medium review `Dirac` initially returned `CHANGES REQUESTED`: Critical 0 / Important 3 / Minor 1. Findings: zero-sales categories were shown as false 0% rings; desktop recent-orders delivery column fell outside the panel; compact sidebar store link wrapped; KPI test was too weak.
+- Remediation: `getAdminCategoryDistribution()` now returns an empty projection for zero sales and excludes zero-share categories; nullable unresolved snapshot revenue is retained in `Другое`; desktop orders table uses fixed proportional columns while retaining mobile scroll; store link is explicitly nowrap at the 186px sidebar width; visual checks remain browser-measured rather than static CSS assertions.
+- RED evidence: the first focused remediation tests failed in the expected three places before the initial implementation patch. Final GREEN evidence: `npm test -- tests/admin-dashboard-render.test.ts tests/admin-dashboard-analytics.test.ts` passed 2 files / 29 tests; `npm run typecheck`, touched-file Prettier, and `git diff --check` passed.
+- Browser evidence after final remediation: desktop 1440x900 has no document overflow, sidebar width 186px, full recent-orders table including `Доставка` visible, store link width 161px on one line, and two positive category rings. Mobile 390x844 has no document overflow; KPI values render one-line heights of 17.16px; the table remains bounded in its scroll container; five status markers remain present.
+- Fresh captures were inspected at desktop and mobile. No mutation, authorization, demo-isolation, or security boundary changed; reviewer confirmed those boundaries remain clean.
+- Task2 remains uncommitted and unpushed on `feat/admin-redesign`; no full gate, build, E2E, Task3, PR, merge, or branch operation ran. User visual acceptance remains pending.
+- Final fresh Sol Medium audit `Mencius`: `APPROVE`, Critical 0 / Important 0 / Minor 1. Minor was stale checkpoint evidence and is corrected above. Final diff fingerprint: `ec4d5a92cad373e4377d41ecadb14bd74eb18dd3`.
+
+## Task 2 reference follow-up — 2026-08-27
+
+- Scope: six user reference comments. Implemented the approved A-model: reference-shaped three-card KPI row (`Заказы`, `Средний чек`, `Конверсия`), five-stage funnel (`Просмотры`, `Корзина`, `Оформление`, `Заказы`, `Выполненные`), real persisted cart/order/delivered counts, and `—` for unsupported views/checkout/conversion sources.
+- Added `AdminFunnelProjection` and period-scoped cart/order projections without schema or tracking changes. Added furniture icon mapping inside category rings, `object-fit: contain` inventory media, larger inventory copy, and document-level admin workspace scrolling while preserving the table's horizontal scroll container.
+- TDD evidence: focused RED failures identified the missing projection/UI contract; final `npm test -- tests/admin-dashboard-render.test.ts tests/admin-dashboard-analytics.test.ts` passed 2 files / 32 tests. `npm run typecheck`, touched-file Prettier, and `git diff --check` passed.
+- Browser evidence on `http://localhost:3000/admin?period=30`: desktop `1440×900` and mobile `390×844`; no runtime error, no document horizontal overflow, five funnel stages, three KPI cards, category icons, full eight-column recent-orders header contract, and mobile table scroll (`overflow-x: auto`, content wider than viewport) verified. Inventory images computed as `contain`. Workspace document scroll reaches the recent-orders panel.
+- Local preview was restarted on port 3000 after the exact repository server occupying that port was stopped. No commit, push, PR, merge, Task 3, full gate, build, or E2E ran. User visual acceptance remains pending.
+
+## Task 2 funnel and scroll refinement — 2026-08-27
+
+- User feedback identified two remaining visual defects: funnel blocks were angular because of `clip-path`, and workspace scroll was still absent.
+- Root cause evidence: browser computed `html/body` inline styles were `overflow: hidden`; `components/admin/scroll-lock.tsx` applied that lock for the entire admin layout. The fix removes the global `ScrollLock` mount from `app/(admin)/layout.tsx`; dialog-specific locks remain available. Funnel blocks now use rounded reference surfaces and CSS triangle arrows.
+- Browser verification on `http://localhost:3000/admin?period=30`: desktop document scroll is active (`html/body overflow-y: auto`, `scrollHeight 1188 > clientHeight 720`), `Последние заказы` begins below the viewport, five stages and four arrow primitives render, and mobile `390×844` has document scroll with no horizontal overflow. Mobile table remains horizontally scrollable inside its wrapper.
+- Focused verification after refinement passed: dashboard tests 32/32, typecheck, touched-file Prettier, and `git diff --check`; no commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 funnel geometry correction — 2026-08-27
+
+- User correctly rejected the first rounded-pill iteration as visually unlike the reference. The funnel now renders five responsive SVG trapezoid surfaces with curved corners, 7% incremental narrowing, and native CSS triangle arrows; this replaces the prior `clip-path` angular geometry and the pill fallback.
+- Browser evidence at desktop `1440×900`: funnel stage widths `371 → 345 → 319 → 293 → 267px`, five SVG shapes, four arrows, and active document scroll (`overflow-y: auto`, `scrollHeight 1287 > clientHeight 900`).
+- Verification passed: dashboard focused tests 32/32, typecheck, touched-file Prettier, and `git diff --check`. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 funnel spacing correction — 2026-08-27
+
+- User identified that the SVG funnel shapes still had materially incorrect vertical spacing. Browser measurement at `1647×920` proved the four stage gaps were `48px`, caused by nine equal CSS Grid rows stretching the arrow rows.
+- Replaced only that layout primitive with a column flex stack and fixed `10px` arrow rows. Fresh browser measurements on `localhost:3000` confirm stage gaps `10/10/10/10px`, five shapes, four arrows, and active document scrolling.
+- Focused dashboard tests 32/32, touched-file Prettier, and `git diff --check` passed. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 funnel inset and icon correction — 2026-08-27
+
+- Reference/current comparison identified the final inner-geometry mismatch: current icon/value insets were `13px`, while the reference visual requires approximately `29px`; the label start is `61px` from the shape edge. First three reference stages are also taller than the lower stages.
+- Updated measured geometry: horizontal inset `29px`, label start `61px`, gaps `10px`, stage heights `52/52/52/46/44px`. Labels and icons now match the reference pattern, including `Добавлено в корзину`, card icon for checkout, and a local circled ₽ glyph for orders rather than Material's dollar symbol.
+- Final browser audit at `1647×920`: five shapes, four arrows, `29px` left/right insets on every stage, `10/10/10/10px` gaps, active document scroll, and no runtime error. Focused dashboard tests 32/32, typecheck, touched-file Prettier, and `git diff --check` passed.
+
+## Task 2 fixed sidebar and table-density correction — 2026-08-27
+
+- User reported that the desktop sidebar scrolled away with the document and that the recent-order rows were too compact. Browser root-cause capture showed the `sticky` sidebar at `top: -250px` after document scrolling; the table rows measured `48px` with `11px` body copy.
+- Desktop shell now reserves the fixed `186px` sidebar grid column while the sidebar uses `position: fixed` from viewport top to bottom and independently scrolls only if its own content exceeds the viewport. The recent-orders table now uses `12px` body copy, `10px` headers, `32px` item media, and consistent `56px` rows.
+- Fresh browser evidence at `1647×920`, after scrolling to the lower dashboard: sidebar is `fixed`, rect `top: 0 / bottom: 920`, no document horizontal overflow; recent-order header is `36px`, all four rows are `56px`. Mobile `390×844`: desktop sidebar hidden, no document horizontal overflow, and the table remains horizontally scrollable within its wrapper.
+- Verification: touched-file Prettier, dashboard focused tests 32/32, and `git diff --check` passed. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 dashboard-width correction — 2026-08-27
+
+- User identified a desktop alignment defect: the dashboard stopped at the `1320px` inner-container cap while the topbar continued to the available workspace width.
+- Root-cause browser measurement at `1647×920`: topbar `left 202 / right 1616 / width 1414px`; dashboard `left 265 / right 1553 / width 1288px`. The only divergent constraint was `.inner { width: min(100%, 1320px) }`.
+- Removed that cap. Fresh desktop evidence: both topbar and dashboard are exactly `left 202 / right 1616 / width 1414px`; document horizontal overflow is false. Mobile `390×844` dashboard width is `366px` with no document overflow.
+- Verification: shell CSS Prettier, dashboard render tests 19/19, and `git diff --check` passed. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 operational funnel and conversion footer — 2026-08-27
+
+- User approved replacing unavailable storefront stages with the real operational flow: created carts, non-cancelled orders, succeeded online payments, SHIPPED or DELIVERED orders, and DELIVERED orders. The decision is recorded as ADR-029; no tracking, schema, provider, or synthetic analytics data was introduced.
+- `getAdminFunnelProjection()` now reads current and previous equal-length periods. Conversion is non-cancelled orders divided by created carts; its footer trend is a percentage-point delta only when both periods have cart bases. COD remains an order but never becomes paid without a succeeded Payment.
+- The reference footer is now a separate rounded surface. At the current data snapshot it shows `50%`; no comparison is shown because the prior period has no usable cart base. The conversion KPI uses the same data and now says `без сравнения` / `корзина → заказ`, not `нет источника`.
+- TDD evidence: focused RED assertions failed against the old unavailable funnel and stale conversion-KPI copy; GREEN tests passed 32/32. Typecheck, touched-file Prettier, and `git diff --check` passed. Browser evidence: desktop `1647×920` and mobile `390×844` show all five real stages and the footer; no document horizontal overflow. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 reference KPI-card correction — 2026-08-27
+
+- User required exact reference hierarchy for the three compact KPI cards. Root-cause inspection found the shared card used a three-row dashboard composition with bottom status/note copy, while the reference uses a left icon plus right-side label and value/trend rows only.
+- Rebuilt the shared KPI component around that two-column hierarchy. Removed the unrelated `без отменённых`, `нет источника`, `корзина → заказ`, and other fallback/footer copy. A percentage trend appears only when a real comparison exists; it is intentionally omitted for a missing prior-period base.
+- Browser measurement at desktop `1647×920`: three cards, each exactly `72px` high, `16px` gaps, icons aligned `16px` from each card left edge, no footer copy, and no page horizontal overflow. At mobile `390×844`, cards are `104×72px`; labels and values do not wrap or overflow, and the page has no horizontal overflow.
+- TDD evidence: a new reference-hierarchy assertion was RED before the component change, then GREEN. Focused dashboard tests passed 33/33; typecheck, touched-file Prettier, and `git diff --check` passed. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Task 2 revenue-chart helper-label removal — 2026-08-27
+
+- User requested removal of only the redundant `Динамика по дням` and `Рубли` labels above the revenue chart. The chart and its axes remain unchanged.
+- TDD evidence: a dedicated absence assertion was RED against both labels before the JSX and unused CSS were removed, then GREEN. Focused dashboard render tests passed 21/21; touched-file Prettier and `git diff --check` passed.
+- Browser evidence at `1647×920`: neither label appears in the rendered DOM and document horizontal overflow is false. No commit, push, PR, merge, full gate, build, E2E, or Task 3.
+
+## Screenshot-first dashboard restart manifest — 2026-08-27
+
+- Branch `feat/admin-redesign`; HEAD `dc85280`; identity `ui-ux-promax <gojjoy22@gmail.com>`. Normal checkout with a dirty, attributable Task 2 worktree. No reset, revert, clean, stash, branch operation, commit, or push permitted.
+- `KEEP_DATA`: `lib/admin/analytics.ts`, `lib/admin/orders.ts`, `app/(admin)/admin/page.tsx`, and focused analytics portions of `tests/admin-dashboard-analytics.test.ts`. These contain bounded read-only funnel/category/stock/recent-order projections needed by later integration.
+- `KEEP_SHELL`: `app/(admin)/layout.tsx`, `app/globals.css`, and `components/admin/admin-shell.module.css`. These contain the accepted Task 1 shell plus later verified scroll/fixed-sidebar corrections.
+- `REPLACE_PRESENTATION`: `app/(admin)/admin/_components/dashboard-view.tsx`, `dashboard-view.module.css`, `dashboard-kpi-card.tsx`, `best-sellers.tsx`, `recent-orders.tsx`, and `revenue-chart.tsx`. Existing files remain untouched until the new isolated component is GREEN; replacement uses new filenames.
+- `DOCS/EVIDENCE`: `.superpowers/sdd/progress.md`, `docs/roadmap/DECISIONS.md`, selected redesign spec/plan, screenshot-first plan, and `docs/design/admin-redesign/**` assets.
+- Protected unrelated untracked files remain untouched: `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` and `docs/superpowers/plans/phase-2-task-3-execution.md`.
+- No unattributed dirty file found. Screenshot-first Task 2 may proceed in place because creating another worktree would omit or split this preserved uncommitted state.
+
+## Screenshot-first dashboard fixture checkpoint — 2026-08-27
+
+- New isolated files: `dashboard-reference-model.ts`, `dashboard-reference-fixture.ts`, `dashboard-reference-view.tsx`, and `dashboard-reference-view.module.css`. Presentation imports no Prisma/server module.
+- Protected `/admin` temporarily renders `DASHBOARD_REFERENCE_FIXTURE` after `requireAdminPage()`; existing queries and prior Task 2 presentation remain preserved below the temporary gate. Fixture is not accepted for production integration.
+- TDD: missing-boundary RED, section-contract RED, smooth-chart/SVG-funnel RED; final focused render result `23/23` passing. `npm run typecheck` and `git diff --check` pass.
+- Visual captures: `C:\Users\010726Admin\AppData\Local\Temp\evironn-dashboard-replica-final-1536x1024.png`, `...-1440x900.png`, and `...-390x844.png`.
+- Browser metrics: `1536x1024` document width `1521/1521`; `1440x900` width `1425/1425`; `390x844` width `390/390`. No document-level horizontal overflow. Mobile chart alone uses bounded internal horizontal scroll.
+- Fixture replica matches approved section order and geometry: sales/KPIs/smooth chart, five curved trapezoid funnel stages/footer, four furniture cards, four category rings/other, and four-row recent-orders table.
+- STOP before data adapter. Await user visual acceptance. No commit, push, full gate, build, E2E, Task 3, DB mutation, or fixture-to-production acceptance.
+
+## Screenshot-first dashboard visual-feedback correction — 2026-08-27
+
+- Applied only the three user-marked presentation corrections: rounder geometry on all five funnel stages, a `10px` gap above the conversion footer, and `52px` recent-order rows.
+- Browser verification at `1647x920`: five stages are `49px` high, footer gap is `10px`, all four body rows are `52px`, and document width is `1632/1632` with no horizontal overflow.
+- Focused dashboard render tests passed `23/23`; typecheck, touched-file Prettier, and `git diff --check` passed. Capture: `C:\Users\010726Admin\AppData\Local\Temp\evironn-dashboard-feedback-final-1647x920.png`.
+- Still awaiting user visual acceptance. No data adapter, commit, push, full gate, build, E2E, Task 3, or DB mutation.
+
+## Screenshot-first dashboard visual acceptance — 2026-08-27
+
+- User approved the fixture-backed dashboard after the final funnel correction. The five stage backgrounds are CSS-only pseudo-elements, with a measured reference-equivalent `10px` radius at the current `49px` stage height; no SVG funnel shapes remain.
+- Accepted visual scope: dashboard presentation and shell only. The fixture is still temporary and must be replaced by the existing read-only Evironn projections in the next task without changing the accepted component layout.
+- No commit, push, PR, full gate, build, E2E, Task 3, or DB mutation occurred as part of acceptance.
+
+## Screenshot-first dashboard live-data integration — 2026-08-27
+
+- Added the pure `createDashboardReferenceModel` adapter and replaced the protected page's temporary fixture binding with live, parallel Evironn read projections. `requireAdminPage()` remains before all reads; the accepted `DashboardReferenceView` tree remains unchanged.
+- The adapter maps persisted KPIs, daily revenue, carts/orders/paid/shipped/completed funnel values, product media/stock, category distribution, and order snapshots. Missing analytics uses `—`; no display number is fabricated. The fixture remains only as visual/test evidence and has no production import path.
+- Live browser evidence: `1536x1024`, `1440x900`, and `390x844` all have no document horizontal overflow; dashboard reference boundary is present and fixture content is absent. A 30-day series originally rendered every date label; its root cause was the fixture's shorter seven-point series. The chart now renders seven evenly spaced labels while retaining every real data point in the curve.
+- Focused checks: `tests/admin-dashboard-analytics.test.ts`, `tests/admin-dashboard-render.test.ts`, and `tests/dashboard-reference-model.test.ts` passed `39/39`; typecheck, touched-file Prettier, and `git diff --check` passed. Live capture: `C:\Users\010726Admin\AppData\Local\Temp\evironn-dashboard-integrated-1536x1024.png`.
+- STOP for user visual acceptance of the live-data dashboard. No old presentation retirement, full gate, build, E2E, commit, push, PR, merge, Task 3, or DB mutation yet.
+
+## Screenshot-first dashboard closeout — 2026-08-27
+
+- User visually accepted the live-data dashboard. Retired only the presentation modules proven to have no production imports: `dashboard-view.tsx`, `dashboard-view.module.css`, `dashboard-kpi-card.tsx`, `best-sellers.tsx`, `recent-orders.tsx`, `revenue-chart.tsx`, and `period-toggle.tsx`.
+- Removed their obsolete component-level tests and retained focused coverage for the accepted reference view, adapter, read projections, server-side authorization ordering, shell responsiveness, and loading semantics. `rg` confirms no remaining production import of the retired modules.
+- Final local verification for this bounded closeout: focused dashboard suites passed `22/22`; `npm run typecheck`, touched-file Prettier, and `git diff --check` passed. Full gate/build/E2E, commit, push, PR, merge, DB mutation, and the next redesign task remain explicitly out of scope.
+
+## Admin redesign Task 1 starting state — 2026-08-28
+
+- Branch: `feat/admin-redesign`.
+- Starting HEAD: `dc85280c86e309f1f2c0672deb19614527b042cc` (`dc85280`), matching the user-provided expected HEAD.
+- Git identity: `ui-ux-promax <gojjoy22@gmail.com>`; remotes unchanged; no fetch, pull, switch, reset, rebase, clean, stash, checkout, commit, push, PR, or merge performed for this task.
+- Exact dirty tracked paths at task start: `.gitignore`; `.superpowers/sdd/progress.md`; `app/(admin)/admin/_components/{best-sellers.tsx,dashboard-kpi-card.tsx,dashboard-view.module.css,dashboard-view.tsx,period-toggle.tsx,recent-orders.tsx,revenue-chart.tsx}` (deleted in working tree); `app/(admin)/admin/page.tsx`; `app/(admin)/layout.tsx`; `app/globals.css`; `components/admin/admin-shell.module.css`; `docs/roadmap/DECISIONS.md`; `docs/superpowers/plans/2026-08-26-selected-admin-redesign.md`; `docs/superpowers/specs/2026-08-26-selected-admin-redesign-design.md`; `lib/admin/analytics.ts`; `lib/admin/orders.ts`; `tests/admin-dashboard-analytics.test.ts`; `tests/admin-dashboard-render.test.ts`.
+- Exact dirty untracked paths at task start: `.superdesign/design-system.md`; `.superdesign/init/{components.md,extractable-components.md,layouts.md,pages.md,routes.md,theme.md}`; `.superdesign/resume.json`; `app/(admin)/admin/_components/{create-dashboard-reference-model.ts,dashboard-reference-fixture.ts,dashboard-reference-model.ts,dashboard-reference-view.module.css,dashboard-reference-view.tsx}`; `docs/design/admin-redesign/concepts/{00-current-admin-reference.png,00-evironn-logo-reference.png,01-light-editorial.png,02-light-operational.png,03-warm-hybrid.png,04-graphite-dark.png,05-gallery-dark.png,08-product-form-reference.png,10-mobile-catalog-reference.png}`; `docs/superpowers/plans/{2026-08-12-phase-2a-executable-storefront-home.md,2026-08-27-admin-dashboard-screenshot-first.md,2026-08-28-approved-admin-screen-set.md}`; `docs/superpowers/specs/2026-08-27-superdesign-catalog-exploration-design.md`; `tests/dashboard-reference-model.test.ts`.
+- Protected pre-existing untracked files: `docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md` and `docs/superpowers/plans/phase-2-task-3-execution.md`; both exist, remain untracked, and are outside ownership.
+- Task 1 ownership: shared protected shell/primitives in `app/(admin)/layout.tsx`, `components/admin/{admin-shell.tsx,admin-shell.module.css,admin-mobile-menu.tsx,admin-page-header.tsx,admin-panel.tsx,admin-tab-bar.tsx}`, `components/admin/ui/{button.tsx,input.tsx,select.tsx,status.tsx,table.tsx,data-table.tsx}`, and only geometry-required `components/admin/skeleton/**`; current dashboard completion in `app/(admin)/admin/_components/` plus its specified focused tests. Preserve all other dirty and untracked paths. Do not touch Tasks 2–6 route files or backend/action/provider boundaries.
+- Task 1 invariants: `requireAdminPage()` remains server-side; utility bar stays normal-flow, non-sticky/non-fixed, with 16px desktop sidebar gap; desktop sidebar may remain fixed; mobile menu remains accessible; dashboard hierarchy and real projections remain; global search stays decorative; no global-search backend; no Task 2 list/form/detail work.
+
+## Admin redesign Task 1 implementation and review checkpoint — 2026-08-28
+
+- Luna High implementation kept existing dashboard hierarchy/live projections and removed desktop/mobile utility-bar `position: sticky`; desktop sidebar remains fixed; semantic active-route assertions cover desktop and mobile navigation.
+- Focused TDD evidence: initial RED was 35/36 with the new utility-bar contract failing; post-remediation worker result was 36/36. Fresh coordinator verification: `npm test -- tests/admin-primitives-contract.test.ts tests/admin-nav.test.ts tests/admin-dashboard-render.test.ts tests/admin-dashboard-analytics.test.ts tests/dashboard-reference-model.test.ts` passed 5 files / 36 tests, exit 0.
+- Fresh touched-file Prettier check passed for `app/(admin)/layout.tsx`, accepted dashboard reference view files, `components/admin/admin-shell.module.css`, and Task 1 navigation/primitive tests. Fresh `git diff --check` passed; only expected CRLF warnings emitted by Git.
+- First fresh isolated Sol Medium review found one Important test-gap: mobile `.topbar` rule was not included in the CSS contract extraction. Same worker fixed it; fresh isolated Sol Medium re-review approved the exact Task 1 scope with Critical 0 / Important 0 / Minor 0. Review could not verify runtime viewport behavior.
+- Task 1 production/test changes remain uncommitted and unstaged. Visual acceptance remains pending at `1536x1024`, `1440x900`, and `390x844`; no Task 2 started.
+
+## Admin redesign Task 1 visual acceptance — 2026-08-28
+
+- User approved the local Task 1 dashboard and shared-shell state after visual review at `1536x1024`, `1440x900`, and `390x844`.
+- Task 1 remains uncommitted and unstaged by explicit user constraint. No push, PR, merge, branch operation, or Task 2 start.
+
+## Admin redesign Task 2 list screens implementation and review — 2026-08-28
+
+- Scope: approved list screens and catalog subroutes only. Task 1 dashboard/shared shell and all backend, DTO, server-read, action, API, authorization, payment, stock, Cloudinary, provider, and schema boundaries were preserved.
+- Task 2 implementation was performed by one Luna High bounded implementer in the existing `feat/admin-redesign` working tree. No branch operation, commit, push, deploy, PR, merge, or forbidden repository operation occurred.
+- Owned production files: catalog tabs; product list page, filters, table; order list page, filters, table; customer list page, filters, table; coupon list page, filters, table; and presentation-only category, option, room, and stock list/page/table files under `app/(admin)/admin/catalog/**`.
+- Owned tests: `tests/admin-catalog-read.test.ts`, `tests/admin-customers-render.test.ts`, `tests/admin-coupons-render.test.ts`, `tests/admin-stock-cell.test.tsx`, and `tests/admin-route-contract.test.ts`.
+- TDD evidence: the initial Task 2 render contracts produced 5 expected failures with 13 passing tests. Review remediation added interaction coverage; the remediation RED isolated five expected gaps (responsive order/coupon filter layout, coupon pagination reset, pagination accessibility, and one duplicate test query). GREEN passed 5 files / 25 tests.
+- Fresh coordinator verification: `npm test -- tests/admin-catalog-read.test.ts tests/admin-customers-render.test.ts tests/admin-coupons-render.test.ts tests/admin-stock-cell.test.tsx tests/admin-route-contract.test.ts` passed 5 files / 25 tests; the touched-file Prettier check passed; `git diff --check` passed with only Git LF/CRLF conversion warnings.
+- Fresh isolated Sol Medium review covered only the Task 2 owned diff and four local Superdesign sources. Initial verdict was `CHANGES REQUESTED` with Critical 0 / Important 2 / Minor 1. Luna remediation added responsive filter grids, preserved coupon query parameters while resetting page, and added pagination accessible names/`aria-current`. The same reviewer performed a bounded follow-up and returned `APPROVE` with Critical 0 / Important 0 / Minor 0; it did not edit files and no broad checks were repeated.
+- Visual-source mapping: product list uses `.superdesign/tmp/catalog-current.html`; order list uses `.superdesign/tmp/orders-register.html`; customer list uses `.superdesign/tmp/customers-register.html`; coupon list uses `.superdesign/tmp/coupons-register.html`. The remote draft URLs from the approved plan remain the corresponding references. Fixture values were not copied; existing Evironn DTOs, queries, filters, pagination, statuses, actions, and destinations remain authoritative.
+- Route coverage remains `/admin/catalog/products` with five catalog tabs, `/admin/orders`, `/admin/customers`, and `/admin/marketing` with visible `Промокоды`; category, option, room, and stock information architecture remains intact. Desktop and mobile visual acceptance is pending user inspection at `1440x900` and `390x844`.
+- Protected Phase 2 plan files remain untracked and unchanged; their control SHA-256 values remain `FD43E58AF19E79F746C41126572072E38792052F202AE5C1C26E4EFDB5F6E6E9` and `F1BE0E060EDA06AFA2AFDFF53D4DCECD338B3C67514E412E2ADD0605C503A7E2`.
+- Remaining debt: no new Task 2 debt identified. Full gate, build, E2E, commit, push, PR, merge, and deployment remain intentionally out of scope until later approved checkpoints.
+
+## Admin redesign Task 2 catalog visual acceptance remediation — 2026-08-28
+
+- Replaced the complete `/admin/catalog/products` presentation with the approved catalog draft structure: hero, embedded catalog tabs, separate filter panel, registry header/export affordance, bounded registry table, and responsive mobile composition. Removed route-specific KPI cards, sales/stock/leader summaries, view toggle, legacy stacked filters, and old card/table hierarchy.
+- Owned files: `app/(admin)/admin/catalog/products/page.tsx`, `app/(admin)/admin/catalog/products/_components/product-filters.tsx`, `app/(admin)/admin/catalog/products/_components/product-table.tsx`, `app/(admin)/admin/catalog/_components/catalog-tabs.tsx`, and the geometry-required `components/admin/content-ready-gate.tsx` `min-w-0` primitive fix. Focused regression coverage updated in `tests/admin-catalog-read.test.ts`.
+- Data and behavior remain Evironn-owned: existing `AdminCatalogProductRow` DTO, catalog/category/room reads, query parameters, filters, sorting, pagination, edit/delete flows, ADMIN protection, and empty/error/loading boundaries. No backend, DTO, schema, API, action, auth, provider, stock, Cloudinary, orders, customers, coupons, or other route changes.
+- Visual-source mapping: product route presentation follows `.superdesign/tmp/catalog-current.html` and the approved product draft URL. The canonical local file was found at `D:\Projects\evironn\.superdesign\tmp\catalog-current.html`; the user-supplied `D:\Projects\evironn.superdesign\tmp\catalog-current.html` path does not exist. Remote draft was inspected read-only.
+- Focused verification: `npm test -- tests/admin-catalog-read.test.ts` passed 6/6; touched-file Prettier passed; `git diff --check` passed. Browser smoke returned HTTP 200 at `1440x900` and `390x844`; document `scrollWidth` matched the viewport at both sizes. Screenshots: `C:\Users\010726Admin\AppData\Local\Temp\evironn-catalog-1440x900.png` and `C:\Users\010726Admin\AppData\Local\Temp\evironn-catalog-390x844.png`.
+- No Sol reviewer was invoked per the user's explicit instruction. No commit, push, deploy, full gate, build, E2E, or visual acceptance claim was made; stop for user desktop/mobile acceptance.
+- Known data constraints for visual parity: existing product rows do not expose product photography or a separate article-number field, so the approved image containers use category-derived Material Symbols and the existing slug is shown in the approved article column. Status labels remain the existing Evironn semantics (`Черновики`, `Без SKU`) rather than inventing new filters.
+
+## Admin redesign Task 2 catalog browser feedback remediation — 2026-08-28
+
+- Addressed three browser findings on the owned catalog route: category badges now keep multi-word names on one line; pagination renders with disabled controls even when the real result has one page; and the additional-filters control toggles the existing status-filter row with `aria-expanded`/`aria-pressed`, without adding a backend query or mutation.
+- Focused verification remained limited to `npm test -- tests/admin-catalog-read.test.ts` (`6/6`), touched-file Prettier, and `git diff --check`. Browser verification at `1647x920` and `390x844` returned HTTP 200, confirmed badge height `27px`, visible page `1`/previous controls, toggle state `true → false`, and document width equal to viewport.
+- Updated captures: `C:\Users\010726Admin\AppData\Local\Temp\evironn-catalog-review-1647x920.png` and `C:\Users\010726Admin\AppData\Local\Temp\evironn-catalog-review-390x844.png`. No Sol review, commit, push, deploy, full gate, build, or E2E was performed.
+
+## Admin redesign Task 2 orders visual parity — 2026-08-28
+
+- Replaced only `/admin/orders` route presentation with the approved register composition from `.superdesign/tmp/orders-register.html` and remote draft `597b3048-0783-4a27-aa91-3a625ceb521c`. The user-supplied `D:\Projects\evironn.superdesign\tmp\orders-register.html` path does not exist; the project-local source is the verified equivalent.
+- Owned files: `app/(admin)/admin/orders/page.tsx`, `app/(admin)/admin/orders/_components/order-filters.tsx`, `app/(admin)/admin/orders/_components/order-table.tsx`, and `tests/admin-orders-render.test.ts`. Shared shell, catalog, customers, coupons, dashboard, server reads, DTOs, query parameters, guards, actions, APIs, payment, stock, Cloudinary, Prisma, migrations, and providers were not changed by this slice.
+- TDD evidence: new orders render/interaction contract was observed RED at 3/3 failures before implementation; GREEN passed after the route replacement. Focused order evidence: `npm test -- tests/admin-orders-read.test.ts tests/admin-orders-render.test.ts` passed 2 files / 8 tests; touched-file Prettier and `git diff --check` passed.
+- Real-data constraints: list projection has no delivery method or product name, so the approved delivery column uses a neutral `—` fallback and composition uses the stored cover image plus real item count. Export, create-order, period, additional-filter, and column-settings controls remain presentational disabled controls because no existing route contract exists.
+- Browser smoke: local `/admin/orders` returned successfully for an ADMIN session. At `1440x900`, document `scrollWidth` matched `clientWidth` (`1425/1425`) and table scroller remained bounded (`1203/1203`). At `390x844`, document width matched viewport (`390/390`) and table scroller was bounded (`362/1180`). No browser console errors. Captures: `C:\Users\010726Admin\AppData\Local\Temp\evironn-orders-1440x900.png` and `C:\Users\010726Admin\AppData\Local\Temp\evironn-orders-390x844.png`.
+- No reviewer was invoked per user instruction. No commit, push, deploy, full gate, build, E2E, PR, or merge was performed. Stop for user visual acceptance.
+
+## Admin redesign Task 2 orders control feedback — 2026-08-28
+
+- Browser feedback reproduced the reported issue: period and additional-filter controls were disabled in `order-filters.tsx`, so clicks had no effect.
+- Added client-only additional-filter disclosure for the existing quick status filters. Added period disclosure with explicit unavailable-state copy; no date query, read contract, DTO, or server behavior was introduced.
+- TDD evidence: feedback regression tests were observed RED at 2 failures, then GREEN at 5/5 focused render tests. Browser verification confirmed both controls enabled; tune toggles quick-filter visibility, calendar opens the period dialog, and no console errors occur.
+- Updated captures after remediation: `C:\Users\010726Admin\AppData\Local\Temp\evironn-orders-1440x900.png` and `C:\Users\010726Admin\AppData\Local\Temp\evironn-orders-390x844.png`. No reviewer, commit, push, deploy, full gate, build, E2E, PR, or merge.
+
+## Admin redesign catalog loading feedback — 2026-08-28
+
+- Reproduced the catalog navigation flash as a loading-composition mismatch: both catalog loading boundaries used the generic `ListPageSkeleton`, while the accepted products route is hero → embedded catalog tabs → filter panel → product registry/table. The catalog layout also rendered persistent tabs during the root redirect.
+- Added the route-local `CatalogProductsSkeleton` and used it from `/admin/catalog/loading.tsx` and `/admin/catalog/products/loading.tsx`. It mirrors the accepted hero/action, tabs, filter controls/status row, registry header, nine-column bounded table, and pagination geometry; KPI/stat and view-toggle placeholders were removed. Root-path persistent tabs are suppressed to prevent a duplicate during redirect.
+- TDD evidence: `tests/admin-catalog-loading.test.ts` was observed RED (`2/2` expected failures) before the implementation and GREEN afterward. Focused catalog checks: `npm test -- tests/admin-catalog-loading.test.ts tests/admin-catalog-read.test.ts` passed `2 files / 8 tests`; touched-file Prettier passed; `git diff --check` passed with only expected CRLF warnings.
+- Browser verification completed against `http://localhost:3000/admin/catalog`; redirect reached `/admin/catalog/products` and the loaded page had no document horizontal overflow. The dev server completed the redirect too quickly to expose the transient loading boundary to an automated screenshot capture, so no transient-state screenshot is claimed.
+- No shared shell, backend, DTO, route API, auth, provider, Prisma, migration, or order/customer/coupon behavior was changed. No reviewer, commit, push, deploy, full gate, build, or E2E was performed. Stop for user visual acceptance.
+
+## Admin redesign catalog loading contrast feedback — 2026-08-28
+
+- Reviewed the user-provided six-second screen recording frame-by-frame. The dashboard/orders → catalog transition did render the intended skeleton geometry, but its placeholders were nearly indistinguishable from the admin background.
+- Root cause: the shared skeleton engine uses `--admin-surface-high` (`hsl(40 18% 97%)`), matching the current admin background lightness (`hsl(40 20% 97%)`). The fix is route-local: `CatalogSkeleton` applies `background-color: var(--admin-surface-low)` inline while preserving the shared shimmer and all accepted geometry.
+- TDD evidence: the contrast regression was observed RED (`2/2`), then GREEN (`2/2`). No shared shell or global skeleton CSS was edited.
+- Video had no audio/transcript; visual evidence showed the exact low-contrast skeleton state before the products page appeared. Final focused catalog checks remain the scoped loading/read suites, touched-file Prettier, and `git diff --check` only. No reviewer, commit, push, deploy, full gate, build, or E2E.
+
+## Admin redesign catalog redirect header feedback — 2026-08-28
+
+- The second recording and supplied screenshot isolated a separate timing defect: during `/admin/catalog` redirect, the shared `.viewport` grid had two `auto` rows and stretched the normal-flow topbar from `72px` to about `341px` while the route content temporarily contained only the catalog tabs.
+- Added `align-content: start` to `.viewport` in `components/admin/admin-shell.module.css`. This preserves the existing shell structure and normal dimensions while preventing free-height distribution between the two auto rows. Removed the ineffective catalog-only min-height workaround.
+- TDD evidence: the viewport geometry assertion was observed RED, then GREEN. Browser trace after the fix measured the transient header at `72px` and the loaded products page at `72px`; `/admin/catalog` redirected successfully with no document horizontal overflow.
+- Focused checks: `tests/admin-catalog-loading.test.ts` plus `tests/admin-catalog-read.test.ts` passed `2 files / 9 tests`; touched-file Prettier passed; `git diff --check` passed with expected CRLF warnings. No reviewer, commit, push, deploy, full gate, build, or E2E.
+
+## Admin redesign orders loading parity — 2026-08-28
+
+- Replaced the generic `/admin/orders` loading boundary with route-local `OrderRegisterSkeleton`, using the same visible contrast, spacing, rounded cards, and block-level treatment as the accepted catalog skeleton while preserving orders-specific geometry: hero/actions, four KPI cards, filters and quick-filter row, registry header, nine-column orders table, and pagination.
+- Updated `components/admin/content-ready-gate.tsx` so the cold-load overlay uses the same orders skeleton instead of the legacy `ListPageSkeleton`. No order reads, DTOs, query parameters, status/payment semantics, detail destinations, or backend behavior changed.
+- TDD evidence: the new orders skeleton contract was observed RED against the old loading output, then GREEN. Focused render test passed `6/6`; browser loading trace showed a `72px` header, visible `1010px` orders skeleton, no document horizontal overflow, and loaded table scroller bounded at `1043/1180`.
+- Touched-file Prettier and `git diff --check` remain required focused checks. No reviewer, commit, push, deploy, full gate, build, or E2E.
+
+## Admin redesign orders table header feedback — 2026-08-28
+
+- Removed the inner rounded wrapper from the loaded and loading orders tables. The registry shell keeps its approved outer radius; the table header now has square left and right edges inside it.
+- TDD evidence: the narrow header-radius contract was observed RED, then GREEN. No order data, interaction, route, or shared-shell behavior changed.
+
+## Admin redesign Task 2 remaining list screens — 2026-08-28
+
+- Scope completed: route-specific approved visual structures for `/admin/orders`, `/admin/customers`, `/admin/marketing` (visible label `Промокоды`), `/admin/catalog/categories`, `/admin/catalog/options`, `/admin/catalog/rooms`, and `/admin/catalog/stock`. Accepted `/admin/catalog/products`, dashboard, and shared shell were not changed. The catalog layout received one route-local fix to prevent duplicate tab rows when subroutes render their embedded tabs.
+- Source mapping: inspected all four approved Superdesign remote drafts (`597b3048-0783-4a27-aa91-3a625ceb521c`, `e921a280-154e-448e-bbe6-47b2f6a10caf`, `c36b9482-ca43-4473-91a5-3cdacea92004`, and `31be6fd0-c57e-4314-9d48-c7d24bf7828e`) and the project-local equivalents under `.superdesign/tmp/`. The user-supplied `D:\Projects\evironn.superdesign\tmp\` paths were absent; no fixture data or draft-only values were copied.
+- Owned production files in this slice: `app/(admin)/admin/orders/page.tsx`; customer page/filter/table; marketing page/filter/table; catalog layout, categories page, options page, rooms page, stock page/table; and the new `app/(admin)/admin/catalog/_components/catalog-static-pager.tsx`. Existing route reads, DTOs, projections, query parameters, filters, sorting, pagination, links, actions, statuses, guards, loading, empty, and error boundaries remain authoritative.
+- TDD evidence: initial route contracts were observed RED before production edits; a duplicate-catalog-tabs regression was separately observed RED and then fixed. Final focused GREEN: `npm test -- tests/admin-catalog-read.test.ts tests/admin-customers-render.test.ts tests/admin-coupons-render.test.ts tests/admin-stock-cell.test.tsx tests/admin-route-contract.test.ts tests/admin-orders-render.test.ts` passed 6 files / 39 tests. Touched-file Prettier check and `git diff --check` passed.
+- Authenticated local browser smoke succeeded with HTTP 200 for all seven routes. Desktop captures at `1440x900`: `C:\Users\010726Admin\AppData\Local\Temp\evironn-admin-orders-1440x900.png`, `evironn-admin-customers-1440x900.png`, `evironn-admin-marketing-1440x900.png`, `evironn-admin-categories-1440x900.png`, `evironn-admin-options-1440x900.png`, `evironn-admin-rooms-1440x900.png`, and `evironn-admin-stock-1440x900.png`. Mobile captures at `390x844` use the same seven basenames with `-390x844.png`.
+- Browser geometry: all seven desktop routes loaded without application errors and measured `scrollWidth === clientWidth === 1425` inside the `1440px` viewport; all seven mobile routes measured `scrollWidth === clientWidth === 390`. Mobile orders and stock tables retain bounded internal horizontal scrollers; catalog tabs are bounded internal navigation scrollers. No document-level horizontal overflow was observed.
+- Real-data constraints: customer reads expose role/order totals/registration but not segment, last purchase, or analytics, so KPIs are real-derived and unsupported segment/analytics controls are disabled. Coupon reads expose code/discount/status/active/expiry/created but not conditions, usage analytics, or server-side type/sort contracts, so only real fields and existing filters/actions are active. Orders lack delivery method/product-name fields; neutral fallbacks and existing real item/cover data remain. Categories/options/rooms have array reads without server pagination, so the approved one-page paginator is real-count based with disabled unavailable arrows. Stock keeps its existing real SKU filter, pagination, optimistic edit, and conflict behavior. No new fields, fake pages, mock analytics, IDs, media, or fixtures were introduced.
+- No reviewer was invoked per user instruction. No full gate, build, E2E, commit, push, deploy, PR, merge, reset, rebase, clean, fetch, switch, or new branch operation occurred. Ready for combined user visual acceptance; any remaining differences are limited to the documented real-data constraints and the approved mobile bounded-scroll treatment.
+
+## Product form approved presentation slice — 2026-08-28
+
+- Scope: replaced route-specific presentation only for `/admin/catalog/products/new` and `/admin/catalog/products/[id]/edit`. The accepted product list, other catalog tabs, orders, customers, coupons, Dashboard, shared shell, server actions, DTOs, validation, Prisma, APIs, auth, payment, stock, Cloudinary, and provider code were not changed.
+- Owned production files: `app/(admin)/admin/catalog/products/_components/product-form.tsx`, `sku-matrix.tsx`, and `specs-editor.tsx`; `app/(admin)/admin/catalog/products/new/page.tsx`; `app/(admin)/admin/catalog/products/[id]/edit/page.tsx`; `components/admin/media/image-uploader.tsx`; and `components/admin/media/image-preview-card.tsx`. Owned regression coverage: `tests/admin-product-form-render.test.tsx`.
+- Visual mapping: source was fully inspected at `http://127.0.0.1:4174/product-editor.html` before editing. The matching local source was `D:\Projects\evironn\.superdesign\tmp\product-editor.html`. The implementation maps its breadcrumb/hero, responsive form grid, basic information, media cards, options/SKU table, publication, specifications, and danger-zone hierarchy while keeping unsupported preview/manage controls decorative and disabled.
+- TDD evidence: the new form composition/interaction test was observed RED before production edits (missing approved form markers); after implementation the focused render/SKU suite passed. Final focused batch: `npm test -- tests/admin-product-form-render.test.tsx tests/admin-sku-matrix.test.ts tests/admin-products-action.test.ts tests/admin-product-media.test.ts tests/admin-media.test.ts` passed 5 files / 36 tests. Touched-file Prettier passed and `git diff --check` passed with only existing LF/CRLF conversion warnings.
+- New-route browser evidence: authenticated local `http://localhost:3000/admin/catalog/products/new` returned the approved form at desktop and mobile. Captures: `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\13-product-new-approved-desktop.png` and `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\15-product-new-approved-mobile.png`. Mobile measured `scrollWidth === clientWidth === 390`; desktop measured `scrollWidth === clientWidth === 1425` inside the requested `1440px` browser viewport, with no document-level overflow.
+- Real-data constraint: the first real edit destination selected read-only from the current catalog list was `http://localhost:3000/admin/catalog/products/cmsooiqec000btsegv6zpk8cj/edit` (`Aster Bar Stool`). The route reaches its existing server read, but the current database contains relative media URLs such as `/assets/products/01-bar-stool-idle.webp`; the unchanged canonical schema rejects them as invalid media URLs before `ProductForm` renders. The same pre-existing constraint was reproduced on another real catalog product. No test product was created and no form was submitted. The required real-route evidence therefore captures the existing error state, not an approved edit form: `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\15-product-edit-aster-bar-stool-real-route-desktop.png` and `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\16-product-edit-aster-bar-stool-real-route-mobile.png`; both had no document overflow.
+- No reviewer was invoked per user instruction. No full gate, complete Vitest suite, typecheck, build, E2E, commit, push, deploy, PR, merge, reset, rebase, clean, fetch, switch, or new branch operation occurred. Stop for user visual acceptance and direction on the pre-existing invalid-media edit-route data constraint.
+
+## Product edit invalid-media remediation — 2026-08-28
+
+- User-reported failure reproduced on the real catalog destination for `Aster Bar Stool`: `getAdminProductDraft` rejected persisted relative URLs before the form rendered. Root cause was the database's legacy `/assets/products/...` media values conflicting with the unchanged DTO's absolute-URL validation.
+- Added a read-boundary normalization in `lib/admin/catalog.ts` using the existing site URL helper. Product and SKU media keep their stored values semantically intact while absolute URLs are supplied to the existing canonical schema; no schema, migration, database write, server action, API, provider, or form behavior changed.
+- TDD: added the relative-media regression to `tests/admin-catalog-read.test.ts`; it failed first with the exact canonical validation error, then passed after the minimal read normalization.
+- Browser verification after reload: `http://localhost:3000/admin/catalog/products/cmsooiqec000btsegv6zpk8cj/edit` now renders `Aster Bar Stool` at both requested viewports. Desktop and mobile both returned the form without the error boundary. Captures were refreshed at `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\15-product-edit-aster-bar-stool-real-route-desktop.png` and `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\16-product-edit-aster-bar-stool-real-route-mobile.png`.
+- Final focused batch: `npm test -- tests/admin-catalog-read.test.ts tests/admin-product-form-render.test.tsx tests/admin-sku-matrix.test.ts tests/admin-products-action.test.ts tests/admin-product-media.test.ts tests/admin-media.test.ts` passed 6 files / 43 tests. Touched-file Prettier passed; `git diff --check` passed with only existing LF/CRLF conversion warnings. Desktop measured `scrollWidth === clientWidth === 1425` inside `1440px`; mobile measured `scrollWidth === clientWidth === 390`.
+- The edit form has no rendered product image cards for this real row because its persisted media has no `publicId`; the approved media area remains available for adding images and the existing media URL is preserved in form state. No test product or form submission was used.
+
+## Product form visual feedback remediation — 2026-08-28
+
+- Reproduced the two browser findings on the real edit route: the SKU media add tile was too wide for its table cell and the combination column exposed the internal `dimensions=bar|finish=oak` key.
+- Added a compact SKU-only uploader presentation with bounded single-column control, truncated button label, hidden icon semantics, and shorter helper copy. General product media upload behavior and upload/delete/reorder/alt handlers remain unchanged.
+- Replaced the visible combination key with readable option labels derived from the existing SKU axes (for example `Отделка: Дуб` and `Размер: Барный`). The canonical key remains in the DOM as screen-reader text and continues to drive row identity, labels, and save behavior. Corrected the SKU table cell order so `Медиа` and `Активен` match their headers.
+- Added a focused regression contract in `tests/admin-sku-matrix.test.ts`; RED was observed before the production edits and GREEN passed after them. Browser verification at `1440x900` confirmed the compact media button stays within its 196px cell (`scrollWidth <= clientWidth`) and the document remains `1425/1425`.
+- Final focused batch remains green: 6 files / 44 tests. Touched-file Prettier and `git diff --check` passed with only existing LF/CRLF conversion warnings. No reviewer, full gate, build, E2E, commit, push, deploy, PR, merge, reset, rebase, clean, fetch, switch, or new branch operation occurred.
+- Browser follow-up evidence for the corrected lower SKU section: `D:\Projects\evironn\.superpowers\sdd\phase-5d-visual-evidence\17-product-edit-sku-fix-desktop.png`.
+
+## Admin dashboard loading skeleton — 2026-08-28
+
+- Scope: replaced the obsolete generic `/admin` loading body in `components/admin/skeleton/dashboard-skeleton.tsx` with silhouettes mapped to the accepted `DashboardReferenceView`: sales/KPI/chart, order funnel, inventory, categories, and recent orders.
+- The skeleton preserves the existing `DashboardSkeleton` status semantics and `app/(admin)/admin/loading.tsx` boundary. It contains no live names, values, IDs, images, links, fixture data, reads, mutations, or new controls.
+- Desktop uses the live dashboard's two-column geometry with a full-width orders panel; mobile stacks the same five regions and keeps the orders table inside a bounded horizontal scroller.
+- TDD evidence: `tests/admin-dashboard-loading.test.ts` was observed RED against the old skeleton, then GREEN after the replacement. Focused dashboard loading/render checks passed 2 files / 9 tests. Touched-file Prettier passed and `git diff --check` passed with only existing LF/CRLF conversion warnings.
+- No dashboard data, live presentation, shared shell, DTO, action, API, provider, full gate, build, complete Vitest suite, E2E, reviewer, or commit operation was performed.
+
+## Admin dashboard chart animation timing refinement — 2026-08-28
+
+- User requested a slower revenue-chart entrance so the drawing is observable. Increased only `dashboardChartDraw` duration from `1200ms` to `1800ms`; funnel cascade, data mapping, chart geometry, and reduced-motion behavior remain unchanged.
+- TDD evidence: added the `1800ms` timing assertion to `tests/admin-dashboard-render.test.ts`; it failed against the prior duration, then passed after the CSS-only adjustment.
+- Focused dashboard checks passed 2 files / 20 tests. Touched-file Prettier and `git diff --check` are required final checks; no reviewer, full gate, build, E2E, or commit was run.
+
+## Admin dashboard entry animation — 2026-08-28
+
+- Scope: added CSS-only entrance motion to the accepted dashboard funnel and revenue chart in `app/(admin)/admin/_components/dashboard-reference-view.tsx` and `dashboard-reference-view.module.css`.
+- The five funnel stages reveal top-to-bottom with staggered delays; arrows and conversion footer follow. The revenue curve draws with `stroke-dashoffset`, while the area fill fades in. Existing model mapping, SVG path generation, labels, layout, and data behavior remain unchanged.
+- Added `prefers-reduced-motion: reduce` overrides that expose the final state immediately. No client boundary, animation dependency, API, action, or data source was introduced.
+- TDD evidence: dashboard animation assertions were observed RED before JSX/CSS changes, then GREEN. Focused dashboard checks passed 2 files / 20 tests. Touched-file Prettier and `git diff --check` remain required final checks; no reviewer, full gate, build, E2E, or commit was run.

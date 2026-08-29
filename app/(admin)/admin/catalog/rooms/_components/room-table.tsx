@@ -38,10 +38,17 @@ export function RoomTable({ rows }: { rows: AdminRoomRow[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface">
-      <div className="divide-y divide-admin-outline-variant">
+    <section
+      aria-label="Реестр комнат"
+      className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface"
+    >
+      <div role="list" className="divide-y divide-admin-outline-variant">
         {rows.map((row, index) => (
-          <div key={row.id} className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+          <div
+            key={row.id}
+            role="listitem"
+            className="flex flex-col gap-4 p-5 transition-colors hover:bg-admin-surface-low md:flex-row md:items-center md:justify-between"
+          >
             <div className="min-w-0">
               <div className="font-bold text-admin-on-surface">{row.name}</div>
               <div className="text-xs text-admin-on-surface-variant">
@@ -95,6 +102,6 @@ export function RoomTable({ rows }: { rows: AdminRoomRow[] }) {
         title="Удалить комнату?"
         description={toDelete ? `«${toDelete.name}» будет удалена безвозвратно.` : undefined}
       />
-    </div>
+    </section>
   );
 }

@@ -38,36 +38,46 @@ export function SkuMatrix({ axes, existing, mediaByCombinationKey = {}, onChange
   }
 
   return (
-    <div className="overflow-x-auto rounded-[14px] border border-admin-outline-variant">
-      <table className="w-full min-w-[760px] text-left text-xs">
+    <div
+      data-testid="admin-product-sku-matrix"
+      className="min-w-0 overflow-x-auto rounded-[14px] border border-admin-outline-variant"
+    >
+      <table className="w-full min-w-[960px] text-left text-[12px]">
         <thead className="bg-admin-surface-low text-admin-on-surface-variant">
           <tr>
-            <th className="px-3 py-2 font-bold">Combination</th>
-            <th className="px-3 py-2 font-bold">Article number</th>
-            <th className="px-3 py-2 font-bold">Price</th>
-            <th className="px-3 py-2 font-bold">Old price</th>
-            <th className="px-3 py-2 font-bold">Stock</th>
-            <th className="px-3 py-2 font-bold">Active</th>
-            <th className="px-3 py-2 font-bold">Media</th>
+            <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Комбинация</th>
+            <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Артикул SKU</th>
+            <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Цена</th>
+            <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Старая цена</th>
+            <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Остаток</th>
+            <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Медиа</th>
+            <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-[.06em]">Активен</th>
           </tr>
         </thead>
         <tbody>
           {result.rows.map((row, rowIndex) => (
             <tr key={row.combinationKey} className="border-t border-admin-outline-variant">
               <td
-                className="px-3 py-2 font-medium text-admin-on-surface"
+                className="px-4 py-3 font-semibold text-admin-on-surface"
                 data-testid={`admin-product-matrix-row-${row.combinationKey}`}
               >
-                {row.combinationKey}
+                <div className="flex flex-wrap gap-1">
+                  {getSelectionLabels(row, axes).map((label) => (
+                    <span key={label} className="rounded-md bg-admin-surface-low px-2 py-1 text-[11px]">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+                <span className="sr-only">{row.combinationKey}</span>
               </td>
-              <td className="px-3 py-2">
+              <td className="px-3 py-3">
                 <Input
                   aria-label={`Article number ${row.combinationKey}`}
                   value={row.articleNumber}
                   onChange={(event) => updateRow(rowIndex, { articleNumber: event.target.value })}
                 />
               </td>
-              <td className="px-3 py-2">
+              <td className="px-3 py-3">
                 <Input
                   aria-label={`Price ${row.combinationKey}`}
                   type="number"
@@ -75,7 +85,7 @@ export function SkuMatrix({ axes, existing, mediaByCombinationKey = {}, onChange
                   onChange={(event) => updateRow(rowIndex, { price: Number(event.target.value) })}
                 />
               </td>
-              <td className="px-3 py-2">
+              <td className="px-3 py-3">
                 <Input
                   aria-label={`Old price ${row.combinationKey}`}
                   type="number"
@@ -85,7 +95,7 @@ export function SkuMatrix({ axes, existing, mediaByCombinationKey = {}, onChange
                   }
                 />
               </td>
-              <td className="px-3 py-2">
+              <td className="px-3 py-3">
                 <Input
                   data-testid={`admin-product-matrix-stock-${row.combinationKey}`}
                   aria-label={`Stock ${row.combinationKey}`}
@@ -96,19 +106,12 @@ export function SkuMatrix({ axes, existing, mediaByCombinationKey = {}, onChange
                 />
                 {row.state === 'existing' && (
                   <span className="mt-1 block text-[11px] text-admin-on-surface-variant">
-                    Stock is managed in the stock console.
+                    <span className="sr-only">Stock is managed in the stock console.</span>
+                    <span>Остаток изменяется в разделе «Остатки».</span>
                   </span>
                 )}
               </td>
-              <td className="px-3 py-2">
-                <input
-                  aria-label={`Active ${row.combinationKey}`}
-                  type="checkbox"
-                  checked={row.active}
-                  onChange={(event) => updateRow(rowIndex, { active: event.target.checked })}
-                />
-              </td>
-              <td className="min-w-[220px] px-3 py-2 align-top">
+              <td className="min-w-[220px] px-3 py-3 align-top">
                 <SkuMediaEditor
                   media={
                     row.skuId
@@ -118,12 +121,28 @@ export function SkuMatrix({ axes, existing, mediaByCombinationKey = {}, onChange
                   onChange={(media) => onMediaChange?.(row.skuId, row.combinationKey, media)}
                 />
               </td>
+              <td className="px-3 py-3">
+                <input
+                  aria-label={`Active ${row.combinationKey}`}
+                  type="checkbox"
+                  checked={row.active}
+                  onChange={(event) => updateRow(rowIndex, { active: event.target.checked })}
+                />
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
   );
+}
+
+function getSelectionLabels(row: SkuMatrixRow, axes: SkuMatrixAxis[]) {
+  return row.selections.map((selection) => {
+    const axis = axes.find((candidate) => candidate.optionGroupSlug === selection.optionGroupSlug);
+    const value = axis?.values.find((candidate) => candidate.optionValueSlug === selection.optionValueSlug);
+    return `${axis?.optionGroupName ?? selection.optionGroupSlug}: ${value?.optionValueName ?? selection.optionValueSlug}`;
+  });
 }
 
 function SkuMediaEditor({ media, onChange }: { media: SkuMedia[]; onChange?: (media: SkuMedia[]) => void }) {
@@ -163,6 +182,7 @@ function SkuMediaEditor({ media, onChange }: { media: SkuMedia[]; onChange?: (me
       onChange={handleChange}
       folder={EVIRONN_SKUS_FOLDER}
       max={4}
+      compact
     />
   );
 }

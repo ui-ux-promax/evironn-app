@@ -5,7 +5,7 @@ export type AdminNavItem = {
 };
 
 export const ADMIN_NAV: readonly AdminNavItem[] = [
-  { href: '/admin', label: 'Дашборд', match: 'exact' },
+  { href: '/admin', label: 'Сводка', match: 'exact' },
   { href: '/admin/catalog', label: 'Каталог', match: 'prefix' },
   { href: '/admin/orders', label: 'Заказы', match: 'prefix' },
   { href: '/admin/customers', label: 'Клиенты', match: 'prefix' },

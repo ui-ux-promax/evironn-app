@@ -72,7 +72,7 @@ export function CategoryTable({ rows }: { rows: CategoryRow[] }) {
     <div className="space-y-3">
       <div className="overflow-hidden rounded-[20px] border border-admin-outline-variant bg-admin-surface">
         <div className="hidden md:block">
-          <Table>
+          <Table aria-label="Реестр категорий">
             <TableHeader>
               <TableRow>
                 <TableHead>Обложка</TableHead>

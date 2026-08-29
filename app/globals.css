@@ -588,46 +588,47 @@ html body[data-scroll-locked] {
 /* ===== Admin panel theme (Phase 3.0) — scoped to .admin-root, не влияет на storefront ===== */
 @layer base {
   .admin-root {
-    /* light (admin-main.html) */
-    --admin-bg: hsl(42 30% 97%);
-    --admin-surface: #ffffff;
-    --admin-surface-low: hsl(42 20% 94%);
-    --admin-surface-container: hsl(42 20% 94%);
-    --admin-surface-high: hsl(42 20% 94%);
-    --admin-on-bg: hsl(220 12% 10%);
-    --admin-on-surface: hsl(220 12% 10%);
-    --admin-on-surface-variant: hsl(220 7% 42%);
-    --admin-primary: hsl(220 12% 10%);
+    --admin-bg: var(--ev-bg);
+    --admin-surface: var(--ev-surface);
+    --admin-surface-low: var(--ev-surface-soft);
+    --admin-surface-container: hsl(40 16% 95%);
+    --admin-surface-high: hsl(40 18% 97%);
+    --admin-on-bg: var(--ev-ink);
+    --admin-on-surface: var(--ev-ink);
+    --admin-on-surface-variant: var(--ev-ink-60);
+    --admin-primary: var(--ev-accent);
     --admin-on-primary: hsl(0 0% 100%);
-    --admin-secondary-container: hsl(151 35% 38% / 0.12);
-    --admin-on-secondary-container: hsl(151 35% 38%);
-    --admin-error: hsl(4 70% 52%);
+    --admin-secondary-container: hsl(150 8% 30% / 0.1);
+    --admin-on-secondary-container: var(--ev-accent);
+    --admin-error: var(--ev-danger);
     --admin-on-error: #ffffff;
-    --admin-outline: hsl(42 15% 88%);
-    --admin-outline-variant: hsl(42 15% 88%);
-    /* блик для shimmer-скелетонов (light) */
+    --admin-outline: var(--ev-border-strong);
+    --admin-outline-variant: var(--ev-border-subtle);
     --admin-shimmer: rgba(255, 255, 255, 0.65);
-    /* мягкая тень скользящей таблетки тоггла (light) */
+    /* Kept for legacy demo/table consumers; protected shell uses white surface. */
     --admin-sidebar: hsl(220 16% 9%);
-    --admin-money: hsl(151 35% 38%);
-    --admin-warning: hsl(42 92% 50%);
-    --admin-info: hsl(205 72% 48%);
-    --admin-shadow-soft: 0 22px 70px hsl(220 12% 10% / 0.08);
-    --admin-shadow-tight: 0 12px 36px hsl(220 12% 10% / 0.06);
-    --pill-shadow: 0 12px 36px hsl(220 12% 10% / 0.08);
+    --admin-money: var(--ev-success);
+    --admin-warning: var(--ev-warning);
+    --admin-info: var(--ev-info);
+    --admin-shadow-soft: var(--ev-shadow-md);
+    --admin-shadow-tight: var(--ev-shadow-xs);
+    --admin-focus-ring: var(--ev-focus-ring);
+    --admin-radius-sm: var(--ev-radius-sm);
+    --admin-radius-md: var(--ev-radius-md);
+    --admin-radius-lg: var(--ev-radius-lg);
+    --admin-radius-pill: var(--ev-radius-pill);
+    --pill-shadow: var(--ev-shadow-sm);
 
-    background: var(--admin-bg); /* перекрывает lime-градиент body */
+    background: var(--admin-bg);
     color: var(--admin-on-bg);
-    background: radial-gradient(circle at 16% -8%, hsl(42 20% 94%) 0, transparent 330px), var(--admin-bg);
     min-height: 100vh;
   }
-  /* На admin-страницах скроллит main, а не документ (модель прототипа): глушим скролл
-     И html (documentElement — на нём обычно вьюпорт-скроллбар), И body. Иначе два скроллбара
-     + при открытии Radix-поповеров react-remove-scroll сдвигает контент и видна lime-полоса.
-     :has() не трогает витрину (там нет .admin-root). */
+  /* Admin workspace scrolls with the document so the complete recent-orders panel remains
+     reachable; the table itself owns horizontal scrolling on narrow screens. */
   html:has(.admin-root),
   body:has(.admin-root) {
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: auto;
   }
   .admin-root.dark {
     /* dark (admin-main-dark.html) */

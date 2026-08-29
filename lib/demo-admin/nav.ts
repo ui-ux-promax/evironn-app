@@ -1,5 +1,5 @@
 export const DEMO_ADMIN_NAV = [
-  { href: '/demo-admin', label: 'Дашборд', icon: 'space_dashboard' },
+  { href: '/demo-admin', label: 'Сводка', icon: 'space_dashboard' },
   { href: '/demo-admin/catalog', label: 'Каталог', icon: 'chair' },
   { href: '/demo-admin/orders', label: 'Заказы', icon: 'shopping_bag' },
   { href: '/demo-admin/customers', label: 'Клиенты', icon: 'group' },

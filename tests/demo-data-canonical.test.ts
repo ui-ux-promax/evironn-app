@@ -13,5 +13,6 @@ it('fails closed outside portfolio production', () => {
   expect(() => assertDemoEnvironment({ DEMO_MODE: 'false', VERCEL_ENV: 'production' })).toThrow(
     'Demo reset is disabled',
   );
+  expect(() => assertDemoEnvironment({ DEMO_MODE: 'false', VERCEL_ENV: 'preview' })).toThrow('Demo reset is disabled');
   expect(() => assertDemoEnvironment({ DEMO_MODE: 'true', VERCEL_ENV: 'preview' })).toThrow('Demo reset is disabled');
 });

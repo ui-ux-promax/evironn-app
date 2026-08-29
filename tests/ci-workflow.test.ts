@@ -11,6 +11,8 @@ describe('CI quality workflow', () => {
     expect(workflow).toContain('npm run typecheck');
     expect(workflow).toContain('npm run test');
     expect(workflow).toContain('npm run build');
+    expect(workflow).toContain('evironn_build');
+    expect(workflow).not.toContain('ritm_build');
     expect(workflow).toMatch(/uses:\s*actions\/checkout@v6\s*\n\s*with:\s*\n\s*lfs:\s*true/);
     expect(workflow).not.toContain('https://ritm-app-eight.vercel.app');
     expect(workflow).not.toMatch(/prisma db push/);

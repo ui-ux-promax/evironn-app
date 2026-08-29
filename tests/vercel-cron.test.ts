@@ -7,10 +7,26 @@ it('registers one daily demo reset cron', () => {
   expect(vercel.crons).toEqual([{ path: '/api/cron/reset-demo', schedule: '0 3 * * *' }]);
 });
 
-it('documents production-only demo reset variables', () => {
+it('documents required environment names without provider values', () => {
   const env = readFileSync('.env.example', 'utf8');
 
-  expect(env).toContain('DEMO_MODE=');
-  expect(env).toContain('CRON_SECRET=');
+  for (const name of [
+    'UPSTASH_REDIS_REST_URL',
+    'UPSTASH_REDIS_REST_TOKEN',
+    'KV_REST_API_URL',
+    'KV_REST_API_TOKEN',
+    'NEXT_PUBLIC_SENTRY_DSN',
+    'SENTRY_DSN',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+    'SENTRY_AUTH_TOKEN',
+    'SENTRY_RELEASE',
+    'NEXT_PUBLIC_SENTRY_RELEASE',
+    'DEMO_MODE',
+    'CRON_SECRET',
+    'SMOKE_BASE_URL',
+  ]) {
+    expect(env).toMatch(new RegExp(`^${name}=`, 'm'));
+  }
   expect(env).toContain('dedicated public demo deployment');
 });

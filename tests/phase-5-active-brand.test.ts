@@ -45,7 +45,7 @@ describe('Phase 5 active Evironn brand contract', () => {
     const folders = readFileSync(resolve(root, 'lib/cloudinary/folders.ts'), 'utf8');
     const resetLock = readFileSync(resolve(root, 'lib/demo-data/reset-lock.ts'), 'utf8');
     expect(folders.match(/LEGACY_MEDIA_PREFIX\s*=\s*['"]ritm\/['"]/g)).toEqual(["LEGACY_MEDIA_PREFIX = 'ritm/'"]);
-    expect(resetLock.match(/['"]ritm:demo-reset-lock['"]/g)).toEqual(["'ritm:demo-reset-lock'"]);
+    expect(resetLock.match(/['"]evironn:demo-reset-lock['"]/g)).toEqual(["'evironn:demo-reset-lock'"]);
 
     const productionHits = collectTextFiles('app')
       .concat(
@@ -69,12 +69,25 @@ describe('Phase 5 active Evironn brand contract', () => {
         line: "export const LEGACY_MEDIA_PREFIX = 'ritm/';",
         lineNumber: 17,
       },
-      {
-        file: 'lib/demo-data/reset-lock.ts',
-        line: "  const lockKey = 'ritm:demo-reset-lock';",
-        lineNumber: 9,
-      },
     ]);
+  });
+
+  it('uses Evironn hardening identifiers in active owners', () => {
+    const rateLimit = readFileSync(resolve(root, 'lib/rate-limit.ts'), 'utf8');
+    const logger = readFileSync(resolve(root, 'lib/logger.ts'), 'utf8');
+    const resetLock = readFileSync(resolve(root, 'lib/demo-data/reset-lock.ts'), 'utf8');
+    const ci = readFileSync(resolve(root, '.github/workflows/ci.yml'), 'utf8');
+
+    for (const prefix of ['login', 'verify', 'resend', 'newsletter', 'dadata', 'cart', 'auth']) {
+      expect(rateLimit).toContain('evironn-app:' + prefix);
+    }
+    expect(rateLimit).not.toContain('stride-app');
+    expect(logger).toContain("const SERVICE = 'evironn-app';");
+    expect(logger).not.toContain('stride-app');
+    expect(resetLock).toContain("const lockKey = 'evironn:demo-reset-lock';");
+    expect(resetLock).not.toContain('ritm:demo-reset-lock');
+    expect(ci).toContain('postgresql://user:pass@localhost:5432/evironn_build');
+    expect(ci).not.toContain('ritm_build');
   });
 
   it('removes retired Ritm logos and every source reference to them', () => {

@@ -49,7 +49,7 @@ async function getLoginLimiter(): Promise<typeof loginLimiter> {
   loginLimiter = new Ratelimit({
     redis: new Redis({ url, token }),
     limiter: Ratelimit.slidingWindow(5, '5 m'),
-    prefix: 'stride-app:login',
+    prefix: 'evironn-app:login',
   });
   return loginLimiter;
 }
@@ -97,28 +97,28 @@ const newsletterSlot = { v: null as Limiter };
 const dadataSlot = { v: null as Limiter };
 
 export async function checkVerifyRateLimit(key: string): Promise<RateLimitResult> {
-  const l = await makeLimiter(verifySlot, 10, '10 m', 'stride-app:verify');
+  const l = await makeLimiter(verifySlot, 10, '10 m', 'evironn-app:verify');
   if (!l) return { success: true, remaining: -1, reset: 0 };
   const r = await l.limit(key);
   return { success: r.success, remaining: r.remaining, reset: r.reset };
 }
 
 export async function checkResendRateLimit(key: string): Promise<RateLimitResult> {
-  const l = await makeLimiter(resendSlot, 5, '1 h', 'stride-app:resend');
+  const l = await makeLimiter(resendSlot, 5, '1 h', 'evironn-app:resend');
   if (!l) return { success: true, remaining: -1, reset: 0 };
   const r = await l.limit(key);
   return { success: r.success, remaining: r.remaining, reset: r.reset };
 }
 
 export async function checkNewsletterRateLimit(key: string): Promise<RateLimitResult> {
-  const l = await makeLimiter(newsletterSlot, 5, '10 m', 'stride-app:newsletter');
+  const l = await makeLimiter(newsletterSlot, 5, '10 m', 'evironn-app:newsletter');
   if (!l) return { success: true, remaining: -1, reset: 0 };
   const r = await l.limit(key);
   return { success: r.success, remaining: r.remaining, reset: r.reset };
 }
 
 export async function checkDadataRateLimit(ip: string): Promise<RateLimitResult> {
-  const l = await makeLimiter(dadataSlot, 30, '1 m', 'stride-app:dadata');
+  const l = await makeLimiter(dadataSlot, 30, '1 m', 'evironn-app:dadata');
   if (!l) return { success: true, remaining: -1, reset: 0 };
   const r = await l.limit(ip);
   return { success: r.success, remaining: r.remaining, reset: r.reset };
@@ -127,7 +127,7 @@ export async function checkDadataRateLimit(ip: string): Promise<RateLimitResult>
 // Fail-open: если Upstash не сконфигурирован — всегда success (sliding window, 60 req/min per IP).
 const cartSlot = { v: null as Limiter };
 export async function checkCartRateLimit(ip: string): Promise<RateLimitResult> {
-  const l = await makeLimiter(cartSlot, CART_RATE_LIMIT.points, CART_RATE_LIMIT.window, 'stride-app:cart');
+  const l = await makeLimiter(cartSlot, CART_RATE_LIMIT.points, CART_RATE_LIMIT.window, 'evironn-app:cart');
   if (!l) return { success: true, remaining: -1, reset: 0 };
   const r = await l.limit(ip);
   return { success: r.success, remaining: r.remaining, reset: r.reset };
@@ -136,7 +136,7 @@ export async function checkCartRateLimit(ip: string): Promise<RateLimitResult> {
 // Fail-open: если Upstash не сконфигурирован — всегда success (sliding window, 5 req/10 min per IP).
 const authSlot = { v: null as Limiter };
 export async function checkAuthRateLimit(ip: string): Promise<RateLimitResult> {
-  const l = await makeLimiter(authSlot, AUTH_RATE_LIMIT.points, AUTH_RATE_LIMIT.window, 'stride-app:auth');
+  const l = await makeLimiter(authSlot, AUTH_RATE_LIMIT.points, AUTH_RATE_LIMIT.window, 'evironn-app:auth');
   if (!l) return { success: true, remaining: -1, reset: 0 };
   const r = await l.limit(ip);
   return { success: r.success, remaining: r.remaining, reset: r.reset };

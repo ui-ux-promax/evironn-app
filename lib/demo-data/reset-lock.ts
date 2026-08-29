@@ -6,7 +6,7 @@ export async function withDemoResetLock<T>(work: () => Promise<T>): Promise<T> {
   if (!url || !token) throw new Error('Demo reset lock is not configured');
 
   const redis = new Redis({ url, token });
-  const lockKey = 'ritm:demo-reset-lock';
+  const lockKey = 'evironn:demo-reset-lock';
   const lockToken = crypto.randomUUID();
   const acquired = await redis.set(lockKey, lockToken, { nx: true, ex: 900 });
   if (acquired !== 'OK') throw new Error('Demo reset already running');

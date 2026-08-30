@@ -1,5 +1,43 @@
 # Phase 5 admin and demo-admin progress
 
+## Phase 6B implementation baseline — 2026-08-30
+
+- Approved-plan baseline: `568c49ac843b23256622041923a80d7824accc6a`.
+- Branch verified: `phase/06-hardening-release`; baseline contains the approved Phase 6B plan and planning brief.
+- Protected untracked Phase 2 plan files preserved unchanged.
+- Phase 6B implementation begins after baseline verification; no provider, database, deployment, build, E2E, full-gate, push, PR, merge, or branch operation performed.
+
+## Phase 6B Task 1 — 2026-08-30
+
+- Name-only environment reader characterization completed. Differences were limited to approved host metadata and compatibility-only declarations; no runtime-only drift found. `.env.example` unchanged.
+- Added compact Local/Preview/Production/Build/Optional smoke environment/provider guidance to `docs/operations/phase-6a-hardening.md`. Presence-only wording retained; no external provider/Vercel presence claim made.
+- Focused checks: required Prettier check passed; required selector matched 13 lines; `git diff --check` passed. No typecheck required for documentation-only change.
+- Fresh Sol Medium task review approved: Critical 0, Important 0, Minor 0. No remediation required.
+- Task 1: complete (commit `568c49a..a750e57`, review clean).
+
+## Phase 6B Task 2 — 2026-08-30
+
+- Cloudinary characterization passed: 13 files / 99 tests. Resend characterization passed: 4 files / 27 tests. All provider/database interactions mocked.
+- Demonstrated owner-local gaps: category deletion ran Cloudinary cleanup before database deletion; Resend provider error exposed provider message. Moved category deletion before best-effort cleanup and sanitized provider failure to `email_send_failed`. Added focused ordering/sanitization assertions; verification persistence ordering assertion added.
+- Final focused union: 17 files / 126 tests passed. Touched-file Prettier and `git diff --check` passed. No typecheck required; no shared contract changed.
+- Fresh Sol Medium task review approved: Critical 0, Important 0, Minor 0. No remediation required.
+- Task 2: complete (commit `a750e57..8c25b9d`, review clean).
+
+## Phase 6B Task 3 — 2026-08-30
+
+- Deterministic DaData RED confirmed missing abort signal after mocked upstream fetch. Added route-local `DADATA_TIMEOUT_MS = 5_000`, `AbortController`, fetch signal, and `finally` timer cleanup. Existing ordering, bounds, filtering, fallback, and scrubbed logging preserved.
+- DaData suite passed: 1 file / 6 tests. YooKassa/payment characterization passed: 10 files / 145 tests. Touched-file Prettier and `git diff --check` passed. No typecheck required; route/shared contracts unchanged.
+- Fresh Sol Medium task review approved: Critical 0, Important 0, Minor 0. No remediation required.
+- Task 3: complete (commit `8c25b9d..5f1874d`, review clean).
+
+## Phase 6B Task 4 checkpoint — 2026-08-30
+
+- Tasks 1–3 complete; final functional/security review complete.
+- Compact cross-boundary checkpoint: `npx vitest run tests/cloudinary-config.test.ts tests/media-delete-route.test.ts tests/send-email.test.ts tests/verification-service.test.ts tests/dadata-suggest-route.test.ts tests/payment-environment.test.ts tests/payment-initialization.test.ts tests/yookassa-webhook.test.ts tests/cancel-order.test.ts` — exit 0, 9 files / 93 tests passed. Provider/database calls remained mocked.
+- Baseline-anchored changed-file secret scan returned only `tests/dadata-suggest-route.test.ts:81`; redacted inspection classified it as a known test-fixture `secret` placeholder. No values printed; no credential hit.
+- Task commits: `a750e57` environment guidance, `8c25b9d` Cloudinary/Resend boundary fixes, `5f1874d` DaData timeout. Reused YooKassa/payment contracts unchanged.
+- Final Sol Medium functional/security review: PASS; Critical 0, Important 0, Minor 0. No remediation required. User approval stop follows; no deployed readiness, provider smoke, release completion, Phase 6C, or Phase 6D work claimed.
+
 ## Current checkpoint
 
 - Status: 5C_USER_ACCEPTED; 5A, 5B, and 5C are user-closed; bounded 5D planning is authorized on `phase/05-admin-demo`.

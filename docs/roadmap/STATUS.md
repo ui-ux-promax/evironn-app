@@ -7,7 +7,7 @@
 - The accepted Evironn admin redesign follow-up merged through PR #11 at merge commit `e06ae9c` on 2026-08-29.
 - Current integration branch: `origin/dev` at exact commit `e06ae9c`.
 - Current local delivery branch: `phase/06-hardening-release`, created from exact `origin/dev` commit `e06ae9c`.
-- Phase 6A implementation is complete on the local branch after user-approved execution of the reviewed plan. Phase 6B and later work have not started.
+- Phase 6A implementation is complete on the local branch after user-approved execution of the reviewed plan. Phase 6B Tasks 1–4 are complete on the local branch; final review passed and delivery is stopped for explicit user approval. Phase 6C and 6D have not started.
 - Current release branch: `origin/main` at `162a35e`. The final `dev` to `main` release remains pending.
 
 ## Completed merges
@@ -67,12 +67,23 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 - Task 3 commit: `f0867df` (`fix: close demo operations defects`). Added reset-lock, reset-guard, environment, CI, cron, smoke, and operations-document coverage; fixed mixed Redis alias handling and strengthened canonical SKU/global temporary cleanup assertions. Task review approved after remediation.
 - Task 4 checkpoint passed: 8 files / 24 tests; manual changed-file Prettier check passed; `git diff --check` passed. Typecheck was not run because no shared TypeScript contract changed. Path-only secret scan listed only known dummy fixture/config paths: `.github/workflows/ci.yml`, `tests/phase-5-active-brand.test.ts`, and `vitest.config.ts`; no unexplained secret-bearing path and no matched values were printed.
 - Final Sol functional/security review passed with Critical 0, Important 0, Minor 0; no remediation required. The review confirmed Redis fail-open/fail-closed behavior, CSRF/CSP, Sentry/PII/ADMIN controls, reset guards/lock/idempotency, CI/cron/smoke contracts, scope exclusions, and preservation of Phase 4/5 boundaries.
-- Full Phase 6 gate, build, broad E2E, deployed smoke, provider checks/mutations, database commands/mutations, Vercel/GitHub changes, push, pull request, merge, performance work, and Phase 6B remain unexecuted and require later authorized scope.
+- Full Phase 6 gate, build, broad E2E, deployed smoke, provider checks/mutations, database commands/mutations, Vercel/GitHub changes, push, pull request, merge, performance work, and Phase 6C/6D remain unexecuted and require later authorized scope. Phase 6B is recorded below.
 
 ## Next action
 
-1. User acceptance of the Phase 6A focused checkpoint.
-2. Later user authorization for the next Phase 6 delivery; do not begin Phase 6B automatically.
+1. Stop Phase 6B for explicit user approval.
+2. Stop for explicit user approval; do not start Phase 6C or 6D.
+
+## Phase 6B focused checkpoint — 2026-08-30
+
+- Approved-plan baseline: `568c49ac843b23256622041923a80d7824accc6a`; branch remains `phase/06-hardening-release`.
+- Task 1: environment reader characterization found no runtime-name drift; added presence-only Local/Preview/Production/Build/Optional smoke guidance. Commit `a750e57`; Sol review Critical 0 / Important 0 / Minor 0.
+- Task 2: Cloudinary/Resend suites passed 17 files / 126 tests. Fixed only demonstrated category post-database cleanup ordering and Resend provider-error message exposure; added focused assertions. Commit `8c25b9d`; Sol review Critical 0 / Important 0 / Minor 0.
+- Task 3: deterministic DaData timeout RED passed at the missing signal assertion; added route-local 5-second abort and cleanup. DaData passed 1 file / 6 tests; YooKassa/payment characterization passed 10 files / 145 tests. Commit `5f1874d`; Sol review Critical 0 / Important 0 / Minor 0.
+- Task 4 compact checkpoint passed 9 files / 93 tests with mocks. Fresh final Sol Medium functional/security review: PASS, Critical 0 / Important 0 / Minor 0; no remediation required. No real provider/database/deployment operation, full gate, build, E2E, push, PR, merge, or release occurred.
+- Path-and-line-only secret scan returned `tests/dadata-suggest-route.test.ts:81`; redacted inspection classified it as a known test-fixture `secret` placeholder. No values printed; no credential, DSN, token, cookie, payment, or personal-data hit.
+- Retained: ADR-009 newsletter deferral; ADR-017/018 payment correlation, durable claim, write-once dispatch, guarded release, and fail-closed rules; ADR-020 mocked providers and optional non-blocking YooKassa smoke. Phase 6C performance and Phase 6D release closeout excluded.
+- Residual risks: no external provider/Vercel environment presence was verified; real YooKassa sandbox smoke remains optional/non-blocking; initial Vercel load remains Phase 6C debt.
 
 ## Protected local files
 

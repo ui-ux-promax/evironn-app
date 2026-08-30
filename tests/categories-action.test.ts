@@ -119,11 +119,12 @@ describe('deleteCategory', () => {
   it('no products → deletes + cleans cover', async () => {
     findUnique.mockResolvedValue({ id: 'c1', coverImagePublicId: 'c/pid', _count: { products: 0 } });
     del.mockResolvedValue({ id: 'c1' });
-    deleteAssetMock.mockResolvedValue({ ok: true });
+    deleteAssetMock.mockRejectedValue(new Error('cloudinary down'));
     const r = await deleteCategory('c1');
     expect(r.ok).toBe(true);
     expect(deleteAssetMock).toHaveBeenCalledWith('c/pid');
     expect(del).toHaveBeenCalledWith({ where: { id: 'c1' } });
+    expect(del.mock.invocationCallOrder[0]).toBeLessThan(deleteAssetMock.mock.invocationCallOrder[0]);
   });
 
   it('not found → ok:false', async () => {

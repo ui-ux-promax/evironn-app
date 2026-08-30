@@ -50,6 +50,7 @@ describe('issueCode', () => {
     );
     expect(send).toHaveBeenCalledOnce();
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ subject: 'Код подтверждения Evironn' }));
+    expect(create.mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[0]);
   });
 });
 

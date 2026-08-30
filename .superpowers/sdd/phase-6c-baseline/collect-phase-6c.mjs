@@ -188,6 +188,41 @@ export function planObservationWindow({ endpoint, now, markerMatchedAt = null })
   };
 }
 
+export function normalizeMarkerObservation(result) {
+  return {
+    markerMatched: result?.matched === true,
+    markerMatchedAt: isFiniteNumber(result?.matchedAt) ? result.matchedAt : null,
+  };
+}
+
+export function validateObservationContract(observation) {
+  const comparable = observation?.comparability?.comparable === true;
+  const unavailableSurface =
+    observation?.errors?.includes('existing reproducible browser measurement surface unavailable') === true;
+  const markerMatched = observation?.document?.markerMatched;
+  if (typeof markerMatched !== 'boolean') throw new Error('markerMatched must be boolean');
+  if (unavailableSurface) return true;
+  const endpoint = observation?.observationEndpoint?.endpointFromNavigationStartMs;
+  const markerAt = observation?.observationEndpoint?.markerMatchedAtFromNavigationStartMs;
+  if (comparable && !markerMatched) throw new Error('markerMatched must be true for comparable evidence');
+  if (comparable && !isFiniteNumber(endpoint)) throw new Error('fixed endpoint must be finite');
+  if (comparable && !isFiniteNumber(markerAt)) throw new Error('marker timing must be finite for comparable evidence');
+  if (isFiniteNumber(markerAt) && isFiniteNumber(endpoint) && markerAt > endpoint) {
+    if (observation.observationEndpoint.markerMatchedBeforeEndpoint !== false || comparable) {
+      throw new Error('marker timing is after fixed endpoint');
+    }
+  }
+  if (
+    isFiniteNumber(markerAt) &&
+    isFiniteNumber(endpoint) &&
+    markerAt <= endpoint &&
+    observation.observationEndpoint.markerMatchedBeforeEndpoint !== true
+  ) {
+    throw new Error('marker-before-endpoint predicate disagrees with marker timing');
+  }
+  return true;
+}
+
 function normalizeCacheIdentity(identity) {
   if (identity === null) return { value: null, reason: null };
   if (!identity || typeof identity !== 'object') return { value: undefined, reason: undefined };
@@ -648,26 +683,34 @@ async function captureObservation(name, route, cacheBuster) {
     if (endpoint !== null && isFiniteNumber(dclTiming.now)) {
       const initialWindow = planObservationWindow({ endpoint, now: dclTiming.now });
       if (initialWindow.expired) {
-        markerMatched = await page
-          .evaluate(
-            (expected) =>
-              [...document.querySelectorAll('h1')].some((heading) => heading.textContent?.includes(expected)),
-            route.marker,
-          )
-          .catch(() => false);
-        if (markerMatched) markerMatchedAt = await page.evaluate(() => performance.now()).catch(() => null);
+        const markerResult = await page
+          .evaluate((expected) => {
+            const matched = [...document.querySelectorAll('h1')].some((heading) =>
+              heading.textContent?.includes(expected),
+            );
+            return { matched, matchedAt: matched ? performance.now() : null };
+          }, route.marker)
+          .catch(() => null);
+        ({ markerMatched, markerMatchedAt } = normalizeMarkerObservation(markerResult));
       } else {
         try {
-          markerMatched = await page.waitForFunction(
-            (expected) =>
-              [...document.querySelectorAll('h1')].some((heading) => heading.textContent?.includes(expected)),
+          const markerHandle = await page.waitForFunction(
+            (expected) => {
+              const matched = [...document.querySelectorAll('h1')].some((heading) =>
+                heading.textContent?.includes(expected),
+              );
+              return { matched, matchedAt: matched ? performance.now() : null };
+            },
             route.marker,
             { timeout: initialWindow.waitMs, polling: 50 },
           );
+          const markerResult = await markerHandle.jsonValue();
+          await markerHandle.dispose();
+          ({ markerMatched, markerMatchedAt } = normalizeMarkerObservation(markerResult));
         } catch {
           markerMatched = false;
+          markerMatchedAt = null;
         }
-        if (markerMatched) markerMatchedAt = await page.evaluate(() => performance.now()).catch(() => null);
         const afterMarker = await page.evaluate(() => performance.now()).catch(() => endpoint);
         const remainingWindow = planObservationWindow({ endpoint, now: afterMarker });
         if (!remainingWindow.expired && remainingWindow.waitMs > 0) {
@@ -1144,7 +1187,7 @@ function ownerActivationContract() {
   }
 }
 
-function buildDecision(summary) {
+function calculateDecision(summary) {
   const homeRepeats = summary.observations.filter(
     (item) => item.route?.key === 'home' && item.label !== 'cold-candidate',
   );
@@ -1174,6 +1217,11 @@ function buildDecision(summary) {
     ],
   };
   const rawByLabel = Object.fromEntries(summary.observations.map((observation) => [observation.label, observation]));
+  return { homeRepeats, contract, requestEvidence, comparableRuns, result, rawByLabel };
+}
+
+function buildDecision(summary) {
+  const { homeRepeats, contract, requestEvidence, comparableRuns, result, rawByLabel } = calculateDecision(summary);
   const lines = [
     `Decision: ${result.decision}`,
     '',
@@ -1498,6 +1546,7 @@ function validateExisting() {
     pdp: ROUTES.find((route) => route.key === 'pdp').path,
   };
   for (const observation of raw) {
+    assertValidation(validateObservationContract(observation) === true, `${observation.label} observation contract`);
     assertValidation(observation.schemaVersion === 1, `${observation.label} schema`);
     assertValidation(
       observation.route?.key === expectedRoutes[observation.label],
@@ -1672,6 +1721,27 @@ function validateExisting() {
     assertValidation(
       summary.routes[route.key].runs.every((run) => run.route.key === route.key),
       `summary ${route.key} route allocation`,
+    );
+  }
+  const recomputedSummary = buildSummary(raw, summary.fallbackCode ?? null);
+  const recomputedDecision = calculateDecision(recomputedSummary).result;
+  recomputedSummary.decision = recomputedDecision.decision;
+  for (const key of [
+    'measurementSurface',
+    'conditions',
+    'deploymentIdentity',
+    'cacheIdentity',
+    'routes',
+    'homeOwnerEvidence',
+    'diagnosis',
+    'scope',
+    'fallbackCode',
+    'comparability',
+    'decision',
+  ]) {
+    assertValidation(
+      JSON.stringify(summary[key]) === JSON.stringify(recomputedSummary[key]),
+      `summary recomputation ${key}`,
     );
   }
   assertValidation(summary.homeOwnerEvidence?.perRun?.length === 3, 'summary owner per-run evidence');

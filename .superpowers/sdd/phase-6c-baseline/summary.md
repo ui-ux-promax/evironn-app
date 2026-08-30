@@ -18,33 +18,33 @@ No interaction occurred. `readyState` is informational. Neither `load` nor `read
 ### home
 
 Runs: 3; fingerprint consistency: true
-TTFB median: 92.09999999403954
-FCP median: 6252
-Observation-window LCP candidate median: 6252
+TTFB median: 91.5
+FCP median: 6272
+Observation-window LCP candidate median: 6272
 CLS median: 0
-TBT median: 1114
+TBT median: 1164
 Observed bytes median: unavailable
 Request starts median: 83
 
 ### catalog
 
 Runs: 3; fingerprint consistency: true
-TTFB median: 86.8999999910593
-FCP median: 2292
-Observation-window LCP candidate median: 3476
+TTFB median: 84
+FCP median: 2392
+Observation-window LCP candidate median: 3608
 CLS median: 0.00031452583741812417
-TBT median: 1331
+TBT median: 1477
 Observed bytes median: unavailable
 Request starts median: 35
 
 ### pdp
 
 Runs: 3; fingerprint consistency: true
-TTFB median: 92
-FCP median: 2288
-Observation-window LCP candidate median: 2288
+TTFB median: 91.29999999701977
+FCP median: 2316
+Observation-window LCP candidate median: 2316
 CLS median: 0
-TBT median: 318
+TBT median: 384
 Observed bytes median: unavailable
 Request starts median: 43
 

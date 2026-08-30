@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "label": "pdp-run-1",
   "classification": "repeat",
-  "capturedAtUtc": "2026-08-30T06:55:06.274Z",
+  "capturedAtUtc": "2026-08-30T07:48:34.470Z",
   "conditions": {
     "host": "https://evironn-app.vercel.app",
     "viewport": {
@@ -44,28 +44,26 @@
   },
   "document": {
     "status": 200,
-    "markerMatched": {
-      "_type": "JSHandle",
-      "_guid": "handle@d5a401292a75814135934d1b5d7c4ad5"
-    },
+    "markerMatched": true,
     "readyState": "interactive",
     "readyStateInformationalOnly": true,
     "safeHeaders": {
       "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
       "content-encoding": "br",
       "content-type": "text/html; charset=utf-8",
-      "date": "Sun, 30 Aug 2026 06:55:00 GMT",
+      "date": "Sun, 30 Aug 2026 07:48:29 GMT",
       "server": "Vercel",
       "x-matched-path": "/product/[slug]",
       "x-vercel-cache": "MISS",
-      "x-vercel-id": "arn1::iad1::sct7v-1788072900636-afb1fe97256d"
+      "x-vercel-id": "arn1::iad1::nf92k-1788076108884-966e6d4abf12"
     }
   },
   "observationEndpoint": {
     "basis": "domContentLoadedEventEnd",
     "windowMs": 2500,
-    "endpointFromNavigationStartMs": 5115.29999999702,
-    "actualReadFromNavigationStartMs": 5125.79999999702,
+    "endpointFromNavigationStartMs": 5025.29999999702,
+    "actualReadFromNavigationStartMs": 5035.79999999702,
+    "markerMatchedAtFromNavigationStartMs": 2774,
     "markerMatchedBeforeEndpoint": true,
     "fixedWindowCompleted": true
   },
@@ -79,21 +77,22 @@
     "comparable": true,
     "reason": null
   },
+  "byteAccountingComparable": false,
   "metrics": {
     "ttfbMs": {
       "available": true,
-      "value": 87.20000000298023
+      "value": 91.29999999701977
     },
     "fcpMs": {
       "available": true,
-      "value": 2356
+      "value": 2316
     },
     "lcpObservationWindowCandidateMs": {
       "available": true,
-      "value": 2356,
+      "value": 2316,
       "windowBasis": "domContentLoadedEventEnd",
       "windowMs": 2500,
-      "endpointFromNavigationStartMs": 5115.29999999702,
+      "endpointFromNavigationStartMs": 5025.29999999702,
       "label": "observation-window LCP candidate"
     },
     "cls": {
@@ -102,7 +101,7 @@
     },
     "tbtMs": {
       "available": true,
-      "value": 400
+      "value": 314
     },
     "inpMs": {
       "available": false,
@@ -141,7 +140,7 @@
   "resourceGroups": {
     "document": {
       "requestStarts": 1,
-      "observedBytes": 11905,
+      "observedBytes": 11872,
       "completedRequests": 1,
       "failedRequests": 0,
       "inFlightRequests": 0
@@ -155,7 +154,7 @@
     },
     "stylesheet": {
       "requestStarts": 8,
-      "observedBytes": 63213,
+      "observedBytes": 63143,
       "completedRequests": 8,
       "failedRequests": 0,
       "inFlightRequests": 0
@@ -169,7 +168,7 @@
     },
     "image": {
       "requestStarts": 7,
-      "observedBytes": 307718,
+      "observedBytes": 1742121,
       "completedRequests": 4,
       "failedRequests": 0,
       "inFlightRequests": 3
@@ -456,6 +455,5 @@
       "group": "otherVideo"
     }
   ],
-  "errors": [],
-  "byteAccountingComparable": false
+  "errors": []
 }

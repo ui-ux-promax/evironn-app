@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "label": "home-run-1",
   "classification": "repeat",
-  "capturedAtUtc": "2026-08-30T06:54:22.908Z",
+  "capturedAtUtc": "2026-08-30T07:47:52.644Z",
   "conditions": {
     "host": "https://evironn-app.vercel.app",
     "viewport": {
@@ -44,28 +44,26 @@
   },
   "document": {
     "status": 200,
-    "markerMatched": {
-      "_type": "JSHandle",
-      "_guid": "handle@d2168d487dca63f06b546b18a6be9bfd"
-    },
+    "markerMatched": true,
     "readyState": "interactive",
     "readyStateInformationalOnly": true,
     "safeHeaders": {
       "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
       "content-encoding": "br",
       "content-type": "text/html; charset=utf-8",
-      "date": "Sun, 30 Aug 2026 06:54:13 GMT",
+      "date": "Sun, 30 Aug 2026 07:47:43 GMT",
       "server": "Vercel",
       "x-matched-path": "/",
       "x-vercel-cache": "MISS",
-      "x-vercel-id": "arn1::iad1::fp8dk-1788072853652-049bc7ff0011"
+      "x-vercel-id": "arn1::iad1::cjcnx-1788076063114-d7789e5441dc"
     }
   },
   "observationEndpoint": {
     "basis": "domContentLoadedEventEnd",
     "windowMs": 2500,
-    "endpointFromNavigationStartMs": 8713.29999999702,
-    "actualReadFromNavigationStartMs": 8742.90000000596,
+    "endpointFromNavigationStartMs": 8953.5,
+    "actualReadFromNavigationStartMs": 8972.29999999702,
+    "markerMatchedAtFromNavigationStartMs": 6598.20000000298,
     "markerMatchedBeforeEndpoint": true,
     "fixedWindowCompleted": true
   },
@@ -79,21 +77,22 @@
     "comparable": true,
     "reason": null
   },
+  "byteAccountingComparable": false,
   "metrics": {
     "ttfbMs": {
       "available": true,
-      "value": 92.09999999403954
+      "value": 87.40000000596046
     },
     "fcpMs": {
       "available": true,
-      "value": 6032
+      "value": 6272
     },
     "lcpObservationWindowCandidateMs": {
       "available": true,
-      "value": 6032,
+      "value": 6272,
       "windowBasis": "domContentLoadedEventEnd",
       "windowMs": 2500,
-      "endpointFromNavigationStartMs": 8713.29999999702,
+      "endpointFromNavigationStartMs": 8953.5,
       "label": "observation-window LCP candidate"
     },
     "cls": {
@@ -102,7 +101,7 @@
     },
     "tbtMs": {
       "available": true,
-      "value": 1087
+      "value": 1164
     },
     "inpMs": {
       "available": false,
@@ -158,7 +157,7 @@
   "resourceGroups": {
     "document": {
       "requestStarts": 1,
-      "observedBytes": 12780,
+      "observedBytes": 12782,
       "completedRequests": 1,
       "failedRequests": 0,
       "inFlightRequests": 0
@@ -172,7 +171,7 @@
     },
     "stylesheet": {
       "requestStarts": 8,
-      "observedBytes": 63639,
+      "observedBytes": 63603,
       "completedRequests": 8,
       "failedRequests": 0,
       "inFlightRequests": 0
@@ -186,7 +185,7 @@
     },
     "image": {
       "requestStarts": 30,
-      "observedBytes": 3228067,
+      "observedBytes": null,
       "completedRequests": 4,
       "failedRequests": 0,
       "inFlightRequests": 26
@@ -713,6 +712,5 @@
       "group": "font"
     }
   ],
-  "errors": [],
-  "byteAccountingComparable": false
+  "errors": []
 }

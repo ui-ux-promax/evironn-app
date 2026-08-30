@@ -7,11 +7,13 @@ import {
   decideCandidate,
   deriveDeploymentIdentity,
   medianComparable,
+  normalizeMarkerObservation,
   planObservationWindow,
   sanitizeHeaders,
   sanitizePublicUrl,
   summarizeRequestLedger,
   summarizeSeries,
+  validateObservationContract,
 } from './collect-phase-6c.mjs';
 
 const heroVideoPaths = new Set(['/assets/hero/sofa-forward.mp4']);
@@ -298,4 +300,32 @@ test('request ledger counts repeated request IDs as separate redirect occurrence
     failedRequests: 0,
     inFlightRequests: 0,
   });
+});
+
+test('normalizeMarkerObservation unwraps structured marker results and rejects handle-shaped values', () => {
+  assert.deepEqual(normalizeMarkerObservation({ matched: true, matchedAt: 2499 }), {
+    markerMatched: true,
+    markerMatchedAt: 2499,
+  });
+  assert.deepEqual(normalizeMarkerObservation({}), {
+    markerMatched: false,
+    markerMatchedAt: null,
+  });
+});
+
+test('offline observation validator rejects malformed marker evidence even when comparable is true', () => {
+  assert.throws(
+    () =>
+      validateObservationContract({
+        document: { markerMatched: {} },
+        observationEndpoint: {
+          endpointFromNavigationStartMs: 2500,
+          markerMatchedAtFromNavigationStartMs: null,
+          markerMatchedBeforeEndpoint: true,
+          fixedWindowCompleted: true,
+        },
+        comparability: { comparable: true },
+      }),
+    /markerMatched/i,
+  );
 });

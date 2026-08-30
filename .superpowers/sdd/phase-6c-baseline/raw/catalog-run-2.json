@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "label": "catalog-run-2",
   "classification": "repeat",
-  "capturedAtUtc": "2026-08-30T06:54:54.763Z",
+  "capturedAtUtc": "2026-08-30T07:48:23.095Z",
   "conditions": {
     "host": "https://evironn-app.vercel.app",
     "viewport": {
@@ -44,28 +44,26 @@
   },
   "document": {
     "status": 200,
-    "markerMatched": {
-      "_type": "JSHandle",
-      "_guid": "handle@cc95ec40e2aa58d65c6e3e362ab66be9"
-    },
+    "markerMatched": true,
     "readyState": "interactive",
     "readyStateInformationalOnly": true,
     "safeHeaders": {
       "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
       "content-encoding": "br",
       "content-type": "text/html; charset=utf-8",
-      "date": "Sun, 30 Aug 2026 06:54:48 GMT",
+      "date": "Sun, 30 Aug 2026 07:48:17 GMT",
       "server": "Vercel",
       "x-matched-path": "/catalog",
       "x-vercel-cache": "MISS",
-      "x-vercel-id": "arn1::iad1::5tkmg-1788072888568-49eb9ef7acca"
+      "x-vercel-id": "arn1::iad1::nf92k-1788076096927-2fa05c9cf440"
     }
   },
   "observationEndpoint": {
     "basis": "domContentLoadedEventEnd",
     "windowMs": 2500,
-    "endpointFromNavigationStartMs": 5127.70000000298,
-    "actualReadFromNavigationStartMs": 5678.70000000298,
+    "endpointFromNavigationStartMs": 5023.9000000059605,
+    "actualReadFromNavigationStartMs": 5605.100000008941,
+    "markerMatchedAtFromNavigationStartMs": 2669.1000000089407,
     "markerMatchedBeforeEndpoint": true,
     "fixedWindowCompleted": true
   },
@@ -79,30 +77,31 @@
     "comparable": true,
     "reason": null
   },
+  "byteAccountingComparable": true,
   "metrics": {
     "ttfbMs": {
       "available": true,
-      "value": 85.8999999910593
+      "value": 84
     },
     "fcpMs": {
       "available": true,
-      "value": 2364
+      "value": 2264
     },
     "lcpObservationWindowCandidateMs": {
       "available": true,
-      "value": 3476,
+      "value": 3308,
       "windowBasis": "domContentLoadedEventEnd",
       "windowMs": 2500,
-      "endpointFromNavigationStartMs": 5127.70000000298,
+      "endpointFromNavigationStartMs": 5023.9000000059605,
       "label": "observation-window LCP candidate"
     },
     "cls": {
       "available": true,
-      "value": 0.00040072921508086935
+      "value": 0.00031452583741812417
     },
     "tbtMs": {
       "available": true,
-      "value": 1276
+      "value": 1243
     },
     "inpMs": {
       "available": false,
@@ -110,7 +109,7 @@
     },
     "observedBytes": {
       "available": true,
-      "value": 912954
+      "value": 912927
     },
     "requestStarts": {
       "available": true,
@@ -141,35 +140,35 @@
   "resourceGroups": {
     "document": {
       "requestStarts": 1,
-      "observedBytes": 14017,
+      "observedBytes": 14018,
       "completedRequests": 1,
       "failedRequests": 0,
       "inFlightRequests": 0
     },
     "script": {
       "requestStarts": 14,
-      "observedBytes": 283737,
+      "observedBytes": 283981,
       "completedRequests": 14,
       "failedRequests": 0,
       "inFlightRequests": 0
     },
     "stylesheet": {
       "requestStarts": 8,
-      "observedBytes": 63202,
+      "observedBytes": 63597,
       "completedRequests": 8,
       "failedRequests": 0,
       "inFlightRequests": 0
     },
     "font": {
       "requestStarts": 7,
-      "observedBytes": 243218,
+      "observedBytes": 243222,
       "completedRequests": 7,
       "failedRequests": 0,
       "inFlightRequests": 0
     },
     "image": {
       "requestStarts": 5,
-      "observedBytes": 308780,
+      "observedBytes": 308109,
       "completedRequests": 5,
       "failedRequests": 0,
       "inFlightRequests": 0
@@ -408,6 +407,5 @@
       "group": "image"
     }
   ],
-  "errors": [],
-  "byteAccountingComparable": true
+  "errors": []
 }

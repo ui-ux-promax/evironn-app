@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "label": "pdp-run-3",
+  "classification": "repeat",
+  "capturedAtUtc": "2026-08-30T06:55:16.966Z",
+  "conditions": {
+    "host": "https://evironn-app.vercel.app",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runsPerRoute": 3,
+    "cpuSlowdownMultiplier": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750,
+    "serviceWorkers": "block",
+    "waitUntil": "domcontentloaded",
+    "observationWindowAfterDomContentLoadedMs": 2500,
+    "cacheDisabled": true,
+    "queryCacheBuster": null,
+    "queryCacheBusterReason": null,
+    "browser": "chromium",
+    "playwrightPackageVersion": "1.60.0",
+    "browserVersion": "148.0.7778.96"
+  },
+  "deploymentIdentity": {
+    "platformBuildId": {
+      "available": false,
+      "value": null,
+      "reason": "public build identifier not exposed"
+    },
+    "resourceFingerprint": {
+      "available": true,
+      "algorithm": "sha256",
+      "input": "sorted unique same-origin Script/Stylesheet pathnames without query or fragment",
+      "value": "6848826b31228a83224aa8e748b28688b313d03361130f02697dc1624e58c040"
+    }
+  },
+  "route": {
+    "key": "pdp",
+    "requestedPath": "/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle",
+    "finalPublicUrlWithoutCacheBuster": "https://evironn-app.vercel.app/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle"
+  },
+  "document": {
+    "status": 200,
+    "markerMatched": {
+      "_type": "JSHandle",
+      "_guid": "handle@4ef4012db146c499292b9d5085302771"
+    },
+    "readyState": "interactive",
+    "readyStateInformationalOnly": true,
+    "safeHeaders": {
+      "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "text/html; charset=utf-8",
+      "date": "Sun, 30 Aug 2026 06:55:11 GMT",
+      "server": "Vercel",
+      "x-matched-path": "/product/[slug]",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "arn1::iad1::lqcm9-1788072911489-e2b7773a6402"
+    }
+  },
+  "observationEndpoint": {
+    "basis": "domContentLoadedEventEnd",
+    "windowMs": 2500,
+    "endpointFromNavigationStartMs": 4973.199999988079,
+    "actualReadFromNavigationStartMs": 4982.5999999940395,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true
+  },
+  "comparability": {
+    "httpStatus200": true,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true,
+    "requiredTimingFieldsAvailable": true,
+    "requiredCdpFieldsAvailable": true,
+    "playwrightAndBrowserVersionsMatchSeries": true,
+    "comparable": true,
+    "reason": null
+  },
+  "metrics": {
+    "ttfbMs": {
+      "available": true,
+      "value": 98
+    },
+    "fcpMs": {
+      "available": true,
+      "value": 2288
+    },
+    "lcpObservationWindowCandidateMs": {
+      "available": true,
+      "value": 2288,
+      "windowBasis": "domContentLoadedEventEnd",
+      "windowMs": 2500,
+      "endpointFromNavigationStartMs": 4973.199999988079,
+      "label": "observation-window LCP candidate"
+    },
+    "cls": {
+      "available": true,
+      "value": 0
+    },
+    "tbtMs": {
+      "available": true,
+      "value": 318
+    },
+    "inpMs": {
+      "available": false,
+      "reason": "no interaction is performed by the fixed anonymous navigation protocol"
+    },
+    "observedBytes": {
+      "available": false,
+      "reason": "encoded byte accounting unavailable or incomparable"
+    },
+    "requestStarts": {
+      "available": true,
+      "value": 43
+    }
+  },
+  "lcpOwner": {
+    "available": true,
+    "tagName": "IMG",
+    "selector": "img",
+    "resourceUrl": "https://evironn-app.vercel.app/assets/evironn-logo.svg"
+  },
+  "dom": {
+    "images": 7,
+    "videos": 5,
+    "scripts": 36,
+    "stylesheets": 8,
+    "preloads": 8
+  },
+  "initialHeroVideos": {
+    "requestStarts": 0,
+    "observedBytes": 0,
+    "completedRequests": 0,
+    "failedRequests": 0,
+    "inFlightRequests": 0,
+    "urls": []
+  },
+  "resourceGroups": {
+    "document": {
+      "requestStarts": 1,
+      "observedBytes": 11905,
+      "completedRequests": 1,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "script": {
+      "requestStarts": 15,
+      "observedBytes": null,
+      "completedRequests": 14,
+      "failedRequests": 0,
+      "inFlightRequests": 1
+    },
+    "stylesheet": {
+      "requestStarts": 8,
+      "observedBytes": 63667,
+      "completedRequests": 8,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "font": {
+      "requestStarts": 7,
+      "observedBytes": null,
+      "completedRequests": 6,
+      "failedRequests": 0,
+      "inFlightRequests": 1
+    },
+    "image": {
+      "requestStarts": 7,
+      "observedBytes": 66664,
+      "completedRequests": 4,
+      "failedRequests": 0,
+      "inFlightRequests": 3
+    },
+    "heroProductVideo": {
+      "requestStarts": 0,
+      "observedBytes": 0,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "otherVideo": {
+      "requestStarts": 5,
+      "observedBytes": 0,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 5
+    },
+    "other": {
+      "requestStarts": 0,
+      "observedBytes": 0,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    }
+  },
+  "resources": [
+    {
+      "url": "https://evironn-app.vercel.app/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle",
+      "pathname": "/product/noma-woven-lounge",
+      "resourceType": "Document",
+      "group": "document"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/29b98dbfba401fa9-s.p.woff2",
+      "pathname": "/_next/static/media/29b98dbfba401fa9-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/4c9affa5bc8f420e-s.p.woff2",
+      "pathname": "/_next/static/media/4c9affa5bc8f420e-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/875ae681bfde4580-s.p.woff2",
+      "pathname": "/_next/static/media/875ae681bfde4580-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/a72d451f1e0337db-s.p.woff2",
+      "pathname": "/_next/static/media/a72d451f1e0337db-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/dae816e23a484c8f.css",
+      "pathname": "/_next/static/css/dae816e23a484c8f.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/0440d9428bcf26f7.css",
+      "pathname": "/_next/static/css/0440d9428bcf26f7.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/fd92a156d999cb6a.css",
+      "pathname": "/_next/static/css/fd92a156d999cb6a.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/19ddfc3202016e34.css",
+      "pathname": "/_next/static/css/19ddfc3202016e34.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/9d2252355f1fa72e.css",
+      "pathname": "/_next/static/css/9d2252355f1fa72e.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/9fe33aad4a002edf.css",
+      "pathname": "/_next/static/css/9fe33aad4a002edf.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/1a5a44616c33f1f4.css",
+      "pathname": "/_next/static/css/1a5a44616c33f1f4.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/ffcbdac47204c18c.css",
+      "pathname": "/_next/static/css/ffcbdac47204c18c.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/evironn-logo.svg",
+      "pathname": "/assets/evironn-logo.svg",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/webpack-6c610d253a66828e.js",
+      "pathname": "/_next/static/chunks/webpack-6c610d253a66828e.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/4bd1b696-b53002d00abacd02.js",
+      "pathname": "/_next/static/chunks/4bd1b696-b53002d00abacd02.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/740-96e2d284b0be96d5.js",
+      "pathname": "/_next/static/chunks/740-96e2d284b0be96d5.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/main-app-4fca8f1791b6a039.js",
+      "pathname": "/_next/static/chunks/main-app-4fca8f1791b6a039.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/global-error-c3cea2925bd358bf.js",
+      "pathname": "/_next/static/chunks/app/global-error-c3cea2925bd358bf.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/53c13509-f82ac5499a8eac3e.js",
+      "pathname": "/_next/static/chunks/53c13509-f82ac5499a8eac3e.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/2619-beb23e0fea18d949.js",
+      "pathname": "/_next/static/chunks/2619-beb23e0fea18d949.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/2901-47e18a1cfed12005.js",
+      "pathname": "/_next/static/chunks/2901-47e18a1cfed12005.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/5937-779976c3e52123d2.js",
+      "pathname": "/_next/static/chunks/5937-779976c3e52123d2.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/6887-a47d2528ac0a9298.js",
+      "pathname": "/_next/static/chunks/6887-a47d2528ac0a9298.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/(auth)/layout-e3fdd3448de015eb.js",
+      "pathname": "/_next/static/chunks/app/(auth)/layout-e3fdd3448de015eb.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/not-found-b94a9c778a12ba2b.js",
+      "pathname": "/_next/static/chunks/app/not-found-b94a9c778a12ba2b.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/fonts/golos-text-latin.woff2",
+      "pathname": "/assets/fonts/golos-text-latin.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/fonts/fraunces-latin.woff2",
+      "pathname": "/assets/fonts/fraunces-latin.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/fonts/golos-text-cyrillic.woff2",
+      "pathname": "/assets/fonts/golos-text-cyrillic.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/ee560e2c-a280e8c7bd70f046.js",
+      "pathname": "/_next/static/chunks/ee560e2c-a280e8c7bd70f046.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/9366-b247c076bc0c3933.js",
+      "pathname": "/_next/static/chunks/9366-b247c076bc0c3933.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/(shop)/product/%5Bslug%5D/page-beccb04abe1644a2.js",
+      "pathname": "/_next/static/chunks/app/(shop)/product/%5Bslug%5D/page-beccb04abe1644a2.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/05-ivory-walnut-chair-fixed-alpha.png",
+      "pathname": "/assets/products/05-ivory-walnut-chair-fixed-alpha.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/01-bar-stool-idle.webp",
+      "pathname": "/assets/products/01-bar-stool-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/02-rocking-chair-idle.webp",
+      "pathname": "/assets/products/02-rocking-chair-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/03-ivory-lounge-idle.webp",
+      "pathname": "/assets/products/03-ivory-lounge-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/04-dark-accent-idle.webp",
+      "pathname": "/assets/products/04-dark-accent-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/05-two-seat-sofa-idle.webp",
+      "pathname": "/assets/products/05-two-seat-sofa-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/01-bar-stool-forward.mp4",
+      "pathname": "/assets/products/01-bar-stool-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/02-rocking-chair-forward.mp4",
+      "pathname": "/assets/products/02-rocking-chair-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/03-ivory-lounge-forward.mp4",
+      "pathname": "/assets/products/03-ivory-lounge-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/04-dark-accent-forward.mp4",
+      "pathname": "/assets/products/04-dark-accent-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/05-two-seat-sofa-forward.mp4",
+      "pathname": "/assets/products/05-two-seat-sofa-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    }
+  ],
+  "errors": [],
+  "byteAccountingComparable": false
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "a662808d11f7083bbf2ce08573c09b1547498174",
+  "requiredArtifactCount": 4,
+  "reviewDisposition": null,
+  "artifacts": [
+    {
+      "path": ".superpowers/sdd/phase-6c-planner-evidence.md",
+      "blob": "a3a8166a32bf5d583c60bb6da9cecff1fc5433bf"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-30-phase-6c-performance-resilience.md",
+      "blob": "63a5d2fa47e915471cff4fe72a60b1c61be4d976"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-30-phase-6c-performance-design.md",
+      "blob": "26c3dfd96de89fdd47b6a8c726d28737c7362969"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-30-phase-6c-planning-brief.md",
+      "blob": "8e98315e4bdb662a25708e1efc5920b1f044f0f9"
+    }
+  ]
+}

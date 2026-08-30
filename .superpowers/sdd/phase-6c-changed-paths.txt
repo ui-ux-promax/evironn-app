@@ -13,8 +13,8 @@
 .superpowers/sdd/phase-6c-baseline/raw/pdp-run-3.json
 .superpowers/sdd/phase-6c-baseline/summary.json
 .superpowers/sdd/phase-6c-baseline/summary.md
-.superpowers/sdd/phase-6c-changed-paths.txt
 .superpowers/sdd/phase-6c-delivery-report.md
+.superpowers/sdd/phase-6c-changed-paths.txt
 .superpowers/sdd/phase-6c-implementation-baseline.txt
 .superpowers/sdd/phase-6c-measurement-commit.txt
 .superpowers/sdd/phase-6c-planning-artifact-manifest.json

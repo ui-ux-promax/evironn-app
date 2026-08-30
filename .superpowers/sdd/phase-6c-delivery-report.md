@@ -8,8 +8,8 @@
 - Candidate commit: `Not created.`
 - Candidate fallback-restoration commit: `Not created.`
 - Fallback evidence commit: `Not created.`
-- Pre-review closeout checkpoint commit: Not created yet by ordered lifecycle.
-- Review remediation commits: Task 2 — `0e19079dad05ccca1287d232d644219a9cc0d378`, `640e0e131203438462b259336d1bdfa8fee70e43`; Task 3 — none; Task 4 — none.
+- Pre-review closeout checkpoint commit: `137899f691c2ae6361741c49874b8b79ede1abbd`.
+- Review remediation commits: Task 2 — `0e19079dad05ccca1287d232d644219a9cc0d378`, `640e0e131203438462b259336d1bdfa8fee70e43`; Task 3 — none; Task 4 — `8ac25e40b308e4b250fc40708d2de38e37db5fc5`.
 
 The approved planning baseline is a future commit relative to the pre-plan design commit. The original measurement receipt remains the first measurement commit, even though later Task 2 remediation commits touched mutable evidence summaries.
 
@@ -75,7 +75,7 @@ The ordered Task 4 validation set is limited to collector syntax, the current 18
 
 ## Task reviews
 
-Task 2 fresh final review: PASS, Critical 0 / Important 0 / Minor 0, after root checks. Task 2 review remediation history is preserved in the immutable measurement receipt chain. Task 3 was skipped and has no implementation or review. Task 4 stops at the clean pre-review checkpoint; no final review or finalization is performed in this session.
+Task 2 fresh final review: PASS, Critical 0 / Important 0 / Minor 0, after root checks. Task 2 review remediation history is preserved in the immutable measurement receipt chain. Task 3 was skipped and has no implementation or review. Latest pre-finalization exact-state Sol Medium review: PASS, Critical 0 / Important 0 / Minor 0. Task 4 finalization records all known checkpoint and remediation receipts; finalization commit SHA is intentionally not recorded in its own receipt files.
 
 ## Security and protected-file checks
 
@@ -96,4 +96,4 @@ Phase 6D owns production build, complete gate, broad E2E, deployment, comparable
 
 ## Approval stop
 
-Approval stop is authorized only after a fresh Sol Medium review of the exact finalization `HEAD` reports no Critical or Important findings and the bounded state remains clean. This Task 4 session stops earlier, after the clean pre-review checkpoint, as explicitly requested. No Phase 6D action is authorized.
+Approval stop is authorized after the fresh exact-state Sol Medium review passed with Critical 0 / Important 0 / Minor 0 and final receipt validation leaves the bounded state clean. Explicit user approval remains required before Phase 6D. No Phase 6D action is authorized.

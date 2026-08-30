@@ -7,7 +7,7 @@
 - The accepted Evironn admin redesign follow-up merged through PR #11 at merge commit `e06ae9c` on 2026-08-29.
 - Current integration branch: `origin/dev` at exact commit `e06ae9c`.
 - Current local delivery branch: `phase/06-hardening-release`, created from exact `origin/dev` commit `e06ae9c`.
-- Phase 6A and 6B are user-accepted on the local branch. Phase 6C implementation/checkpoint is complete and pending final review and user approval. Phase 6D has not started.
+- Phase 6A and 6B are user-accepted on the local branch. Phase 6C implementation/checkpoint and final review are complete, pending user approval. Phase 6D has not started.
 - Current release branch: `origin/main` at `162a35e`. The final `dev` to `main` release remains pending.
 
 ## Completed merges
@@ -71,8 +71,7 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 
 ## Next action
 
-1. Complete final exact-state Sol review and receipt finalization for Phase 6C.
-2. Wait for explicit user approval before beginning Phase 6D.
+1. Wait for explicit user approval before beginning Phase 6D.
 
 ## Phase 6B focused checkpoint — 2026-08-30
 
@@ -92,8 +91,8 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 - Task 1 and Task 2 are complete. Original measurement-evidence commit remains `34b8938574fa4ea5de30a97342f284b1b5029ac9`; receipt commit is `d0fba2d82023300abfae42f62e20f4260bc6ef88`; Task 2 remediation commits are `0e19079dad05ccca1287d232d644219a9cc0d378` and `640e0e131203438462b259336d1bdfa8fee70e43`.
 - Fresh raw evidence is 10/10: one cold candidate plus three comparable home, catalog, and PDP repeats under the fixed anonymous mobile protocol. Null cache identity is comparable across all observations; marker timing is before the fixed endpoint; all route series are 3/3 comparable. Build ID is unavailable; resource fingerprints remain explicit identity evidence only.
 - Decision is `NO_CHANGE`. Home medians: TTFB 91.5 ms, FCP/LCP observation-window candidate 6272 ms, CLS 0, TBT 1164 ms, total starts 83. Catalog medians: TTFB 84 ms, FCP 2392 ms, LCP candidate 3608 ms, CLS 0.0003145, TBT 1477 ms, starts 35. PDP medians: TTFB 91.3 ms, FCP/LCP candidate 2316 ms, CLS 0, TBT 384 ms, starts 43. Owner starts median 16 versus combined non-owner median 67; owner bytes unavailable; strict fallback gate failed in all three home runs.
-- Task 3 is skipped and created no application production file or application test. Task 4 is underway and owns only its report, changed-path ledger, progress entry, and this status section. No catalog/PDP/shared-cache/auth/provider/security change is authorized.
-- Task 2 fresh final Sol Medium review passed after root checks: Critical 0 / Important 0 / Minor 0. Task 4 proceeds only through the clean pre-review checkpoint; no final review or finalization is performed here.
+- Task 3 is skipped and created no application production file or application test. Task 4 finalization is complete and owns only its report, changed-path ledger, progress entry, and this status section. No catalog/PDP/shared-cache/auth/provider/security change is authorized.
+- Task 2 fresh final Sol Medium review passed after root checks: Critical 0 / Important 0 / Minor 0. Latest exact-state Sol Medium review passed: Critical 0 / Important 0 / Minor 0. Finalization receipt records known checkpoint/remediation SHAs and intentionally omits its own SHA.
 - Task 4 focused Steps 3–6 passed: touched-document Prettier, exact static 15-file baseline and 22-path NO_CHANGE collector, both protected hashes, value-free secret scan with zero violating paths, current 18-test dependency-free collector suite, existing-evidence validation, final documentation Prettier, and absence of both Task 3 application paths.
 - Phase 6C makes no deployed improvement claim. Phase 6D owns production build, complete gate, broad E2E, deployment, comparable public after-measurement, release closeout, push, PR, merge, and any deployed-performance claim.
 

@@ -7,7 +7,7 @@
 - The accepted Evironn admin redesign follow-up merged through PR #11 at merge commit `e06ae9c` on 2026-08-29.
 - Current integration branch: `origin/dev` at exact commit `e06ae9c`.
 - Current local delivery branch: `phase/06-hardening-release`, created from exact `origin/dev` commit `e06ae9c`.
-- Phase 6A and 6B are user-accepted on the local branch. Phase 6C performance design is user-approved; planning has not started. Phase 6D has not started.
+- Phase 6A and 6B are user-accepted on the local branch. Phase 6C implementation/checkpoint is complete and pending final review and user approval. Phase 6D has not started.
 - Current release branch: `origin/main` at `162a35e`. The final `dev` to `main` release remains pending.
 
 ## Completed merges
@@ -71,8 +71,8 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 
 ## Next action
 
-1. Prepare compact Phase 6C public-baseline and repository evidence.
-2. Create and independently review one executable Phase 6C plan, then stop for explicit user approval before implementation.
+1. Complete final exact-state Sol review and receipt finalization for Phase 6C.
+2. Wait for explicit user approval before beginning Phase 6D.
 
 ## Phase 6B focused checkpoint — 2026-08-30
 

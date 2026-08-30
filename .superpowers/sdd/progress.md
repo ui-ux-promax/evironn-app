@@ -1,5 +1,14 @@
 # Phase 5 admin and demo-admin progress
 
+## Phase 6B user acceptance and Phase 6C design — 2026-08-30
+
+- User accepted Phase 6B after the final Sol Medium `PASS` and independent root verification of the 9-file / 93-test checkpoint plus the 1-file / 15-test category action suite.
+- Phase 6B accepted range: `568c49ac843b23256622041923a80d7824accc6a..076b06767ef61538d863373d1af61624a67cad9b`.
+- User authorized read-only measurement of the public Vercel deployment and reported Vercel Authentication disabled. `https://evironn-app.vercel.app/` returned HTTP `200`; no Vercel login or token was used.
+- Phase 6C design approved: `/` is the optimization target; `/catalog` and one reachable real PDP are guardrails. Use repeated controlled measurements and median evidence, change only the dominant proven bottleneck, preserve portfolio scope, and allow a no-change diagnosis.
+- Phase 6C has no push or deployment. Phase 6D owns the production build, deployment, comparable public after-measurement, full gate, broad E2E, and final deployed-performance claim.
+- Next: prepare one compact evidence bundle, one fresh Sol Medium plan, one fresh Sol Medium plan review, resolve all Critical/Important findings, then stop for user approval before Phase 6C implementation.
+
 ## Phase 6B implementation baseline — 2026-08-30
 
 - Approved-plan baseline: `568c49ac843b23256622041923a80d7824accc6a`.

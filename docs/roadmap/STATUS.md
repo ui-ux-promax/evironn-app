@@ -7,7 +7,7 @@
 - The accepted Evironn admin redesign follow-up merged through PR #11 at merge commit `e06ae9c` on 2026-08-29.
 - Current integration branch: `origin/dev` at exact commit `e06ae9c`.
 - Current local delivery branch: `phase/06-hardening-release`, created from exact `origin/dev` commit `e06ae9c`.
-- Phase 6A implementation is complete on the local branch after user-approved execution of the reviewed plan. Phase 6B Tasks 1–4 are complete on the local branch; final review passed and delivery is stopped for explicit user approval. Phase 6C and 6D have not started.
+- Phase 6A and 6B are user-accepted on the local branch. Phase 6C performance design is user-approved; planning has not started. Phase 6D has not started.
 - Current release branch: `origin/main` at `162a35e`. The final `dev` to `main` release remains pending.
 
 ## Completed merges
@@ -71,8 +71,8 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 
 ## Next action
 
-1. Stop Phase 6B for explicit user approval.
-2. Stop for explicit user approval; do not start Phase 6C or 6D.
+1. Prepare compact Phase 6C public-baseline and repository evidence.
+2. Create and independently review one executable Phase 6C plan, then stop for explicit user approval before implementation.
 
 ## Phase 6B focused checkpoint — 2026-08-30
 
@@ -84,6 +84,15 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 - Path-and-line-only secret scan returned `tests/dadata-suggest-route.test.ts:81`; redacted inspection classified it as a known test-fixture `secret` placeholder. No values printed; no credential, DSN, token, cookie, payment, or personal-data hit.
 - Retained: ADR-009 newsletter deferral; ADR-017/018 payment correlation, durable claim, write-once dispatch, guarded release, and fail-closed rules; ADR-020 mocked providers and optional non-blocking YooKassa smoke. Phase 6C performance and Phase 6D release closeout excluded.
 - Residual risks: no external provider/Vercel environment presence was verified; real YooKassa sandbox smoke remains optional/non-blocking; initial Vercel load remains Phase 6C debt.
+- User accepted Phase 6B on 2026-08-30 and authorized Phase 6C design/planning. Public read-only Vercel measurement is allowed; deployment and the comparable public after-measurement remain Phase 6D scope.
+
+## Phase 6C approved design — 2026-08-30
+
+- Approved design: `docs/superpowers/specs/2026-08-30-phase-6c-performance-design.md`.
+- Primary measurement route is `/`; `/catalog` and one reachable real PDP are regression guardrails only.
+- Use at least three controlled fresh-browser mobile runs and median evidence. A first-observed request may be labelled only as a cold candidate unless Vercel proves cold-start state.
+- Optimize only the dominant evidenced bottleneck. A diagnosis with no production change is valid.
+- Phase 6C does not push or deploy and cannot claim deployed improvement. Phase 6D owns the production build, deployment, comparable public after-measurement, and release closeout.
 
 ## Protected local files
 

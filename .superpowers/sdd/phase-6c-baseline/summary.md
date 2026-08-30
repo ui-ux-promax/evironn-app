@@ -52,4 +52,14 @@ Request starts median: 43
 
 Compare TTFB against FCP/LCP and per-group resource ledgers; evidence is observational and does not prove a deployed cause.
 Only exact HERO_VIDEO_PATHS request pathnames are attributed to heroProductVideo; owner-local scheduling remains subject to the frozen component contract.
+Exact owner request-start median: 16
+Exact owner observed-byte median: unavailable
+Per-run combined non-owner request starts: [67,67,67]
+Per-run combined non-owner bytes: [null,null,null]
+Combined non-owner request-start median: 67
+Combined non-owner observed-byte median: unavailable
+Owner decision evaluation: NO_CHANGE; mode: requestStarts
+
+Task 3: skipped because Candidate Decision Rule did not pass.
+Task 4: jump directly to Task 4 closeout on NO_CHANGE; no Task 3 implementation.
 Catalog and PDP are regression guardrails only. No deployed after-comparison exists in Phase 6C; Phase 6D owns deployment and comparable public after-measurement.

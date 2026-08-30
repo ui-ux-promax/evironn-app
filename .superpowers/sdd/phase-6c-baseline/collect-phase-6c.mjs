@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,6 +91,24 @@ const RAW_NAMES = Object.freeze([
   'pdp-run-3',
 ]);
 
+const STATIC_PATHS = Object.freeze([
+  'collect-phase-6c.test.mjs',
+  'collect-phase-6c.mjs',
+  'raw/cold-candidate.json',
+  'raw/home-run-1.json',
+  'raw/home-run-2.json',
+  'raw/home-run-3.json',
+  'raw/catalog-run-1.json',
+  'raw/catalog-run-2.json',
+  'raw/catalog-run-3.json',
+  'raw/pdp-run-1.json',
+  'raw/pdp-run-2.json',
+  'raw/pdp-run-3.json',
+  'summary.json',
+  'summary.md',
+  'decision.md',
+]);
+
 const OBSERVATION_REASON = 'observation-window LCP candidate';
 const INP_UNAVAILABLE_REASON = 'no interaction is performed by the fixed anonymous navigation protocol';
 const FINGERPRINT_INPUT = 'sorted unique same-origin Script/Stylesheet pathnames without query or fragment';
@@ -160,6 +178,16 @@ export function buildNavigationUrl(path, cacheBuster = null) {
   return parsed.toString();
 }
 
+export function planObservationWindow({ endpoint, now, markerMatchedAt = null }) {
+  const expired = isFiniteNumber(endpoint) && isFiniteNumber(now) && now >= endpoint;
+  return {
+    expired,
+    waitMs: expired || !isFiniteNumber(endpoint) || !isFiniteNumber(now) ? 0 : endpoint - now,
+    markerMatchedBeforeEndpoint:
+      isFiniteNumber(markerMatchedAt) && isFiniteNumber(endpoint) && markerMatchedAt <= endpoint,
+  };
+}
+
 function normalizeCacheIdentity(identity) {
   if (identity === null) return { value: null, reason: null };
   if (!identity || typeof identity !== 'object') return { value: undefined, reason: undefined };
@@ -201,8 +229,7 @@ export function medianComparable(values) {
   }
   const sorted = [...values].sort((left, right) => left - right);
   const middle = Math.floor(sorted.length / 2);
-  const value =
-    sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+  const value = sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
   return { available: true, value };
 }
 
@@ -215,9 +242,7 @@ export function summarizeSeries(samples) {
     list.length > 0 &&
     list.every(
       (sample) =>
-        sample?.valid === false &&
-        sample?.comparable === false &&
-        sample?.unavailableReason === unavailableReasons[0],
+        sample?.valid === false && sample?.comparable === false && sample?.unavailableReason === unavailableReasons[0],
     ) &&
     unavailableReasons.length === list.length
   ) {
@@ -231,7 +256,10 @@ export function summarizeSeries(samples) {
   const comparableValues = list
     .filter((sample) => sample?.valid === true && sample?.comparable === true)
     .map((sample) => sample.value);
-  const median = comparableValues.length === list.length ? medianComparable(comparableValues) : unavailable('incomplete or noisy comparable series');
+  const median =
+    comparableValues.length === list.length
+      ? medianComparable(comparableValues)
+      : unavailable('incomplete or noisy comparable series');
   return {
     comparable: comparableValues.length === list.length && median.available,
     median,
@@ -282,7 +310,8 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
         requiredCdpFieldsAvailable = false;
         continue;
       }
-      const item = requestMap.get(requestId) ?? {
+      const occurrences = requestMap.get(requestId) ?? [];
+      const item = {
         requestId,
         url,
         resourceType,
@@ -294,10 +323,12 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
         completed: false,
         failed: false,
       };
-      requestMap.set(requestId, item);
+      occurrences.push(item);
+      requestMap.set(requestId, occurrences);
       continue;
     }
-    const item = requestMap.get(requestId);
+    const occurrences = requestMap.get(requestId);
+    const item = occurrences?.[occurrences.length - 1];
     if (!item) {
       requiredCdpFieldsAvailable = false;
       continue;
@@ -329,32 +360,29 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
   const groups = Object.fromEntries(GROUP_NAMES.map((name) => [name, emptyGroup()]));
   const resources = [];
   let byteAccountingComparable = true;
-  for (const item of requestMap.values()) {
-    const group = groups[item.group];
-    group.requestStarts += 1;
-    if (item.completed) group.completedRequests += 1;
-    if (item.failed) group.failedRequests += 1;
-    if (!item.completed && !item.failed) group.inFlightRequests += 1;
-    const bytes =
-      item.byteState === 'complete'
-        ? item.finalBytes
-        : item.byteState === 'partial'
-          ? item.chunks
-          : null;
-    if (bytes === null) {
-      group.observedBytes = null;
-      byteAccountingComparable = false;
-    } else if (group.observedBytes !== null) {
-      group.observedBytes += bytes;
-    }
-    const publicUrl = sanitizePublicUrl(item.url);
-    if (publicUrl) {
-      resources.push({
-        url: publicUrl,
-        pathname: urlPathname(publicUrl),
-        resourceType: item.resourceType,
-        group: item.group,
-      });
+  for (const occurrences of requestMap.values()) {
+    for (const item of occurrences) {
+      const group = groups[item.group];
+      group.requestStarts += 1;
+      if (item.completed) group.completedRequests += 1;
+      if (item.failed) group.failedRequests += 1;
+      if (!item.completed && !item.failed) group.inFlightRequests += 1;
+      const bytes = item.byteState === 'complete' ? item.finalBytes : item.byteState === 'partial' ? item.chunks : null;
+      if (bytes === null) {
+        group.observedBytes = null;
+        byteAccountingComparable = false;
+      } else if (group.observedBytes !== null) {
+        group.observedBytes += bytes;
+      }
+      const publicUrl = sanitizePublicUrl(item.url);
+      if (publicUrl) {
+        resources.push({
+          url: publicUrl,
+          pathname: urlPathname(publicUrl),
+          resourceType: item.resourceType,
+          group: item.group,
+        });
+      }
     }
   }
 
@@ -365,6 +393,7 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
     failedRequests: groups.heroProductVideo.failedRequests,
     inFlightRequests: groups.heroProductVideo.inFlightRequests,
     urls: [...requestMap.values()]
+      .flat()
       .filter((item) => heroVideoPaths.has(urlPathname(item.url)))
       .map((item) => sanitizePublicUrl(item.url))
       .filter(Boolean),
@@ -380,14 +409,22 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
 }
 
 export function deriveDeploymentIdentity(resources, publicBuildId = null) {
-  const pathnames = [...new Set(
-    (Array.isArray(resources) ? resources : [])
-      .filter((resource) => resource?.type === 'Script' || resource?.resourceType === 'Script' || resource?.type === 'Stylesheet' || resource?.resourceType === 'Stylesheet')
-      .map((resource) => resource.url)
-      .filter((url) => typeof url === 'string' && isPublicUrl(url))
-      .map(urlPathname)
-      .filter(Boolean),
-  )].sort();
+  const pathnames = [
+    ...new Set(
+      (Array.isArray(resources) ? resources : [])
+        .filter(
+          (resource) =>
+            resource?.type === 'Script' ||
+            resource?.resourceType === 'Script' ||
+            resource?.type === 'Stylesheet' ||
+            resource?.resourceType === 'Stylesheet',
+        )
+        .map((resource) => resource.url)
+        .filter((url) => typeof url === 'string' && isPublicUrl(url))
+        .map(urlPathname)
+        .filter(Boolean),
+    ),
+  ].sort();
   const value = createHash('sha256').update(pathnames.join('\n')).digest('hex');
   const platformBuildId =
     typeof publicBuildId === 'string' && publicBuildId.length > 0
@@ -482,6 +519,7 @@ function createUnavailableObservation(name, route, reason, packageVersion = null
       windowMs: CONDITIONS.observationWindowAfterDomContentLoadedMs,
       endpointFromNavigationStartMs: null,
       actualReadFromNavigationStartMs: null,
+      markerMatchedAtFromNavigationStartMs: null,
       markerMatchedBeforeEndpoint: false,
       fixedWindowCompleted: false,
     },
@@ -605,21 +643,37 @@ async function captureObservation(name, route, cacheBuster) {
       ? dclTiming.domContentLoadedEventEnd + CONDITIONS.observationWindowAfterDomContentLoadedMs
       : null;
     let markerMatched = false;
+    let markerMatchedAt = null;
     let fixedWindowCompleted = false;
     if (endpoint !== null && isFiniteNumber(dclTiming.now)) {
-      const remaining = Math.max(0, endpoint - dclTiming.now);
-      try {
-        markerMatched = await page.waitForFunction(
-          (expected) => [...document.querySelectorAll('h1')].some((heading) => heading.textContent?.includes(expected)),
-          route.marker,
-          { timeout: remaining, polling: 50 },
-        );
-      } catch {
-        markerMatched = false;
+      const initialWindow = planObservationWindow({ endpoint, now: dclTiming.now });
+      if (initialWindow.expired) {
+        markerMatched = await page
+          .evaluate(
+            (expected) =>
+              [...document.querySelectorAll('h1')].some((heading) => heading.textContent?.includes(expected)),
+            route.marker,
+          )
+          .catch(() => false);
+        if (markerMatched) markerMatchedAt = await page.evaluate(() => performance.now()).catch(() => null);
+      } else {
+        try {
+          markerMatched = await page.waitForFunction(
+            (expected) =>
+              [...document.querySelectorAll('h1')].some((heading) => heading.textContent?.includes(expected)),
+            route.marker,
+            { timeout: initialWindow.waitMs, polling: 50 },
+          );
+        } catch {
+          markerMatched = false;
+        }
+        if (markerMatched) markerMatchedAt = await page.evaluate(() => performance.now()).catch(() => null);
+        const afterMarker = await page.evaluate(() => performance.now()).catch(() => endpoint);
+        const remainingWindow = planObservationWindow({ endpoint, now: afterMarker });
+        if (!remainingWindow.expired && remainingWindow.waitMs > 0) {
+          await page.waitForTimeout(remainingWindow.waitMs);
+        }
       }
-      const afterMarker = await page.evaluate(() => performance.now()).catch(() => endpoint);
-      const remainingAfterMarker = Math.max(0, endpoint - afterMarker);
-      if (remainingAfterMarker > 0) await page.waitForTimeout(remainingAfterMarker);
       fixedWindowCompleted = true;
     }
 
@@ -655,7 +709,16 @@ async function captureObservation(name, route, cacheBuster) {
           },
         };
       })
-      .catch(() => ({ actualRead: null, navigation: null, readyState: null, fcp: null, lcp: null, cls: null, tbtMs: null, dom: null }));
+      .catch(() => ({
+        actualRead: null,
+        navigation: null,
+        readyState: null,
+        fcp: null,
+        lcp: null,
+        cls: null,
+        tbtMs: null,
+        dom: null,
+      }));
 
     const documentStatus = response?.status() ?? null;
     const safeHeaders = sanitizeHeaders(response ? await response.allHeaders() : {});
@@ -667,7 +730,9 @@ async function captureObservation(name, route, cacheBuster) {
       isFiniteNumber(pageState.navigation?.responseStart) &&
       isFiniteNumber(pageState.navigation?.domContentLoadedEventEnd) &&
       endpoint !== null;
-    const markerMatchedBeforeEndpoint = markerMatched && isFiniteNumber(pageState.actualRead) && endpoint !== null;
+    const markerMatchedBeforeEndpoint =
+      markerMatched &&
+      planObservationWindow({ endpoint, now: pageState.actualRead, markerMatchedAt }).markerMatchedBeforeEndpoint;
     const lcpOwner = pageState.lcp
       ? {
           available: true,
@@ -721,6 +786,7 @@ async function captureObservation(name, route, cacheBuster) {
         windowMs: CONDITIONS.observationWindowAfterDomContentLoadedMs,
         endpointFromNavigationStartMs: endpoint,
         actualReadFromNavigationStartMs: pageState.actualRead,
+        markerMatchedAtFromNavigationStartMs: markerMatchedAt,
         markerMatchedBeforeEndpoint,
         fixedWindowCompleted,
       },
@@ -732,7 +798,7 @@ async function captureObservation(name, route, cacheBuster) {
         requiredCdpFieldsAvailable: ledger.requiredCdpFieldsAvailable,
         playwrightAndBrowserVersionsMatchSeries: true,
         comparable,
-        reason: comparable ? null : errors[0] ?? 'observation not comparable',
+        reason: comparable ? null : (errors[0] ?? 'observation not comparable'),
       },
       byteAccountingComparable: ledger.byteAccountingComparable,
       metrics: {
@@ -844,7 +910,12 @@ function observationComparable(observation, { versionsMatch, cacheIdentityMatch,
   if (!versionsMatch) reasons.push('Playwright/browser version mismatch across observations');
   if (!cacheIdentityMatch) reasons.push('mixed cache identity across observations');
   if (!fingerprintMatch) reasons.push('available resource fingerprints differ');
-  return { ...base, playwrightAndBrowserVersionsMatchSeries: versionsMatch, comparable, reason: comparable ? null : reasons.join('; ') };
+  return {
+    ...base,
+    playwrightAndBrowserVersionsMatchSeries: versionsMatch,
+    comparable,
+    reason: comparable ? null : reasons.join('; '),
+  };
 }
 
 function getMetricValue(observation, key) {
@@ -874,16 +945,19 @@ function routeSeriesSummary(observations, versionsMatch, cacheIdentityMatch) {
   const medians = Object.fromEntries(
     metricKeys.map(([output, key]) => [
       output,
-      summarizeSeries(runs.map((run) => ({
-        valid: true,
-        comparable: run.comparability.comparable,
-        value: getMetricValue(run, key),
-      }))),
+      summarizeSeries(
+        runs.map((run) => ({
+          valid: true,
+          comparable: run.comparability.comparable,
+          value: getMetricValue(run, key),
+        })),
+      ),
     ]),
   );
   const identity = deriveDeploymentIdentity(
     runs.flatMap((run) => run.resources ?? []).map((resource) => ({ url: resource.url, type: resource.resourceType })),
-    runs.find((run) => run.deploymentIdentity?.platformBuildId?.available)?.deploymentIdentity.platformBuildId.value ?? null,
+    runs.find((run) => run.deploymentIdentity?.platformBuildId?.available)?.deploymentIdentity.platformBuildId.value ??
+      null,
   );
   return {
     runs,
@@ -895,6 +969,73 @@ function routeSeriesSummary(observations, versionsMatch, cacheIdentityMatch) {
 
 function routeMap(raw) {
   return Object.fromEntries(ROUTES.map((route) => [route.key, raw.filter((item) => item.route?.key === route.key)]));
+}
+
+function summarizeOwnerEvidence(homeRepeats) {
+  const perRun = homeRepeats.map((run) => {
+    const groups = Object.fromEntries(
+      GROUP_NAMES.map((group) => [
+        group,
+        {
+          requestStarts: run.resourceGroups?.[group]?.requestStarts ?? null,
+          observedBytes: run.resourceGroups?.[group]?.observedBytes ?? null,
+        },
+      ]),
+    );
+    const combinedNonOwner = {
+      requestStarts: GROUP_NAMES.filter((group) => group !== 'heroProductVideo').reduce(
+        (total, group) => total + (groups[group].requestStarts ?? 0),
+        0,
+      ),
+      observedBytes: GROUP_NAMES.every(
+        (group) => group === 'heroProductVideo' || isFiniteNumber(groups[group].observedBytes),
+      )
+        ? GROUP_NAMES.filter((group) => group !== 'heroProductVideo').reduce(
+            (total, group) => total + groups[group].observedBytes,
+            0,
+          )
+        : null,
+    };
+    return {
+      label: run.label,
+      comparable: run.comparability?.comparable === true,
+      groups,
+      exactOwner: groups.heroProductVideo,
+      combinedNonOwner,
+      total: {
+        requestStarts: run.metrics?.requestStarts?.value ?? null,
+        observedBytes: run.metrics?.observedBytes?.value ?? null,
+      },
+    };
+  });
+  const medianFor = (field, value) =>
+    summarizeSeries(
+      perRun.map((run) => ({
+        valid: true,
+        comparable: run.comparable,
+        value: run[field]?.[value] ?? null,
+      })),
+    );
+  const exactOwner = {
+    requestStarts: medianFor('exactOwner', 'requestStarts'),
+    observedBytes: medianFor('exactOwner', 'observedBytes'),
+  };
+  const combinedNonOwner = {
+    requestStarts: medianFor('combinedNonOwner', 'requestStarts'),
+    observedBytes: medianFor('combinedNonOwner', 'observedBytes'),
+  };
+  const evaluation = decideCandidate({
+    homeRuns: homeRepeats.map((run) => ({
+      byteAccountingComparable: run.byteAccountingComparable === true,
+      groups: run.resourceGroups,
+    })),
+    activationLoadPreserved: true,
+  });
+  return {
+    perRun,
+    medians: { exactOwner, combinedNonOwner },
+    evaluation,
+  };
 }
 
 function buildSummary(raw, fallbackCode = null) {
@@ -914,12 +1055,14 @@ function buildSummary(raw, fallbackCode = null) {
     const observations = route.key === 'home' ? homeRepeats : routes[route.key];
     routeSummaries[route.key] = routeSeriesSummary(observations, versionsMatch, cacheIdentity.comparable);
   }
-  const homeFingerprints = fingerprintConsistency([routes.home.find((item) => item.label === 'cold-candidate'), ...homeRepeats]);
+  const homeFingerprints = fingerprintConsistency([
+    routes.home.find((item) => item.label === 'cold-candidate'),
+    ...homeRepeats,
+  ]);
+  const ownerEvidence = summarizeOwnerEvidence(homeRepeats);
   const allComparableHome = homeRepeats.length === 3 && homeRepeats.every((run) => run.comparability.comparable);
   const coldCandidate = routes.home.find((item) => item.label === 'cold-candidate') ?? null;
-  const resourceIdentityUncertainty = raw.some(
-    (item) => item.deploymentIdentity?.platformBuildId?.available === false,
-  );
+  const resourceIdentityUncertainty = raw.some((item) => item.deploymentIdentity?.platformBuildId?.available === false);
   return {
     schemaVersion: 1,
     generatedAtUtc: new Date().toISOString(),
@@ -937,16 +1080,25 @@ function buildSummary(raw, fallbackCode = null) {
       allTenObservationsCacheIdentityComparable: cacheIdentity.comparable,
     },
     deploymentIdentity: {
-      platformBuildId: raw[0]?.deploymentIdentity?.platformBuildId ?? { available: false, value: null, reason: 'public build identifier not exposed' },
-      platformBuildIdUncertainty: resourceIdentityUncertainty ? 'public build identifier not exposed; no deployed identity claim made' : null,
+      platformBuildId: raw[0]?.deploymentIdentity?.platformBuildId ?? {
+        available: false,
+        value: null,
+        reason: 'public build identifier not exposed',
+      },
+      platformBuildIdUncertainty: resourceIdentityUncertainty
+        ? 'public build identifier not exposed; no deployed identity claim made'
+        : null,
       coldCandidateVsHomeRepeatFingerprintConsistency: homeFingerprints,
     },
     cacheIdentity,
     routes: routeSummaries,
+    homeOwnerEvidence: ownerEvidence,
     observations: raw,
     diagnosis: {
-      serverVsBrowserResource: 'Compare TTFB against FCP/LCP and per-group resource ledgers; evidence is observational and does not prove a deployed cause.',
-      homeOwnerAttribution: 'Only exact HERO_VIDEO_PATHS request pathnames are attributed to heroProductVideo; owner-local scheduling remains subject to the frozen component contract.',
+      serverVsBrowserResource:
+        'Compare TTFB against FCP/LCP and per-group resource ledgers; evidence is observational and does not prove a deployed cause.',
+      homeOwnerAttribution:
+        'Only exact HERO_VIDEO_PATHS request pathnames are attributed to heroProductVideo; owner-local scheduling remains subject to the frozen component contract.',
       publicVariability: {
         homeRepeatTtfbMs: homeRepeats.map((run) => getMetricValue(run, 'ttfbMs')),
         homeRepeatObservedBytes: homeRepeats.map((run) => getMetricValue(run, 'observedBytes')),
@@ -957,6 +1109,10 @@ function buildSummary(raw, fallbackCode = null) {
       pdp: 'guardrail only',
       deployedAfterComparison: 'not available in Phase 6C; owned by Phase 6D',
       coldClassification: 'cold candidate; platform cold state unproven',
+      applicationFiles:
+        'No application production file or application test outside measurement evidence changes on NO_CHANGE.',
+      task3: 'skipped because Candidate Decision Rule did not pass',
+      task4: 'jump directly to Task 4 closeout on NO_CHANGE; no Task 3 implementation.',
     },
     fallbackCode,
     decision: 'NO_CHANGE',
@@ -989,7 +1145,9 @@ function ownerActivationContract() {
 }
 
 function buildDecision(summary) {
-  const homeRepeats = summary.observations.filter((item) => item.route?.key === 'home' && item.label !== 'cold-candidate');
+  const homeRepeats = summary.observations.filter(
+    (item) => item.route?.key === 'home' && item.label !== 'cold-candidate',
+  );
   const contract = ownerActivationContract();
   const requestEvidence = homeRepeats.filter((run) => (run.initialHeroVideos?.requestStarts ?? 0) > 0).length >= 2;
   const comparableRuns = homeRepeats.filter((run) => run.comparability?.comparable).length === 3;
@@ -1008,42 +1166,94 @@ function buildDecision(summary) {
     mode: null,
     reasons: [
       ...(!comparableRuns ? ['home repeat series incomplete, noisy, or incomparable'] : []),
-      ...(!requestEvidence ? ['fewer than two comparable home runs contain exact allowlisted hero-video request starts'] : []),
+      ...(!requestEvidence
+        ? ['fewer than two comparable home runs contain exact allowlisted hero-video request starts']
+        : []),
       ...(!contract.activationLoadPreserved ? ['activation-time video.load() contract unavailable'] : []),
       ...(!contract.proposedPreload ? ['owner preload="auto" contract unavailable'] : []),
     ],
   };
   const rawByLabel = Object.fromEntries(summary.observations.map((observation) => [observation.label, observation]));
-  const lines = [`Decision: ${result.decision}`, '', 'Measurement decision record', '', `Mode: ${result.mode ?? 'unavailable'}`, `Reasons: ${result.reasons.join('; ') || 'all candidate conditions met'}`, ''];
+  const lines = [
+    `Decision: ${result.decision}`,
+    '',
+    'Measurement decision record',
+    '',
+    `Mode: ${result.mode ?? 'unavailable'}`,
+    `Reasons: ${result.reasons.join('; ') || 'all candidate conditions met'}`,
+    '',
+  ];
   lines.push('Candidate Decision Rule');
-  lines.push('1. Existing local Playwright and Chromium surface used; no installation, login, deployment, provider/database mutation, or secret access.');
-  lines.push('2. Exact HERO_VIDEO_PATHS request starts are counted before the fixed endpoint; no interaction occurred.');
-  lines.push('3. Owner ranking uses all three complete home ledgers, per-run combined non-owner values, then medians. Ties fail.');
+  lines.push(
+    '1. Existing local Playwright and Chromium surface used; no installation, login, deployment, provider/database mutation, or secret access.',
+  );
+  lines.push(
+    '2. Exact HERO_VIDEO_PATHS request starts are counted before the fixed endpoint; no interaction occurred.',
+  );
+  lines.push(
+    '3. Owner ranking uses all three complete home ledgers, per-run combined non-owner values, then medians. Ties fail.',
+  );
   lines.push('4. Catalog/PDP are guardrails; no catalog/PDP/shared-cache/auth/provider/security change is authorized.');
-  lines.push('5. Owner change, if authorized, is exactly preload="auto" to preload="none" with activation-time video.load() preserved.');
+  lines.push(
+    '5. Owner change, if authorized, is exactly preload="auto" to preload="none" with activation-time video.load() preserved.',
+  );
   lines.push('');
   lines.push(`Home repeats comparable: ${comparableRuns}`);
   lines.push(`Exact hero request evidence in at least two home runs: ${requestEvidence}`);
   lines.push(`Activation-time load preserved: ${contract.activationLoadPreserved}`);
   lines.push(`Owner preload contract: ${contract.proposedPreload ?? 'unavailable'}`);
-  lines.push(`Playwright/browser versions match all observations: ${summary.measurementSurface.packageAndBrowserVersionsMatchAcrossAllObservations}`);
+  lines.push(
+    `Playwright/browser versions match all observations: ${summary.measurementSurface.packageAndBrowserVersionsMatchAcrossAllObservations}`,
+  );
   lines.push(`Cache identity comparable across all ten observations: ${summary.cacheIdentity.comparable}`);
   lines.push(`Cold classification: ${summary.scope.coldClassification}`);
   lines.push('Neither load nor readyState === "complete" is a comparability requirement.');
+  lines.push(
+    `Exact-owner request-start median: ${summary.homeOwnerEvidence.medians.exactOwner.requestStarts.median.value ?? 'unavailable'}`,
+  );
+  lines.push(
+    `Exact-owner observed-byte median: ${summary.homeOwnerEvidence.medians.exactOwner.observedBytes.median.value ?? 'unavailable'}`,
+  );
+  lines.push(
+    `Per-run combined non-owner request starts: ${JSON.stringify(summary.homeOwnerEvidence.perRun.map((run) => run.combinedNonOwner.requestStarts))}`,
+  );
+  lines.push(
+    `Per-run combined non-owner bytes: ${JSON.stringify(summary.homeOwnerEvidence.perRun.map((run) => run.combinedNonOwner.observedBytes))}`,
+  );
+  lines.push(
+    `Combined non-owner request-start median: ${summary.homeOwnerEvidence.medians.combinedNonOwner.requestStarts.median.value ?? 'unavailable'}`,
+  );
+  lines.push(
+    `Combined non-owner observed-byte median: ${summary.homeOwnerEvidence.medians.combinedNonOwner.observedBytes.median.value ?? 'unavailable'}`,
+  );
+  lines.push(
+    `Owner/combined decision medians: request starts owner=${summary.homeOwnerEvidence.evaluation.ownerMedian ?? 'unavailable'}; combined non-owner=${summary.homeOwnerEvidence.evaluation.combinedNonOwnerMedian ?? 'unavailable'}; mode=${summary.homeOwnerEvidence.evaluation.mode ?? 'unavailable'}`,
+  );
   lines.push('');
   lines.push('Home request/resource evidence');
   for (const run of homeRepeats) {
-    lines.push(`- ${run.label}: comparable=${run.comparability.comparable}; owner starts=${run.initialHeroVideos.requestStarts}; owner bytes=${run.initialHeroVideos.observedBytes}; total starts=${run.metrics.requestStarts.value ?? 'unavailable'}; total bytes=${run.metrics.observedBytes.value ?? 'unavailable'}`);
+    lines.push(
+      `- ${run.label}: comparable=${run.comparability.comparable}; owner starts=${run.initialHeroVideos.requestStarts}; owner bytes=${run.initialHeroVideos.observedBytes}; total starts=${run.metrics.requestStarts.value ?? 'unavailable'}; total bytes=${run.metrics.observedBytes.value ?? 'unavailable'}`,
+    );
     lines.push(`  groups=${JSON.stringify(run.resourceGroups)}`);
     lines.push(`  owner URLs=${JSON.stringify(run.initialHeroVideos.urls)}`);
   }
   if (rawByLabel['cold-candidate']) {
-    lines.push(`- cold-candidate: first observed request only; platform cold state unproven; fingerprint=${summary.deploymentIdentity.coldCandidateVsHomeRepeatFingerprintConsistency.reason ?? 'consistent'}`);
+    lines.push(
+      `- cold-candidate: first observed request only; platform cold state unproven; fingerprint=${summary.deploymentIdentity.coldCandidateVsHomeRepeatFingerprintConsistency.reason ?? 'consistent'}`,
+    );
   }
   lines.push('');
   lines.push(`Owner component: ${contract.sourcePath}`);
-  lines.push('No evidence supports broader change, media removal, image-quality reduction, dynamic-cache change, or catalog/PDP optimization.');
-  lines.push(`Decision rationale: ${result.reasons.join('; ') || 'strict owner-first ranking and median dominance passed.'}`);
+  lines.push(`Application-file preservation: ${summary.scope.applicationFiles}`);
+  lines.push(`Task 3: ${summary.scope.task3}.`);
+  lines.push(`Task 4: ${summary.scope.task4}`);
+  lines.push(
+    'No evidence supports broader change, media removal, image-quality reduction, dynamic-cache change, or catalog/PDP optimization.',
+  );
+  lines.push(
+    `Decision rationale: ${result.reasons.join('; ') || 'strict owner-first ranking and median dominance passed.'}`,
+  );
   writeAtomic('decision.md', `${lines.join('\n')}\n`);
   return result;
 }
@@ -1120,7 +1330,9 @@ function updateRawComparability(raw) {
         cacheIdentityMatch,
         fingerprintMatch: consistency.consistent,
       });
-      observation.byteAccountingComparable = Object.values(observation.resourceGroups ?? {}).every((group) => isFiniteNumber(group.observedBytes));
+      observation.byteAccountingComparable = Object.values(observation.resourceGroups ?? {}).every((group) =>
+        isFiniteNumber(group.observedBytes),
+      );
       writeJson(rawRelativeName(observation.label), observation);
     }
   }
@@ -1194,6 +1406,16 @@ function summarizeAndWrite(fallbackCode = null) {
     '',
     summary.diagnosis.serverVsBrowserResource,
     summary.diagnosis.homeOwnerAttribution,
+    `Exact owner request-start median: ${summary.homeOwnerEvidence.medians.exactOwner.requestStarts.median.value ?? 'unavailable'}`,
+    `Exact owner observed-byte median: ${summary.homeOwnerEvidence.medians.exactOwner.observedBytes.median.value ?? 'unavailable'}`,
+    `Per-run combined non-owner request starts: ${JSON.stringify(summary.homeOwnerEvidence.perRun.map((run) => run.combinedNonOwner.requestStarts))}`,
+    `Per-run combined non-owner bytes: ${JSON.stringify(summary.homeOwnerEvidence.perRun.map((run) => run.combinedNonOwner.observedBytes))}`,
+    `Combined non-owner request-start median: ${summary.homeOwnerEvidence.medians.combinedNonOwner.requestStarts.median.value ?? 'unavailable'}`,
+    `Combined non-owner observed-byte median: ${summary.homeOwnerEvidence.medians.combinedNonOwner.observedBytes.median.value ?? 'unavailable'}`,
+    `Owner decision evaluation: ${summary.homeOwnerEvidence.evaluation.decision}; mode: ${summary.homeOwnerEvidence.evaluation.mode ?? 'unavailable'}`,
+    summary.diagnosis.applicationFiles,
+    `Task 3: ${summary.scope.task3}.`,
+    `Task 4: ${summary.scope.task4}`,
     'Catalog and PDP are regression guardrails only. No deployed after-comparison exists in Phase 6C; Phase 6D owns deployment and comparable public after-measurement.',
   ].join('\n');
   writeAtomic('summary.md', `${md}\n`);
@@ -1229,18 +1451,284 @@ function runFallback(code) {
   const summary = buildSummary(raw, code);
   summary.decision = 'NO_CHANGE';
   writeJson('summary.json', summary);
-  writeAtomic('summary.md', `# Phase 6C performance baseline\n\nDecision: NO_CHANGE\n\nFallback: ${code}\n\nRaw observations preserved unchanged. No application production file or application test outside measurement evidence changes.\n`);
-  writeAtomic('decision.md', `Decision: NO_CHANGE\n\nFallback: ${code}\n\nRaw observations preserved unchanged. Measurement evidence does not authorize Task 3.\n`);
+  writeAtomic(
+    'summary.md',
+    `# Phase 6C performance baseline\n\nDecision: NO_CHANGE\n\nFallback: ${code}\n\nRaw observations preserved unchanged. No application production file or application test outside measurement evidence changes.\n`,
+  );
+  writeAtomic(
+    'decision.md',
+    `Decision: NO_CHANGE\n\nFallback: ${code}\n\nRaw observations preserved unchanged. Measurement evidence does not authorize Task 3.\n`,
+  );
+}
+
+function assertValidation(condition, message) {
+  if (!condition) throw new Error(`existing evidence validation failed: ${message}`);
+}
+
+function validMetricShape(value) {
+  if (!value || typeof value !== 'object' || typeof value.available !== 'boolean') return false;
+  return value.available ? isFiniteNumber(value.value) : typeof value.reason === 'string' && value.reason.length > 0;
 }
 
 function validateExisting() {
+  const expectedLabels = RAW_NAMES;
+  const actualPaths = [
+    ...new Set(requireFiles(BASELINE_DIR).map((path) => path.slice(BASELINE_DIR.length + 1).replaceAll('\\', '/'))),
+  ].sort();
+  assertValidation(JSON.stringify(actualPaths) === JSON.stringify([...STATIC_PATHS].sort()), 'static 15-path set');
+
   const raw = allRaw();
-  if (raw.length !== 10 || raw.some((item) => item.schemaVersion !== 1)) throw new Error('raw observation schema invalid');
+  assertValidation(raw.length === 10, 'ten raw observations');
+  assertValidation(JSON.stringify(raw.map((item) => item.label)) === JSON.stringify(expectedLabels), 'raw labels');
+  const expectedRoutes = {
+    'cold-candidate': 'home',
+    'home-run-1': 'home',
+    'home-run-2': 'home',
+    'home-run-3': 'home',
+    'catalog-run-1': 'catalog',
+    'catalog-run-2': 'catalog',
+    'catalog-run-3': 'catalog',
+    'pdp-run-1': 'pdp',
+    'pdp-run-2': 'pdp',
+    'pdp-run-3': 'pdp',
+  };
+  const expectedPaths = {
+    home: '/',
+    catalog: '/catalog',
+    pdp: ROUTES.find((route) => route.key === 'pdp').path,
+  };
+  for (const observation of raw) {
+    assertValidation(observation.schemaVersion === 1, `${observation.label} schema`);
+    assertValidation(
+      observation.route?.key === expectedRoutes[observation.label],
+      `${observation.label} route allocation`,
+    );
+    assertValidation(
+      observation.route?.requestedPath === expectedPaths[observation.route.key],
+      `${observation.label} route path`,
+    );
+    assertValidation(
+      observation.route?.finalPublicUrlWithoutCacheBuster === buildNavigationUrl(observation.route.requestedPath),
+      `${observation.label} public URL`,
+    );
+    assertValidation(
+      observation.classification === (observation.label === 'cold-candidate' ? 'cold candidate' : 'repeat'),
+      `${observation.label} classification`,
+    );
+    assertValidation(observation.conditions?.host === CONDITIONS.host, `${observation.label} host condition`);
+    assertValidation(
+      observation.conditions?.viewport?.width === CONDITIONS.viewport.width &&
+        observation.conditions?.viewport?.height === CONDITIONS.viewport.height,
+      `${observation.label} viewport condition`,
+    );
+    assertValidation(
+      observation.conditions?.cacheDisabled === true && observation.conditions?.serviceWorkers === 'block',
+      `${observation.label} cache/service-worker condition`,
+    );
+    assertValidation(
+      observation.conditions?.observationWindowAfterDomContentLoadedMs === 2500,
+      `${observation.label} fixed endpoint condition`,
+    );
+    assertValidation(
+      observation.conditions?.queryCacheBuster === null && observation.conditions?.queryCacheBusterReason === null,
+      `${observation.label} default cache identity`,
+    );
+    assertValidation(
+      observation.document?.readyStateInformationalOnly === true,
+      `${observation.label} readyState contract`,
+    );
+    assertValidation(
+      observation.document?.safeHeaders &&
+        Object.keys(observation.document.safeHeaders).every((key) => SAFE_RESPONSE_HEADERS.has(key)),
+      `${observation.label} safe headers`,
+    );
+    assertValidation(
+      observation.observationEndpoint?.basis === 'domContentLoadedEventEnd',
+      `${observation.label} endpoint basis`,
+    );
+    assertValidation(observation.observationEndpoint?.windowMs === 2500, `${observation.label} endpoint window`);
+    assertValidation(
+      typeof observation.observationEndpoint?.markerMatchedBeforeEndpoint === 'boolean',
+      `${observation.label} marker predicate`,
+    );
+    assertValidation(
+      typeof observation.observationEndpoint?.fixedWindowCompleted === 'boolean',
+      `${observation.label} fixed window predicate`,
+    );
+    for (const key of [
+      'httpStatus200',
+      'markerMatchedBeforeEndpoint',
+      'fixedWindowCompleted',
+      'requiredTimingFieldsAvailable',
+      'requiredCdpFieldsAvailable',
+      'playwrightAndBrowserVersionsMatchSeries',
+      'comparable',
+    ]) {
+      assertValidation(
+        typeof observation.comparability?.[key] === 'boolean',
+        `${observation.label} comparability predicate ${key}`,
+      );
+    }
+    for (const key of [
+      'ttfbMs',
+      'fcpMs',
+      'lcpObservationWindowCandidateMs',
+      'cls',
+      'tbtMs',
+      'inpMs',
+      'observedBytes',
+      'requestStarts',
+    ]) {
+      assertValidation(validMetricShape(observation.metrics?.[key]), `${observation.label} metric ${key}`);
+    }
+    assertValidation(
+      observation.resourceGroups &&
+        JSON.stringify(Object.keys(observation.resourceGroups).sort()) === JSON.stringify([...GROUP_NAMES].sort()),
+      `${observation.label} resource groups`,
+    );
+    for (const group of Object.values(observation.resourceGroups)) {
+      assertValidation(
+        isFiniteNumber(group.requestStarts) && group.requestStarts >= 0,
+        `${observation.label} request starts`,
+      );
+      assertValidation(
+        group.observedBytes === null || (isFiniteNumber(group.observedBytes) && group.observedBytes >= 0),
+        `${observation.label} observed bytes`,
+      );
+    }
+    assertValidation(
+      Array.isArray(observation.errors) &&
+        observation.errors.every((error) => typeof error === 'string' && !error.includes('\n')),
+      `${observation.label} safe errors`,
+    );
+    assertValidation(
+      observation.deploymentIdentity?.resourceFingerprint?.algorithm === 'sha256',
+      `${observation.label} fingerprint algorithm`,
+    );
+    assertValidation(
+      /^[0-9a-f]{64}$/.test(observation.deploymentIdentity.resourceFingerprint.value),
+      `${observation.label} fingerprint value`,
+    );
+    assertValidation(
+      observation.conditions?.playwrightPackageVersion === raw[0].conditions.playwrightPackageVersion,
+      `${observation.label} package identity`,
+    );
+    assertValidation(
+      observation.conditions?.browserVersion === raw[0].conditions.browserVersion,
+      `${observation.label} browser identity`,
+    );
+  }
+  assertValidation(
+    assertComparableCacheIdentity(raw.map(identityForObservation)).value === null,
+    'all-ten cache identity',
+  );
+  assertValidation(new Set(raw.map(versionForObservation)).size === 1, 'all-ten browser/package identity');
+
+  const byRoute = routeMap(raw);
+  for (const route of ROUTES) {
+    const routeRuns =
+      route.key === 'home' ? byRoute.home.filter((item) => item.label !== 'cold-candidate') : byRoute[route.key];
+    assertValidation(routeRuns.length === 3, `${route.key} repeat count`);
+    const consistency = fingerprintConsistency(route.key === 'home' ? byRoute.home : routeRuns);
+    assertValidation(consistency.consistent, `${route.key} fingerprint consistency`);
+    for (const observation of route.key === 'home' ? byRoute.home : routeRuns) {
+      const base = observation.comparability;
+      const expectedComparable =
+        base.httpStatus200 &&
+        base.markerMatchedBeforeEndpoint &&
+        base.fixedWindowCompleted &&
+        base.requiredTimingFieldsAvailable &&
+        base.requiredCdpFieldsAvailable &&
+        base.playwrightAndBrowserVersionsMatchSeries &&
+        consistency.consistent;
+      assertValidation(base.comparable === expectedComparable, `${observation.label} comparability agreement`);
+    }
+  }
+
   const summary = JSON.parse(readFileSync(join(BASELINE_DIR, 'summary.json'), 'utf8'));
-  if (summary.schemaVersion !== 1 || !['CANDIDATE', 'NO_CHANGE'].includes(summary.decision)) throw new Error('summary schema invalid');
-  const decision = readFileSync(join(BASELINE_DIR, 'decision.md'), 'utf8').split(/\r?\n/, 1)[0];
-  if (!['Decision: CANDIDATE', 'Decision: NO_CHANGE'].includes(decision)) throw new Error('decision token invalid');
-  console.log('existing-validation=valid');
+  assertValidation(
+    summary.schemaVersion === 1 && ['CANDIDATE', 'NO_CHANGE'].includes(summary.decision),
+    'summary schema/decision',
+  );
+  assertValidation(
+    summary.conditions?.queryCacheBuster === null && summary.conditions?.queryCacheBusterReason === null,
+    'summary cache identity',
+  );
+  assertValidation(summary.conditions?.allTenObservationsCacheIdentityComparable === true, 'summary cache agreement');
+  assertValidation(
+    summary.measurementSurface?.packageAndBrowserVersionsMatchAcrossAllObservations === true,
+    'summary version agreement',
+  );
+  assertValidation(summary.observations?.length === raw.length, 'summary raw count');
+  for (const observation of raw) {
+    const summaryObservation = summary.observations.find((item) => item.label === observation.label);
+    assertValidation(
+      JSON.stringify(summaryObservation) === JSON.stringify(observation),
+      `${observation.label} summary/raw agreement`,
+    );
+  }
+  for (const route of ROUTES) {
+    assertValidation(summary.routes?.[route.key]?.runs?.length === 3, `summary ${route.key} run count`);
+    assertValidation(
+      summary.routes[route.key].runs.every((run) => run.route.key === route.key),
+      `summary ${route.key} route allocation`,
+    );
+  }
+  assertValidation(summary.homeOwnerEvidence?.perRun?.length === 3, 'summary owner per-run evidence');
+  assertValidation(
+    validMetricShape(summary.homeOwnerEvidence.medians.exactOwner.requestStarts.median),
+    'summary exact-owner request median',
+  );
+  assertValidation(
+    validMetricShape(summary.homeOwnerEvidence.medians.exactOwner.observedBytes.median),
+    'summary exact-owner byte median',
+  );
+  assertValidation(
+    Array.isArray(summary.homeOwnerEvidence.perRun.map((run) => run.combinedNonOwner.requestStarts)),
+    'summary combined non-owner request values',
+  );
+  assertValidation(
+    Array.isArray(summary.homeOwnerEvidence.perRun.map((run) => run.combinedNonOwner.observedBytes)),
+    'summary combined non-owner byte values',
+  );
+  assertValidation(summary.decision === 'NO_CHANGE', 'NO_CHANGE evidence consistency');
+  assertValidation(summary.homeOwnerEvidence.evaluation.decision === 'NO_CHANGE', 'NO_CHANGE candidate evaluation');
+  assertValidation(
+    typeof summary.scope?.applicationFiles === 'string' &&
+      summary.scope.applicationFiles.includes('No application production file'),
+    'application-file preservation statement',
+  );
+  assertValidation(
+    typeof summary.scope?.task3 === 'string' && summary.scope.task3.includes('skipped'),
+    'Task 3 skip statement',
+  );
+  assertValidation(
+    typeof summary.scope?.task4 === 'string' && summary.scope.task4.includes('Task 4'),
+    'Task 4 jump statement',
+  );
+  const decisionText = readFileSync(join(BASELINE_DIR, 'decision.md'), 'utf8');
+  assertValidation(decisionText.split(/\r?\n/, 1)[0] === 'Decision: NO_CHANGE', 'decision token');
+  assertValidation(decisionText.includes('Exact-owner request-start median'), 'decision owner request median');
+  assertValidation(decisionText.includes('Exact-owner observed-byte median'), 'decision owner byte median');
+  assertValidation(
+    decisionText.includes('Per-run combined non-owner request starts'),
+    'decision combined request values',
+  );
+  assertValidation(decisionText.includes('Per-run combined non-owner bytes'), 'decision combined byte values');
+  assertValidation(decisionText.includes('Application-file preservation'), 'decision application preservation');
+  assertValidation(decisionText.includes('Task 3:'), 'decision Task 3 skip');
+  assertValidation(decisionText.includes('Task 4:'), 'decision Task 4 jump');
+  console.log('existing-validation=valid; full-offline-contract=pass');
+}
+
+function requireFiles(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...requireFiles(entryPath));
+    else files.push(entryPath);
+  }
+  return files;
 }
 
 function parseArgs(args) {
@@ -1248,7 +1736,12 @@ function parseArgs(args) {
   const reasonIndex = args.indexOf('--cache-buster-reason');
   const hasCache = cacheIndex >= 0 || reasonIndex >= 0;
   if (!hasCache) return null;
-  if (cacheIndex < 0 || reasonIndex < 0 || typeof args[cacheIndex + 1] !== 'string' || typeof args[reasonIndex + 1] !== 'string') {
+  if (
+    cacheIndex < 0 ||
+    reasonIndex < 0 ||
+    typeof args[cacheIndex + 1] !== 'string' ||
+    typeof args[reasonIndex + 1] !== 'string'
+  ) {
     throw new Error('cache-buster and cache-buster-reason must be supplied as a pair');
   }
   const value = args[cacheIndex + 1];

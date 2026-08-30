@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAtUtc": "2026-08-30T06:56:12.834Z",
+  "generatedAtUtc": "2026-08-30T07:31:38.351Z",
   "measurementSurface": {
     "available": true,
     "reason": null,
@@ -2211,11 +2211,7 @@
             "available": true,
             "value": 92.09999999403954
           },
-          "values": [
-            92.09999999403954,
-            85.69999998807907,
-            96.5
-          ],
+          "values": [92.09999999403954, 85.69999998807907, 96.5],
           "reason": null
         },
         "fcpMs": {
@@ -2224,11 +2220,7 @@
             "available": true,
             "value": 6252
           },
-          "values": [
-            6032,
-            6252,
-            6828
-          ],
+          "values": [6032, 6252, 6828],
           "reason": null
         },
         "lcpObservationWindowCandidateMs": {
@@ -2237,11 +2229,7 @@
             "available": true,
             "value": 6252
           },
-          "values": [
-            6032,
-            6252,
-            6828
-          ],
+          "values": [6032, 6252, 6828],
           "reason": null
         },
         "cls": {
@@ -2250,11 +2238,7 @@
             "available": true,
             "value": 0
           },
-          "values": [
-            0,
-            0,
-            0
-          ],
+          "values": [0, 0, 0],
           "reason": null
         },
         "tbtMs": {
@@ -2263,11 +2247,7 @@
             "available": true,
             "value": 1114
           },
-          "values": [
-            1087,
-            1114,
-            1161
-          ],
+          "values": [1087, 1114, 1161],
           "reason": null
         },
         "observedBytes": {
@@ -2276,11 +2256,7 @@
             "available": false,
             "reason": "median input unavailable"
           },
-          "values": [
-            null,
-            null,
-            null
-          ],
+          "values": [null, null, null],
           "reason": null
         },
         "requestStarts": {
@@ -2289,11 +2265,7 @@
             "available": true,
             "value": 83
           },
-          "values": [
-            83,
-            83,
-            83
-          ],
+          "values": [83, 83, 83],
           "reason": null
         }
       },
@@ -3577,11 +3549,7 @@
             "available": true,
             "value": 86.8999999910593
           },
-          "values": [
-            86.8999999910593,
-            85.8999999910593,
-            88.20000000298023
-          ],
+          "values": [86.8999999910593, 85.8999999910593, 88.20000000298023],
           "reason": null
         },
         "fcpMs": {
@@ -3590,11 +3558,7 @@
             "available": true,
             "value": 2292
           },
-          "values": [
-            2288,
-            2364,
-            2292
-          ],
+          "values": [2288, 2364, 2292],
           "reason": null
         },
         "lcpObservationWindowCandidateMs": {
@@ -3603,11 +3567,7 @@
             "available": true,
             "value": 3476
           },
-          "values": [
-            5576,
-            3476,
-            3300
-          ],
+          "values": [5576, 3476, 3300],
           "reason": null
         },
         "cls": {
@@ -3616,11 +3576,7 @@
             "available": true,
             "value": 0.00031452583741812417
           },
-          "values": [
-            0,
-            0.00040072921508086935,
-            0.00031452583741812417
-          ],
+          "values": [0, 0.00040072921508086935, 0.00031452583741812417],
           "reason": null
         },
         "tbtMs": {
@@ -3629,11 +3585,7 @@
             "available": true,
             "value": 1331
           },
-          "values": [
-            1977,
-            1276,
-            1331
-          ],
+          "values": [1977, 1276, 1331],
           "reason": null
         },
         "observedBytes": {
@@ -3642,11 +3594,7 @@
             "available": false,
             "reason": "median input unavailable"
           },
-          "values": [
-            null,
-            912954,
-            912941
-          ],
+          "values": [null, 912954, 912941],
           "reason": null
         },
         "requestStarts": {
@@ -3655,11 +3603,7 @@
             "available": true,
             "value": 35
           },
-          "values": [
-            38,
-            35,
-            35
-          ],
+          "values": [38, 35, 35],
           "reason": null
         }
       },
@@ -5075,11 +5019,7 @@
             "available": true,
             "value": 92
           },
-          "values": [
-            87.20000000298023,
-            92,
-            98
-          ],
+          "values": [87.20000000298023, 92, 98],
           "reason": null
         },
         "fcpMs": {
@@ -5088,11 +5028,7 @@
             "available": true,
             "value": 2288
           },
-          "values": [
-            2356,
-            2256,
-            2288
-          ],
+          "values": [2356, 2256, 2288],
           "reason": null
         },
         "lcpObservationWindowCandidateMs": {
@@ -5101,11 +5037,7 @@
             "available": true,
             "value": 2288
           },
-          "values": [
-            2356,
-            2256,
-            2288
-          ],
+          "values": [2356, 2256, 2288],
           "reason": null
         },
         "cls": {
@@ -5114,11 +5046,7 @@
             "available": true,
             "value": 0
           },
-          "values": [
-            0,
-            0,
-            0
-          ],
+          "values": [0, 0, 0],
           "reason": null
         },
         "tbtMs": {
@@ -5127,11 +5055,7 @@
             "available": true,
             "value": 318
           },
-          "values": [
-            400,
-            272,
-            318
-          ],
+          "values": [400, 272, 318],
           "reason": null
         },
         "observedBytes": {
@@ -5140,11 +5064,7 @@
             "available": false,
             "reason": "median input unavailable"
           },
-          "values": [
-            null,
-            null,
-            null
-          ],
+          "values": [null, null, null],
           "reason": null
         },
         "requestStarts": {
@@ -5153,11 +5073,7 @@
             "available": true,
             "value": 43
           },
-          "values": [
-            43,
-            43,
-            43
-          ],
+          "values": [43, 43, 43],
           "reason": null
         }
       },
@@ -5179,6 +5095,215 @@
           "value": "6848826b31228a83224aa8e748b28688b313d03361130f02697dc1624e58c040"
         }
       }
+    }
+  },
+  "homeOwnerEvidence": {
+    "perRun": [
+      {
+        "label": "home-run-1",
+        "comparable": true,
+        "groups": {
+          "document": {
+            "requestStarts": 1,
+            "observedBytes": 12780
+          },
+          "script": {
+            "requestStarts": 16,
+            "observedBytes": null
+          },
+          "stylesheet": {
+            "requestStarts": 8,
+            "observedBytes": 63639
+          },
+          "font": {
+            "requestStarts": 7,
+            "observedBytes": null
+          },
+          "image": {
+            "requestStarts": 30,
+            "observedBytes": 3228067
+          },
+          "heroProductVideo": {
+            "requestStarts": 16,
+            "observedBytes": null
+          },
+          "otherVideo": {
+            "requestStarts": 5,
+            "observedBytes": null
+          },
+          "other": {
+            "requestStarts": 0,
+            "observedBytes": 0
+          }
+        },
+        "exactOwner": {
+          "requestStarts": 16,
+          "observedBytes": null
+        },
+        "combinedNonOwner": {
+          "requestStarts": 67,
+          "observedBytes": null
+        },
+        "total": {
+          "requestStarts": 83,
+          "observedBytes": null
+        }
+      },
+      {
+        "label": "home-run-2",
+        "comparable": true,
+        "groups": {
+          "document": {
+            "requestStarts": 1,
+            "observedBytes": 12780
+          },
+          "script": {
+            "requestStarts": 16,
+            "observedBytes": null
+          },
+          "stylesheet": {
+            "requestStarts": 8,
+            "observedBytes": 63630
+          },
+          "font": {
+            "requestStarts": 7,
+            "observedBytes": null
+          },
+          "image": {
+            "requestStarts": 30,
+            "observedBytes": null
+          },
+          "heroProductVideo": {
+            "requestStarts": 16,
+            "observedBytes": null
+          },
+          "otherVideo": {
+            "requestStarts": 5,
+            "observedBytes": null
+          },
+          "other": {
+            "requestStarts": 0,
+            "observedBytes": 0
+          }
+        },
+        "exactOwner": {
+          "requestStarts": 16,
+          "observedBytes": null
+        },
+        "combinedNonOwner": {
+          "requestStarts": 67,
+          "observedBytes": null
+        },
+        "total": {
+          "requestStarts": 83,
+          "observedBytes": null
+        }
+      },
+      {
+        "label": "home-run-3",
+        "comparable": true,
+        "groups": {
+          "document": {
+            "requestStarts": 1,
+            "observedBytes": 12782
+          },
+          "script": {
+            "requestStarts": 16,
+            "observedBytes": null
+          },
+          "stylesheet": {
+            "requestStarts": 8,
+            "observedBytes": 63222
+          },
+          "font": {
+            "requestStarts": 7,
+            "observedBytes": null
+          },
+          "image": {
+            "requestStarts": 30,
+            "observedBytes": 3039622
+          },
+          "heroProductVideo": {
+            "requestStarts": 16,
+            "observedBytes": 886369
+          },
+          "otherVideo": {
+            "requestStarts": 5,
+            "observedBytes": null
+          },
+          "other": {
+            "requestStarts": 0,
+            "observedBytes": 0
+          }
+        },
+        "exactOwner": {
+          "requestStarts": 16,
+          "observedBytes": 886369
+        },
+        "combinedNonOwner": {
+          "requestStarts": 67,
+          "observedBytes": null
+        },
+        "total": {
+          "requestStarts": 83,
+          "observedBytes": null
+        }
+      }
+    ],
+    "medians": {
+      "exactOwner": {
+        "requestStarts": {
+          "comparable": true,
+          "median": {
+            "available": true,
+            "value": 16
+          },
+          "values": [16, 16, 16],
+          "reason": null
+        },
+        "observedBytes": {
+          "comparable": false,
+          "median": {
+            "available": false,
+            "reason": "median input unavailable"
+          },
+          "values": [null, null, 886369],
+          "reason": null
+        }
+      },
+      "combinedNonOwner": {
+        "requestStarts": {
+          "comparable": true,
+          "median": {
+            "available": true,
+            "value": 67
+          },
+          "values": [67, 67, 67],
+          "reason": null
+        },
+        "observedBytes": {
+          "comparable": false,
+          "median": {
+            "available": false,
+            "reason": "median input unavailable"
+          },
+          "values": [null, null, null],
+          "reason": null
+        }
+      }
+    },
+    "evaluation": {
+      "decision": "NO_CHANGE",
+      "mode": "requestStarts",
+      "reasons": [
+        "run 1 owner fails strict rank",
+        "run 2 owner fails strict rank",
+        "run 3 owner fails strict rank",
+        "owner median does not exceed combined non-owner median"
+      ],
+      "perRunCombinedNonOwner": [67, 67, 67],
+      "ownerMedian": 16,
+      "combinedNonOwnerMedian": 67
     }
   },
   "observations": [
@@ -10693,23 +10818,18 @@
     "serverVsBrowserResource": "Compare TTFB against FCP/LCP and per-group resource ledgers; evidence is observational and does not prove a deployed cause.",
     "homeOwnerAttribution": "Only exact HERO_VIDEO_PATHS request pathnames are attributed to heroProductVideo; owner-local scheduling remains subject to the frozen component contract.",
     "publicVariability": {
-      "homeRepeatTtfbMs": [
-        92.09999999403954,
-        85.69999998807907,
-        96.5
-      ],
-      "homeRepeatObservedBytes": [
-        null,
-        null,
-        null
-      ]
+      "homeRepeatTtfbMs": [92.09999999403954, 85.69999998807907, 96.5],
+      "homeRepeatObservedBytes": [null, null, null]
     }
   },
   "scope": {
     "catalog": "guardrail only",
     "pdp": "guardrail only",
     "deployedAfterComparison": "not available in Phase 6C; owned by Phase 6D",
-    "coldClassification": "cold candidate; platform cold state unproven"
+    "coldClassification": "cold candidate; platform cold state unproven",
+    "applicationFiles": "No application production file or application test outside measurement evidence changes on NO_CHANGE.",
+    "task3": "skipped because Candidate Decision Rule did not pass",
+    "task4": "jump directly to Task 4 closeout on NO_CHANGE; no Task 3 implementation."
   },
   "fallbackCode": null,
   "decision": "NO_CHANGE",

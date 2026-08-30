@@ -7,6 +7,7 @@ import {
   decideCandidate,
   deriveDeploymentIdentity,
   medianComparable,
+  planObservationWindow,
   sanitizeHeaders,
   sanitizePublicUrl,
   summarizeRequestLedger,
@@ -100,10 +101,7 @@ test('one fixed operator cache-buster is reused and mixed series are rejected', 
   assert.doesNotThrow(() => assertComparableCacheIdentity(Array(10).fill(null)));
   assert.doesNotThrow(() => assertComparableCacheIdentity(Array(10).fill(fixed)));
   assert.throws(
-    () => assertComparableCacheIdentity([
-      ...Array(9).fill(fixed),
-      { ...fixed, value: 'phase6c-other-series' },
-    ]),
+    () => assertComparableCacheIdentity([...Array(9).fill(fixed), { ...fixed, value: 'phase6c-other-series' }]),
     /mixed cache identity/i,
   );
 });
@@ -256,4 +254,48 @@ test('deriveDeploymentIdentity records unavailable build id and deterministic pu
   assert.match(first.resourceFingerprint.value, /^[0-9a-f]{64}$/);
   assert.equal(first.resourceFingerprint.value, reordered.resourceFingerprint.value);
   assert.notEqual(first.resourceFingerprint.value, changed.resourceFingerprint.value);
+});
+
+test('planObservationWindow handles an expired endpoint without timeout zero and records marker timing', () => {
+  assert.deepEqual(planObservationWindow({ endpoint: 2500, now: 2500, markerMatchedAt: 2499 }), {
+    expired: true,
+    waitMs: 0,
+    markerMatchedBeforeEndpoint: true,
+  });
+  assert.deepEqual(planObservationWindow({ endpoint: 2500, now: 2600, markerMatchedAt: 2601 }), {
+    expired: true,
+    waitMs: 0,
+    markerMatchedBeforeEndpoint: false,
+  });
+});
+
+test('request ledger counts repeated request IDs as separate redirect occurrences', () => {
+  const ledger = summarizeRequestLedger(
+    [
+      {
+        method: 'Network.requestWillBeSent',
+        requestId: 'redirected',
+        url: 'https://evironn-app.vercel.app/assets/hero/sofa-forward.mp4',
+        resourceType: 'Media',
+      },
+      { method: 'Network.dataReceived', requestId: 'redirected', encodedDataLength: 120 },
+      { method: 'Network.loadingFinished', requestId: 'redirected', encodedDataLength: 100 },
+      {
+        method: 'Network.requestWillBeSent',
+        requestId: 'redirected',
+        url: 'https://evironn-app.vercel.app/assets/hero/sofa-forward.mp4',
+        resourceType: 'Media',
+      },
+      { method: 'Network.dataReceived', requestId: 'redirected', encodedDataLength: 80 },
+      { method: 'Network.loadingFinished', requestId: 'redirected', encodedDataLength: 70 },
+    ],
+    { heroVideoPaths },
+  );
+  assert.deepEqual(ledger.groups.heroProductVideo, {
+    requestStarts: 2,
+    observedBytes: 170,
+    completedRequests: 2,
+    failedRequests: 0,
+    inFlightRequests: 0,
+  });
 });

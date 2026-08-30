@@ -5,6 +5,8 @@ import { tooManyRequests } from '@/lib/rate-limit-response';
 
 export const runtime = 'nodejs';
 
+const DADATA_TIMEOUT_MS = 5_000;
+
 function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
@@ -63,21 +65,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ suggestions: [] }, { status: 400 });
     }
 
-    const res = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
-      method: 'POST',
-      headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: normalizedQuery,
-        count: 5,
-        language: 'ru',
-        locations: [{ region: 'Москва' }, { region: 'Московская область' }],
-      }),
-    });
-    if (!res.ok) {
-      logger.error('dadata_suggest_upstream_failed', new Error(`status ${res.status}`));
-      return NextResponse.json({ suggestions: [] });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DADATA_TIMEOUT_MS);
+    try {
+      const res = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+        method: 'POST',
+        headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: normalizedQuery,
+          count: 5,
+          language: 'ru',
+          locations: [{ region: 'Москва' }, { region: 'Московская область' }],
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        logger.error('dadata_suggest_upstream_failed', new Error(`status ${res.status}`));
+        return NextResponse.json({ suggestions: [] });
+      }
+      return NextResponse.json({ suggestions: narrowSuggestions(await res.json()) });
+    } finally {
+      clearTimeout(timeout);
     }
-    return NextResponse.json({ suggestions: narrowSuggestions(await res.json()) });
   } catch (e) {
     logger.error('dadata_suggest_failed', e);
     return NextResponse.json({ suggestions: [] });

@@ -110,4 +110,40 @@ describe('POST /api/dadata/suggest', () => {
     expect(limitMock).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it('returns an empty list when the DaData request times out', async () => {
+    vi.useFakeTimers();
+    let capturedSignal: AbortSignal | undefined;
+
+    vi.mocked(fetch).mockImplementationOnce(
+      (_input, init) =>
+        new Promise<Response>((_, reject) => {
+          capturedSignal = init?.signal;
+          if (init?.signal) {
+            init.signal.addEventListener(
+              'abort',
+              () => reject(new DOMException('The operation was aborted.', 'AbortError')),
+              { once: true },
+            );
+          }
+        }),
+    );
+
+    try {
+      const routePromise = POST(req({ query: 'Москва' }));
+
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+      expect(capturedSignal).toBeDefined();
+
+      const signal = capturedSignal!;
+      vi.advanceTimersByTime(5_000);
+      expect(signal.aborted).toBe(true);
+
+      const res = await routePromise;
+      expect(res.status).toBe(200);
+      await expect(res.json()).resolves.toEqual({ suggestions: [] });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

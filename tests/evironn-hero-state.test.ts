@@ -71,7 +71,7 @@ describe('Evironn hero pure state', () => {
     expect(HERO_ROOMS.kitchen.productIds).toEqual(['kitchen-dining', 'kitchen-island']);
     expect(HERO_ROOMS.bedroom.productIds).toEqual(['bedroom-chair', 'bedroom-bed']);
     expect(HERO_ROOMS.terrace.productIds).toEqual(['terrace-chair', 'terrace-sofa']);
-    expect(HERO_ROOMS['living-room'].idleSrc).toBe('/assets/hero/living-room-idle.png');
+    expect(HERO_ROOMS['living-room'].idleSrc).toBe('/assets/hero/living-room-idle-5f0f1836.webp');
     expect(HERO_PRODUCTS['kitchen-island'].playbackRate).toBe(1.2);
     expect(HERO_PRODUCTS['kitchen-island'].href).toBe(
       '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',

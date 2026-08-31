@@ -93,6 +93,11 @@ const heroManifest = [
     sha256: '7ebab953d4fa7abaca66a452ea2bcac00528d94be0cfe314c9ac9f75c9ee9c1f',
   },
   {
+    path: 'public/assets/hero/living-room-idle-5f0f1836.webp',
+    bytes: 223502,
+    sha256: '5f0f1836760241be5f6de79e25937c5b21fd4b2ca6ec73394a6d0fac89ac8c7f',
+  },
+  {
     path: 'public/assets/hero/living-room-idle.png',
     bytes: 2422566,
     sha256: 'a100b4dcb54c9603fe50a2c91eb22d9dbb4467d8188911efc6a5f63c828eb63c',
@@ -154,8 +159,8 @@ function digest(file: string): string {
 }
 
 describe('Evironn hero binary contract', () => {
-  it('enumerates exactly 28 committed normative files with audited sizes and hashes', () => {
-    expect(heroManifest).toHaveLength(28);
+  it('enumerates exactly 29 committed normative files with audited sizes and hashes', () => {
+    expect(heroManifest).toHaveLength(29);
     expect(readdirSync(heroDirectory).sort()).toEqual(heroManifest.map((asset) => path.basename(asset.path)).sort());
     for (const asset of heroManifest) {
       const target = path.join(repositoryRoot, asset.path);
@@ -168,7 +173,7 @@ describe('Evironn hero binary contract', () => {
 
   it('keeps the audited inventory total and maximum below the object-size boundary', () => {
     const sizes = heroManifest.map((asset) => asset.bytes);
-    expect(sizes.reduce((total, size) => total + size, 0)).toBe(107355374);
+    expect(sizes.reduce((total, size) => total + size, 0)).toBe(107578876);
     expect(Math.max(...sizes)).toBe(9941316);
     expect(Math.max(...sizes)).toBeLessThan(100 * 1024 * 1024);
   });

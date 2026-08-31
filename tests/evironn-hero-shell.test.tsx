@@ -79,10 +79,19 @@ describe('Evironn interactive hero shell', () => {
     expect(productFocusImages).toHaveLength(0);
     expect(heroMarkup).not.toContain('/assets/hero/sofa-forward.mp4');
     expect(heroMarkup).not.toContain('/assets/hero/sofa-reverse.mp4');
-    const livingRoomImage = hero.querySelector<HTMLImageElement>('img[src="/assets/hero/living-room-idle.png"]');
+    const livingRoomImage = hero.querySelector<HTMLImageElement>('.furni-hero-room-media__image.is-living-room');
     expect(livingRoomImage).toHaveClass('is-stable');
     expect(livingRoomImage).toHaveAttribute('loading', 'eager');
     expect(livingRoomImage).toHaveAttribute('fetchpriority', 'high');
+    expect(livingRoomImage).toHaveAttribute('width', '1536');
+    expect(livingRoomImage).toHaveAttribute('height', '1024');
+    expect(livingRoomImage).toHaveAttribute('sizes', '100vw');
+    expect(livingRoomImage).toHaveAttribute('data-nimg', '1');
+    expect(livingRoomImage?.getAttribute('src')).toContain('%2Fassets%2Fhero%2Fliving-room-idle-5f0f1836.webp');
+    expect(livingRoomImage?.getAttribute('src')).toContain('q=90');
+    expect(livingRoomImage?.getAttribute('srcset')).toContain('_next/image');
+    expect(livingRoomImage?.getAttribute('srcset')).toContain('%2Fassets%2Fhero%2Fliving-room-idle-5f0f1836.webp');
+    expect(livingRoomImage?.getAttribute('srcset')).toContain('q=90');
     expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')).toHaveAttribute('loading', 'lazy');
     expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')).toHaveAttribute('fetchpriority', 'auto');
   });
@@ -215,7 +224,7 @@ describe('Evironn interactive hero shell', () => {
     expect(kitchen).toBeDisabled();
 
     const livingImages = [...document.querySelectorAll<HTMLImageElement>('#evironn-hero img')];
-    expect(livingImages.some((image) => image.getAttribute('src') === '/assets/hero/living-room-idle.png')).toBe(true);
+    expect(livingImages.some((image) => image.classList.contains('is-living-room'))).toBe(true);
     fireEvent.load(livingImages.find((image) => image.getAttribute('src') === '/assets/hero/kitchen-idle.jpg')!);
     expect(kitchen).not.toBeDisabled();
     fireEvent.click(kitchen);
@@ -253,13 +262,13 @@ describe('Evironn interactive hero shell', () => {
     fireEvent.click(kitchen);
     fireEvent.error(kitchenImage!);
     expect(kitchen).not.toBeDisabled();
-    expect(document.querySelector('img[src="/assets/hero/living-room-idle.png"]')).toHaveClass('is-stable');
+    expect(document.querySelector('.furni-hero-room-media__image.is-living-room')).toHaveClass('is-stable');
 
     fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
     const video = document.querySelector<HTMLVideoElement>('video[src="/assets/hero/sofa-forward.mp4"]');
     fireEvent.error(video!);
     expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument();
-    expect(document.querySelector('img[src="/assets/hero/living-room-idle.png"]')).toHaveClass('is-stable');
+    expect(document.querySelector('.furni-hero-room-media__image.is-living-room')).toHaveClass('is-stable');
   });
 
   it('keeps the source-faithful media, keyboard, cleanup, and reduced-motion contracts', () => {

@@ -26,7 +26,7 @@ export const HERO_ROOMS: Record<AvailableHeroRoomId, HeroRoom> = {
   'living-room': {
     id: 'living-room',
     label: 'ГОСТИНАЯ',
-    idleSrc: '/assets/hero/living-room-idle.png',
+    idleSrc: '/assets/hero/living-room-idle-5f0f1836.webp',
     mediaClassName: 'is-living-room is-mirrored',
     productIds: ['chair', 'sofa'],
   },

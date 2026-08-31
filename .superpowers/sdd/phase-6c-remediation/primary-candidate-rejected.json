@@ -1,0 +1,55 @@
+{
+  "status": "PRIMARY_CANDIDATE_REJECTED",
+  "ownerPath": "components/evironn/home/furniture-editorial-sections.tsx",
+  "reason": "exact five-image request reduction gate failed",
+  "requestReductionFraction": 0.2,
+  "evidence": {
+    "before": [
+      ".superpowers/sdd/phase-6c-remediation/before/summary.json",
+      ".superpowers/sdd/phase-6c-remediation/before/summary.md",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/home-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/home-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/home-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-00500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-01500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-02500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-05000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-10000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-20000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-30000ms.png"
+    ],
+    "after": [
+      ".superpowers/sdd/phase-6c-remediation/after/summary.json",
+      ".superpowers/sdd/phase-6c-remediation/after/summary.md",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/home-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/home-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/home-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-00500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-01500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-02500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-05000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-10000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-20000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-30000ms.png"
+    ],
+    "comparison": [
+      ".superpowers/sdd/phase-6c-remediation/primary-comparison.json"
+    ],
+    "localClassification": [
+      "controlled-local-diagnostic-only"
+    ]
+  },
+  "nextStep": "separate evidence/plan cycle required"
+}

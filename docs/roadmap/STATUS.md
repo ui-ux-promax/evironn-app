@@ -108,3 +108,13 @@ Preserve these pre-existing untracked Phase 2 plans without modification, stagin
 - `.env.local` contains the expected application database variable names. Never print their values.
 - Vercel environment values and external-provider credentials must be checked by presence and target/environment only unless the user explicitly requests a provider operation.
 - Vercel builds must never run `prisma db push`; schema changes use reviewed Prisma migrations outside the build command.
+
+## Phase 6C primary image remediation — 2026-08-31
+
+- Immutable implementation baseline: `ef6adf4ead33f7ec5df4ad4acd50bbb369b4ff46`.
+- Task 1 measurement commit: `9b389efcfff56cfb9ab36d107a68c036de8e635a6`; fresh Sol review PASS, Critical 0 / Important 0 / Minor 0. Controlled local BEFORE evidence contains 3 home, 3 catalog, and 3 selected-PDP runs plus seven fixed screenshots.
+- Task 2 used genuine RED/GREEN. The production candidate added exactly three `loading="lazy"` attributes in `components/evironn/home/furniture-editorial-sections.tsx` and one focused test was created. Fresh Sol review PASS, Critical 0 / Important 0 / Minor 0.
+- Task 3 after evidence completed one controlled local comparison. Request-start median improved from 5 to 4 (20%), below the required 50% reduction. Home FCP/LCP candidate changed 2648 ms to 2668 ms; TBT changed 483 ms to 492 ms. Visual gate passed 7/7 pairs; catalog and selected-PDP guardrails passed with no regression over 10%.
+- Verdict: `PRIMARY_CANDIDATE_REJECTED`. Task 3 rejection commit: `179b8b5ba26ac4b8dcde00c1ac6952eb020c3950`. Production blob was restored exactly to `d9a77661b1ccd7c5071b935a8f23c7fb7b551df8`; focused candidate test was removed. No fallback candidate or new `NO_CHANGE` artifact was created.
+- Task 3 review: Spec PASS / Code Quality PASS; Critical 0 / Important 0 / Minor 2. Minor dispositions: defer aggregate style diagnostic precision and stronger current-decision CLI assertion.
+- Task 4 closeout PASS: fresh Sol Medium functional/security review found Critical 0 / Important 0 / Minor 0. Checkpoint commit is the final Phase 6C local state; Phase 6C remains local diagnostic only. Phase 6D retains production build, full gate, deployment, comparable public after-measurement, push, PR, merge, and release work.

@@ -1,0 +1,120 @@
+Decision: PRIMARY_CANDIDATE_REJECTED
+Allowed outcome paths (excluding protected files):
+.superpowers/sdd/phase-6c-baseline/collect-phase-6c.mjs
+.superpowers/sdd/phase-6c-baseline/collect-phase-6c.test.mjs
+.superpowers/sdd/phase-6c-baseline/playwright-phase-6c.config.mjs
+.superpowers/sdd/phase-6c-remediation/run-controlled-primary.ps1
+.superpowers/sdd/phase-6c-remediation/implementation-baseline.txt
+.superpowers/sdd/phase-6c-remediation/primary-comparison.json
+.superpowers/sdd/phase-6c-remediation/primary-candidate-rejected.json
+.superpowers/sdd/phase-6c-remediation/delivery-report.md
+.superpowers/sdd/phase-6c-remediation/changed-paths.txt
+.superpowers/sdd/progress.md
+docs/roadmap/STATUS.md
+.superpowers/sdd/phase-6c-remediation/before/summary.json
+.superpowers/sdd/phase-6c-remediation/before/summary.md
+.superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-1.json
+.superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-2.json
+.superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-3.json
+.superpowers/sdd/phase-6c-remediation/before/raw/home-run-1.json
+.superpowers/sdd/phase-6c-remediation/before/raw/home-run-2.json
+.superpowers/sdd/phase-6c-remediation/before/raw/home-run-3.json
+.superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-1.json
+.superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-2.json
+.superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-3.json
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-00500ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-01500ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-02500ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-05000ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-10000ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-20000ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-30000ms.png
+.superpowers/sdd/phase-6c-remediation/after/summary.json
+.superpowers/sdd/phase-6c-remediation/after/summary.md
+.superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-1.json
+.superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-2.json
+.superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-3.json
+.superpowers/sdd/phase-6c-remediation/after/raw/home-run-1.json
+.superpowers/sdd/phase-6c-remediation/after/raw/home-run-2.json
+.superpowers/sdd/phase-6c-remediation/after/raw/home-run-3.json
+.superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-1.json
+.superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-2.json
+.superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-3.json
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-00500ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-01500ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-02500ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-05000ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-10000ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-20000ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-30000ms.png
+
+Protected untracked paths preserved with recorded hashes:
+docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md c9ac4d833e4f0aea2a474115f3aef58ffd04ef0c
+docs/superpowers/plans/phase-2-task-3-execution.md acbeaf76e79ad2ae6dcb3541a306e6af7c80055e
+
+Review status: PASS; Critical 0 / Important 0 / Minor 0.
+
+Observed path sets before final review/checkpoint commit (Task 4 exact collection):
+tracked baseline-to-HEAD:
+.superpowers/sdd/phase-6c-baseline/collect-phase-6c.mjs
+.superpowers/sdd/phase-6c-baseline/collect-phase-6c.test.mjs
+.superpowers/sdd/phase-6c-baseline/playwright-phase-6c.config.mjs
+.superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-1.json
+.superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-2.json
+.superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-3.json
+.superpowers/sdd/phase-6c-remediation/after/raw/home-run-1.json
+.superpowers/sdd/phase-6c-remediation/after/raw/home-run-2.json
+.superpowers/sdd/phase-6c-remediation/after/raw/home-run-3.json
+.superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-1.json
+.superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-2.json
+.superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-3.json
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-00500ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-01500ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-02500ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-05000ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-10000ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-20000ms.png
+.superpowers/sdd/phase-6c-remediation/after/screenshots/home-30000ms.png
+.superpowers/sdd/phase-6c-remediation/after/summary.json
+.superpowers/sdd/phase-6c-remediation/after/summary.md
+.superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-1.json
+.superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-2.json
+.superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-3.json
+.superpowers/sdd/phase-6c-remediation/before/raw/home-run-1.json
+.superpowers/sdd/phase-6c-remediation/before/raw/home-run-2.json
+.superpowers/sdd/phase-6c-remediation/before/raw/home-run-3.json
+.superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-1.json
+.superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-2.json
+.superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-3.json
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-00500ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-01500ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-02500ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-05000ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-10000ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-20000ms.png
+.superpowers/sdd/phase-6c-remediation/before/screenshots/home-30000ms.png
+.superpowers/sdd/phase-6c-remediation/before/summary.json
+.superpowers/sdd/phase-6c-remediation/before/summary.md
+.superpowers/sdd/phase-6c-remediation/implementation-baseline.txt
+.superpowers/sdd/phase-6c-remediation/primary-candidate-rejected.json
+.superpowers/sdd/phase-6c-remediation/primary-comparison.json
+.superpowers/sdd/phase-6c-remediation/run-controlled-primary.ps1
+staged:
+.superpowers/sdd/phase-6c-remediation/changed-paths.txt
+.superpowers/sdd/phase-6c-remediation/delivery-report.md
+.superpowers/sdd/progress.md
+docs/roadmap/STATUS.md
+working-tree unstaged: 0 paths.
+non-ignored untracked:
+docs/superpowers/plans/2026-08-12-phase-2a-executable-storefront-home.md
+docs/superpowers/plans/phase-2-task-3-execution.md
+ignored in owned scopes: 0 paths.
+Observed union before final commit: 49 paths (47 allowed outcome + 2 protected).
+
+Final checkpoint projection after committing the four staged closeout paths:
+tracked baseline-to-HEAD: 47 allowed outcome paths.
+staged: 0 paths.
+working-tree unstaged: 0 paths.
+non-ignored untracked: the two protected Phase 2 plan paths above.
+ignored in owned scopes: 0 paths.
+Final union: 49 paths (47 allowed outcome + 2 protected).

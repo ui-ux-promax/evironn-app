@@ -3,24 +3,51 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('framer-motion', () => {
+  const stripMotionProps = ({ animate, exit, initial, variants, ...props }: Record<string, unknown>) => props;
+  const createMotionElement = (tag: keyof HTMLElementTagNameMap) => (props: Record<string, unknown>) => {
+    const Component = tag as keyof React.JSX.IntrinsicElements;
+    return <Component {...stripMotionProps(props)} />;
+  };
+
+  return {
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    motion: {
+      aside: createMotionElement('aside'),
+      button: createMotionElement('button'),
+      create: (Component: React.ElementType) => (props: Record<string, unknown>) => {
+        const { children, ...rest } = stripMotionProps(props);
+        return <Component {...rest}>{children}</Component>;
+      },
+      div: createMotionElement('div'),
+      span: createMotionElement('span'),
+    },
+    useReducedMotion: () => false,
+  };
+});
 
 vi.mock('next/link', () => ({
   default: ({ children, ...props }: React.ComponentProps<'a'>) => <a {...props}>{children}</a>,
 }));
 
-vi.stubGlobal('matchMedia', (query: string) => ({
-  matches: false,
-  media: query,
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  addListener: vi.fn(),
-  removeListener: vi.fn(),
-  onchange: null,
-  dispatchEvent: vi.fn(),
-}));
+function createMatchMedia(matches: boolean) {
+  return (query: string) => ({
+    matches,
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    onchange: null,
+    dispatchEvent: vi.fn(),
+  });
+}
+
+vi.stubGlobal('matchMedia', createMatchMedia(false));
 
 const playMock = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
 vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
@@ -31,11 +58,135 @@ import { Hero } from '@/components/evironn/home/hero';
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.stubGlobal('matchMedia', createMatchMedia(false));
 });
 
 const heroCss = readFileSync(path.join(process.cwd(), 'styles/evironn/home/hero.css'), 'utf8');
 
 describe('Evironn interactive hero shell', () => {
+  it('keeps initial hero poster-first with no product transition sources or focus replacements', () => {
+    render(<Hero />);
+
+    const hero = screen.getByRole('region', { name: 'Мебель с душой, созданная поколениями' });
+    const productVideos = [...hero.querySelectorAll<HTMLVideoElement>('video')];
+    const productFocusImages = [...hero.querySelectorAll<HTMLImageElement>('img')].filter((image) =>
+      image.className.includes('furni-hero-product-media__asset'),
+    );
+    const heroMarkup = hero.innerHTML;
+
+    expect(productVideos).toHaveLength(0);
+    expect(productVideos.some((video) => video.getAttribute('src'))).toBe(false);
+    expect(productFocusImages).toHaveLength(0);
+    expect(heroMarkup).not.toContain('/assets/hero/sofa-forward.mp4');
+    expect(heroMarkup).not.toContain('/assets/hero/sofa-reverse.mp4');
+    const livingRoomImage = hero.querySelector<HTMLImageElement>('img[src="/assets/hero/living-room-idle.png"]');
+    expect(livingRoomImage).toHaveClass('is-stable');
+    expect(livingRoomImage).toHaveAttribute('loading', 'eager');
+    expect(livingRoomImage).toHaveAttribute('fetchpriority', 'high');
+    expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')).toHaveAttribute('loading', 'lazy');
+    expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')).toHaveAttribute('fetchpriority', 'auto');
+  });
+
+  it('connects only selected forward video and releases it when transition ends', () => {
+    render(<Hero />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+
+    const videos = [...document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')];
+    expect(videos).toHaveLength(1);
+    expect(videos[0]).toHaveAttribute('src', '/assets/hero/sofa-forward.mp4');
+    expect(videos[0]).not.toHaveClass('is-visible');
+    const focusImage = document.querySelector<HTMLImageElement>('img[src="/assets/hero/sofa-focus.webp"]');
+    expect(focusImage).toBeInTheDocument();
+    expect(focusImage).not.toHaveClass('is-visible');
+    expect(
+      videos.filter((video) => video.getAttribute('src')?.includes('/assets/hero/')).map((video) => video.src),
+    ).toEqual(['http://localhost:3000/assets/hero/sofa-forward.mp4']);
+
+    fireEvent.loadedData(videos[0]);
+    expect(videos[0]).toHaveClass('is-visible');
+    fireEvent.ended(videos[0]);
+
+    expect(document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')).toHaveLength(0);
+    expect(document.querySelector('img[src="/assets/hero/sofa-focus.webp"]')).toHaveClass('is-visible');
+  });
+
+  it('loads reverse video only on return and keeps unrelated product sources absent', () => {
+    render(<Hero />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+    const forward = document.querySelector<HTMLVideoElement>('#evironn-hero video');
+    expect(forward).not.toBeNull();
+    fireEvent.loadedData(forward!);
+    fireEvent.ended(forward!);
+
+    fireEvent.click(screen.getByRole('button', { name: /Назад/ }));
+
+    const reverseVideos = [...document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')];
+    expect(reverseVideos).toHaveLength(1);
+    expect(reverseVideos[0]).toHaveAttribute('src', '/assets/hero/sofa-reverse.mp4');
+    expect(reverseVideos[0]).not.toHaveAttribute('src', '/assets/hero/chair-reverse.mp4');
+    expect(reverseVideos[0]).not.toHaveClass('is-visible');
+    expect(document.querySelector('img[src="/assets/hero/sofa-focus.webp"]')).toHaveClass('is-visible');
+
+    fireEvent.loadedData(reverseVideos[0]);
+    expect(reverseVideos[0]).toHaveClass('is-visible');
+    expect(document.querySelector('img[src="/assets/hero/sofa-focus.webp"]')).not.toHaveClass('is-visible');
+    fireEvent.ended(reverseVideos[0]);
+    expect(document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')).toHaveLength(0);
+  });
+
+  it('does not connect transition video when reduced motion is preferred', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      onchange: null,
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(<Hero />);
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+
+    expect(document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')).toHaveLength(0);
+    const backButton = await screen.findByRole('button', { name: /Назад/ });
+    expect(backButton).toBeInTheDocument();
+    fireEvent.click(backButton);
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument());
+    const sofaHotspot = screen.getByRole('button', { name: /Диван Linden/ });
+    expect(sofaHotspot).toBeEnabled();
+    expect(sofaHotspot).not.toHaveClass('is-hidden');
+  });
+
+  it('ignores stale progress events after an active transition is released', () => {
+    render(<Hero />);
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+    const video = document.querySelector<HTMLVideoElement>('#evironn-hero video');
+    expect(video).not.toBeNull();
+    fireEvent.error(video!);
+    Object.defineProperty(video, 'currentTime', { configurable: true, value: 5 });
+    Object.defineProperty(video, 'duration', { configurable: true, value: 6 });
+    fireEvent.timeUpdate(video!);
+
+    expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument();
+    expect(document.querySelector('#evironn-hero video')).toBeNull();
+  });
+
+  it('releases an active source when a room change cancels product transition', () => {
+    render(<Hero />);
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+    expect(document.querySelector('#evironn-hero video')).toHaveAttribute('src', '/assets/hero/sofa-forward.mp4');
+
+    const kitchen = screen.getByRole('button', { name: 'КУХНЯ' });
+    fireEvent.load(document.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')!);
+    fireEvent.click(kitchen);
+
+    expect(document.querySelector('#evironn-hero video')).toBeNull();
+  });
+
   it('renders clone roots, Russian copy, room controls, hotspots, and accessible product fallback', () => {
     render(<Hero />);
 

@@ -39,6 +39,7 @@ export function HeroRoomMedia({
         const isStable = state.phase === 'idle' && state.activeRoom === room.id;
         const isOutgoing = state.phase === 'changing' && state.activeRoom === room.id && !state.direct;
         const isIncoming = state.phase === 'changing' && state.targetRoom === room.id;
+        const isCriticalPoster = room.id === 'living-room';
 
         return (
           <img
@@ -61,6 +62,8 @@ export function HeroRoomMedia({
               .join(' ')}
             src={room.idleSrc}
             alt=""
+            loading={isCriticalPoster ? 'eager' : 'lazy'}
+            fetchPriority={isCriticalPoster ? 'high' : 'auto'}
             onLoad={() => onRoomReady(room.id)}
             onError={() => {
               if (isIncoming) onTransitionFailure();

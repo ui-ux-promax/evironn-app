@@ -1,0 +1,682 @@
+{
+  "schemaVersion": 1,
+  "label": "home-run-2",
+  "classification": "controlled-local-diagnostic-only",
+  "capturedAtUtc": "2026-08-31T02:49:43.772Z",
+  "conditions": {
+    "host": "http://127.0.0.1:3106",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runsPerRoute": 3,
+    "cpuSlowdownMultiplier": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750,
+    "serviceWorkers": "block",
+    "waitUntil": "domcontentloaded",
+    "observationWindowAfterDomContentLoadedMs": 2500,
+    "cacheDisabled": true,
+    "queryCacheBuster": null,
+    "queryCacheBusterReason": null,
+    "browser": "chromium",
+    "playwrightPackageVersion": "1.60.0",
+    "browserVersion": "148.0.7778.96"
+  },
+  "route": {
+    "key": "home",
+    "requestedPath": "/",
+    "finalUrl": "http://127.0.0.1:3106/"
+  },
+  "document": {
+    "status": 200,
+    "markerMatched": true,
+    "readyState": "interactive",
+    "readyStateInformationalOnly": true
+  },
+  "observationEndpoint": {
+    "basis": "domContentLoadedEventEnd",
+    "windowMs": 2500,
+    "endpointFromNavigationStartMs": 5141.9000000059605,
+    "actualReadFromNavigationStartMs": 5156.700000017881,
+    "markerMatchedAtFromNavigationStartMs": 2694.5999999940395,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true
+  },
+  "comparability": {
+    "httpStatus200": true,
+    "navigationOriginIsLocal": true,
+    "localOrigin": true,
+    "subrequestsLocalOrigin": true,
+    "comparable": true,
+    "reason": null
+  },
+  "metrics": {
+    "ttfbMs": 183.69999998807907,
+    "fcpMs": 2648,
+    "lcpMs": 2648,
+    "tbtMs": 479,
+    "cls": 0.0003425781783186154
+  },
+  "primaryImageRequests": [
+    {
+      "pathname": "/assets/editorial/images/category-sofa.png",
+      "startTimeMs": 223.67599999415688,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/category-console.png",
+      "startTimeMs": 224.07799999928102,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/category-reading-chair.png",
+      "startTimeMs": 224.66700000222772,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/category-bedside.png",
+      "startTimeMs": 225.06799999973737,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+      "startTimeMs": 229.93800000404008,
+      "observedBytes": null
+    }
+  ],
+  "primaryImageDom": [
+    {
+      "pathname": "/assets/editorial/images/category-sofa.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/category-console.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/category-reading-chair.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/category-bedside.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    }
+  ],
+  "visual": {
+    "screenshotPaths": [],
+    "samples": [],
+    "aboveFoldBoxes": [],
+    "heroReadiness": []
+  },
+  "requestLedger": {
+    "requiredCdpFieldsAvailable": true,
+    "byteAccountingComparable": false,
+    "groups": {
+      "document": {
+        "requestStarts": 1,
+        "observedBytes": 17602,
+        "completedRequests": 1,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      },
+      "script": {
+        "requestStarts": 7,
+        "observedBytes": null,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 7
+      },
+      "stylesheet": {
+        "requestStarts": 2,
+        "observedBytes": 67548,
+        "completedRequests": 2,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      },
+      "font": {
+        "requestStarts": 3,
+        "observedBytes": null,
+        "completedRequests": 1,
+        "failedRequests": 0,
+        "inFlightRequests": 2
+      },
+      "image": {
+        "requestStarts": 30,
+        "observedBytes": null,
+        "completedRequests": 2,
+        "failedRequests": 0,
+        "inFlightRequests": 28
+      },
+      "heroProductVideo": {
+        "requestStarts": 16,
+        "observedBytes": null,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 16
+      },
+      "otherVideo": {
+        "requestStarts": 5,
+        "observedBytes": null,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 5
+      },
+      "other": {
+        "requestStarts": 0,
+        "observedBytes": 0,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      }
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:3106/",
+        "pathname": "/",
+        "resourceType": "Document",
+        "group": "document"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/css/app/layout.css?v=1788144578663",
+        "pathname": "/_next/static/css/app/layout.css",
+        "resourceType": "Stylesheet",
+        "group": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/css/app/(shop)/layout.css?v=1788144578663",
+        "pathname": "/_next/static/css/app/(shop)/layout.css",
+        "resourceType": "Stylesheet",
+        "group": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/evironn-logo.svg",
+        "pathname": "/assets/evironn-logo.svg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/living-room-idle.png",
+        "pathname": "/assets/hero/living-room-idle.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-idle.jpg",
+        "pathname": "/assets/hero/kitchen-idle.jpg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-idle.jpg",
+        "pathname": "/assets/hero/bedroom-idle.jpg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-idle.jpg",
+        "pathname": "/assets/hero/terrace-idle.jpg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/sofa-focus.webp",
+        "pathname": "/assets/hero/sofa-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/chair-focus.webp",
+        "pathname": "/assets/hero/chair-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-dining-focus.webp",
+        "pathname": "/assets/hero/kitchen-dining-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-island-focus.webp",
+        "pathname": "/assets/hero/kitchen-island-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-chair-focus.webp",
+        "pathname": "/assets/hero/bedroom-chair-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/webpack.js?v=1788144578663",
+        "pathname": "/_next/static/chunks/webpack.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/main-app.js?v=1788144578663",
+        "pathname": "/_next/static/chunks/main-app.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app-pages-internals.js",
+        "pathname": "/_next/static/chunks/app-pages-internals.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/(shop)/page.js",
+        "pathname": "/_next/static/chunks/app/(shop)/page.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/global-error.js",
+        "pathname": "/_next/static/chunks/app/global-error.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/(shop)/layout.js",
+        "pathname": "/_next/static/chunks/app/(shop)/layout.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/not-found.js",
+        "pathname": "/_next/static/chunks/app/not-found.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-bed-focus.webp",
+        "pathname": "/assets/hero/bedroom-bed-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-chair-focus.webp",
+        "pathname": "/assets/hero/terrace-chair-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-sofa-focus.webp",
+        "pathname": "/assets/hero/terrace-sofa-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-sofa.png",
+        "pathname": "/assets/editorial/images/category-sofa.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-console.png",
+        "pathname": "/assets/editorial/images/category-console.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-reading-chair.png",
+        "pathname": "/assets/editorial/images/category-reading-chair.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-bedside.png",
+        "pathname": "/assets/editorial/images/category-bedside.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-idle.webp",
+        "pathname": "/assets/products/01-bar-stool-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/02-rocking-chair-idle.webp",
+        "pathname": "/assets/products/02-rocking-chair-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-idle.webp",
+        "pathname": "/assets/products/03-ivory-lounge-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/04-dark-accent-idle.webp",
+        "pathname": "/assets/products/04-dark-accent-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/05-two-seat-sofa-idle.webp",
+        "pathname": "/assets/products/05-two-seat-sofa-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/material-wood-detail.png",
+        "pathname": "/assets/furniture/material-wood-detail.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/material-textile-detail.png",
+        "pathname": "/assets/furniture/material-textile-detail.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/material-joinery-detail.png",
+        "pathname": "/assets/furniture/material-joinery-detail.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/materials-room-wide.png",
+        "pathname": "/assets/furniture/materials-room-wide.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/craftsmanship-wide.png",
+        "pathname": "/assets/furniture/craftsmanship-wide.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-cutout.png",
+        "pathname": "/assets/products/03-ivory-lounge-cutout.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-cutout.png",
+        "pathname": "/assets/products/01-bar-stool-cutout.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/71c2b8589fc6.png",
+        "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/sofa-forward.mp4",
+        "pathname": "/assets/hero/sofa-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/sofa-reverse.mp4",
+        "pathname": "/assets/hero/sofa-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/chair-forward.mp4",
+        "pathname": "/assets/hero/chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/chair-reverse.mp4",
+        "pathname": "/assets/hero/chair-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-dining-forward.mp4",
+        "pathname": "/assets/hero/kitchen-dining-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-dining-reverse.mp4",
+        "pathname": "/assets/hero/kitchen-dining-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-island-forward.mp4",
+        "pathname": "/assets/hero/kitchen-island-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-island-reverse.mp4",
+        "pathname": "/assets/hero/kitchen-island-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-chair-forward.mp4",
+        "pathname": "/assets/hero/bedroom-chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-chair-reverse.mp4",
+        "pathname": "/assets/hero/bedroom-chair-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-bed-forward.mp4",
+        "pathname": "/assets/hero/bedroom-bed-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-bed-reverse.mp4",
+        "pathname": "/assets/hero/bedroom-bed-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-chair-forward.mp4",
+        "pathname": "/assets/hero/terrace-chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-chair-reverse.mp4",
+        "pathname": "/assets/hero/terrace-chair-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-sofa-forward.mp4",
+        "pathname": "/assets/hero/terrace-sofa-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-sofa-reverse.mp4",
+        "pathname": "/assets/hero/terrace-sofa-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-forward.mp4",
+        "pathname": "/assets/products/01-bar-stool-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/02-rocking-chair-forward.mp4",
+        "pathname": "/assets/products/02-rocking-chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-forward.mp4",
+        "pathname": "/assets/products/03-ivory-lounge-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/04-dark-accent-forward.mp4",
+        "pathname": "/assets/products/04-dark-accent-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/05-two-seat-sofa-forward.mp4",
+        "pathname": "/assets/products/05-two-seat-sofa-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/fonts/golos-text-latin.woff2",
+        "pathname": "/assets/fonts/golos-text-latin.woff2",
+        "resourceType": "Font",
+        "group": "font"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/fonts/fraunces-latin.woff2",
+        "pathname": "/assets/fonts/fraunces-latin.woff2",
+        "resourceType": "Font",
+        "group": "font"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/fonts/golos-text-cyrillic.woff2",
+        "pathname": "/assets/fonts/golos-text-cyrillic.woff2",
+        "resourceType": "Font",
+        "group": "font"
+      }
+    ],
+    "initialHeroVideos": {
+      "requestStarts": 16,
+      "observedBytes": null,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 16,
+      "urls": [
+        "http://127.0.0.1:3106/assets/hero/sofa-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/sofa-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/chair-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/chair-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-dining-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-dining-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-island-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-island-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-chair-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-chair-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-bed-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-bed-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-chair-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-chair-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-sofa-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-sofa-reverse.mp4"
+      ]
+    }
+  },
+  "errors": [],
+  "primaryImageRun": {
+    "comparable": true,
+    "reason": null,
+    "requestStarts": 5,
+    "observedBytes": null,
+    "targets": [
+      {
+        "pathname": "/assets/editorial/images/category-sofa.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/category-console.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/category-reading-chair.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/category-bedside.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      }
+    ],
+    "metrics": {
+      "ttfbMs": 183.69999998807907,
+      "fcpMs": 2648,
+      "lcpMs": 2648,
+      "tbtMs": 479,
+      "cls": 0.0003425781783186154
+    },
+    "visual": {
+      "screenshotPaths": [],
+      "samples": [],
+      "aboveFoldBoxes": [],
+      "heroReadiness": []
+    }
+  }
+}

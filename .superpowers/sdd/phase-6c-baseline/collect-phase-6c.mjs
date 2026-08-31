@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -65,6 +65,26 @@ export const HERO_VIDEO_PATHS = new Set([
   '/assets/hero/terrace-chair-reverse.mp4',
   '/assets/hero/terrace-sofa-forward.mp4',
   '/assets/hero/terrace-sofa-reverse.mp4',
+]);
+
+export const PRIMARY_IMAGE_TARGETS = Object.freeze([
+  '/assets/editorial/images/category-sofa.png',
+  '/assets/editorial/images/category-console.png',
+  '/assets/editorial/images/category-reading-chair.png',
+  '/assets/editorial/images/category-bedside.png',
+  '/assets/editorial/images/71c2b8589fc6.png',
+]);
+
+const PRIMARY_IMAGE_TARGET_SET = new Set(PRIMARY_IMAGE_TARGETS);
+const PRIMARY_VISUAL_TIMES = Object.freeze([500, 1500, 2500, 5000, 10000, 20000, 30000]);
+const PRIMARY_LOCAL_ORIGIN = 'http://127.0.0.1:3106';
+const PRIMARY_COMPARE_CLASSIFICATION = 'controlled-local-diagnostic-only';
+const PRIMARY_VISUAL_SELECTORS = Object.freeze([
+  'header',
+  '#evironn-hero',
+  '#evironn-hero h1',
+  '#evironn-hero img',
+  '#evironn-hero video',
 ]);
 
 const GROUP_NAMES = Object.freeze([
@@ -141,6 +161,44 @@ function isPublicUrl(value) {
   }
 }
 
+function isUrlForOrigin(value, origin) {
+  try {
+    return new URL(value, origin).origin === origin;
+  } catch {
+    return false;
+  }
+}
+
+export function assertLocalDiagnosticUrl(value, label = 'collector URL') {
+  if (typeof value !== 'string' || !isUrlForOrigin(value, PRIMARY_LOCAL_ORIGIN)) {
+    throw new Error(`${label} must use ${PRIMARY_LOCAL_ORIGIN}`);
+  }
+  return new URL(value, PRIMARY_LOCAL_ORIGIN).toString();
+}
+
+export function collectForeignOrigins(urls, origin = PRIMARY_LOCAL_ORIGIN) {
+  const foreignOrigins = new Set();
+  for (const value of Array.isArray(urls) ? urls : []) {
+    if (typeof value !== 'string') continue;
+    try {
+      const parsed = new URL(value, origin);
+      if (!['http:', 'https:'].includes(parsed.protocol)) continue;
+      if (parsed.origin !== origin) foreignOrigins.add(parsed.origin);
+    } catch {
+      foreignOrigins.add('invalid-origin');
+    }
+  }
+  return foreignOrigins;
+}
+
+function sanitizeUrlForOrigin(value, origin) {
+  if (typeof value !== 'string' || !isUrlForOrigin(value, origin)) return null;
+  const parsed = new URL(value, origin);
+  parsed.hash = '';
+  parsed.searchParams.delete('phase6c_measure');
+  return parsed.toString();
+}
+
 export function sanitizePublicUrl(value) {
   if (typeof value !== 'string' || !isPublicUrl(value)) return null;
   const parsed = new URL(value, PUBLIC_ORIGIN);
@@ -171,6 +229,17 @@ export function buildNavigationUrl(path, cacheBuster = null) {
       typeof cacheBuster.reason !== 'string' ||
       cacheBuster.reason.trim().length === 0
     ) {
+      throw new Error('cache-buster and cache-buster reason must be a non-empty pair');
+    }
+    parsed.searchParams.set('phase6c_measure', cacheBuster.value);
+  }
+  return parsed.toString();
+}
+
+function buildNavigationUrlForOrigin(path, origin, cacheBuster = null) {
+  const parsed = new URL(path, origin);
+  if (cacheBuster !== null) {
+    if (!cacheBuster?.value || !cacheBuster?.reason) {
       throw new Error('cache-buster and cache-buster reason must be a non-empty pair');
     }
     parsed.searchParams.set('phase6c_measure', cacheBuster.value);
@@ -303,6 +372,349 @@ export function summarizeSeries(samples) {
   };
 }
 
+function readRecordedMetric(value) {
+  if (isFiniteNumber(value)) return value;
+  return value?.available === true && isFiniteNumber(value.value) ? value.value : null;
+}
+
+function primaryFailure(reason) {
+  return {
+    comparable: false,
+    reason,
+  };
+}
+
+export function summarizePrimaryImageRun(observation) {
+  const endpoint = observation?.observationEndpoint?.endpointFromNavigationStartMs;
+  if (!isFiniteNumber(endpoint)) return primaryFailure('fixed observation endpoint unavailable');
+
+  const domEntries = Array.isArray(observation?.primaryImageDom) ? observation.primaryImageDom : [];
+  const domByPath = new Map(domEntries.map((entry) => [entry?.pathname, entry]));
+  if (
+    domEntries.length !== PRIMARY_IMAGE_TARGETS.length ||
+    domByPath.size !== PRIMARY_IMAGE_TARGETS.length ||
+    domEntries.some((entry) => !PRIMARY_IMAGE_TARGET_SET.has(entry?.pathname))
+  ) {
+    return primaryFailure('exact five primary image DOM targets unavailable');
+  }
+
+  const requests = Array.isArray(observation?.primaryImageRequests) ? observation.primaryImageRequests : [];
+  const targets = PRIMARY_IMAGE_TARGETS.map((pathname) => {
+    const targetRequests = requests.filter(
+      (request) =>
+        request?.pathname === pathname && isFiniteNumber(request.startTimeMs) && request.startTimeMs <= endpoint,
+    );
+    const bytes = targetRequests.map((request) => request.observedBytes);
+    const dom = domByPath.get(pathname);
+    return {
+      pathname,
+      requestStarts: targetRequests.length,
+      observedBytes:
+        targetRequests.length > 0 && bytes.every(isFiniteNumber) ? bytes.reduce((sum, value) => sum + value, 0) : null,
+      loading: typeof dom.loading === 'string' ? dom.loading : null,
+      viewportClass: dom.viewportClass,
+      complete: dom.complete === true,
+      naturalWidth: isFiniteNumber(dom.naturalWidth) ? dom.naturalWidth : null,
+      naturalHeight: isFiniteNumber(dom.naturalHeight) ? dom.naturalHeight : null,
+    };
+  });
+  const metrics = {
+    ttfbMs: readRecordedMetric(observation.metrics?.ttfbMs),
+    fcpMs: readRecordedMetric(observation.metrics?.fcpMs),
+    lcpMs: readRecordedMetric(observation.metrics?.lcpMs ?? observation.metrics?.lcpObservationWindowCandidateMs),
+    tbtMs: readRecordedMetric(observation.metrics?.tbtMs),
+    cls: readRecordedMetric(observation.metrics?.cls),
+  };
+  const visual = observation.visual ?? {
+    screenshotPaths: [],
+    samples: [],
+    aboveFoldBoxes: [],
+    heroReadiness: [],
+  };
+  const comparability = observation?.comparability;
+  const comparable =
+    comparability?.comparable === true &&
+    comparability.httpStatus200 !== false &&
+    comparability.localOrigin !== false &&
+    comparability.navigationOrigin !== false &&
+    comparability.subrequestsLocalOrigin !== false &&
+    (!Array.isArray(observation?.errors) || observation.errors.length === 0) &&
+    targets.every(
+      (target) =>
+        ['above-fold', 'below-fold', 'crosses-fold'].includes(target.viewportClass) &&
+        typeof target.complete === 'boolean' &&
+        isFiniteNumber(target.naturalWidth) &&
+        isFiniteNumber(target.naturalHeight),
+    ) &&
+    Object.values(metrics).every(isFiniteNumber);
+  return {
+    comparable,
+    reason: comparable
+      ? null
+      : (comparability?.reason ?? 'primary image DOM or metric evidence incomplete or incomparable'),
+    requestStarts: targets.reduce((sum, target) => sum + target.requestStarts, 0),
+    observedBytes: targets.every((target) => isFiniteNumber(target.observedBytes))
+      ? targets.reduce((sum, target) => sum + target.observedBytes, 0)
+      : null,
+    targets,
+    metrics,
+    visual,
+  };
+}
+
+function medianRouteMetrics(runs) {
+  const keys = ['ttfbMs', 'fcpMs', 'lcpMs', 'tbtMs', 'cls', 'requestStarts'];
+  if (
+    !Array.isArray(runs) ||
+    runs.length !== 3 ||
+    runs.some((run) => run?.comparable !== true || !isFiniteNumber(run.endpointMs))
+  ) {
+    return { comparable: false, medians: Object.fromEntries(keys.map((key) => [key, null])) };
+  }
+  const medians = Object.fromEntries(
+    keys
+      .map((key) => [key, medianComparable(runs.map((run) => run[key]))])
+      .map(([key, value]) => [key, value.value ?? null]),
+  );
+  return {
+    comparable: Object.values(medians).every(isFiniteNumber),
+    medians,
+  };
+}
+
+function lowerIsBetterChange(before, after) {
+  if (!isFiniteNumber(before) || !isFiniteNumber(after)) return null;
+  if (before === 0) return after === 0 ? 0 : Number.NEGATIVE_INFINITY;
+  return (before - after) / before;
+}
+
+function routeGate(beforeRuns, afterRuns) {
+  const before = medianRouteMetrics(beforeRuns);
+  const after = medianRouteMetrics(afterRuns);
+  const regressionFractions = Object.fromEntries(
+    ['ttfbMs', 'fcpMs', 'lcpMs', 'tbtMs', 'cls', 'requestStarts'].map((key) => [
+      key === 'requestStarts' ? key : key.replace('Ms', ''),
+      (() => {
+        const change = lowerIsBetterChange(before.medians[key], after.medians[key]);
+        return change === null ? Number.NaN : change === Number.POSITIVE_INFINITY ? change : Math.max(0, -change);
+      })(),
+    ]),
+  );
+  const passed =
+    before.comparable &&
+    after.comparable &&
+    Object.values(regressionFractions).every((value) => Number.isFinite(value) && value <= 0.1);
+  return {
+    comparable: before.comparable && after.comparable,
+    before: before.medians,
+    after: after.medians,
+    regressionFractions,
+    passed,
+  };
+}
+
+function summarizeHomeMedians(runs) {
+  if (!Array.isArray(runs) || runs.length !== 3 || runs.some((run) => run?.comparable !== true)) {
+    return { comparable: false, values: { requestStarts: null, fcpMs: null, lcpMs: null, tbtMs: null } };
+  }
+  const values = Object.fromEntries(
+    ['requestStarts', 'fcpMs', 'lcpMs', 'tbtMs'].map((key) => [
+      key,
+      medianComparable(runs.map((run) => (key === 'requestStarts' ? run[key] : run.metrics?.[key]))),
+    ]),
+  );
+  return {
+    comparable: Object.values(values).every((value) => value.available),
+    values: Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.value ?? null])),
+  };
+}
+
+function compareVisualEvidence(beforeRuns, afterRuns) {
+  const samplePairs = [];
+  const before = beforeRuns?.[0]?.visual;
+  const after = afterRuns?.[0]?.visual;
+  const beforeSamples = before?.samples ?? [];
+  const afterSamples = after?.samples ?? [];
+  const beforeBoxes = before?.aboveFoldBoxes ?? [];
+  const afterBoxes = after?.aboveFoldBoxes ?? [];
+  const beforeReady = before?.heroReadiness ?? [];
+  const afterReady = after?.heroReadiness ?? [];
+  const times = PRIMARY_VISUAL_TIMES;
+  const expectedBoxKeys = new Set(
+    times.flatMap((timeMs) => PRIMARY_VISUAL_SELECTORS.map((selector) => `${timeMs}:${selector}`)),
+  );
+  const hasExactSamples = (samples) =>
+    Array.isArray(samples) &&
+    samples.length === times.length &&
+    samples.every(
+      (sample, index) =>
+        sample?.timeMs === times[index] &&
+        typeof sample.screenshotPath === 'string' &&
+        sample.screenshotPath.length > 0 &&
+        typeof sample.screenshotSha256 === 'string' &&
+        /^[0-9a-f]{64}$/i.test(sample.screenshotSha256) &&
+        sample.screenshotWidth === 390 &&
+        sample.screenshotHeight === 844,
+    );
+  const hasExactBoxes = (boxes) => {
+    if (!Array.isArray(boxes) || boxes.length !== expectedBoxKeys.size) return false;
+    const keys = boxes.map((box) => `${box?.timeMs}:${box?.selector}`);
+    return (
+      new Set(keys).size === expectedBoxKeys.size &&
+      keys.every((key) => expectedBoxKeys.has(key)) &&
+      boxes.every(
+        (box) =>
+          isFiniteNumber(box?.timeMs) &&
+          typeof box?.selector === 'string' &&
+          ['x', 'y', 'width', 'height'].every((key) => isFiniteNumber(box[key])) &&
+          typeof box.visibility === 'string' &&
+          typeof box.opacity === 'string' &&
+          typeof box.backgroundColor === 'string',
+      )
+    );
+  };
+  const hasExactReadiness = (readiness) =>
+    Array.isArray(readiness) &&
+    readiness.length === times.length &&
+    readiness.every((entry, index) => entry?.timeMs === times[index] && typeof entry.ready === 'boolean');
+  const comparableSeries =
+    hasExactSamples(beforeSamples) &&
+    hasExactSamples(afterSamples) &&
+    hasExactBoxes(beforeBoxes) &&
+    hasExactBoxes(afterBoxes) &&
+    hasExactReadiness(beforeReady) &&
+    hasExactReadiness(afterReady);
+  if (!comparableSeries) {
+    return {
+      comparable: false,
+      aboveFoldUnchanged: false,
+      heroReadinessUnchanged: false,
+      screenshotPairs: [],
+      pass: false,
+    };
+  }
+  let pass = true;
+  for (const timeMs of times) {
+    const beforeSample = beforeSamples.find((sample) => sample.timeMs === timeMs);
+    const afterSample = afterSamples.find((sample) => sample.timeMs === timeMs);
+    const beforeAtTime = beforeBoxes.filter((box) => box.timeMs === timeMs);
+    const afterAtTime = afterBoxes.filter((box) => box.timeMs === timeMs);
+    const boxBySelector = (boxes) => new Map(boxes.map((box) => [box.selector, box]));
+    const beforeMap = boxBySelector(beforeAtTime);
+    const afterMap = boxBySelector(afterAtTime);
+    let geometryDeltaPx = 0;
+    let geometryMatch = beforeMap.size === afterMap.size;
+    let styleMatch = geometryMatch;
+    for (const [selector, beforeBox] of beforeMap) {
+      const afterBox = afterMap.get(selector);
+      if (!afterBox) {
+        geometryMatch = false;
+        styleMatch = false;
+        continue;
+      }
+      geometryDeltaPx = Math.max(
+        geometryDeltaPx,
+        ...['x', 'y', 'width', 'height'].map((key) => Math.abs(beforeBox[key] - afterBox[key])),
+      );
+      styleMatch =
+        styleMatch &&
+        beforeBox.visibility === afterBox.visibility &&
+        beforeBox.opacity === afterBox.opacity &&
+        beforeBox.backgroundColor === afterBox.backgroundColor;
+    }
+    const beforeReadyAt = beforeReady.find((entry) => entry.timeMs === timeMs);
+    const afterReadyAt = afterReady.find((entry) => entry.timeMs === timeMs);
+    const heroReadinessMatch = beforeReadyAt?.ready === afterReadyAt?.ready;
+    const contentHashMatch = beforeSample.screenshotSha256 === afterSample.screenshotSha256;
+    const dimensionsMatch =
+      beforeSample.screenshotWidth === 390 &&
+      beforeSample.screenshotHeight === 844 &&
+      afterSample.screenshotWidth === 390 &&
+      afterSample.screenshotHeight === 844;
+    const pairPass =
+      contentHashMatch && dimensionsMatch && geometryMatch && geometryDeltaPx <= 1 && styleMatch && heroReadinessMatch;
+    pass = pass && pairPass;
+    samplePairs.push({
+      timeMs,
+      before: beforeSample.screenshotPath,
+      after: afterSample.screenshotPath,
+      beforeSha256: beforeSample.screenshotSha256,
+      afterSha256: afterSample.screenshotSha256,
+      contentHashMatch,
+      geometryDeltaPx,
+      visibilityMatch: styleMatch,
+      opacityMatch: styleMatch,
+      backgroundColorMatch: styleMatch,
+      heroReadinessMatch,
+      verdict: pairPass ? 'PASS' : 'FAIL',
+    });
+  }
+  return {
+    comparable: true,
+    aboveFoldUnchanged: samplePairs.every(
+      (pair) => pair.geometryDeltaPx <= 1 && pair.visibilityMatch && pair.opacityMatch && pair.backgroundColorMatch,
+    ),
+    heroReadinessUnchanged: samplePairs.every((pair) => pair.heroReadinessMatch),
+    screenshotPairs: samplePairs,
+    pass: pass && samplePairs.length === PRIMARY_VISUAL_TIMES.length,
+  };
+}
+
+export function comparePrimaryImageRuns({ homeBefore, homeAfter, catalogBefore, catalogAfter, pdpBefore, pdpAfter }) {
+  const beforeHome = summarizeHomeMedians(homeBefore);
+  const afterHome = summarizeHomeMedians(homeAfter);
+  const homeMedians = { before: beforeHome.values, after: afterHome.values };
+  const requestReductionFraction =
+    isFiniteNumber(homeMedians.before.requestStarts) &&
+    homeMedians.before.requestStarts > 0 &&
+    isFiniteNumber(homeMedians.after.requestStarts)
+      ? (homeMedians.before.requestStarts - homeMedians.after.requestStarts) / homeMedians.before.requestStarts
+      : null;
+  const improvements = Object.fromEntries(
+    ['fcpMs', 'lcpMs', 'tbtMs'].map((key) => [
+      key.replace('Ms', ''),
+      lowerIsBetterChange(homeMedians.before[key], homeMedians.after[key]),
+    ]),
+  );
+  const visual = compareVisualEvidence(
+    homeBefore.comparable ? (homeBefore.runs ?? homeBefore) : homeBefore,
+    homeAfter.comparable ? (homeAfter.runs ?? homeAfter) : homeAfter,
+  );
+  const catalog = routeGate(catalogBefore, catalogAfter);
+  const pdp = routeGate(pdpBefore, pdpAfter);
+  const homeComparable = beforeHome.comparable && afterHome.comparable;
+  const requestPass =
+    requestReductionFraction !== null &&
+    homeMedians.after.requestStarts < homeMedians.before.requestStarts &&
+    requestReductionFraction >= 0.5;
+  const performancePass =
+    Object.values(improvements).some((value) => isFiniteNumber(value) && value >= 0.1) &&
+    Object.values(improvements).every((value) => isFiniteNumber(value) && value >= -0.1);
+  const visualPass = visual.comparable && visual.pass && visual.aboveFoldUnchanged && visual.heroReadinessUnchanged;
+  const allPass = homeComparable && requestPass && performancePass && visualPass && catalog.passed && pdp.passed;
+  let reason = 'primary candidate gate passed';
+  if (!homeComparable || !catalog.comparable || !pdp.comparable)
+    reason = 'home or guardrail series incomplete or incomparable';
+  else if (!requestPass) reason = 'exact five-image request reduction gate failed';
+  else if (!performancePass) reason = 'home performance gate failed';
+  else if (!visualPass) reason = 'visual or hero-readiness gate failed';
+  else if (!catalog.passed || !pdp.passed) reason = 'route guardrail regression gate failed';
+  return {
+    decision: allPass ? 'RETAIN' : 'PRIMARY_CANDIDATE_REJECTED',
+    reason,
+    requestReductionFraction,
+    improvements: { fcp: improvements.fcp, lcp: improvements.lcp, tbt: improvements.tbt },
+    homeMedians,
+    guardrails: { catalog, pdp },
+    visual,
+    evidence: {
+      before: [],
+      after: [],
+      localClassification: 'controlled-local-diagnostic-only',
+    },
+  };
+}
+
 function groupForRequest(url, resourceType, heroVideoPaths) {
   const pathname = urlPathname(url);
   if (pathname && heroVideoPaths.has(pathname)) return 'heroProductVideo';
@@ -328,7 +740,7 @@ function emptyGroup() {
   };
 }
 
-export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PATHS } = {}) {
+export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PATHS, origin = PUBLIC_ORIGIN } = {}) {
   const requestMap = new Map();
   let requiredCdpFieldsAvailable = true;
   for (const event of Array.isArray(events) ? events : []) {
@@ -409,11 +821,11 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
       } else if (group.observedBytes !== null) {
         group.observedBytes += bytes;
       }
-      const publicUrl = sanitizePublicUrl(item.url);
-      if (publicUrl) {
+      const safeUrl = sanitizeUrlForOrigin(item.url, origin);
+      if (safeUrl) {
         resources.push({
-          url: publicUrl,
-          pathname: urlPathname(publicUrl),
+          url: safeUrl,
+          pathname: urlPathname(safeUrl),
           resourceType: item.resourceType,
           group: item.group,
         });
@@ -430,7 +842,7 @@ export function summarizeRequestLedger(events, { heroVideoPaths = HERO_VIDEO_PAT
     urls: [...requestMap.values()]
       .flat()
       .filter((item) => heroVideoPaths.has(urlPathname(item.url)))
-      .map((item) => sanitizePublicUrl(item.url))
+      .map((item) => sanitizeUrlForOrigin(item.url, origin))
       .filter(Boolean),
   };
 
@@ -603,7 +1015,21 @@ async function loadPlaywright() {
   return { chromium, packageVersion };
 }
 
-async function captureObservation(name, route, cacheBuster) {
+export async function waitForNavigationRelativeTime(page, timeMs) {
+  const handle = await page.waitForFunction(() => Number.isFinite(window.__phase6cNavigationStartedAt), null, {
+    timeout: 30000,
+    polling: 10,
+  });
+  await handle?.dispose?.();
+  const remainingMs = await page.evaluate(
+    (targetMs) => targetMs - (performance.now() - window.__phase6cNavigationStartedAt),
+    timeMs,
+  );
+  if (isFiniteNumber(remainingMs) && remainingMs > 0) await page.waitForTimeout(remainingMs);
+}
+
+async function captureObservation(name, route, cacheBuster, { origin = PRIMARY_LOCAL_ORIGIN } = {}) {
+  const collectorOrigin = new URL(assertLocalDiagnosticUrl(origin, 'collector origin')).origin;
   const { chromium, packageVersion } = await loadPlaywright();
   let browser;
   let context;
@@ -653,7 +1079,7 @@ async function captureObservation(name, route, cacheBuster) {
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: CONDITIONS.cpuSlowdownMultiplier });
     await page.addInitScript(makeObserverInitScript());
 
-    const navigationUrl = buildNavigationUrl(route.path, cacheBuster);
+    const navigationUrl = buildNavigationUrlForOrigin(route.path, collectorOrigin, cacheBuster);
     let response = null;
     const errors = [];
     try {
@@ -720,6 +1146,15 @@ async function captureObservation(name, route, cacheBuster) {
       fixedWindowCompleted = true;
     }
 
+    const observedNavigationUrl = response?.url?.() ?? page.url();
+    const requestUrls = events
+      .filter((event) => event?.method === 'Network.requestWillBeSent')
+      .map((event) => event.url);
+    const foreignOrigins = collectForeignOrigins(
+      [navigationUrl, observedNavigationUrl, ...requestUrls],
+      collectorOrigin,
+    );
+    const navigationOriginIsLocal = isUrlForOrigin(observedNavigationUrl, collectorOrigin);
     const pageState = await page
       .evaluate(() => {
         const navigation = performance.getEntriesByType('navigation')[0];
@@ -765,7 +1200,7 @@ async function captureObservation(name, route, cacheBuster) {
 
     const documentStatus = response?.status() ?? null;
     const safeHeaders = sanitizeHeaders(response ? await response.allHeaders() : {});
-    const ledger = summarizeRequestLedger(events, { heroVideoPaths: HERO_VIDEO_PATHS });
+    const ledger = summarizeRequestLedger(events, { heroVideoPaths: HERO_VIDEO_PATHS, origin: collectorOrigin });
     const publicBuildId = extractPublicBuildId(ledger.resources);
     const deploymentIdentity = deriveDeploymentIdentity(ledger.resources, publicBuildId);
     const requiredTimingFieldsAvailable =
@@ -781,7 +1216,7 @@ async function captureObservation(name, route, cacheBuster) {
           available: true,
           tagName: pageState.lcp.tagName,
           selector: pageState.lcp.tagName ? pageState.lcp.tagName.toLowerCase() : null,
-          resourceUrl: sanitizePublicUrl(pageState.lcp.url),
+          resourceUrl: sanitizeUrlForOrigin(pageState.lcp.url, collectorOrigin),
         }
       : unavailable('no LCP entry observed before fixed endpoint');
     const comparable =
@@ -789,12 +1224,15 @@ async function captureObservation(name, route, cacheBuster) {
       markerMatchedBeforeEndpoint &&
       fixedWindowCompleted &&
       requiredTimingFieldsAvailable &&
-      ledger.requiredCdpFieldsAvailable;
+      ledger.requiredCdpFieldsAvailable &&
+      navigationOriginIsLocal &&
+      foreignOrigins.size === 0;
     if (documentStatus !== 200) errors.push('HTTP_STATUS_NOT_200');
     if (!markerMatchedBeforeEndpoint) errors.push('ROUTE_MARKER_NOT_BEFORE_ENDPOINT');
     if (!fixedWindowCompleted) errors.push('FIXED_WINDOW_NOT_COMPLETED');
     if (!requiredTimingFieldsAvailable) errors.push('NAVIGATION_TIMING_UNAVAILABLE');
     if (!ledger.requiredCdpFieldsAvailable) errors.push('CDP_FIELDS_UNAVAILABLE');
+    if (!navigationOriginIsLocal || foreignOrigins.size > 0) errors.push('LOCAL_ORIGIN_ESCAPE');
     const totalObservedBytes = Object.values(ledger.groups).every((group) => isFiniteNumber(group.observedBytes))
       ? Object.values(ledger.groups).reduce((total, group) => total + group.observedBytes, 0)
       : null;
@@ -806,6 +1244,7 @@ async function captureObservation(name, route, cacheBuster) {
       capturedAtUtc: new Date().toISOString(),
       conditions: {
         ...CONDITIONS,
+        host: collectorOrigin,
         playwrightPackageVersion: packageVersion,
         browserVersion,
         queryCacheBuster: cacheBuster?.value ?? null,
@@ -815,7 +1254,7 @@ async function captureObservation(name, route, cacheBuster) {
       route: {
         key: route.key,
         requestedPath: route.path,
-        finalPublicUrlWithoutCacheBuster: sanitizePublicUrl(navigationUrl),
+        finalPublicUrlWithoutCacheBuster: sanitizeUrlForOrigin(observedNavigationUrl, collectorOrigin),
       },
       document: {
         status: documentStatus,
@@ -839,6 +1278,8 @@ async function captureObservation(name, route, cacheBuster) {
         fixedWindowCompleted,
         requiredTimingFieldsAvailable,
         requiredCdpFieldsAvailable: ledger.requiredCdpFieldsAvailable,
+        navigationOriginIsLocal,
+        subrequestsLocalOrigin: foreignOrigins.size === 0,
         playwrightAndBrowserVersionsMatchSeries: true,
         comparable,
         reason: comparable ? null : (errors[0] ?? 'observation not comparable'),
@@ -884,6 +1325,642 @@ function writeAtomic(relativeName, value) {
   const temp = `${target}.tmp`;
   writeFileSync(temp, value, 'utf8');
   renameSync(temp, target);
+}
+
+function writeOutputFile(outputRoot, relativeName, value) {
+  const root = resolve(outputRoot);
+  const target = resolve(root, relativeName);
+  if (target !== root && !target.startsWith(`${root}${process.platform === 'win32' ? '\\' : '/'}`)) {
+    throw new Error('primary output path outside evidence root');
+  }
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, value, 'utf8');
+}
+
+export async function capturePrimaryVisual(page, outputRoot) {
+  const samples = [];
+  const aboveFoldBoxes = [];
+  const heroReadiness = [];
+  const selectors = PRIMARY_VISUAL_SELECTORS;
+  for (const timeMs of PRIMARY_VISUAL_TIMES) {
+    await waitForNavigationRelativeTime(page, timeMs);
+    const screenshotPath = `screenshots/home-${String(timeMs).padStart(5, '0')}ms.png`;
+    const screenshotFile = resolve(outputRoot, screenshotPath);
+    mkdirSync(dirname(screenshotFile), { recursive: true });
+    await page.screenshot({
+      path: screenshotFile,
+      animations: 'disabled',
+      caret: 'hide',
+      mask: [page.locator('#evironn-hero video'), page.locator('#evironn-hero img')],
+      maskColor: '#000000',
+    });
+    const snapshot = await page.evaluate((snapshotSelectors) => {
+      const readBox = (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          selector,
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+          visibility: style.visibility,
+          opacity: style.opacity,
+          backgroundColor: style.backgroundColor,
+        };
+      };
+      const heroImage =
+        document.querySelector('#evironn-hero img.is-stable') || document.querySelector('#evironn-hero img');
+      return {
+        boxes: snapshotSelectors.map(readBox).filter(Boolean),
+        ready: Boolean(heroImage?.complete && heroImage.naturalWidth > 0),
+      };
+    }, selectors);
+    const buffer = readFileSync(screenshotFile);
+    samples.push({
+      timeMs,
+      screenshotWidth: 390,
+      screenshotHeight: 844,
+      screenshotPath,
+      screenshotSha256: createHash('sha256').update(buffer).digest('hex'),
+    });
+    aboveFoldBoxes.push(...snapshot.boxes.map((box) => ({ timeMs, ...box })));
+    heroReadiness.push({ timeMs, ready: snapshot.ready });
+  }
+  return {
+    screenshotPaths: samples.map((sample) => sample.screenshotPath),
+    samples,
+    aboveFoldBoxes,
+    heroReadiness,
+  };
+}
+
+function primaryDomSnapshot(pageState) {
+  return pageState.primaryImageDom ?? [];
+}
+
+async function capturePrimaryHomeObservation(name, route, outputRoot, captureVisual) {
+  const { chromium, packageVersion } = await loadPlaywright();
+  let browser;
+  let context;
+  try {
+    browser = await chromium.launch();
+    const browserVersion = browser.version();
+    context = await browser.newContext({ viewport: CONDITIONS.viewport, serviceWorkers: CONDITIONS.serviceWorkers });
+    const page = await context.newPage();
+    const cdp = await context.newCDPSession(page);
+    const events = [];
+    const primaryRequests = [];
+    let navigationCdpTimestamp = null;
+    const foreignOrigins = new Set();
+    cdp.on('Network.requestWillBeSent', (event) => {
+      if (navigationCdpTimestamp === null && isFiniteNumber(event.timestamp)) navigationCdpTimestamp = event.timestamp;
+      const url = event.request?.url;
+      try {
+        if (url && /^https?:/i.test(url) && new URL(url).origin !== PRIMARY_LOCAL_ORIGIN)
+          foreignOrigins.add(new URL(url).origin);
+      } catch {
+        foreignOrigins.add('invalid-origin');
+      }
+      const pathname = urlPathname(url);
+      if (PRIMARY_IMAGE_TARGET_SET.has(pathname)) {
+        primaryRequests.push({
+          requestId: event.requestId,
+          pathname,
+          timestamp: event.timestamp,
+          chunks: 0,
+          bytes: null,
+        });
+      }
+      events.push({
+        method: 'Network.requestWillBeSent',
+        requestId: event.requestId,
+        url,
+        resourceType: event.type,
+        timestamp: event.timestamp,
+      });
+    });
+    const updatePrimaryRequest = (event, final) => {
+      const request = [...primaryRequests].reverse().find((item) => item.requestId === event.requestId);
+      if (!request) return;
+      if (final) request.bytes = isFiniteNumber(event.encodedDataLength) ? event.encodedDataLength : null;
+      else if (isFiniteNumber(event.encodedDataLength) && request.bytes === null)
+        request.chunks += event.encodedDataLength;
+    };
+    cdp.on('Network.dataReceived', (event) => {
+      updatePrimaryRequest(event, false);
+      events.push({
+        method: 'Network.dataReceived',
+        requestId: event.requestId,
+        encodedDataLength: event.encodedDataLength,
+        timestamp: event.timestamp,
+      });
+    });
+    cdp.on('Network.loadingFinished', (event) => {
+      updatePrimaryRequest(event, true);
+      events.push({
+        method: 'Network.loadingFinished',
+        requestId: event.requestId,
+        encodedDataLength: event.encodedDataLength,
+        timestamp: event.timestamp,
+      });
+    });
+    cdp.on('Network.loadingFailed', (event) => {
+      events.push({ method: 'Network.loadingFailed', requestId: event.requestId, timestamp: event.timestamp });
+    });
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: CONDITIONS.latencyMs,
+      downloadThroughput: CONDITIONS.downloadBytesPerSecond,
+      uploadThroughput: CONDITIONS.uploadBytesPerSecond,
+    });
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: CONDITIONS.cpuSlowdownMultiplier });
+    await page.addInitScript(() => {
+      window.__phase6cNavigationStartedAt = performance.now();
+    });
+    await page.addInitScript(makeObserverInitScript());
+    const navigationUrl = buildNavigationUrlForOrigin(route.path, PRIMARY_LOCAL_ORIGIN);
+    let response = null;
+    const errors = [];
+    const visualPromise = captureVisual ? capturePrimaryVisual(page, outputRoot) : null;
+    try {
+      response = await page.goto(navigationUrl, { waitUntil: CONDITIONS.waitUntil, timeout: 30000 });
+    } catch {
+      errors.push('NAVIGATION_FAILED');
+    }
+    const dclTiming = await page
+      .evaluate(() => {
+        const navigation = performance.getEntriesByType('navigation')[0];
+        return { domContentLoadedEventEnd: navigation?.domContentLoadedEventEnd, now: performance.now() };
+      })
+      .catch(() => ({ domContentLoadedEventEnd: null, now: null }));
+    const endpoint = isFiniteNumber(dclTiming.domContentLoadedEventEnd)
+      ? dclTiming.domContentLoadedEventEnd + CONDITIONS.observationWindowAfterDomContentLoadedMs
+      : null;
+    let markerMatched = false;
+    let markerMatchedAt = null;
+    if (endpoint !== null && isFiniteNumber(dclTiming.now)) {
+      const window = planObservationWindow({ endpoint, now: dclTiming.now });
+      try {
+        const markerHandle = await page.waitForFunction(
+          (expected) => {
+            const matched = [...document.querySelectorAll('h1')].some((heading) =>
+              heading.textContent?.includes(expected),
+            );
+            return { matched, matchedAt: matched ? performance.now() : null };
+          },
+          route.marker,
+          { timeout: window.waitMs, polling: 50 },
+        );
+        ({ markerMatched, markerMatchedAt } = normalizeMarkerObservation(await markerHandle.jsonValue()));
+        await markerHandle.dispose();
+      } catch {
+        markerMatched = false;
+      }
+      const remaining = planObservationWindow({ endpoint, now: await page.evaluate(() => performance.now()) });
+      if (!remaining.expired && remaining.waitMs > 0) await page.waitForTimeout(remaining.waitMs);
+    }
+    const pageState = await page.evaluate((targetPaths) => {
+      const navigation = performance.getEntriesByType('navigation')[0];
+      const state = window.__phase6cPerformance ?? {};
+      const lcp = Array.isArray(state.lcp) && state.lcp.length > 0 ? state.lcp[state.lcp.length - 1] : null;
+      const domByPath = new Map();
+      for (const image of document.images) {
+        const pathname = new URL(image.currentSrc || image.src, location.href).pathname;
+        if (!targetPaths.includes(pathname)) continue;
+        const rect = image.getBoundingClientRect();
+        const viewportClass = rect.top >= innerHeight ? 'below-fold' : rect.bottom <= 0 ? 'above-fold' : 'crosses-fold';
+        domByPath.set(pathname, {
+          pathname,
+          loading: image.getAttribute('loading'),
+          viewportClass,
+          complete: image.complete,
+          naturalWidth: image.naturalWidth,
+          naturalHeight: image.naturalHeight,
+        });
+      }
+      return {
+        actualRead: performance.now(),
+        navigation: navigation
+          ? {
+              requestStart: navigation.requestStart,
+              responseStart: navigation.responseStart,
+              domContentLoadedEventEnd: navigation.domContentLoadedEventEnd,
+            }
+          : null,
+        readyState: document.readyState,
+        fcp: state.fcp,
+        lcp,
+        cls: Array.isArray(state.layoutShifts)
+          ? state.layoutShifts.reduce((total, entry) => total + (entry.hadRecentInput === false ? entry.value : 0), 0)
+          : null,
+        tbtMs: Array.isArray(state.longTasks)
+          ? state.longTasks.reduce((total, entry) => total + Math.max(0, entry.duration - 50), 0)
+          : null,
+        primaryImageDom: targetPaths.map((pathname) => domByPath.get(pathname)).filter(Boolean),
+      };
+    }, PRIMARY_IMAGE_TARGETS);
+    const visual = visualPromise
+      ? await visualPromise
+      : { screenshotPaths: [], samples: [], aboveFoldBoxes: [], heroReadiness: [] };
+    const observedNavigationUrl = response?.url?.() ?? page.url();
+    const observedForeignOrigins = collectForeignOrigins(
+      [navigationUrl, observedNavigationUrl, ...events.map((event) => event.url)],
+      PRIMARY_LOCAL_ORIGIN,
+    );
+    for (const origin of observedForeignOrigins) foreignOrigins.add(origin);
+    const navigationOriginIsLocal = isUrlForOrigin(observedNavigationUrl, PRIMARY_LOCAL_ORIGIN);
+    if (!navigationOriginIsLocal || foreignOrigins.size > 0) errors.push('LOCAL_ORIGIN_ESCAPE');
+    const ledger = summarizeRequestLedger(events, { heroVideoPaths: HERO_VIDEO_PATHS, origin: PRIMARY_LOCAL_ORIGIN });
+    const requestRecords = primaryRequests.map((request) => ({
+      pathname: request.pathname,
+      startTimeMs:
+        isFiniteNumber(request.timestamp) && isFiniteNumber(navigationCdpTimestamp)
+          ? (request.timestamp - navigationCdpTimestamp) * 1000
+          : null,
+      observedBytes: request.bytes ?? (request.chunks > 0 ? request.chunks : null),
+    }));
+    const comparable =
+      response?.status() === 200 &&
+      markerMatched &&
+      isFiniteNumber(endpoint) &&
+      isFiniteNumber(pageState.navigation?.requestStart) &&
+      isFiniteNumber(pageState.navigation?.responseStart) &&
+      isFiniteNumber(pageState.navigation?.domContentLoadedEventEnd) &&
+      pageState.primaryImageDom.length === PRIMARY_IMAGE_TARGETS.length &&
+      navigationOriginIsLocal &&
+      foreignOrigins.size === 0;
+    if (response?.status() !== 200) errors.push('HTTP_STATUS_NOT_200');
+    if (!markerMatched) errors.push('ROUTE_MARKER_NOT_BEFORE_ENDPOINT');
+    const observation = {
+      schemaVersion: 1,
+      label: name,
+      classification: 'controlled-local-diagnostic-only',
+      capturedAtUtc: new Date().toISOString(),
+      conditions: {
+        ...CONDITIONS,
+        host: PRIMARY_LOCAL_ORIGIN,
+        playwrightPackageVersion: packageVersion,
+        browserVersion,
+        queryCacheBuster: null,
+        queryCacheBusterReason: null,
+      },
+      route: {
+        key: route.key,
+        requestedPath: route.path,
+        finalUrl: sanitizeUrlForOrigin(observedNavigationUrl, PRIMARY_LOCAL_ORIGIN),
+      },
+      document: {
+        status: response?.status() ?? null,
+        markerMatched,
+        readyState: pageState.readyState,
+        readyStateInformationalOnly: true,
+      },
+      observationEndpoint: {
+        basis: 'domContentLoadedEventEnd',
+        windowMs: CONDITIONS.observationWindowAfterDomContentLoadedMs,
+        endpointFromNavigationStartMs: endpoint,
+        actualReadFromNavigationStartMs: pageState.actualRead,
+        markerMatchedAtFromNavigationStartMs: markerMatchedAt,
+        markerMatchedBeforeEndpoint: markerMatched,
+        fixedWindowCompleted: endpoint !== null,
+      },
+      comparability: {
+        httpStatus200: response?.status() === 200,
+        navigationOriginIsLocal,
+        localOrigin: navigationOriginIsLocal,
+        subrequestsLocalOrigin: foreignOrigins.size === 0,
+        comparable,
+        reason: comparable ? null : (errors[0] ?? 'primary observation not comparable'),
+      },
+      metrics: {
+        ttfbMs: pageState.navigation ? pageState.navigation.responseStart - pageState.navigation.requestStart : null,
+        fcpMs: pageState.fcp,
+        lcpMs: pageState.lcp?.startTime ?? null,
+        tbtMs: pageState.tbtMs,
+        cls: pageState.cls,
+      },
+      primaryImageRequests: requestRecords,
+      primaryImageDom: primaryDomSnapshot(pageState),
+      visual,
+      requestLedger: ledger,
+      errors,
+    };
+    return observation;
+  } finally {
+    await context?.close().catch(() => {});
+    await browser?.close().catch(() => {});
+  }
+}
+
+function localMetricValue(observation, key) {
+  return readRecordedMetric(observation.metrics?.[key]);
+}
+
+function toRouteGuardrailRun(observation) {
+  return {
+    comparable: observation.comparability?.comparable === true,
+    endpointMs: observation.observationEndpoint?.endpointFromNavigationStartMs,
+    ttfbMs: localMetricValue(observation, 'ttfbMs'),
+    fcpMs: localMetricValue(observation, 'fcpMs'),
+    lcpMs: localMetricValue(observation, 'lcpObservationWindowCandidateMs'),
+    tbtMs: localMetricValue(observation, 'tbtMs'),
+    cls: localMetricValue(observation, 'cls'),
+    requestStarts: localMetricValue(observation, 'requestStarts'),
+  };
+}
+
+function localRouteSummary(runs) {
+  const guardrails = runs.map(toRouteGuardrailRun);
+  const summary = medianRouteMetrics(guardrails);
+  return { runs: guardrails, medians: summary.medians, comparable: summary.comparable };
+}
+
+async function runPrimarySeries(label, outputRoot, host) {
+  if (!['before', 'after'].includes(label)) throw new Error('primary series label must be before or after');
+  if (host !== PRIMARY_LOCAL_ORIGIN) throw new Error('primary series host must be http://127.0.0.1:3106');
+  const root = resolve(outputRoot);
+  const remediationRoot = resolve(MODULE_DIR, '..', 'phase-6c-remediation');
+  if (root !== remediationRoot && !root.startsWith(`${remediationRoot}${process.platform === 'win32' ? '\\' : '/'}`)) {
+    throw new Error('primary series output must remain inside phase-6c-remediation');
+  }
+  mkdirSync(root, { recursive: true });
+  const homeRoute = ROUTES.find((route) => route.key === 'home');
+  const catalogRoute = ROUTES.find((route) => route.key === 'catalog');
+  const pdpRoute = ROUTES.find((route) => route.key === 'pdp');
+  const homeRuns = [];
+  for (let index = 1; index <= 3; index += 1) {
+    const observation = await capturePrimaryHomeObservation(`home-run-${index}`, homeRoute, root, index === 1);
+    observation.primaryImageRun = summarizePrimaryImageRun(observation);
+    writeOutputFile(root, `raw/home-run-${index}.json`, `${JSON.stringify(observation, null, 2)}\n`);
+    homeRuns.push(observation);
+  }
+  const catalogRuns = [];
+  const pdpRuns = [];
+  for (let index = 1; index <= 3; index += 1) {
+    const catalog = await captureObservation(`catalog-run-${index}`, catalogRoute, null, { origin: host });
+    const pdp = await captureObservation(`pdp-run-${index}`, pdpRoute, null, { origin: host });
+    writeOutputFile(root, `raw/catalog-run-${index}.json`, `${JSON.stringify(catalog, null, 2)}\n`);
+    writeOutputFile(root, `raw/pdp-run-${index}.json`, `${JSON.stringify(pdp, null, 2)}\n`);
+    catalogRuns.push(catalog);
+    pdpRuns.push(pdp);
+  }
+  const homeSummaries = homeRuns.map((run) => run.primaryImageRun);
+  const summary = {
+    schemaVersion: 1,
+    label,
+    classification: 'controlled-local-diagnostic-only',
+    host,
+    conditions: { ...CONDITIONS, host, screenshots: PRIMARY_VISUAL_TIMES },
+    home: {
+      runs: homeSummaries,
+      medians: summarizeHomeMedians(homeSummaries).values,
+      comparable: homeSummaries.every((run) => run.comparable),
+    },
+    catalog: localRouteSummary(catalogRuns),
+    pdp: localRouteSummary(pdpRuns),
+    exactPrimaryImageTargets: PRIMARY_IMAGE_TARGETS,
+    comparableReason: [...homeSummaries, ...catalogRuns, ...pdpRuns].every(
+      (run) => run.comparable ?? run.comparability?.comparable,
+    )
+      ? 'all controlled local diagnostic observations comparable'
+      : 'one or more controlled local diagnostic observations incomplete or incomparable',
+  };
+  writeOutputFile(root, 'summary.json', `${JSON.stringify(summary, null, 2)}\n`);
+  const markdown = [
+    '# Phase 6C controlled local diagnostic series',
+    '',
+    `Classification: ${summary.classification}`,
+    `Label: ${label}`,
+    `Host: ${host}`,
+    `Exact primary image request targets: ${PRIMARY_IMAGE_TARGETS.length}`,
+    `Home comparable: ${summary.home.comparable}`,
+    `Catalog comparable: ${summary.catalog.comparable}`,
+    `PDP comparable: ${summary.pdp.comparable}`,
+    `Comparable reason: ${summary.comparableReason}`,
+    '',
+    'No public or deployed origin is used by this controlled local diagnostic series.',
+  ].join('\n');
+  writeOutputFile(root, 'summary.md', `${markdown}\n`);
+  console.log(`wrote ${label} controlled-local-diagnostic-only series`);
+}
+
+const PRIMARY_COMPARE_RAW_LABELS = Object.freeze([
+  'home-run-1',
+  'home-run-2',
+  'home-run-3',
+  'catalog-run-1',
+  'catalog-run-2',
+  'catalog-run-3',
+  'pdp-run-1',
+  'pdp-run-2',
+  'pdp-run-3',
+]);
+
+const PRIMARY_COMPARE_SCREENSHOT_PATHS = Object.freeze(
+  PRIMARY_VISUAL_TIMES.map((timeMs) => `screenshots/home-${String(timeMs).padStart(5, '0')}ms.png`),
+);
+
+const PRIMARY_COMPARE_EVIDENCE_PATHS = Object.freeze([
+  'summary.json',
+  'summary.md',
+  ...PRIMARY_COMPARE_RAW_LABELS.map((label) => `raw/${label}.json`),
+  ...PRIMARY_COMPARE_SCREENSHOT_PATHS,
+]);
+
+function compareEvidenceError(message) {
+  throw new Error(`primary comparison evidence invalid: ${message}`);
+}
+
+function resolveEvidenceFile(root, relativePath) {
+  const resolvedRoot = resolve(root);
+  const target = resolve(resolvedRoot, relativePath);
+  if (target !== resolvedRoot && !target.startsWith(`${resolvedRoot}${process.platform === 'win32' ? '\\' : '/'}`)) {
+    compareEvidenceError('evidence path escaped root');
+  }
+  try {
+    return { target, bytes: readFileSync(target) };
+  } catch {
+    compareEvidenceError(`missing ${relativePath}`);
+  }
+}
+
+function readEvidenceJson(root, relativePath) {
+  const { target, bytes } = resolveEvidenceFile(root, relativePath);
+  try {
+    return { target, value: JSON.parse(bytes.toString('utf8')) };
+  } catch {
+    compareEvidenceError(`invalid JSON in ${relativePath}`);
+  }
+}
+
+function assertExactPngEvidence(root, relativePath) {
+  const { bytes } = resolveEvidenceFile(root, relativePath);
+  const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (
+    bytes.length < 24 ||
+    !bytes.subarray(0, pngSignature.length).equals(pngSignature) ||
+    bytes.readUInt32BE(16) !== 390 ||
+    bytes.readUInt32BE(20) !== 844
+  ) {
+    compareEvidenceError(`screenshot dimensions or format invalid for ${relativePath}`);
+  }
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+function localRouteGuardrailRun(observation) {
+  return {
+    comparable: observation.comparability?.comparable === true,
+    endpointMs: observation.observationEndpoint?.endpointFromNavigationStartMs,
+    ttfbMs: readRecordedMetric(observation.metrics?.ttfbMs),
+    fcpMs: readRecordedMetric(observation.metrics?.fcpMs),
+    lcpMs: readRecordedMetric(observation.metrics?.lcpObservationWindowCandidateMs),
+    tbtMs: readRecordedMetric(observation.metrics?.tbtMs),
+    cls: readRecordedMetric(observation.metrics?.cls),
+    requestStarts: readRecordedMetric(observation.metrics?.requestStarts),
+  };
+}
+
+function assertJsonEqual(actual, expected, message) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) compareEvidenceError(message);
+}
+
+function readPrimaryCompareEvidence(root, label) {
+  const summary = readEvidenceJson(root, 'summary.json').value;
+  if (summary.classification !== PRIMARY_COMPARE_CLASSIFICATION) {
+    compareEvidenceError(`${label} summary classification must be ${PRIMARY_COMPARE_CLASSIFICATION}`);
+  }
+  if (summary.label !== label || summary.host !== PRIMARY_LOCAL_ORIGIN) {
+    compareEvidenceError(`${label} summary identity is not local controlled evidence`);
+  }
+  assertJsonEqual(summary.exactPrimaryImageTargets, PRIMARY_IMAGE_TARGETS, `${label} primary target list mismatch`);
+
+  const raw = Object.fromEntries(
+    PRIMARY_COMPARE_RAW_LABELS.map((rawLabel) => {
+      const observation = readEvidenceJson(root, `raw/${rawLabel}.json`).value;
+      const expectedClassification = rawLabel.startsWith('home-') ? PRIMARY_COMPARE_CLASSIFICATION : 'repeat';
+      if (observation.classification !== expectedClassification) {
+        compareEvidenceError(`${rawLabel} classification is not expected for local evidence`);
+      }
+      if (observation.conditions?.host !== PRIMARY_LOCAL_ORIGIN) {
+        compareEvidenceError(`${rawLabel} host is not local controlled evidence`);
+      }
+      if (observation.label !== rawLabel) compareEvidenceError(`${rawLabel} label mismatch`);
+      return [rawLabel, observation];
+    }),
+  );
+  const homeRuns = PRIMARY_COMPARE_RAW_LABELS.filter((rawLabel) => rawLabel.startsWith('home-')).map((rawLabel) => {
+    const observation = raw[rawLabel];
+    const calculated = summarizePrimaryImageRun(observation);
+    assertJsonEqual(observation.primaryImageRun, calculated, `${rawLabel} primary summary mismatch`);
+    return calculated;
+  });
+  const catalogRuns = PRIMARY_COMPARE_RAW_LABELS.filter((rawLabel) => rawLabel.startsWith('catalog-')).map((rawLabel) =>
+    localRouteGuardrailRun(raw[rawLabel]),
+  );
+  const pdpRuns = PRIMARY_COMPARE_RAW_LABELS.filter((rawLabel) => rawLabel.startsWith('pdp-')).map((rawLabel) =>
+    localRouteGuardrailRun(raw[rawLabel]),
+  );
+  assertJsonEqual(summary.home?.runs, homeRuns, `${label} home summary/raw mismatch`);
+  assertJsonEqual(summary.catalog?.runs, catalogRuns, `${label} catalog summary/raw mismatch`);
+  assertJsonEqual(summary.pdp?.runs, pdpRuns, `${label} PDP summary/raw mismatch`);
+  if (
+    summary.home?.comparable !== homeRuns.every((run) => run.comparable) ||
+    summary.catalog?.comparable !== catalogRuns.every((run) => run.comparable) ||
+    summary.pdp?.comparable !== pdpRuns.every((run) => run.comparable)
+  ) {
+    compareEvidenceError(`${label} comparable summary does not match raw evidence`);
+  }
+
+  const firstHomeVisual = homeRuns[0]?.visual;
+  if (
+    JSON.stringify(firstHomeVisual?.screenshotPaths) !== JSON.stringify(PRIMARY_COMPARE_SCREENSHOT_PATHS) ||
+    firstHomeVisual?.samples?.length !== PRIMARY_VISUAL_TIMES.length
+  ) {
+    compareEvidenceError(`${label} screenshot series is incomplete`);
+  }
+  for (const sample of firstHomeVisual.samples) {
+    const screenshotPath = sample.screenshotPath;
+    if (!PRIMARY_COMPARE_SCREENSHOT_PATHS.includes(screenshotPath)) {
+      compareEvidenceError(`${label} screenshot path is not exact`);
+    }
+    if (sample.screenshotWidth !== 390 || sample.screenshotHeight !== 844) {
+      compareEvidenceError(`${label} recorded screenshot dimensions are not 390x844`);
+    }
+    const actualHash = assertExactPngEvidence(root, screenshotPath);
+    if (actualHash !== sample.screenshotSha256) compareEvidenceError(`${label} screenshot hash mismatch`);
+  }
+  resolveEvidenceFile(root, 'summary.md');
+  return {
+    summary,
+    homeRuns,
+    catalogRuns,
+    pdpRuns,
+    evidence: PRIMARY_COMPARE_EVIDENCE_PATHS.map((relativePath) => `${root}/${relativePath}`),
+  };
+}
+
+function writePrimaryComparison(outputPath, comparison) {
+  const target = resolve(outputPath);
+  mkdirSync(dirname(target), { recursive: true });
+  const temporary = `${target}.tmp`;
+  writeFileSync(temporary, `${JSON.stringify(comparison, null, 2)}\n`, 'utf8');
+  renameSync(temporary, target);
+}
+
+function parsePrimaryCompareArgs(args) {
+  const beforeIndex = args.indexOf('--before-root');
+  const afterIndex = args.indexOf('--after-root');
+  const outputIndex = args.indexOf('--output');
+  const values = [
+    ['--before-root', beforeIndex],
+    ['--after-root', afterIndex],
+    ['--output', outputIndex],
+  ];
+  for (const [flag, index] of values) {
+    if (index < 0 || typeof args[index + 1] !== 'string' || args[index + 1].startsWith('--')) {
+      throw new Error(`primary compare requires ${flag}`);
+    }
+  }
+  return {
+    beforeRoot: args[beforeIndex + 1],
+    afterRoot: args[afterIndex + 1],
+    output: args[outputIndex + 1],
+  };
+}
+
+function runPrimaryCompare(args) {
+  const { beforeRoot, afterRoot, output } = parsePrimaryCompareArgs(args);
+  const before = readPrimaryCompareEvidence(beforeRoot, 'before');
+  const after = readPrimaryCompareEvidence(afterRoot, 'after');
+  const result = comparePrimaryImageRuns({
+    homeBefore: before.homeRuns,
+    homeAfter: after.homeRuns,
+    catalogBefore: before.catalogRuns,
+    catalogAfter: after.catalogRuns,
+    pdpBefore: before.pdpRuns,
+    pdpAfter: after.pdpRuns,
+  });
+  const comparison = {
+    decision: result.decision,
+    reason: result.reason,
+    requestReductionFraction: result.requestReductionFraction,
+    improvements: result.improvements,
+    homeMedians: result.homeMedians,
+    guardrails: result.guardrails,
+    visual: result.visual,
+    evidence: {
+      before: before.evidence,
+      after: after.evidence,
+      localClassification: PRIMARY_COMPARE_CLASSIFICATION,
+    },
+  };
+  writePrimaryComparison(output, comparison);
+  console.log(`wrote ${resolve(output)}`);
 }
 
 function writeJson(relativeName, value) {
@@ -1822,6 +2899,16 @@ function parseArgs(args) {
 
 async function main(args) {
   const cacheBuster = parseArgs(args);
+  if (args.includes('--primary-compare')) return runPrimaryCompare(args);
+  if (args.includes('--primary-series')) {
+    const labelIndex = args.indexOf('--label');
+    const outputIndex = args.indexOf('--output-root');
+    const hostIndex = args.indexOf('--host');
+    if (labelIndex < 0 || outputIndex < 0 || hostIndex < 0) {
+      throw new Error('primary series requires --label, --output-root, and --host');
+    }
+    return runPrimarySeries(args[labelIndex + 1], args[outputIndex + 1], args[hostIndex + 1]);
+  }
   if (args.includes('--cold-candidate')) return runCold(cacheBuster);
   if (args.includes('--repeat-series')) return runRepeatSeries(cacheBuster);
   if (args.includes('--summarize')) return summarizeAndWrite();

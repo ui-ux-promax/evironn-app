@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getHeroProduct, HERO_PRODUCT_IDS, type HeroPhase } from './hero-product-state';
 import { HERO_PRODUCTS } from './hero-products';
+import type { HomeVideoMode } from './video-ab';
 
 type Direction = 'forward' | 'reverse';
 type VideoKey = string;
@@ -8,6 +9,7 @@ type VisibleLayer = string | null;
 
 type HeroProductMediaProps = {
   phase: HeroPhase;
+  videoMode: HomeVideoMode;
   reducedMotion: boolean;
   onProgress: (currentTime: number, duration: number) => void;
   onForwardComplete: () => void;
@@ -17,6 +19,7 @@ type HeroProductMediaProps = {
 
 export function HeroProductMedia({
   phase,
+  videoMode,
   reducedMotion,
   onProgress,
   onForwardComplete,
@@ -40,6 +43,12 @@ export function HeroProductMedia({
     const entering = phase === `entering-${productId}`;
     const returning = phase === `returning-${productId}`;
     if (!entering && !returning) return;
+
+    if (videoMode === 'poster-only') {
+      setVisibleLayer(entering ? `${productId}-focus` : null);
+      queueMicrotask(entering ? onForwardComplete : onReverseComplete);
+      return;
+    }
 
     if (reducedMotion) {
       setVisibleLayer(entering ? `${productId}-focus` : null);
@@ -81,7 +90,7 @@ export function HeroProductMedia({
     }
 
     return () => video.removeEventListener('loadeddata', revealAndPlay);
-  }, [phase, reducedMotion, onFailure, onForwardComplete, onReverseComplete]);
+  }, [phase, reducedMotion, videoMode, onFailure, onForwardComplete, onReverseComplete]);
 
   const activeProduct = getHeroProduct(phase);
 
@@ -102,54 +111,57 @@ export function HeroProductMedia({
               .join(' ')}
             src={product.focusSrc}
             alt=""
+            data-video-fallback="true"
           />
         );
       })}
-      {HERO_PRODUCT_IDS.flatMap((id) =>
-        (['forward', 'reverse'] as const).map((direction) => {
-          const product = HERO_PRODUCTS[id];
-          const key: VideoKey = `${id}-${direction}`;
-          const activePhase = `${direction === 'forward' ? 'entering' : 'returning'}-${id}`;
-          const isActive = phase === activePhase;
+      {videoMode === 'control'
+        ? HERO_PRODUCT_IDS.flatMap((id) =>
+            (['forward', 'reverse'] as const).map((direction) => {
+              const product = HERO_PRODUCTS[id];
+              const key: VideoKey = `${id}-${direction}`;
+              const activePhase = `${direction === 'forward' ? 'entering' : 'returning'}-${id}`;
+              const isActive = phase === activePhase;
 
-          return (
-            <video
-              key={key}
-              ref={(node) => {
-                if (node) videoRefs.current[key] = node;
-                else delete videoRefs.current[key];
-              }}
-              className={[
-                'furni-hero-product-media__asset',
-                product.mediaClassName,
-                `is-product-${id}`,
-                visibleLayer === key ? 'is-visible' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              src={direction === 'forward' ? product.forwardSrc : product.reverseSrc}
-              muted
-              playsInline
-              preload="auto"
-              onTimeUpdate={(event) => {
-                if (direction === 'forward' && activeProduct === id) {
-                  onProgress(event.currentTarget.currentTime, event.currentTarget.duration);
-                }
-              }}
-              onEnded={() => {
-                if (!isActive) return;
-                if (direction === 'forward') onForwardComplete();
-                else onReverseComplete();
-              }}
-              onError={() => {
-                if (!isActive) return;
-                setVisibleLayer(direction === 'forward' ? null : `${id}-focus`);
-                onFailure(phase);
-              }}
-            />
-          );
-        }),
-      )}
+              return (
+                <video
+                  key={key}
+                  ref={(node) => {
+                    if (node) videoRefs.current[key] = node;
+                    else delete videoRefs.current[key];
+                  }}
+                  className={[
+                    'furni-hero-product-media__asset',
+                    product.mediaClassName,
+                    `is-product-${id}`,
+                    visibleLayer === key ? 'is-visible' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  src={direction === 'forward' ? product.forwardSrc : product.reverseSrc}
+                  muted
+                  playsInline
+                  preload="auto"
+                  onTimeUpdate={(event) => {
+                    if (direction === 'forward' && activeProduct === id) {
+                      onProgress(event.currentTarget.currentTime, event.currentTarget.duration);
+                    }
+                  }}
+                  onEnded={() => {
+                    if (!isActive) return;
+                    if (direction === 'forward') onForwardComplete();
+                    else onReverseComplete();
+                  }}
+                  onError={() => {
+                    if (!isActive) return;
+                    setVisibleLayer(direction === 'forward' ? null : `${id}-focus`);
+                    onFailure(phase);
+                  }}
+                />
+              );
+            }),
+          )
+        : null}
     </div>
   );
 }

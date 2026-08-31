@@ -11,6 +11,7 @@ import {
   type MediaFallbackMode,
   type MobilePlaybackState,
 } from './furniture-playback';
+import type { HomeVideoMode } from './video-ab';
 
 type Product = {
   name: string;
@@ -69,7 +70,13 @@ const products: Product[] = [
 const finePointerQuery = '(hover: hover) and (pointer: fine)';
 const defaultFurnitureHeading = 'Уют, продуманный со всех сторон';
 
-export function InteractiveFurnitureCards({ heading = defaultFurnitureHeading }: { heading?: string }) {
+export function InteractiveFurnitureCards({
+  heading = defaultFurnitureHeading,
+  videoMode = 'control',
+}: {
+  heading?: string;
+  videoMode?: HomeVideoMode;
+}) {
   const headingWords = heading.split(' ');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [videoFrameReady, setVideoFrameReady] = useState(() => products.map(() => false));
@@ -214,7 +221,17 @@ export function InteractiveFurnitureCards({ heading = defaultFurnitureHeading }:
 
   const reverseCard = (index: number) => {
     const video = videoRefs.current[index];
-    if (!video || cardPhases.current[index] === 'idle' || cardPhases.current[index] === 'reverse') return;
+    if (!video) {
+      if (videoMode === 'poster-only') {
+        const pendingIndex = mobileState.current.activeIndex === index ? mobileState.current.pendingIndex : null;
+        cardPhases.current[index] = 'idle';
+        if (activeRef.current === index) setActive(null);
+        mobileState.current = { activeIndex: null, pendingIndex: null, phase: 'idle' };
+        if (pendingIndex !== null) activateCard(pendingIndex, true);
+      }
+      return;
+    }
+    if (cardPhases.current[index] === 'idle' || cardPhases.current[index] === 'reverse') return;
 
     const reverseTime = getReverseStartTime(video.currentTime, video.duration, video.duration);
     cardPhases.current[index] = 'reverse';
@@ -337,6 +354,7 @@ export function InteractiveFurnitureCards({ heading = defaultFurnitureHeading }:
                   }
                   src={product.idleSrc}
                   alt=""
+                  data-video-fallback="true"
                 />
                 <canvas
                   className={
@@ -348,18 +366,20 @@ export function InteractiveFurnitureCards({ heading = defaultFurnitureHeading }:
                   width="720"
                   height="720"
                 />
-                <video
-                  className={
-                    getMediaLayerState(videoFrameReady[index], fallbackModes[index]).showVideo ? 'is-frame-ready' : ''
-                  }
-                  ref={(node) => {
-                    videoRefs.current[index] = node;
-                  }}
-                  src={product.forwardSrc}
-                  muted
-                  playsInline
-                  preload="auto"
-                />
+                {videoMode === 'control' ? (
+                  <video
+                    className={
+                      getMediaLayerState(videoFrameReady[index], fallbackModes[index]).showVideo ? 'is-frame-ready' : ''
+                    }
+                    ref={(node) => {
+                      videoRefs.current[index] = node;
+                    }}
+                    src={product.forwardSrc}
+                    muted
+                    playsInline
+                    preload="auto"
+                  />
+                ) : null}
               </span>
               <FurnitureCaption
                 name={product.name}

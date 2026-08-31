@@ -8,6 +8,7 @@ import { HeroProductMedia } from './hero-product-media';
 import { HeroRoomMedia } from './hero-room-media';
 import { HERO_PRODUCTS } from './hero-products';
 import { HERO_ROOM_OPTIONS, HERO_ROOMS } from './hero-rooms';
+import type { HomeVideoMode } from './video-ab';
 import {
   completeHeroForward,
   completeHeroReturn,
@@ -39,7 +40,7 @@ const HERO_ROOM_CATALOG_SLUGS: Record<AvailableHeroRoomId, string> = {
   terrace: 'terrace',
 };
 
-export function Hero() {
+export function Hero({ videoMode = 'control' }: { videoMode?: HomeVideoMode }) {
   const segRef = useRef<HTMLDivElement>(null);
   const roomButtonRefs = useRef<Partial<Record<HeroRoomId, HTMLButtonElement>>>({});
   const [roomState, setRoomState] = useState(INITIAL_HERO_ROOM_STATE);
@@ -204,6 +205,7 @@ export function Hero() {
       />
       <HeroProductMedia
         phase={phase}
+        videoMode={videoMode}
         reducedMotion={reducedMotion}
         onProgress={handleProgress}
         onForwardComplete={finishForward}

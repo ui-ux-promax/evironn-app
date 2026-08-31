@@ -8,8 +8,16 @@ import {
   FurnitureWorksParallax,
   InstagramFollowSection,
 } from '@/components/evironn/home';
+import type { HomeVideoMode } from '@/components/evironn/home/video-ab';
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const videoMode: HomeVideoMode = params['video-ab'] === 'poster' ? 'poster-only' : 'control';
+
   return (
     <>
       <a
@@ -19,9 +27,13 @@ export default function HomePage() {
         Перейти к содержимому
       </a>
       <main id="main-content" tabIndex={-1}>
-        <Hero />
+        {videoMode === 'poster-only' ? <Hero videoMode={videoMode} /> : <Hero />}
         <FurnitureCategorySection />
-        <InteractiveFurnitureCards />
+        {videoMode === 'poster-only' ? (
+          <InteractiveFurnitureCards videoMode={videoMode} />
+        ) : (
+          <InteractiveFurnitureCards />
+        )}
         <EditorialStatement />
         <NatureSection />
         <BenefitsShowcaseSection />

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ENCODE_SOURCE_CONTRACTS,
@@ -1737,6 +1738,19 @@ describe('visual package and guarded browser playback', () => {
     expect(index).toContain('src="/candidate/h264-crf18/reverse.mp4"');
     expect(index).toContain('original.playbackRate=1');
     expect(index).toContain('candidate.playbackRate=1');
+  });
+
+  it('generates a direct-playback index with a parseable inline script', async () => {
+    const fixture = await completeEligibleObjectiveRun();
+    const dependencies = await mainVisualDependencies(fixture);
+
+    await main(['visuals', '--run-id', fixture.manifest.runId], dependencies);
+
+    const index = await readFile(path.resolve(fixture.paths.runRoot, 'visuals/index.html'), 'utf8');
+    const script = index.match(/<script>([\s\S]*)<\/script>/)?.[1];
+
+    expect(script).toBeDefined();
+    expect(() => new vm.Script(script!)).not.toThrow();
   });
 
   it('rejects malformed user observations instead of treating missing fields as pending', async () => {

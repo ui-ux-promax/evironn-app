@@ -1197,7 +1197,7 @@ export function buildEncodeInvocations(candidate, paths, startingSequence) {
 export function buildProbeInvocations(candidate, paths, startingSequence) {
   candidateIdentity(candidate);
   const input = path.resolve(paths.runRoot, candidate.candidateRelativePath);
-  const base = ['-v', 'error', '-nostdin'];
+  const base = ['-v', 'error'];
   return [
     invocation(
       startingSequence,

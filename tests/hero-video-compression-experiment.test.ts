@@ -897,15 +897,32 @@ describe('probe contract', () => {
   it('builds named metadata and stream probes only', async () => {
     const { paths } = await createdRun();
     const invocations = buildProbeInvocations(candidate(), paths, 7);
+    const input = path.resolve(paths.runRoot, 'candidates/h264-crf18-forward.mp4');
     expect(invocations).toHaveLength(2);
-    expect(invocations[0].args).toEqual(expect.arrayContaining(['-select_streams', 'v:0', '-count_packets']));
-    expect(invocations[0].args).toEqual(
-      expect.arrayContaining([
-        'stream=index,codec_name,profile,width,height,pix_fmt,r_frame_rate,avg_frame_rate,nb_read_packets,bit_rate:format=duration,bit_rate,size',
-      ]),
-    );
+    expect(invocations[0].args).toEqual([
+      '-v',
+      'error',
+      '-select_streams',
+      'v:0',
+      '-count_packets',
+      '-show_entries',
+      'stream=index,codec_name,profile,width,height,pix_fmt,r_frame_rate,avg_frame_rate,nb_read_packets,bit_rate:format=duration,bit_rate,size',
+      '-of',
+      'json',
+      input,
+    ]);
+    expect(invocations[0].args).not.toContain('-nostdin');
     expect(invocations[0].args.join(' ')).not.toMatch(/tags|comment|show_entries format$/i);
-    expect(invocations[1].args).toEqual(expect.arrayContaining(['-show_entries', 'stream=index,codec_type']));
+    expect(invocations[1].args).toEqual([
+      '-v',
+      'error',
+      '-show_entries',
+      'stream=index,codec_type',
+      '-of',
+      'json',
+      input,
+    ]);
+    expect(invocations[1].args).not.toContain('-nostdin');
   });
 });
 

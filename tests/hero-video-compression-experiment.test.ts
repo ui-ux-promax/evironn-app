@@ -451,7 +451,13 @@ function decisionDependencies(fixture: any) {
 }
 
 async function objectiveHarness(
-  options: { missingCandidate?: string; nanMetric?: boolean; unknownTool?: boolean; unexpectedArtifact?: boolean } = {},
+  options: {
+    missingCandidate?: string;
+    nanMetric?: boolean;
+    psnrAvgField?: boolean;
+    unknownTool?: boolean;
+    unexpectedArtifact?: boolean;
+  } = {},
 ) {
   const repositoryRoot = await tempRepository();
   const paths = resolveRunPaths(repositoryRoot, 'orchestration', 'create');
@@ -504,7 +510,9 @@ async function objectiveHarness(
     if (relative?.startsWith('metrics/')) {
       const bytes = relative.endsWith('-vmaf.json')
         ? Buffer.from(JSON.stringify({ pooled_metrics: { vmaf: { mean: options.nanMetric ? 'NaN' : 95 } } }))
-        : Buffer.from(relative.endsWith('-ssim.log') ? 'All:0.99' : 'average:45');
+        : Buffer.from(
+            relative.endsWith('-ssim.log') ? 'All:0.99' : options.psnrAvgField ? 'psnr_avg:43.48' : 'psnr_avg:45',
+          );
       await writeOwned(path.resolve(paths.runRoot, relative), bytes);
     }
     if (item.executable === 'ffmpeg' && item.args.includes('-passlogfile')) {
@@ -1184,6 +1192,17 @@ describe('CLI lifecycle and run orchestration', () => {
     });
     expect(JSON.parse(await readFile(fixture.paths.manifestPath, 'utf8')).toolVersions.ffmpeg).toBe('ffmpeg-test');
     expect(await readFile(fixture.paths.deliveryReportPath, 'utf8')).toContain('sourceHashesAfter');
+  });
+
+  it('parses FFmpeg psnr_avg metric output during objective closeout', async () => {
+    const fixture = await objectiveHarness({ psnrAvgField: true });
+    await expect(main(['run', '--run-id', 'orchestration'], fixture.dependencies)).resolves.toBe(0);
+    const manifest = JSON.parse(await readFile(fixture.paths.manifestPath, 'utf8'));
+    expect(
+      manifest.pairResults.every((pair: any) =>
+        ['forward', 'reverse'].every((direction) => pair.directions[direction].metrics.psnr.value === 43.48),
+      ),
+    ).toBe(true);
   });
 
   it('hard-fails missing candidate artifacts before objective status/report closeout', async () => {

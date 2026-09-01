@@ -1844,7 +1844,7 @@ function parseProbe(metadata, streams, candidate, bytes) {
 function parseMetricValue(kind, output) {
   if (kind === 'vmaf') return Number(output?.pooled_metrics?.vmaf?.mean ?? NaN);
   const text = String(output ?? '');
-  const pattern = kind === 'ssim' ? /All:([0-9.]+)/g : /average:([0-9.]+)/g;
+  const pattern = kind === 'ssim' ? /All:([0-9.]+)/g : /psnr_avg:([0-9.]+)/g;
   const values = [...text.matchAll(pattern)].map((match) => Number(match[1]));
   return values.at(-1) ?? NaN;
 }

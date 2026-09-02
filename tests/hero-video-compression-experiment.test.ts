@@ -36,6 +36,9 @@ import * as harness from '../scripts/hero-video-compression-experiment.mjs';
 const BASELINE = '4704a3158732a1701f6c65cd6191e563239aee91';
 const HARNESS = '1111111111111111111111111111111111111111';
 const SHA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+type PairContract = (typeof PAIR_CONTRACTS)[number];
+type CandidateRecord = ReturnType<typeof candidate>;
+type VisualInvocation = ReturnType<typeof buildVisualInvocations>[number];
 
 function testIndexBytes(ids: string[]) {
   return Buffer.from(`<!doctype html><html><body>${ids.join(',')}</body></html>`);
@@ -88,7 +91,7 @@ async function createdRun() {
 }
 
 function candidate(pairId = 'h264-crf18', direction = 'forward') {
-  const pair = PAIR_CONTRACTS.find((entry) => entry.pairId === pairId)!;
+  const pair = PAIR_CONTRACTS.find((entry: PairContract) => entry.pairId === pairId)!;
   return {
     ...pair,
     direction,
@@ -732,7 +735,7 @@ describe('hero video immutable contracts', () => {
     expect(Object.isFrozen(VISUAL_SUPPORT_CONTRACTS)).toBe(true);
     expect(Object.isFrozen(PAIR_CONTRACTS)).toBe(true);
     expect(PAIR_CONTRACTS).toHaveLength(6);
-    expect(PAIR_CONTRACTS.map((pair) => pair.pairId)).toEqual([
+    expect(PAIR_CONTRACTS.map((pair: PairContract) => pair.pairId)).toEqual([
       'h264-crf18',
       'h264-crf20',
       'vp9-cq24',
@@ -869,12 +872,12 @@ describe('run lifecycle', () => {
 describe('candidate identity and encoder arrays', () => {
   it('expands each pair into unique forward and reverse candidates', async () => {
     const { paths } = await createdRun();
-    const all = PAIR_CONTRACTS.flatMap((pair) => [
+    const all = PAIR_CONTRACTS.flatMap((pair: PairContract) => [
       candidate(pair.pairId, 'forward'),
       candidate(pair.pairId, 'reverse'),
     ]);
-    expect(new Set(all.map((entry) => `${entry.pairId}:${entry.direction}`)).size).toBe(12);
-    expect(all.every((entry) => entry.candidateRelativePath.startsWith('candidates/'))).toBe(true);
+    expect(new Set(all.map((entry: CandidateRecord) => `${entry.pairId}:${entry.direction}`)).size).toBe(12);
+    expect(all.every((entry: CandidateRecord) => entry.candidateRelativePath.startsWith('candidates/'))).toBe(true);
     expect(buildEncodeInvocations(candidate(), paths, 1)[0].shell).toBe(false);
   });
 
@@ -1104,7 +1107,7 @@ describe('manifest identity and eligibility', () => {
         forward: directionResult('forward', 95, 4000000),
         reverse: directionResult('reverse', 95, 4000000),
       },
-    } as never;
+    } as Parameters<typeof assessPair>[0];
     expect(assessPair(base).eligible).toBe(true);
     expect(
       assessPair({ ...base, directions: { ...base.directions, forward: directionResult('forward', 94.999, 4000000) } })
@@ -1282,9 +1285,13 @@ describe('visual package and guarded browser playback', () => {
       1,
     );
     expect(invocations.length).toBeGreaterThanOrEqual(7);
-    expect(invocations.every((entry) => entry.args.includes('-n'))).toBe(true);
-    expect(invocations.some((entry) => entry.args.join(' ').includes('fps=24,select=eq(n\\,0)'))).toBe(true);
-    expect(invocations.some((entry) => entry.args.join(' ').includes('terrace-sofa-focus.webp'))).toBe(true);
+    expect(invocations.every((entry: VisualInvocation) => entry.args.includes('-n'))).toBe(true);
+    expect(
+      invocations.some((entry: VisualInvocation) => entry.args.join(' ').includes('fps=24,select=eq(n\\,0)')),
+    ).toBe(true);
+    expect(
+      invocations.some((entry: VisualInvocation) => entry.args.join(' ').includes('terrace-sofa-focus.webp')),
+    ).toBe(true);
   });
 
   it('builds a common-size timed local sequence with explicit focus timing', async () => {
@@ -1305,7 +1312,9 @@ describe('visual package and guarded browser playback', () => {
       paths,
       1,
     );
-    const sequence = invocations.find((entry) => entry.artifactRelativePath?.endsWith('forward-focus-reverse.mp4'))!;
+    const sequence = invocations.find((entry: VisualInvocation) =>
+      entry.artifactRelativePath?.endsWith('forward-focus-reverse.mp4'),
+    )!;
     const args = sequence.args.join(' ');
     expect(args).toContain('scale=1168:784');
     expect(args).toContain('settb=1/24');

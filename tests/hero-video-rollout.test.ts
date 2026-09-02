@@ -31,6 +31,22 @@ import {
   writeJsonAtomic,
 } from '../scripts/hero-video-rollout.mjs';
 
+type HeroVideoSource = {
+  id: string;
+  sourcePath: string;
+  bytes: number;
+  sha256: string;
+  width: number;
+  height: number;
+};
+
+type ProductionIdentity = { bytes: number; sha256: string };
+type RolloutContext = Parameters<typeof runCandidateBatch>[0];
+type RolloutManifest = RolloutContext['manifest'];
+type PromotionEntry = { state: 'INTENT' | 'COMPLETED' };
+
+const HERO_SOURCES = HERO_VIDEO_SOURCES as readonly HeroVideoSource[];
+
 const EXPECTED_MP4 = [
   'public/assets/hero/bedroom-bed-forward.mp4',
   'public/assets/hero/bedroom-bed-reverse.mp4',
@@ -72,7 +88,7 @@ const EXPECTED_BYTES = [
   3979743, 3211117, 6476041, 5437362, 9022617, 7696268, 6138461, 5330779, 4664253, 4013620, 6918992, 5679663, 8556765,
   7382094, 9941316, 8627076,
 ] as const;
-const source = HERO_VIDEO_SOURCES[0];
+const source = HERO_SOURCES[0];
 const paths = resolveRolloutPaths('D:/repo', 'phase-6c-rollout-20260901-01');
 const passingCandidate = {
   sourceId: source.id,
@@ -110,7 +126,7 @@ const passingCandidate = {
 };
 
 function makeAcceptedCandidates() {
-  return HERO_VIDEO_SOURCES.flatMap((item) => [
+  return HERO_SOURCES.flatMap((item) => [
     {
       ...passingCandidate,
       sourceId: item.id,
@@ -170,7 +186,7 @@ function makeDependencies(
     secondaryPath: string | null;
   }> = [];
   const removedWorkspacePaths: string[] = [];
-  const productionMp4 = new Map(EXPECTED_MP4.map((path, index) => [path, EXPECTED_HASHES[index]]));
+  const productionMp4 = new Map<string, string>(EXPECTED_MP4.map((path, index) => [path, EXPECTED_HASHES[index]]));
   const productionWebm = new Set<string>();
   const temporaryIdentity = new Map<string, { bytes: number; sha256: string }>();
   const temporaryFiles = new Set<string>();
@@ -207,13 +223,13 @@ function makeDependencies(
   };
   const markObservation = (operation: string, target: string) =>
     filesystemReceipts.push({ operation, mode: 'OBSERVE', path: target, secondaryPath: null });
-  const identityFor = (target: string) => {
+  const identityFor = (target: string): ProductionIdentity => {
     const normalized = target.replaceAll('\\', '/');
     const temporary = temporaryIdentity.get(normalized);
     if (temporary) return temporary;
-    const backupSource = HERO_VIDEO_SOURCES.find(({ sourcePath }) => normalized.endsWith(`/backups/${sourcePath}`));
+    const backupSource = HERO_SOURCES.find(({ sourcePath }) => normalized.endsWith(`/backups/${sourcePath}`));
     if (backupSource) return { bytes: backupSource.bytes, sha256: backupSource.sha256 };
-    const originalSource = HERO_VIDEO_SOURCES.find(({ sourcePath }) => normalized.endsWith(`/${sourcePath}`));
+    const originalSource = HERO_SOURCES.find(({ sourcePath }) => normalized.endsWith(`/${sourcePath}`));
     if (originalSource && !normalized.endsWith('.webm')) {
       const productionHash = productionMp4.get(originalSource.sourcePath) ?? originalSource.sha256;
       const candidate = acceptedCandidates.find(
@@ -243,8 +259,8 @@ function makeDependencies(
     pilotHarnessCommit: '7dc7fb6e636bd36d59cb4e00b152cc9e0abbb4fe' as const,
     status: acceptedCandidates.length === 32 ? ('VALIDATED' as const) : ('VALIDATED' as const),
     productionState: 'UNCHANGED' as const,
-    immutableSources: HERO_VIDEO_SOURCES,
-    backupSources: HERO_VIDEO_SOURCES.map((item) => ({
+    immutableSources: HERO_SOURCES,
+    backupSources: HERO_SOURCES.map((item) => ({
       sourcePath: item.sourcePath,
       backupPath: `backups/${item.sourcePath}`,
       bytes: item.bytes,
@@ -276,7 +292,7 @@ function makeDependencies(
       artifactSha256: candidate.sha256,
     })),
     filesystemReceipts: [],
-  };
+  } as RolloutManifest;
   const dependencies = {
     audit: filesystemReceipts,
     preflight: vi.fn(async () => options.preflightFailure ?? null),
@@ -331,12 +347,7 @@ function makeDependencies(
       calls.preMutationSnapshotSequence = sequence;
     }),
     encodeProbeMetricAndPlay: vi.fn(
-      async (
-        item: (typeof HERO_VIDEO_SOURCES)[number],
-        format: 'webm' | 'mp4',
-        quality: 28 | 24 | 20 | 18,
-        attempt: number,
-      ) => ({
+      async (item: HeroVideoSource, format: 'webm' | 'mp4', quality: 28 | 24 | 20 | 18, attempt: number) => ({
         ...passingCandidate,
         sourceId: item.id,
         format,
@@ -482,7 +493,7 @@ function makeDependencies(
       promotion: productionPromotionRenameCalls,
       rollback: productionRollbackRenameCalls,
     }),
-    productionHashes: () => EXPECTED_MP4.map((path) => productionMp4.get(path)),
+    productionHashes: () => EXPECTED_MP4.map((path) => productionMp4.get(path)!),
     corruptProduction: (relative: string) => productionMp4.set(relative, 'f'.repeat(64)),
     existingProductionWebm: () => [...productionWebm].sort(),
     openFlags: () => [...openFlags],
@@ -491,10 +502,10 @@ function makeDependencies(
 
 describe('hero video rollout harness', () => {
   it('locks all sixteen immutable source paths, bytes, hashes, and dimensions', () => {
-    expect(HERO_VIDEO_SOURCES.map(({ sourcePath }) => sourcePath)).toEqual(EXPECTED_MP4);
-    expect(HERO_VIDEO_SOURCES.map(({ bytes }) => bytes)).toEqual(EXPECTED_BYTES);
-    expect(HERO_VIDEO_SOURCES.map(({ sha256 }) => sha256)).toEqual(EXPECTED_HASHES);
-    expect(HERO_VIDEO_SOURCES.map(({ width, height }) => `${width}x${height}`)).toEqual([
+    expect(HERO_SOURCES.map(({ sourcePath }) => sourcePath)).toEqual(EXPECTED_MP4);
+    expect(HERO_SOURCES.map(({ bytes }) => bytes)).toEqual(EXPECTED_BYTES);
+    expect(HERO_SOURCES.map(({ sha256 }) => sha256)).toEqual(EXPECTED_HASHES);
+    expect(HERO_SOURCES.map(({ width, height }) => `${width}x${height}`)).toEqual([
       '1168x768',
       '1168x768',
       '1168x768',
@@ -528,16 +539,14 @@ describe('hero video rollout harness', () => {
   });
 
   it('rejects missing, extra, duplicate, or reordered source identities', () => {
-    expect(() => validateSourceInventory(HERO_VIDEO_SOURCES.slice(1))).toThrow('Source inventory identity mismatch.');
-    expect(() => validateSourceInventory([...HERO_VIDEO_SOURCES, HERO_VIDEO_SOURCES[0]])).toThrow(
+    expect(() => validateSourceInventory(HERO_SOURCES.slice(1))).toThrow('Source inventory identity mismatch.');
+    expect(() => validateSourceInventory([...HERO_SOURCES, HERO_SOURCES[0]])).toThrow(
       'Source inventory identity mismatch.',
     );
-    expect(() => validateSourceInventory([...HERO_VIDEO_SOURCES, HERO_VIDEO_SOURCES[0]].slice(1))).toThrow(
+    expect(() => validateSourceInventory([...HERO_SOURCES, HERO_SOURCES[0]].slice(1))).toThrow(
       'Source inventory identity mismatch.',
     );
-    expect(() => validateSourceInventory([...HERO_VIDEO_SOURCES].reverse())).toThrow(
-      'Source inventory identity mismatch.',
-    );
+    expect(() => validateSourceInventory([...HERO_SOURCES].reverse())).toThrow('Source inventory identity mismatch.');
   });
 
   it('rejects lexical symlink, non-file, and realpath-escaping artifacts before resolution', async () => {
@@ -1216,7 +1225,9 @@ describe('hero video rollout harness', () => {
     expect(fixture.context.dependencies.realpath).toHaveBeenCalledWith(paths.runRoot);
     expect(fixture.context.dependencies.realpath).toHaveBeenCalledWith(path.dirname(paths.manifest));
     expect(fixture.context.manifest.promotionAttempt?.entries).toHaveLength(32);
-    expect(fixture.context.manifest.promotionAttempt?.entries.every(({ state }) => state === 'COMPLETED')).toBe(true);
+    expect(
+      fixture.context.manifest.promotionAttempt?.entries.every(({ state }: PromotionEntry) => state === 'COMPLETED'),
+    ).toBe(true);
     const firstProductionCopy = fixture.filesystemReceipts.findIndex(
       ({ operation, path }) => operation === 'copyFile' && path.startsWith('D:/repo/public/assets/hero/'),
     );

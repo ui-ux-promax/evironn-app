@@ -1,14 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import { getHeroProduct, type HeroPhase } from './hero-product-state';
-import { HERO_PRODUCTS } from './hero-products';
+import { HERO_PRODUCTS, type HeroVideoSources } from './hero-products';
 
 type Direction = 'forward' | 'reverse';
 
 type HeroProductTransition = {
   direction: Direction;
   productId: NonNullable<ReturnType<typeof getHeroProduct>>;
-  src: string;
+  sources: HeroVideoSources;
 };
+
+type AttemptHandlers = Readonly<{
+  loadeddata: () => void;
+  timeupdate: () => void;
+  ended: () => void;
+  error: () => void;
+}>;
+
+export type HeroVideoFormat = 'webm' | 'mp4';
+export type SelectedHeroVideoSource = Readonly<{ format: HeroVideoFormat; src: string }>;
+
+export function selectHeroVideoSource(
+  sources: HeroVideoSources,
+  canPlayType: (mime: string) => string,
+): SelectedHeroVideoSource {
+  return sources.webm && canPlayType('video/webm; codecs="vp9"') !== ''
+    ? { format: 'webm', src: sources.webm }
+    : { format: 'mp4', src: sources.mp4 };
+}
 
 type HeroProductMediaProps = {
   phase: HeroPhase;
@@ -22,15 +41,24 @@ type HeroProductMediaProps = {
 function getActiveTransition(phase: HeroPhase): HeroProductTransition | null {
   if (phase.startsWith('entering-')) {
     const productId = getHeroProduct(phase);
-    return productId ? { direction: 'forward', productId, src: HERO_PRODUCTS[productId].forwardSrc } : null;
+    return productId ? { direction: 'forward', productId, sources: HERO_PRODUCTS[productId].forward } : null;
   }
 
   if (phase.startsWith('returning-')) {
     const productId = getHeroProduct(phase);
-    return productId ? { direction: 'reverse', productId, src: HERO_PRODUCTS[productId].reverseSrc } : null;
+    return productId ? { direction: 'reverse', productId, sources: HERO_PRODUCTS[productId].reverse } : null;
   }
 
   return null;
+}
+
+function browserCanPlayType(mime: string): string {
+  if (typeof document === 'undefined') return '';
+  try {
+    return document.createElement('video').canPlayType(mime);
+  } catch {
+    return '';
+  }
 }
 
 function releaseVideo(video: HTMLVideoElement) {
@@ -51,6 +79,7 @@ export function HeroProductMedia({
 }: HeroProductMediaProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const operation = useRef(0);
+  const attempt = useRef(0);
   const [visibleVideoKey, setVisibleVideoKey] = useState<string | null>(null);
   const activeProductId = getHeroProduct(phase);
   const transition = reducedMotion ? null : getActiveTransition(phase);
@@ -73,6 +102,7 @@ export function HeroProductMedia({
 
     if (reducedMotion) {
       operation.current += 1;
+      attempt.current += 1;
       const currentOperation = operation.current;
       setVisibleVideoKey(null);
       if (video) releaseVideo(video);
@@ -87,11 +117,13 @@ export function HeroProductMedia({
         });
       return () => {
         if (operation.current === currentOperation) operation.current += 1;
+        attempt.current += 1;
       };
     }
 
     if (!activeTransition || !video) {
       operation.current += 1;
+      attempt.current += 1;
       setVisibleVideoKey(null);
       if (video) releaseVideo(video);
       return;
@@ -101,58 +133,94 @@ export function HeroProductMedia({
     const currentOperation = operation.current;
     const product = HERO_PRODUCTS[activeTransition.productId];
     const isCurrentOperation = () => operation.current === currentOperation;
-    let playbackStarted = false;
+    let activeHandlers: AttemptHandlers | null = null;
+    let fallbackAttempted = false;
 
     video.pause();
     video.currentTime = 0;
 
-    const fail = () => {
-      if (!isCurrentOperation()) return;
-      operation.current += 1;
-      setVisibleVideoKey(null);
-      releaseVideo(video);
-      onFailure(phase);
+    const removeAttemptHandlers = () => {
+      if (!activeHandlers) return;
+      video.removeEventListener('loadeddata', activeHandlers.loadeddata);
+      video.removeEventListener('timeupdate', activeHandlers.timeupdate);
+      video.removeEventListener('ended', activeHandlers.ended);
+      video.removeEventListener('error', activeHandlers.error);
+      activeHandlers = null;
     };
 
-    const revealAndPlay = () => {
-      if (!isCurrentOperation() || playbackStarted) return;
-      playbackStarted = true;
-      setVisibleVideoKey(`${activeTransition.productId}-${activeTransition.direction}`);
-      video.playbackRate = product.playbackRate;
-      void video.play().catch(fail);
+    const bindAttempt = (selected: SelectedHeroVideoSource) => {
+      removeAttemptHandlers();
+      attempt.current += 1;
+      const currentAttempt = attempt.current;
+      const assignedSource = selected.src;
+      let playbackStarted = false;
+      const isCurrentAttempt = () =>
+        operation.current === currentOperation &&
+        attempt.current === currentAttempt &&
+        video.getAttribute('src') === assignedSource;
+
+      const fail = () => {
+        if (!isCurrentAttempt()) return;
+        removeAttemptHandlers();
+        operation.current += 1;
+        attempt.current += 1;
+        setVisibleVideoKey(null);
+        releaseVideo(video);
+        onFailure(phase);
+      };
+
+      const loadeddata = () => {
+        if (!isCurrentAttempt() || playbackStarted) return;
+        playbackStarted = true;
+        setVisibleVideoKey(`${activeTransition.productId}-${activeTransition.direction}`);
+        video.playbackRate = product.playbackRate;
+        void video.play().catch(fail);
+      };
+      const timeupdate = () => {
+        if (isCurrentAttempt() && activeTransition.direction === 'forward') {
+          onProgress(video.currentTime, video.duration);
+        }
+      };
+      const ended = () => {
+        if (!isCurrentAttempt()) return;
+        removeAttemptHandlers();
+        operation.current += 1;
+        attempt.current += 1;
+        setVisibleVideoKey(null);
+        releaseVideo(video);
+        if (activeTransition.direction === 'forward') onForwardComplete();
+        else onReverseComplete();
+      };
+      const error = () => {
+        if (!isCurrentAttempt()) return;
+        if (selected.format === 'webm' && !playbackStarted && !fallbackAttempted) {
+          fallbackAttempted = true;
+          setVisibleVideoKey(null);
+          video.pause();
+          video.currentTime = 0;
+          bindAttempt({ format: 'mp4', src: activeTransition.sources.mp4 });
+          return;
+        }
+        fail();
+      };
+
+      activeHandlers = { loadeddata, timeupdate, ended, error };
+      video.addEventListener('loadeddata', loadeddata);
+      video.addEventListener('timeupdate', timeupdate);
+      video.addEventListener('ended', ended);
+      video.addEventListener('error', error);
+      video.setAttribute('src', assignedSource);
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) loadeddata();
+      else video.load();
     };
 
-    const handleLoadedData = () => revealAndPlay();
-    const handleTimeUpdate = () => {
-      if (activeTransition.direction === 'forward' && isCurrentOperation()) {
-        onProgress(video.currentTime, video.duration);
-      }
-    };
-    const handleEnded = () => {
-      if (!isCurrentOperation()) return;
-      operation.current += 1;
-      setVisibleVideoKey(null);
-      releaseVideo(video);
-      if (activeTransition.direction === 'forward') onForwardComplete();
-      else onReverseComplete();
-    };
-    const handleError = () => fail();
-
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('ended', handleEnded);
-    video.addEventListener('error', handleError);
-
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) revealAndPlay();
-    else video.load();
+    bindAttempt(selectHeroVideoSource(activeTransition.sources, browserCanPlayType));
 
     return () => {
       if (isCurrentOperation()) operation.current += 1;
+      attempt.current += 1;
       setVisibleVideoKey(null);
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('error', handleError);
+      removeAttemptHandlers();
       releaseVideo(video);
     };
   }, [onFailure, onForwardComplete, onProgress, onReverseComplete, phase, reducedMotion]);
@@ -180,7 +248,6 @@ export function HeroProductMedia({
             `is-product-${transition.productId}`,
             visibleVideoKey === transitionKey ? 'is-visible' : '',
           ].join(' ')}
-          src={transition.src}
           muted
           playsInline
           preload="auto"

@@ -8,14 +8,16 @@ export type HeroProduct = {
   name: string;
   category: string;
   price: string;
-  forwardSrc: string;
-  reverseSrc: string;
+  forward: HeroVideoSources;
+  reverse: HeroVideoSources;
   focusSrc: string;
   playbackRate: number;
   mediaClassName: string;
   hotspotClassName: string;
   href: string | null;
 };
+
+export type HeroVideoSources = Readonly<{ webm: string; mp4: string }>;
 
 export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
   sofa: {
@@ -24,8 +26,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Диван Linden на два места',
     category: 'Гостиная',
     price: '$1,680',
-    forwardSrc: '/assets/hero/sofa-forward.mp4',
-    reverseSrc: '/assets/hero/sofa-reverse.mp4',
+    forward: { webm: '/assets/hero/sofa-forward.webm', mp4: '/assets/hero/sofa-forward.mp4' },
+    reverse: { webm: '/assets/hero/sofa-reverse.webm', mp4: '/assets/hero/sofa-reverse.mp4' },
     focusSrc: '/assets/hero/sofa-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-living-room is-mirrored',
@@ -38,8 +40,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Плетёное кресло Noma',
     category: 'Мягкая мебель',
     price: '$1,240',
-    forwardSrc: '/assets/hero/chair-forward.mp4',
-    reverseSrc: '/assets/hero/chair-reverse.mp4',
+    forward: { webm: '/assets/hero/chair-forward.webm', mp4: '/assets/hero/chair-forward.mp4' },
+    reverse: { webm: '/assets/hero/chair-reverse.webm', mp4: '/assets/hero/chair-reverse.mp4' },
     focusSrc: '/assets/hero/chair-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-living-room is-mirrored',
@@ -52,8 +54,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Обеденный стул Arden',
     category: 'Столовая',
     price: '$620',
-    forwardSrc: '/assets/hero/kitchen-dining-forward.mp4',
-    reverseSrc: '/assets/hero/kitchen-dining-reverse.mp4',
+    forward: { webm: '/assets/hero/kitchen-dining-forward.webm', mp4: '/assets/hero/kitchen-dining-forward.mp4' },
+    reverse: { webm: '/assets/hero/kitchen-dining-reverse.webm', mp4: '/assets/hero/kitchen-dining-reverse.mp4' },
     focusSrc: '/assets/hero/kitchen-dining-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-kitchen',
@@ -66,8 +68,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Барный стул Aster',
     category: 'Кухня',
     price: '$490',
-    forwardSrc: '/assets/hero/kitchen-island-forward.mp4',
-    reverseSrc: '/assets/hero/kitchen-island-reverse.mp4',
+    forward: { webm: '/assets/hero/kitchen-island-forward.webm', mp4: '/assets/hero/kitchen-island-forward.mp4' },
+    reverse: { webm: '/assets/hero/kitchen-island-reverse.webm', mp4: '/assets/hero/kitchen-island-reverse.mp4' },
     focusSrc: '/assets/hero/kitchen-island-focus.webp',
     playbackRate: 1.2,
     mediaClassName: 'is-kitchen',
@@ -80,8 +82,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Кресло Elara Bouclé',
     category: 'Мебель для спальни',
     price: '$980',
-    forwardSrc: '/assets/hero/bedroom-chair-forward.mp4',
-    reverseSrc: '/assets/hero/bedroom-chair-reverse.mp4',
+    forward: { webm: '/assets/hero/bedroom-chair-forward.webm', mp4: '/assets/hero/bedroom-chair-forward.mp4' },
+    reverse: { webm: '/assets/hero/bedroom-chair-reverse.webm', mp4: '/assets/hero/bedroom-chair-reverse.mp4' },
     focusSrc: '/assets/hero/bedroom-chair-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-bedroom',
@@ -94,8 +96,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Кровать Maren на платформе',
     category: 'Спальня',
     price: '$2,480',
-    forwardSrc: '/assets/hero/bedroom-bed-forward.mp4',
-    reverseSrc: '/assets/hero/bedroom-bed-reverse.mp4',
+    forward: { webm: '/assets/hero/bedroom-bed-forward.webm', mp4: '/assets/hero/bedroom-bed-forward.mp4' },
+    reverse: { webm: '/assets/hero/bedroom-bed-reverse.webm', mp4: '/assets/hero/bedroom-bed-reverse.mp4' },
     focusSrc: '/assets/hero/bedroom-bed-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-bedroom',
@@ -108,8 +110,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Уличное кресло Sora',
     category: 'Уличная мебель',
     price: '$1,120',
-    forwardSrc: '/assets/hero/terrace-chair-forward.mp4',
-    reverseSrc: '/assets/hero/terrace-chair-reverse.mp4',
+    forward: { webm: '/assets/hero/terrace-chair-forward.webm', mp4: '/assets/hero/terrace-chair-forward.mp4' },
+    reverse: { webm: '/assets/hero/terrace-chair-reverse.webm', mp4: '/assets/hero/terrace-chair-reverse.mp4' },
     focusSrc: '/assets/hero/terrace-chair-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-terrace',
@@ -122,8 +124,8 @@ export const HERO_PRODUCTS: Record<HeroProductId, HeroProduct> = {
     name: 'Уличный диван Vale',
     category: 'Терраса',
     price: '$1,890',
-    forwardSrc: '/assets/hero/terrace-sofa-forward.mp4',
-    reverseSrc: '/assets/hero/terrace-sofa-reverse.mp4',
+    forward: { webm: '/assets/hero/terrace-sofa-forward.webm', mp4: '/assets/hero/terrace-sofa-forward.mp4' },
+    reverse: { webm: '/assets/hero/terrace-sofa-reverse.webm', mp4: '/assets/hero/terrace-sofa-reverse.mp4' },
     focusSrc: '/assets/hero/terrace-sofa-focus.webp',
     playbackRate: 1,
     mediaClassName: 'is-terrace',

@@ -9,9 +9,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('framer-motion', () => {
   const stripMotionProps = ({ animate, exit, initial, variants, ...props }: Record<string, unknown>) => props;
-  const createMotionElement = (tag: keyof HTMLElementTagNameMap) => (props: Record<string, unknown>) => {
-    const Component = tag as keyof React.JSX.IntrinsicElements;
-    return <Component {...stripMotionProps(props)} />;
+  const createMotionElement = (tag: keyof HTMLElementTagNameMap) => {
+    const MotionElement = (props: Record<string, unknown>) => {
+      const Component = tag as keyof React.JSX.IntrinsicElements;
+      return <Component {...stripMotionProps(props)} />;
+    };
+    return MotionElement;
   };
 
   return {
@@ -52,12 +55,14 @@ vi.stubGlobal('matchMedia', createMatchMedia(false));
 const playMock = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
 vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
 vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => undefined);
+const canPlayTypeMock = vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('');
 
 import { Hero } from '@/components/evironn/home/hero';
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  canPlayTypeMock.mockReturnValue('');
   vi.stubGlobal('matchMedia', createMatchMedia(false));
 });
 
@@ -118,6 +123,62 @@ describe('Evironn interactive hero shell', () => {
 
     expect(document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')).toHaveLength(0);
     expect(document.querySelector('img[src="/assets/hero/sofa-focus.webp"]')).toHaveClass('is-visible');
+  });
+
+  it('connects only WebM when Chromium reports VP9 support', () => {
+    canPlayTypeMock.mockReturnValue('probably');
+    render(<Hero />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+
+    const video = document.querySelector<HTMLVideoElement>('#evironn-hero video');
+    expect(video).toHaveAttribute('src', '/assets/hero/sofa-forward.webm');
+    expect(video).not.toHaveAttribute('src', '/assets/hero/sofa-forward.mp4');
+    expect(video).not.toHaveAttribute('src', '/assets/hero/sofa-reverse.webm');
+  });
+
+  it('falls back from WebM to matching MP4 once before playback', () => {
+    canPlayTypeMock.mockReturnValue('probably');
+    render(<Hero />);
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+
+    const video = document.querySelector<HTMLVideoElement>('#evironn-hero video');
+    expect(video).toHaveAttribute('src', '/assets/hero/sofa-forward.webm');
+
+    fireEvent.error(video!);
+    expect(video).toHaveAttribute('src', '/assets/hero/sofa-forward.mp4');
+    expect(video).not.toHaveClass('is-visible');
+
+    fireEvent.loadedData(video!);
+    expect(video).toHaveClass('is-visible');
+    expect(playMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports MP4 failure after WebM fallback without retrying', () => {
+    canPlayTypeMock.mockReturnValue('probably');
+    render(<Hero />);
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+    const video = document.querySelector<HTMLVideoElement>('#evironn-hero video');
+
+    fireEvent.error(video!);
+    expect(video).toHaveAttribute('src', '/assets/hero/sofa-forward.mp4');
+    fireEvent.error(video!);
+
+    expect(document.querySelector('#evironn-hero video')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument();
+  });
+
+  it('does not fall back after WebM has started playback', () => {
+    canPlayTypeMock.mockReturnValue('probably');
+    render(<Hero />);
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+    const video = document.querySelector<HTMLVideoElement>('#evironn-hero video');
+
+    fireEvent.loadedData(video!);
+    fireEvent.error(video!);
+
+    expect(document.querySelector('#evironn-hero video')).toBeNull();
+    expect(playMock).toHaveBeenCalledTimes(1);
   });
 
   it('loads reverse video only on return and keeps unrelated product sources absent', () => {

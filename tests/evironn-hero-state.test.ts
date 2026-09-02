@@ -26,6 +26,7 @@ import {
 } from '@/components/evironn/home/hero-product-motion';
 import { HERO_PRODUCTS } from '@/components/evironn/home/hero-products';
 import { HERO_ROOMS } from '@/components/evironn/home/hero-rooms';
+import { selectHeroVideoSource } from '@/components/evironn/home/hero-product-media';
 
 describe('Evironn hero pure state', () => {
   it('starts only a ready available room transition and locks competing input', () => {
@@ -79,7 +80,7 @@ describe('Evironn hero pure state', () => {
     expect(HERO_PRODUCTS['bedroom-bed'].href).toBe(
       '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle',
     );
-    expect(HERO_PRODUCTS['terrace-sofa'].forwardSrc).toBe('/assets/hero/terrace-sofa-forward.mp4');
+    expect(HERO_PRODUCTS['terrace-sofa'].forward.mp4).toBe('/assets/hero/terrace-sofa-forward.mp4');
   });
 
   it('removes spatial motion variants when reduced motion is requested', () => {
@@ -96,11 +97,59 @@ describe('Evironn hero pure state', () => {
 
   it('keeps every hero media map and production route adapter explicit', () => {
     for (const product of Object.values(HERO_PRODUCTS)) {
-      expect(product.forwardSrc).toMatch(/^\/assets\/hero\/.*-forward\.mp4$/);
-      expect(product.reverseSrc).toMatch(/^\/assets\/hero\/.*-reverse\.mp4$/);
+      expect(product.forward.webm).toMatch(/^\/assets\/hero\/.*-forward\.webm$/);
+      expect(product.forward.mp4).toMatch(/^\/assets\/hero\/.*-forward\.mp4$/);
+      expect(product.reverse.webm).toMatch(/^\/assets\/hero\/.*-reverse\.webm$/);
+      expect(product.reverse.mp4).toMatch(/^\/assets\/hero\/.*-reverse\.mp4$/);
       expect(product.focusSrc).toMatch(/^\/assets\/hero\/.*-focus\.webp$/);
       expect(product.href).toBe('/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle');
     }
+  });
+
+  it('maps every hero direction to its exact WebM and MP4 production pair', () => {
+    const expected = [
+      'bedroom-bed-forward',
+      'bedroom-bed-reverse',
+      'bedroom-chair-forward',
+      'bedroom-chair-reverse',
+      'chair-forward',
+      'chair-reverse',
+      'kitchen-dining-forward',
+      'kitchen-dining-reverse',
+      'kitchen-island-forward',
+      'kitchen-island-reverse',
+      'sofa-forward',
+      'sofa-reverse',
+      'terrace-chair-forward',
+      'terrace-chair-reverse',
+      'terrace-sofa-forward',
+      'terrace-sofa-reverse',
+    ];
+    const actual = Object.values(HERO_PRODUCTS).flatMap((product) => [
+      `${product.forward.webm}|${product.forward.mp4}`,
+      `${product.reverse.webm}|${product.reverse.mp4}`,
+    ]);
+
+    expect(actual.sort()).toEqual(
+      expected.map((basename) => `/assets/hero/${basename}.webm|/assets/hero/${basename}.mp4`).sort(),
+    );
+    expect(actual.some((pair) => pair.includes('/assets/products/'))).toBe(false);
+  });
+
+  it('selects WebM only when browser reports VP9 support', () => {
+    const sources = { webm: '/assets/hero/sofa-forward.webm', mp4: '/assets/hero/sofa-forward.mp4' };
+    const canPlayType = (mime: string) => {
+      expect(mime).toBe('video/webm; codecs="vp9"');
+      return 'probably';
+    };
+
+    expect(selectHeroVideoSource(sources, canPlayType)).toEqual({ format: 'webm', src: sources.webm });
+    expect(selectHeroVideoSource(sources, () => 'maybe')).toEqual({ format: 'webm', src: sources.webm });
+    expect(selectHeroVideoSource(sources, () => '')).toEqual({ format: 'mp4', src: sources.mp4 });
+    expect(selectHeroVideoSource({ webm: '', mp4: sources.mp4 }, () => 'probably')).toEqual({
+      format: 'mp4',
+      src: sources.mp4,
+    });
   });
 
   it('recognizes all four available rooms', () => {

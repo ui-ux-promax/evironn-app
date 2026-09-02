@@ -3,21 +3,21 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const productPath = '/product/noma-woven-lounge';
 const defaultCanonicalPath = '/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle';
-const sceneBackground = '/assets/products/05-graphite-walnut-room-background-fixed.png';
+const sceneBackground = '/assets/products/05-graphite-walnut-room-background-fixed.webp';
 const turntableVideo = '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm';
-const turntablePoster = '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png';
+const turntablePoster = '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp';
 const turntableBytes = 28_717_710;
 const price = '89 990 ₽';
 const oldPrice = '109 990 ₽';
 const fallbackStatus = '360° недоступен, показано статичное изображение';
 
 const combinations = [
-  ['ivory', 'pine', 'finish%3Aoak%2Cupholstery%3Aivory-boucle', '05-ivory-pine-chair-fixed-alpha.png'],
-  ['ivory', 'walnut', 'finish%3Awalnut%2Cupholstery%3Aivory-boucle', '05-ivory-walnut-chair-fixed-alpha.png'],
-  ['charcoal', 'pine', 'finish%3Aoak%2Cupholstery%3Agraphite', '05-graphite-pine-chair-fixed-alpha.png'],
-  ['charcoal', 'walnut', 'finish%3Awalnut%2Cupholstery%3Agraphite', '05-graphite-walnut-chair-fixed-alpha.png'],
-  ['terracotta', 'pine', 'finish%3Aoak%2Cupholstery%3Aterracotta', '05-terracotta-pine-chair-fixed-alpha.png'],
-  ['terracotta', 'walnut', 'finish%3Awalnut%2Cupholstery%3Aterracotta', '05-terracotta-walnut-chair-fixed-alpha.png'],
+  ['ivory', 'pine', 'finish%3Aoak%2Cupholstery%3Aivory-boucle', '05-ivory-pine-chair-fixed-alpha.webp'],
+  ['ivory', 'walnut', 'finish%3Awalnut%2Cupholstery%3Aivory-boucle', '05-ivory-walnut-chair-fixed-alpha.webp'],
+  ['charcoal', 'pine', 'finish%3Aoak%2Cupholstery%3Agraphite', '05-graphite-pine-chair-fixed-alpha.webp'],
+  ['charcoal', 'walnut', 'finish%3Awalnut%2Cupholstery%3Agraphite', '05-graphite-walnut-chair-fixed-alpha.webp'],
+  ['terracotta', 'pine', 'finish%3Aoak%2Cupholstery%3Aterracotta', '05-terracotta-pine-chair-fixed-alpha.webp'],
+  ['terracotta', 'walnut', 'finish%3Awalnut%2Cupholstery%3Aterracotta', '05-terracotta-walnut-chair-fixed-alpha.webp'],
 ] as const;
 
 const upholsteryLabels = {
@@ -94,7 +94,7 @@ test('showcase default redirects to exact canonical scene, panel, and recommenda
   await expect(page.locator('.product-page__scene')).toHaveCSS('background-image', new RegExp(sceneBackground));
   await expect(page.locator('.product-page__scene-chair')).toHaveAttribute(
     'src',
-    '/assets/products/05-ivory-walnut-chair-fixed-alpha.png',
+    '/assets/products/05-ivory-walnut-chair-fixed-alpha.webp',
   );
   await expect(page.locator('.product-page__panel')).toBeVisible();
   await expect(page.locator('.product-page__panel h1')).toHaveText('Кресло Graphite');

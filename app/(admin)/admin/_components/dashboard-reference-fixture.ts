@@ -34,7 +34,7 @@ export const DASHBOARD_REFERENCE_FIXTURE: DashboardReferenceModel = {
     {
       id: 'sofa',
       name: 'Льняной диван',
-      imageUrl: '/assets/editorial/images/category-sofa.png',
+      imageUrl: '/assets/editorial/images/category-sofa.webp',
       availability: 'В наличии',
       stock: '42',
       href: '/admin/catalog/products',
@@ -42,7 +42,7 @@ export const DASHBOARD_REFERENCE_FIXTURE: DashboardReferenceModel = {
     {
       id: 'armchair',
       name: 'Кресло «Олива»',
-      imageUrl: '/assets/editorial/images/category-reading-chair.png',
+      imageUrl: '/assets/editorial/images/category-reading-chair.webp',
       availability: 'В наличии',
       stock: '28',
       href: '/admin/catalog/products',
@@ -50,7 +50,7 @@ export const DASHBOARD_REFERENCE_FIXTURE: DashboardReferenceModel = {
     {
       id: 'table',
       name: 'Журнальный стол «Дуб»',
-      imageUrl: '/assets/editorial/images/category-console.png',
+      imageUrl: '/assets/editorial/images/category-console.webp',
       availability: 'В наличии',
       stock: '36',
       href: '/admin/catalog/products',
@@ -83,8 +83,8 @@ export const DASHBOARD_REFERENCE_FIXTURE: DashboardReferenceModel = {
     date,
     customer,
     products: [
-      { name: 'Диван', imageUrl: '/assets/editorial/images/category-sofa.png' },
-      { name: 'Кресло', imageUrl: '/assets/editorial/images/category-reading-chair.png' },
+      { name: 'Диван', imageUrl: '/assets/editorial/images/category-sofa.webp' },
+      { name: 'Кресло', imageUrl: '/assets/editorial/images/category-reading-chair.webp' },
     ],
     overflowCount: index + 1,
     total,

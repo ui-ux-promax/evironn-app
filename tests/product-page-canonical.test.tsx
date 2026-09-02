@@ -4,7 +4,7 @@ import { buildCombinationKey } from '@/lib/furniture-sku';
 import type { FurnitureProductForSelection } from '@/lib/product-selection';
 
 const REDIRECT = 'NEXT_REDIRECT_TEST';
-const AUDITED_POSTER = '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png';
+const AUDITED_POSTER = '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp';
 
 const mocks = vi.hoisted(() => ({
   getFurnitureProductBySlug: vi.fn(),

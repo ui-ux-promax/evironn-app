@@ -97,8 +97,8 @@ describe('Evironn interactive hero shell', () => {
     expect(livingRoomImage?.getAttribute('srcset')).toContain('_next/image');
     expect(livingRoomImage?.getAttribute('srcset')).toContain('%2Fassets%2Fhero%2Fliving-room-idle-5f0f1836.webp');
     expect(livingRoomImage?.getAttribute('srcset')).toContain('q=90');
-    expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')).toHaveAttribute('loading', 'lazy');
-    expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')).toHaveAttribute('fetchpriority', 'auto');
+    expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.webp"]')).toHaveAttribute('loading', 'lazy');
+    expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.webp"]')).toHaveAttribute('fetchpriority', 'auto');
   });
 
   it('connects only selected forward video and releases it when transition ends', () => {
@@ -251,7 +251,7 @@ describe('Evironn interactive hero shell', () => {
     expect(document.querySelector('#evironn-hero video')).toHaveAttribute('src', '/assets/hero/sofa-forward.mp4');
 
     const kitchen = screen.getByRole('button', { name: 'КУХНЯ' });
-    fireEvent.load(document.querySelector('img[src="/assets/hero/kitchen-idle.jpg"]')!);
+    fireEvent.load(document.querySelector('img[src="/assets/hero/kitchen-idle.webp"]')!);
     fireEvent.click(kitchen);
 
     expect(document.querySelector('#evironn-hero video')).toBeNull();
@@ -286,7 +286,7 @@ describe('Evironn interactive hero shell', () => {
 
     const livingImages = [...document.querySelectorAll<HTMLImageElement>('#evironn-hero img')];
     expect(livingImages.some((image) => image.classList.contains('is-living-room'))).toBe(true);
-    fireEvent.load(livingImages.find((image) => image.getAttribute('src') === '/assets/hero/kitchen-idle.jpg')!);
+    fireEvent.load(livingImages.find((image) => image.getAttribute('src') === '/assets/hero/kitchen-idle.webp')!);
     expect(kitchen).not.toBeDisabled();
     fireEvent.click(kitchen);
     expect(kitchen).toBeDisabled();
@@ -318,7 +318,7 @@ describe('Evironn interactive hero shell', () => {
     render(<Hero />);
 
     const kitchen = screen.getByRole('button', { name: 'КУХНЯ' });
-    const kitchenImage = document.querySelector<HTMLImageElement>('img[src="/assets/hero/kitchen-idle.jpg"]');
+    const kitchenImage = document.querySelector<HTMLImageElement>('img[src="/assets/hero/kitchen-idle.webp"]');
     fireEvent.load(kitchenImage!);
     fireEvent.click(kitchen);
     fireEvent.error(kitchenImage!);

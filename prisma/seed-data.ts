@@ -285,7 +285,7 @@ export const furnitureProducts: SeedProduct[] = [
       ),
     ],
     media: [
-      image('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png', 'Noma Woven Lounge'),
+      image('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp', 'Noma Woven Lounge'),
       {
         kind: 'TURN_TABLE_VIDEO',
         url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
@@ -294,13 +294,13 @@ export const furnitureProducts: SeedProduct[] = [
       },
       {
         kind: 'TURN_TABLE_POSTER',
-        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
         alt: 'Noma Woven Lounge 360 poster',
         sortOrder: 0,
       },
       {
         kind: 'TURN_TABLE_FALLBACK',
-        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
         alt: 'Noma Woven Lounge static view',
         sortOrder: 0,
       },
@@ -411,7 +411,7 @@ export const furnitureProducts: SeedProduct[] = [
         4,
       ),
     ],
-    media: [image('/assets/products/01-bar-stool-cutout.png', 'Aster Counter Chair')],
+    media: [image('/assets/products/01-bar-stool-cutout.webp', 'Aster Counter Chair')],
   },
   {
     name: 'Terra Rocking Chair Dark',
@@ -490,7 +490,7 @@ export const furnitureProducts: SeedProduct[] = [
         112000,
       ),
     ],
-    media: [image('/assets/products/05-terracotta-walnut-chair-alpha.png', 'Sora Accent Terracotta')],
+    media: [image('/assets/products/05-terracotta-walnut-chair-alpha.webp', 'Sora Accent Terracotta')],
   },
   {
     name: 'Linden Sofa Sage',

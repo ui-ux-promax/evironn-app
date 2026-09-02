@@ -139,7 +139,7 @@ export function BenefitsShowcaseSection() {
             <RevealMedia className="benefit-story-video-reveal" initial={{ scale: 1.1 }}>
               <img
                 className="benefit-story-video"
-                src="/assets/furniture/craftsmanship-wide.png"
+                src="/assets/furniture/craftsmanship-wide.webp"
                 alt="Работа мастера над деревянной деталью мебели"
               />
             </RevealMedia>
@@ -168,7 +168,7 @@ export function BenefitsShowcaseSection() {
                 <img
                   alt="Кресло из светлой мебельной ткани"
                   className="benefit-materials-product"
-                  src="/assets/products/03-ivory-lounge-cutout.png"
+                  src="/assets/products/03-ivory-lounge-cutout.webp"
                 />
               </RevealMedia>
             </article>
@@ -181,7 +181,7 @@ export function BenefitsShowcaseSection() {
                 <img
                   alt="Барный стул с мягким сиденьем"
                   className="benefit-standards-product"
-                  src="/assets/products/01-bar-stool-cutout.png"
+                  src="/assets/products/01-bar-stool-cutout.webp"
                 />
               </RevealMedia>
               <div className="benefit-standards-copy">

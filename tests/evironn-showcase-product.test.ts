@@ -80,7 +80,7 @@ const product = {
     {
       id: 'noma-image',
       kind: 'IMAGE' as const,
-      url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+      url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
       alt: 'Noma Woven Lounge',
       sortOrder: 0,
     },
@@ -94,14 +94,14 @@ const product = {
     {
       id: 'noma-poster',
       kind: 'TURN_TABLE_POSTER' as const,
-      url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+      url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
       alt: 'Noma poster',
       sortOrder: 0,
     },
     {
       id: 'noma-fallback',
       kind: 'TURN_TABLE_FALLBACK' as const,
-      url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+      url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
       alt: 'Noma fallback',
       sortOrder: 0,
     },
@@ -158,8 +158,8 @@ describe('showcase product DTO', () => {
     expect(dto.sceneBackgroundUrl).toBe(PRODUCT_SCENE_BACKGROUND);
     expect(dto.turntable).toEqual({
       videoUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
-      posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
-      fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+      posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
+      fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
       alt: 'Noma 360',
     });
     expect(JSON.parse(JSON.stringify(dto))).toEqual(dto);

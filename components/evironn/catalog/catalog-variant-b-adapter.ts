@@ -66,9 +66,9 @@ const MEDIA_BY_BASENAME: Record<string, CatalogBMedia> = {
   },
 };
 
-MEDIA_BY_BASENAME['01-bar-stool-cutout.png'] = MEDIA_BY_BASENAME['01-bar-stool-idle.webp'];
-MEDIA_BY_BASENAME['03-ivory-lounge-cutout.png'] = MEDIA_BY_BASENAME['03-ivory-lounge-idle.webp'];
-MEDIA_BY_BASENAME['05-terracotta-walnut-chair-alpha.png'] = MEDIA_BY_BASENAME['05-two-seat-sofa-idle.webp'];
+MEDIA_BY_BASENAME['01-bar-stool-cutout.webp'] = MEDIA_BY_BASENAME['01-bar-stool-idle.webp'];
+MEDIA_BY_BASENAME['03-ivory-lounge-cutout.webp'] = MEDIA_BY_BASENAME['03-ivory-lounge-idle.webp'];
+MEDIA_BY_BASENAME['05-terracotta-walnut-chair-alpha.webp'] = MEDIA_BY_BASENAME['05-two-seat-sofa-idle.webp'];
 
 const FALLBACK_MEDIA: CatalogBMedia = {
   idle: '/assets/products/03-ivory-lounge-idle.webp',
@@ -77,11 +77,11 @@ const FALLBACK_MEDIA: CatalogBMedia = {
 };
 
 const ROOM_TABS = [
-  { id: 'all', label: 'Все', image: '/assets/hero/kitchen-idle.jpg' },
-  { id: 'living', label: 'Гостиная', image: '/assets/editorial/images/71c2b8589fc6.png' },
-  { id: 'dining', label: 'Столовая', image: '/assets/hero/kitchen-idle.jpg' },
-  { id: 'bedroom', label: 'Спальня', image: '/assets/hero/bedroom-idle.jpg' },
-  { id: 'terrace', label: 'Терраса', image: '/assets/hero/terrace-idle.jpg' },
+  { id: 'all', label: 'Все', image: '/assets/hero/kitchen-idle.webp' },
+  { id: 'living', label: 'Гостиная', image: '/assets/editorial/images/71c2b8589fc6.webp' },
+  { id: 'dining', label: 'Столовая', image: '/assets/hero/kitchen-idle.webp' },
+  { id: 'bedroom', label: 'Спальня', image: '/assets/hero/bedroom-idle.webp' },
+  { id: 'terrace', label: 'Терраса', image: '/assets/hero/terrace-idle.webp' },
 ] as const;
 
 function imageBasename(imageUrl: string | null): string | null {

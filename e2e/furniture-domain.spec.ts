@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 const furnitureMedia = [
   { url: '/assets/products/01-bar-stool-idle.webp', type: 'image/webp' },
   { url: '/assets/products/03-ivory-lounge-turntable.mp4', type: 'video/mp4' },
-  { url: '/assets/products/03-ivory-lounge-turntable-alpha-poster.png', type: 'image/png' },
-  { url: '/assets/products/03-ivory-lounge-cutout.png', type: 'image/png' },
+  { url: '/assets/products/03-ivory-lounge-turntable-alpha-poster.webp', type: 'image/webp' },
+  { url: '/assets/products/03-ivory-lounge-cutout.webp', type: 'image/webp' },
 ] as const;
 
 test.describe('Phase 1 furniture media contract', () => {

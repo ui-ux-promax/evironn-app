@@ -17,20 +17,20 @@ export const WOOD_OPTIONS = [
   { id: 'walnut', label: 'Орех', color: '#4e3426', disabled: false },
 ] as const;
 
-export const PRODUCT_SCENE_BACKGROUND = '/assets/products/05-graphite-walnut-room-background-fixed.png';
+export const PRODUCT_SCENE_BACKGROUND = '/assets/products/05-graphite-walnut-room-background-fixed.webp';
 
 export const PRODUCT_SCENE_CHAIRS = {
   ivory: {
-    walnut: '/assets/products/05-ivory-walnut-chair-fixed-alpha.png',
-    pine: '/assets/products/05-ivory-pine-chair-fixed-alpha.png',
+    walnut: '/assets/products/05-ivory-walnut-chair-fixed-alpha.webp',
+    pine: '/assets/products/05-ivory-pine-chair-fixed-alpha.webp',
   },
   charcoal: {
-    walnut: '/assets/products/05-graphite-walnut-chair-fixed-alpha.png',
-    pine: '/assets/products/05-graphite-pine-chair-fixed-alpha.png',
+    walnut: '/assets/products/05-graphite-walnut-chair-fixed-alpha.webp',
+    pine: '/assets/products/05-graphite-pine-chair-fixed-alpha.webp',
   },
   terracotta: {
-    walnut: '/assets/products/05-terracotta-walnut-chair-fixed-alpha.png',
-    pine: '/assets/products/05-terracotta-pine-chair-fixed-alpha.png',
+    walnut: '/assets/products/05-terracotta-walnut-chair-fixed-alpha.webp',
+    pine: '/assets/products/05-terracotta-pine-chair-fixed-alpha.webp',
   },
 } as const;
 

@@ -8,16 +8,16 @@ describe('Phase 3 auth composition assets', () => {
     const root = process.cwd();
     const assets = [
       [
-        'public/assets/products/05-graphite-walnut-room-integrated-v2.png',
-        '77AD814923CEA3E2381F5596C9A50FBA3B07E8446625DCDEA90FCECE25FC80D7',
+        'public/assets/products/05-graphite-walnut-room-integrated-v2.webp',
+        '81170D516492F742DC662780F75B0A76D08D1CE67EF67DC1B96372B56C774618',
       ],
       [
-        'public/assets/products/05-ivory-walnut-chair-alpha.png',
-        '75106ABA76F8C121ADC3A9D5497A6566655A53320EE519267CBE86CAC6EF66F1',
+        'public/assets/products/05-ivory-walnut-chair-alpha.webp',
+        '8A7D4F0DAE48798294CA8B6323EBA5BA753EF9311C5759010B26B6BCE3531842',
       ],
       [
-        'public/assets/products/05-terracotta-walnut-chair-alpha.png',
-        '19F4717415537D49BBF6195D79A2ED35AB5A7AF240A538A03B9FDED5203D385D',
+        'public/assets/products/05-terracotta-walnut-chair-alpha.webp',
+        '06B3A51E86FC75A8197168B9A83EBC88B77625F842E9D7D767FB4635DB19021C',
       ],
     ] as const;
 

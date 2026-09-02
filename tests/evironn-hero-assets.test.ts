@@ -58,9 +58,9 @@ const heroManifest = [
     sha256: '60b43bb55b0035d7e2484700628923210ef4d82df8c8cf5e154024875dc12278',
   },
   {
-    path: 'public/assets/hero/bedroom-idle.jpg',
-    bytes: 273941,
-    sha256: 'b398f08f862c8a5bc7ec49a0bb2ab1802268b805b80701f09e00352cca0a1140',
+    path: 'public/assets/hero/bedroom-idle.webp',
+    bytes: 137950,
+    sha256: '0311aa3dc70ec5b8c9ec9a49b2c63b660675bd36adbf1d5c15c56422d631a8f4',
   },
   {
     path: 'public/assets/hero/chair-focus.webp',
@@ -113,9 +113,9 @@ const heroManifest = [
     sha256: 'f60c819da5ce6cb1f48755b097a1ee12f648f2759126e8bd75b8137aa93472c2',
   },
   {
-    path: 'public/assets/hero/kitchen-idle.jpg',
-    bytes: 241034,
-    sha256: '1a7eb4084acee3e4268c3fb773fe6869d73d11bf332ede67cb1144381e4f9433',
+    path: 'public/assets/hero/kitchen-idle.webp',
+    bytes: 111134,
+    sha256: 'c5c7f1dec81c8cf0b756b93f5c122315162bbfdf62e0b10105404ce8dac699bd',
   },
   {
     path: 'public/assets/hero/kitchen-island-focus.webp',
@@ -146,11 +146,6 @@ const heroManifest = [
     path: 'public/assets/hero/living-room-idle-5f0f1836.webp',
     bytes: 223502,
     sha256: '5f0f1836760241be5f6de79e25937c5b21fd4b2ca6ec73394a6d0fac89ac8c7f',
-  },
-  {
-    path: 'public/assets/hero/living-room-idle.png',
-    bytes: 2422566,
-    sha256: 'a100b4dcb54c9603fe50a2c91eb22d9dbb4467d8188911efc6a5f63c828eb63c',
   },
   {
     path: 'public/assets/hero/sofa-focus.webp',
@@ -203,9 +198,9 @@ const heroManifest = [
     sha256: 'b6a7e08822e957f575d4c1dfa49f547ca54d7b09d4b689a27b232ee08f15d7fd',
   },
   {
-    path: 'public/assets/hero/terrace-idle.jpg',
-    bytes: 285542,
-    sha256: '28ca0ed9c9db1544989fb500f834bb60edf6621fc7f7c4ffd22ddd9b126c45e2',
+    path: 'public/assets/hero/terrace-idle.webp',
+    bytes: 152530,
+    sha256: 'c42c96956b995df8cb30e4b455c3bfbda335ffca027da01de8bf81165abb5003',
   },
   {
     path: 'public/assets/hero/terrace-sofa-focus.webp',
@@ -239,8 +234,8 @@ function digest(file: string): string {
 }
 
 describe('Evironn hero binary contract', () => {
-  it('enumerates exactly 45 committed normative files with audited sizes and hashes', () => {
-    expect(heroManifest).toHaveLength(45);
+  it('enumerates exactly 44 committed normative files with audited sizes and hashes', () => {
+    expect(heroManifest).toHaveLength(44);
     expect(readdirSync(heroDirectory).sort()).toEqual(heroManifest.map((asset) => path.basename(asset.path)).sort());
     for (const asset of heroManifest) {
       const target = path.join(repositoryRoot, asset.path);
@@ -253,7 +248,7 @@ describe('Evironn hero binary contract', () => {
 
   it('keeps the audited inventory total and maximum below the object-size boundary', () => {
     const sizes = heroManifest.map((asset) => asset.bytes);
-    expect(sizes.reduce((total, size) => total + size, 0)).toBe(166104243);
+    expect(sizes.reduce((total, size) => total + size, 0)).toBe(163282774);
     expect(Math.max(...sizes)).toBe(9941316);
     expect(Math.max(...sizes)).toBeLessThan(100 * 1024 * 1024);
   });

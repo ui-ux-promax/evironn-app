@@ -113,7 +113,7 @@ describe('POST /api/dadata/suggest', () => {
 
   it('returns an empty list when the DaData request times out', async () => {
     vi.useFakeTimers();
-    let capturedSignal: AbortSignal | undefined;
+    let capturedSignal: AbortSignal | null | undefined;
 
     vi.mocked(fetch).mockImplementationOnce(
       (_input, init) =>

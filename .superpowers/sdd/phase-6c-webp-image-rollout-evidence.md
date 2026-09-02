@@ -150,3 +150,19 @@ User-provided dry-run evidence for the exact sharp conversion: all 12 alpha file
 ## Forbidden during planning
 
 No production/test/asset/package/Prisma/workflow/provider configuration change; no build, E2E, deployment, provider/database operation; no push, PR, merge, or branch operation. Evidence is value-free and contains no secrets.
+
+## Task 2 bounded sentinel exception
+
+`SYNTHETIC_TEST_SENTINEL_EXCEPTION` is limited to the exact literal `/assets/products/server-upload.webp` in `tests/evironn-catalog-adapter.test.ts`. The literal occurs exactly twice and nowhere else in production code, Prisma seed, SEO, admin fixtures, or E2E. `public/assets/products/server-upload.webp` is intentionally absent. The test exercises pass-through of an unknown server-provided `imageUrl`; the `forward` and `reverse` fallbacks remain existing real assets. The corrected completeness gate excluded only this exact literal and reported zero missing remaining references. No placeholder asset, fixture change, runtime change, wildcard, directory, or generic exemption was introduced. This is not a production asset or runtime completeness debt.
+
+## Task 3 Preview seed, snapshot rewrite, and gate evidence
+
+`NEON_PREVIEW_PRISMA_SEED_AUTHORIZED_BY_USER`: user explicitly authorized exactly the штатный `npm run prisma:seed` against the current Neon Preview target. The seed completed through its existing upsert path (`categories=5 rooms=5 products=16 optionGroups=3 optionValues=19 skus=25 media=19`). No reset, truncate, delete, ad hoc SQL, migration, schema change, provider mutation, or cron reset was used.
+
+Post-seed read-only proof: Noma poster/fallback URLs are WebP; Sora terracotta catalog media is WebP; all six Noma showcase SKUs have stock `3`; `ProductMedia`, `SkuMedia`, and `ProductImage` contain zero legacy `.png`, `.jpg`, or `.jpeg` URLs. Focused Chromium E2E completed with 12 passing tests and one flaky test recovered on retry (exit 0).
+
+`NEON_PREVIEW_TWO_ORDERITEM_IMAGEURL_REWRITE_AUTHORIZED_BY_USER`: user explicitly authorized rewriting exactly the two confirmed `OrderItem.imageUrl` rows for orders 52 and 53. Read-only preconditions matched both row IDs, order IDs, order numbers, and the exact legacy PNG path; no conflicting rows matched. A Prisma transaction updated only `imageUrl` for those two rows and reported `affected=2`. No other fields, order rows, ProductMedia, SkuMedia, or ProductImage rows were changed.
+
+Post-rewrite read-only proof: orders 52 and 53 both point to `/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp`; global legacy `.png`, `.jpg`, and `.jpeg` `OrderItem.imageUrl` count is `0`. Exact public visual/network checks at `1440x1000` and `390x844` for home, catalog, showcase PDP, and login reported HTTP 200, zero broken images, zero failed asset responses, zero legacy image requests, and zero console errors. The existing authenticated `/profile` and `/admin` session rendered without broken images, legacy image requests, or console errors at the available browser viewport `874x920`.
+
+Task 3 then passed the exact pre-delete conditions and removed only the 28 approved PNG/JPG source files. Post-delete checks reported 27 non-empty WebP outputs, output bytes `7,510,922`, `public/assets` after bytes `207,834,476`, saved bytes `42,840,051` (`85.082866%`), 14 unchanged existing-WebP hashes, and zero stale approved source references. Retained-output metadata verification passed for all 27 files. Post-delete focused Vitest passed `15` files and `85` tests; focused Chromium passed `13` tests. No loading-speed or deployed-performance claim was measured.

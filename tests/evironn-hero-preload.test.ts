@@ -618,6 +618,27 @@ describe('hero room media preload cache', () => {
     const addListener = vi.spyOn(HTMLVideoElement.prototype, 'addEventListener');
     const removeListener = vi.spyOn(HTMLVideoElement.prototype, 'removeEventListener');
     let lateCompletion!: () => void;
+    let cancelAtRegistration = true;
+    const originalMapSet = Map.prototype.set;
+    vi.spyOn(Map.prototype, 'set').mockImplementation(function set(
+      this: Map<unknown, unknown>,
+      key: unknown,
+      value: unknown,
+    ) {
+      const result = originalMapSet.call(this, key, value);
+      if (
+        cancelAtRegistration &&
+        key === 'chair:forward' &&
+        typeof value === 'object' &&
+        value !== null &&
+        'element' in value &&
+        value.element instanceof HTMLVideoElement
+      ) {
+        cancelAtRegistration = false;
+        controller.abort();
+      }
+      return result;
+    });
     vi.mocked(HTMLVideoElement.prototype.load).mockImplementation(function load(this: HTMLVideoElement) {
       Object.defineProperties(this, {
         duration: { configurable: true, value: 6 },
@@ -629,7 +650,6 @@ describe('hero room media preload cache', () => {
       };
       queueMicrotask(() => {
         lateCompletion();
-        queueMicrotask(() => controller.abort());
       });
     });
     const preparation = cache.prepare('living-room', 'animated', 1, controller.signal);
@@ -644,10 +664,12 @@ describe('hero room media preload cache', () => {
     expect(revokeObjectUrl).toHaveBeenCalledTimes(1);
     expect(host.querySelectorAll('video')).toHaveLength(0);
     expect(vi.getTimerCount()).toBe(0);
-    for (const type of ['loadedmetadata', 'loadeddata', 'error']) {
-      expect(removeListener.mock.calls.filter(([event]) => event === type)).toHaveLength(
-        addListener.mock.calls.filter(([event]) => event === type).length,
-      );
+    const mediaEvents = new Set(['loadedmetadata', 'loadeddata', 'error']);
+    const addedMediaListeners = addListener.mock.calls.filter(([event]) => mediaEvents.has(String(event)));
+    const removedMediaListeners = removeListener.mock.calls.filter(([event]) => mediaEvents.has(String(event)));
+    expect(removedMediaListeners).toHaveLength(addedMediaListeners.length);
+    for (const [event, listener] of addedMediaListeners) {
+      expect(removedMediaListeners).toContainEqual(expect.arrayContaining([event, listener]));
     }
 
     lateCompletion();

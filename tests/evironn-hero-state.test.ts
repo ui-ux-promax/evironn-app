@@ -14,10 +14,14 @@ import {
 } from '@/components/evironn/home/hero-product-state';
 import {
   INITIAL_HERO_ROOM_STATE,
+  completeHeroRoomPreparation,
   completeHeroRoomTransition,
+  dismissHeroRoomError,
+  failHeroRoomPreparation,
   isAvailableHeroRoom,
   isHeroRoomTransitioning,
   recoverHeroRoomTransition,
+  restartHeroRoomPreparation,
   requestHeroRoom,
 } from '@/components/evironn/home/hero-room-state';
 import {
@@ -29,24 +33,166 @@ import { HERO_ROOMS } from '@/components/evironn/home/hero-rooms';
 import { selectHeroVideoSource } from '@/components/evironn/home/hero-product-media';
 
 describe('Evironn hero pure state', () => {
-  it('starts only a ready available room transition and locks competing input', () => {
-    expect(requestHeroRoom(INITIAL_HERO_ROOM_STATE, 'kitchen', false)).toEqual(INITIAL_HERO_ROOM_STATE);
-    const changing = requestHeroRoom(INITIAL_HERO_ROOM_STATE, 'kitchen', true);
-    expect(changing).toEqual({ activeRoom: 'living-room', targetRoom: 'kitchen', phase: 'changing', direct: false });
-    expect(requestHeroRoom(changing, 'living-room', true)).toEqual(changing);
-    expect(isHeroRoomTransitioning(changing)).toBe(true);
-    expect(requestHeroRoom(INITIAL_HERO_ROOM_STATE, 'kitchen', true, true).direct).toBe(true);
-  });
+  it('bootstraps living room before accepting a kitchen request', () => {
+    expect(INITIAL_HERO_ROOM_STATE).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'living-room',
+      phase: 'preparing',
+      direct: false,
+      operationId: 0,
+      error: null,
+    });
 
-  it('commits and recovers room transitions without losing the outgoing stable room', () => {
-    const changing = requestHeroRoom(INITIAL_HERO_ROOM_STATE, 'bedroom', true);
-    expect(completeHeroRoomTransition(changing)).toEqual({
-      activeRoom: 'bedroom',
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    expect(ready).toEqual({
+      activeRoom: 'living-room',
       targetRoom: null,
       phase: 'idle',
       direct: false,
+      operationId: 0,
+      error: null,
     });
-    expect(recoverHeroRoomTransition(changing)).toEqual(INITIAL_HERO_ROOM_STATE);
+    expect(requestHeroRoom(INITIAL_HERO_ROOM_STATE, 'kitchen', true)).toBe(INITIAL_HERO_ROOM_STATE);
+
+    const changing = requestHeroRoom(ready, 'kitchen', true);
+    expect(changing).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'kitchen',
+      phase: 'changing',
+      direct: false,
+      operationId: 1,
+      error: null,
+    });
+    expect(requestHeroRoom(changing, 'living-room', true)).toBe(changing);
+    expect(isHeroRoomTransitioning(changing)).toBe(true);
+    expect(isHeroRoomTransitioning(INITIAL_HERO_ROOM_STATE)).toBe(false);
+    expect(requestHeroRoom(ready, 'kitchen', true, true, 1).direct).toBe(true);
+  });
+
+  it('commits and recovers room transitions without losing the outgoing stable room', () => {
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    const changing = requestHeroRoom(ready, 'kitchen', true, false, 1);
+    expect(completeHeroRoomTransition(changing)).toEqual({
+      activeRoom: 'kitchen',
+      targetRoom: null,
+      phase: 'idle',
+      direct: false,
+      operationId: 1,
+      error: null,
+    });
+    expect(recoverHeroRoomTransition(changing)).toEqual({ ...ready, operationId: 1 });
+  });
+
+  it('waits for the matching complete kitchen bundle', () => {
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    const pending = requestHeroRoom(ready, 'kitchen', false, false, 1);
+    expect(pending.phase).toBe('preparing');
+    expect(pending.activeRoom).toBe('living-room');
+    expect(completeHeroRoomPreparation(pending, 0)).toBe(pending);
+    expect(completeHeroRoomPreparation(pending, 1).phase).toBe('changing');
+    expect(requestHeroRoom(ready, 'bedroom', true)).toBe(ready);
+    expect(requestHeroRoom(ready, 'terrace', true)).toBe(ready);
+  });
+
+  it('supports same-room preparation retry with monotonic operation IDs', () => {
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    const retry = requestHeroRoom(ready, 'living-room', false, false, 1);
+
+    expect(retry).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'living-room',
+      phase: 'preparing',
+      direct: false,
+      operationId: 1,
+      error: null,
+    });
+    expect(requestHeroRoom(retry, 'kitchen', true, false, 1)).toBe(retry);
+    expect(requestHeroRoom(retry, 'kitchen', true, false, 0)).toBe(retry);
+    expect(requestHeroRoom(retry, 'kitchen', true, false, 2)).toBe(retry);
+  });
+
+  it('ignores stale preparation callbacks after a motion restart', () => {
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    const pending = requestHeroRoom(ready, 'kitchen', false, true, 1);
+    const restarted = restartHeroRoomPreparation(pending, 2);
+
+    expect(restarted).toEqual({ ...pending, phase: 'preparing', operationId: 2 });
+    expect(completeHeroRoomPreparation(restarted, 1)).toBe(restarted);
+    expect(failHeroRoomPreparation(restarted, 1, 'Late failure')).toBe(restarted);
+    expect(completeHeroRoomPreparation(restarted, 2).phase).toBe('changing');
+    expect(restartHeroRoomPreparation(restarted, 2)).toBe(restarted);
+  });
+
+  it('dismisses failed kitchen on living selection and ignores stale completion', () => {
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    const pending = requestHeroRoom(ready, 'kitchen', false, false, 1);
+    const failed = failHeroRoomPreparation(pending, 1, 'Kitchen failed');
+    expect(failed).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: null,
+      phase: 'error',
+      direct: false,
+      operationId: 1,
+      error: { room: 'kitchen', message: 'Kitchen failed' },
+    });
+    expect(requestHeroRoom(failed, 'living-room', true)).toBe(failed);
+    const dismissed = dismissHeroRoomError(failed, 'living-room', true);
+    expect(dismissed).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: null,
+      phase: 'idle',
+      direct: false,
+      operationId: 2,
+      error: null,
+    });
+    expect(completeHeroRoomPreparation(dismissed, 1)).toBe(dismissed);
+    expect(failHeroRoomPreparation(dismissed, 1, 'Late failure')).toBe(dismissed);
+    const retry = requestHeroRoom(dismissed, 'kitchen', false, false, 3);
+    expect(retry.phase).toBe('preparing');
+    expect(completeHeroRoomPreparation(retry, 1)).toBe(retry);
+    const changing = completeHeroRoomPreparation(retry, 3);
+    expect(changing.phase).toBe('changing');
+    expect(completeHeroRoomTransition(changing).activeRoom).toBe('kitchen');
+
+    expect(dismissHeroRoomError(failed, 'living-room', false)).toBe(failed);
+    expect(dismissHeroRoomError(failed, 'kitchen', true)).toBe(failed);
+    expect(dismissHeroRoomError(ready, 'living-room', true)).toBe(ready);
+  });
+
+  it('retries failed preparation and accepts an alternate pilot room from error', () => {
+    const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
+    const failedKitchen = failHeroRoomPreparation(
+      requestHeroRoom(ready, 'kitchen', false, false, 1),
+      1,
+      'Kitchen failed',
+    );
+
+    const retry = requestHeroRoom(failedKitchen, 'kitchen', false, false, 2);
+    expect(retry).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'kitchen',
+      phase: 'preparing',
+      direct: false,
+      operationId: 2,
+      error: null,
+    });
+    expect(requestHeroRoom(failedKitchen, 'living-room', true, false, 2)).toBe(failedKitchen);
+    expect(requestHeroRoom(failedKitchen, 'bedroom', true, false, 2)).toBe(failedKitchen);
+
+    const failedLiving = failHeroRoomPreparation(
+      requestHeroRoom(ready, 'living-room', false, false, 1),
+      1,
+      'Living failed',
+    );
+    const alternate = requestHeroRoom(failedLiving, 'kitchen', true, false, 2);
+    expect(alternate).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'kitchen',
+      phase: 'changing',
+      direct: false,
+      operationId: 2,
+      error: null,
+    });
   });
 
   it('preserves product phases, failure recovery, and reveal timing', () => {
@@ -152,10 +298,10 @@ describe('Evironn hero pure state', () => {
     });
   });
 
-  it('recognizes all four available rooms', () => {
+  it('limits runtime room availability to the living room and kitchen pilot', () => {
     expect(isAvailableHeroRoom('living-room')).toBe(true);
     expect(isAvailableHeroRoom('kitchen')).toBe(true);
-    expect(isAvailableHeroRoom('bedroom')).toBe(true);
-    expect(isAvailableHeroRoom('terrace')).toBe(true);
+    expect(isAvailableHeroRoom('bedroom')).toBe(false);
+    expect(isAvailableHeroRoom('terrace')).toBe(false);
   });
 });

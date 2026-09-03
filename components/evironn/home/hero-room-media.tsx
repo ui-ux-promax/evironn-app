@@ -1,29 +1,119 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { HERO_ROOMS } from './hero-rooms';
-import type { AvailableHeroRoomId, HeroRoomState } from './hero-room-state';
+import type { PilotHeroRoomId, HeroRoomState } from './hero-room-state';
 
 type HeroRoomMediaProps = {
   state: HeroRoomState;
   reducedMotion: boolean;
-  onRoomReady: (room: AvailableHeroRoomId) => void;
-  onTransitionComplete: () => void;
-  onTransitionFailure: () => void;
+  requestedRooms: readonly PilotHeroRoomId[];
+  posterVersions: Readonly<Partial<Record<PilotHeroRoomId, number>>>;
+  onPosterElement: (room: PilotHeroRoomId, image: HTMLImageElement | null) => void;
+  onTransitionComplete: (operationId: number) => void;
+  onTransitionFailure: (operationId: number) => void;
 };
+
+type HeroPosterImageProps = {
+  room: PilotHeroRoomId;
+  version: number;
+  state: HeroRoomState;
+  onPosterElement: (room: PilotHeroRoomId, image: HTMLImageElement | null) => void;
+  onTransitionComplete: (operationId: number) => void;
+  onTransitionFailure: (operationId: number) => void;
+};
+
+function HeroPosterImage({
+  room,
+  version,
+  state,
+  onPosterElement,
+  onTransitionComplete,
+  onTransitionFailure,
+}: HeroPosterImageProps) {
+  const roomConfig = HERO_ROOMS[room];
+  const isStable = state.activeRoom === room && ['idle', 'preparing', 'error'].includes(state.phase);
+  const isOutgoing = state.phase === 'changing' && state.activeRoom === room && !state.direct;
+  const isIncoming = state.phase === 'changing' && state.targetRoom === room;
+
+  const setPoster = useCallback(
+    (image: HTMLImageElement | null) => onPosterElement(room, image),
+    [onPosterElement, room],
+  );
+
+  const imageProps = {
+    ref: setPoster,
+    className: [
+      'furni-hero-room-media__image',
+      roomConfig.mediaClassName,
+      isStable ? 'is-stable' : '',
+      isOutgoing ? 'is-outgoing' : '',
+      isIncoming ? 'is-incoming' : '',
+      isIncoming && state.direct ? 'is-direct-incoming' : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+    src: roomConfig.idleSrc,
+    loading: 'eager' as const,
+    onError: () => {
+      if (state.targetRoom === room || (state.phase === 'preparing' && state.activeRoom === room)) {
+        onTransitionFailure(state.operationId);
+      }
+    },
+    onAnimationEnd: (event: React.AnimationEvent<HTMLImageElement>) => {
+      if (isIncoming && event.currentTarget === event.target && event.animationName?.startsWith('hero-room-enter')) {
+        onTransitionComplete(state.operationId);
+      }
+    },
+  };
+
+  useEffect(() => {
+    const image = document.querySelector<HTMLImageElement>(
+      `.furni-hero-room-media__image[data-hero-room="${room}"][data-hero-poster-version="${version}"]`,
+    );
+    if (image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0) onPosterElement(room, image);
+  }, [onPosterElement, room, version]);
+
+  return room === 'living-room' ? (
+    <Image
+      key={`${room}-${version}`}
+      {...imageProps}
+      data-hero-room={room}
+      data-hero-poster-version={version}
+      alt=""
+      width={1536}
+      height={1024}
+      sizes="100vw"
+      quality={90}
+      fetchPriority="high"
+      priority
+    />
+  ) : (
+    <img key={`${room}-${version}`} {...imageProps} data-hero-room={room} data-hero-poster-version={version} alt="" />
+  );
+}
 
 export function HeroRoomMedia({
   state,
   reducedMotion,
-  onRoomReady,
+  requestedRooms,
+  posterVersions,
+  onPosterElement,
   onTransitionComplete,
   onTransitionFailure,
 }: HeroRoomMediaProps) {
   useEffect(() => {
     if (state.phase !== 'changing') return;
 
-    const fallback = window.setTimeout(onTransitionFailure, 1400);
+    const fallback = window.setTimeout(() => onTransitionFailure(state.operationId), 1400);
+    if (reducedMotion) {
+      const complete = window.setTimeout(() => onTransitionComplete(state.operationId), 0);
+      return () => {
+        window.clearTimeout(fallback);
+        window.clearTimeout(complete);
+      };
+    }
     return () => window.clearTimeout(fallback);
-  }, [state.activeRoom, state.phase, state.targetRoom, onTransitionFailure]);
+  }, [onTransitionComplete, onTransitionFailure, reducedMotion, state.operationId, state.phase]);
 
   return (
     <div
@@ -36,61 +126,17 @@ export function HeroRoomMedia({
         .join(' ')}
       aria-hidden="true"
     >
-      {Object.values(HERO_ROOMS).map((room) => {
-        const isStable = state.phase === 'idle' && state.activeRoom === room.id;
-        const isOutgoing = state.phase === 'changing' && state.activeRoom === room.id && !state.direct;
-        const isIncoming = state.phase === 'changing' && state.targetRoom === room.id;
-        const isCriticalPoster = room.id === 'living-room';
-        const imageProps = {
-          ref: (node: HTMLImageElement | null) => {
-            // Under SSR the idle images can finish loading before hydration attaches the
-            // React onLoad handler, so its load event is never observed and the room pill
-            // stays disabled forever. Signal readiness for any image already complete at mount.
-            if (node?.complete && node.naturalWidth > 0) onRoomReady(room.id);
-          },
-          className: [
-            'furni-hero-room-media__image',
-            room.mediaClassName,
-            isStable ? 'is-stable' : '',
-            isOutgoing ? 'is-outgoing' : '',
-            isIncoming ? 'is-incoming' : '',
-            isIncoming && state.direct ? 'is-direct-incoming' : '',
-          ]
-            .filter(Boolean)
-            .join(' '),
-          src: room.idleSrc,
-          loading: isCriticalPoster ? ('eager' as const) : ('lazy' as const),
-          onLoad: () => onRoomReady(room.id),
-          onError: () => {
-            if (isIncoming) onTransitionFailure();
-          },
-          onAnimationEnd: (event: React.AnimationEvent<HTMLImageElement>) => {
-            if (
-              isIncoming &&
-              event.currentTarget === event.target &&
-              event.animationName.startsWith('hero-room-enter')
-            ) {
-              onTransitionComplete();
-            }
-          },
-        };
-
-        return isCriticalPoster ? (
-          <Image
-            key={room.id}
-            {...imageProps}
-            alt=""
-            width={1536}
-            height={1024}
-            sizes="100vw"
-            quality={90}
-            fetchPriority="high"
-            priority={isCriticalPoster}
-          />
-        ) : (
-          <img key={room.id} {...imageProps} alt="" fetchPriority="auto" />
-        );
-      })}
+      {requestedRooms.map((room) => (
+        <HeroPosterImage
+          key={`${room}-${posterVersions[room] ?? 0}`}
+          room={room}
+          version={posterVersions[room] ?? 0}
+          state={state}
+          onPosterElement={onPosterElement}
+          onTransitionComplete={onTransitionComplete}
+          onTransitionFailure={onTransitionFailure}
+        />
+      ))}
     </div>
   );
 }

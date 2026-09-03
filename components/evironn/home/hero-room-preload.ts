@@ -1,0 +1,614 @@
+import { HERO_PRODUCTS, type HeroVideoSources } from './hero-products';
+import { HERO_ROOMS } from './hero-rooms';
+import type { HeroProductId } from './hero-product-state';
+import type { PilotHeroRoomId } from './hero-room-state';
+
+const ACTIVE_RESOURCE_TIMEOUT_MS = 15_000;
+const ROOM_PREPARATION_TIMEOUT_MS = 45_000;
+
+export type HeroPreparationMode = 'animated' | 'static';
+export type HeroVideoDirection = 'forward' | 'reverse';
+export type HeroVideoEntryId = Readonly<{
+  productId: HeroProductId;
+  direction: HeroVideoDirection;
+}>;
+export type HeroPreparationFailure = Error & {
+  room: PilotHeroRoomId;
+  resource: 'poster' | 'focus' | 'video' | 'registration';
+};
+export type HeroPreparedVideo = Readonly<{
+  entry: HeroVideoEntryId;
+  format: 'webm' | 'mp4';
+  blob: Blob;
+  objectUrl: string;
+  element: HTMLVideoElement;
+  mediaReady: boolean;
+}>;
+export type HeroPreparedRoom = Readonly<{
+  room: PilotHeroRoomId;
+  mode: HeroPreparationMode;
+  poster: HTMLImageElement;
+  focus: ReadonlyMap<HeroProductId, HTMLImageElement>;
+  videos: ReadonlyMap<string, HeroPreparedVideo>;
+}>;
+export type HeroRoomMediaCache = {
+  setHost(host: HTMLDivElement | null): void;
+  setPoster(room: PilotHeroRoomId, image: HTMLImageElement | null): void;
+  get(room: PilotHeroRoomId, mode: HeroPreparationMode): HeroPreparedRoom | null;
+  getUnreadyVideo(room: PilotHeroRoomId): HeroVideoEntryId | null;
+  prepare(
+    room: PilotHeroRoomId,
+    mode: HeroPreparationMode,
+    operationId: number,
+    signal: AbortSignal,
+  ): Promise<HeroPreparedRoom>;
+  invalidateVideoMedia(room: PilotHeroRoomId, product: HeroProductId, direction: HeroVideoDirection): void;
+  disposeVideoResource(room: PilotHeroRoomId, product: HeroProductId, direction: HeroVideoDirection): void;
+  dispose(): void;
+};
+
+type VideoRecord = HeroPreparedVideo & { sourceGeneration: number };
+
+type RoomRecord = {
+  poster: HTMLImageElement | null;
+  posterReady: boolean;
+  focus: Map<HeroProductId, HTMLImageElement>;
+  focusReady: Set<HeroProductId>;
+  videos: Map<string, VideoRecord>;
+  bundles: Partial<Record<HeroPreparationMode, HeroPreparedRoom>>;
+  attempt: Attempt | null;
+};
+
+type Attempt = {
+  room: PilotHeroRoomId;
+  mode: HeroPreparationMode;
+  operationId: number;
+  controller: AbortController;
+  signal: AbortSignal;
+  activeResource: HeroPreparationFailure['resource'];
+  deadlineFailure: HeroPreparationFailure | null;
+  createdFocus: Map<HeroProductId, HTMLImageElement>;
+  createdVideos: Map<string, VideoRecord>;
+  promise: Promise<HeroPreparedRoom>;
+};
+
+type SelectedSource = Readonly<{ format: 'webm' | 'mp4'; src: string }>;
+
+const directions: readonly HeroVideoDirection[] = ['forward', 'reverse'];
+
+function keyOf(productId: HeroProductId, direction: HeroVideoDirection) {
+  return `${productId}:${direction}`;
+}
+
+function createAbortError() {
+  return new DOMException('The operation was aborted', 'AbortError');
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+function createPreparationFailure(
+  room: PilotHeroRoomId,
+  resource: HeroPreparationFailure['resource'],
+  message: string,
+  cause?: unknown,
+): HeroPreparationFailure {
+  const error = new Error(message) as HeroPreparationFailure;
+  error.name = 'HeroPreparationFailure';
+  error.room = room;
+  error.resource = resource;
+  if (cause !== undefined) error.cause = cause;
+  return error;
+}
+
+function isCompleteImage(image: HTMLImageElement | undefined) {
+  return Boolean(image?.complete && image.naturalWidth > 0);
+}
+
+function isVideoComplete(video: HeroPreparedVideo | undefined) {
+  return Boolean(video?.blob && video.objectUrl && video.element && video.mediaReady);
+}
+
+function appendToHost(host: HTMLDivElement, element: HTMLElement) {
+  if (element.parentElement !== host) host.appendChild(element);
+}
+
+function detachVideo(video: HTMLVideoElement) {
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+}
+
+function removeVideoElement(video: HTMLVideoElement) {
+  detachVideo(video);
+  video.remove();
+}
+
+function getRoomRecord(rooms: Map<PilotHeroRoomId, RoomRecord>, room: PilotHeroRoomId) {
+  let record = rooms.get(room);
+  if (!record) {
+    record = {
+      poster: null,
+      posterReady: false,
+      focus: new Map(),
+      focusReady: new Set(),
+      videos: new Map(),
+      bundles: {},
+      attempt: null,
+    };
+    rooms.set(room, record);
+  }
+  return record;
+}
+
+function allEntries(room: PilotHeroRoomId): HeroVideoEntryId[] {
+  return HERO_ROOMS[room].productIds.flatMap((productId) => directions.map((direction) => ({ productId, direction })));
+}
+
+export function isHeroVideoMediaReady(video: HTMLVideoElement, metadataSeen: boolean): boolean {
+  return (
+    metadataSeen &&
+    video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+    Number.isFinite(video.duration) &&
+    video.duration > 0
+  );
+}
+
+export function createHeroRoomMediaCache(
+  selectSource: (
+    sources: HeroVideoSources,
+    canPlayType: (mime: string) => string,
+  ) => Readonly<{ format: 'webm' | 'mp4'; src: string }>,
+): HeroRoomMediaCache {
+  const rooms = new Map<PilotHeroRoomId, RoomRecord>();
+  const waiters = new Set<() => void>();
+  let host: HTMLDivElement | null = null;
+  let disposed = false;
+
+  const notify = () => {
+    for (const waiter of [...waiters]) waiter();
+  };
+
+  const awaitCondition = (attempt: Attempt, condition: () => boolean) => {
+    if (condition()) return Promise.resolve();
+    if (attempt.signal.aborted) return Promise.reject(createAbortError());
+    return new Promise<void>((resolve, reject) => {
+      const check = () => {
+        if (condition()) {
+          cleanup();
+          resolve();
+        }
+      };
+      const abort = () => {
+        cleanup();
+        reject(createAbortError());
+      };
+      const cleanup = () => {
+        waiters.delete(check);
+        attempt.signal.removeEventListener('abort', abort);
+      };
+      waiters.add(check);
+      attempt.signal.addEventListener('abort', abort, { once: true });
+      check();
+    });
+  };
+
+  const assertAttemptActive = (attempt: Attempt) => {
+    if (attempt.signal.aborted) throw createAbortError();
+  };
+
+  const runActive = async <T>(
+    attempt: Attempt,
+    resource: HeroPreparationFailure['resource'],
+    task: (signal: AbortSignal) => Promise<T>,
+  ) => {
+    attempt.activeResource = resource;
+    const controller = new AbortController();
+    let timedOut = false;
+    const forwardAbort = () => controller.abort();
+    attempt.signal.addEventListener('abort', forwardAbort, { once: true });
+    let rejectAborted!: (error: unknown) => void;
+    const aborted = new Promise<never>((_, reject) => {
+      rejectAborted = reject;
+    });
+    const onAttemptAbort = () => rejectAborted(createAbortError());
+    attempt.signal.addEventListener('abort', onAttemptAbort, { once: true });
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        reject(createPreparationFailure(attempt.room, resource, `${resource} resource deadline exceeded`));
+      }, ACTIVE_RESOURCE_TIMEOUT_MS);
+    });
+    try {
+      return await Promise.race([task(controller.signal), timeout, aborted]);
+    } catch (error) {
+      if (attempt.deadlineFailure) throw attempt.deadlineFailure;
+      assertAttemptActive(attempt);
+      if (timedOut) throw error;
+      if (error instanceof Error && error.name === 'HeroPreparationFailure') throw error;
+      throw createPreparationFailure(attempt.room, resource, `${resource} preparation failed`, error);
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      attempt.signal.removeEventListener('abort', forwardAbort);
+      attempt.signal.removeEventListener('abort', onAttemptAbort);
+    }
+  };
+
+  const decodeImage = async (attempt: Attempt, image: HTMLImageElement, resource: 'poster' | 'focus') => {
+    if (isCompleteImage(image)) return;
+    if (typeof image.decode !== 'function') {
+      await runActive(attempt, resource, async (signal) => {
+        await awaitCondition(attempt, () => isCompleteImage(image));
+        if (signal.aborted) throw createAbortError();
+      });
+      return;
+    }
+    await runActive(attempt, resource, async (signal) => {
+      const decoded = image.decode();
+      await decoded;
+      if (signal.aborted) throw createAbortError();
+    });
+  };
+
+  const fetchBlob = async (attempt: Attempt, src: string) =>
+    runActive(attempt, 'video', async (signal) => {
+      const response = await fetch(src, { signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (blob.size === 0) throw new Error('Empty video Blob');
+      return blob;
+    });
+
+  const bindVideo = async (
+    attempt: Attempt,
+    entry: HeroVideoEntryId,
+    selected: SelectedSource,
+    retained: VideoRecord | null,
+  ): Promise<VideoRecord> => {
+    const video = retained?.element ?? document.createElement('video');
+    let objectUrl = retained?.objectUrl ?? '';
+    let blob = retained?.blob;
+    const generation = (retained?.sourceGeneration ?? 0) + 1;
+    const isRetained = Boolean(retained);
+
+    if (!blob) {
+      blob = await fetchBlob(attempt, selected.src);
+      assertAttemptActive(attempt);
+      objectUrl = URL.createObjectURL(blob);
+    }
+
+    if (!host) {
+      if (!isRetained && objectUrl) URL.revokeObjectURL(objectUrl);
+      throw createPreparationFailure(attempt.room, 'registration', 'Hero media host is not registered');
+    }
+
+    appendToHost(host, video);
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.setAttribute('aria-hidden', 'true');
+
+    let mediaReady: boolean;
+    try {
+      mediaReady = await runActive(attempt, 'video', async (signal) => {
+        let metadataSeen = false;
+        let firstFrameSeen = false;
+        let settled = false;
+        let resolveReady!: (value: boolean) => void;
+        let rejectReady!: (error: unknown) => void;
+        const ready = new Promise<boolean>((resolve, reject) => {
+          resolveReady = resolve;
+          rejectReady = reject;
+        });
+        const cleanup = () => {
+          video.removeEventListener('loadedmetadata', onMetadata);
+          video.removeEventListener('loadeddata', onData);
+          video.removeEventListener('error', onError);
+          signal.removeEventListener('abort', onAbort);
+        };
+        const settle = (callback: () => void) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          callback();
+        };
+        const checkReady = () => {
+          if (firstFrameSeen && isHeroVideoMediaReady(video, metadataSeen)) settle(() => resolveReady(true));
+        };
+        const onMetadata = () => {
+          metadataSeen = true;
+          checkReady();
+        };
+        const onData = () => {
+          firstFrameSeen = true;
+          checkReady();
+        };
+        const onError = () => settle(() => rejectReady(new Error('Hero video media error')));
+        const onAbort = () => settle(() => rejectReady(createAbortError()));
+
+        video.addEventListener('loadedmetadata', onMetadata);
+        video.addEventListener('loadeddata', onData);
+        video.addEventListener('error', onError);
+        signal.addEventListener('abort', onAbort, { once: true });
+        if (attempt.signal.aborted) throw createAbortError();
+        video.setAttribute('src', objectUrl);
+        video.load();
+        return ready;
+      });
+    } catch (error) {
+      if (retained) {
+        detachVideo(retained.element);
+      } else {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        removeVideoElement(video);
+      }
+      throw error;
+    }
+
+    assertAttemptActive(attempt);
+    if (!mediaReady) throw new Error('Hero video media is not ready');
+    return {
+      entry,
+      format: selected.format,
+      blob,
+      objectUrl,
+      element: video,
+      mediaReady: true,
+      sourceGeneration: generation,
+    };
+  };
+
+  const disposeUncommittedVideo = (record: RoomRecord, key: string, expected?: VideoRecord) => {
+    const video = record.videos.get(key);
+    if (!video || (expected && video !== expected)) return;
+    if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
+    removeVideoElement(video.element);
+    record.videos.delete(key);
+  };
+
+  const prepareVideo = async (attempt: Attempt, record: RoomRecord, entry: HeroVideoEntryId) => {
+    const key = keyOf(entry.productId, entry.direction);
+    const product = HERO_PRODUCTS[entry.productId];
+    const sources = product[entry.direction];
+    let retained = record.videos.get(key) ?? null;
+    if (retained && isVideoComplete(retained)) return retained;
+    if (retained && (!retained.blob || !retained.objectUrl || !retained.element)) {
+      disposeUncommittedVideo(record, key);
+      retained = null;
+    }
+
+    let selected = retained
+      ? { format: retained.format, src: retained.objectUrl }
+      : selectSource(sources, (mime) => {
+          try {
+            return (retained?.element ?? document.createElement('video')).canPlayType(mime);
+          } catch {
+            return '';
+          }
+        });
+    let fallbackAttempted = false;
+    while (true) {
+      try {
+        const prepared = await bindVideo(attempt, entry, selected, retained);
+        record.videos.set(key, prepared);
+        if (!retained) attempt.createdVideos.set(key, prepared);
+        return prepared;
+      } catch (error) {
+        if (isAbortError(error) || attempt.signal.aborted) throw error;
+        if (retained && selected.src === retained.objectUrl) {
+          detachVideo(retained.element);
+          record.videos.set(key, { ...retained, mediaReady: false, sourceGeneration: retained.sourceGeneration + 1 });
+        } else if (record.videos.has(key)) {
+          disposeUncommittedVideo(record, key);
+        }
+        if (selected.format === 'webm' && !fallbackAttempted && sources.mp4 && sources.mp4 !== selected.src) {
+          fallbackAttempted = true;
+          if (retained) disposeUncommittedVideo(record, key);
+          retained = null;
+          selected = { format: 'mp4', src: sources.mp4 };
+          continue;
+        }
+        throw createPreparationFailure(attempt.room, 'video', 'Hero video could not become media-ready', error);
+      }
+    }
+  };
+
+  const makeBundle = (room: PilotHeroRoomId, mode: HeroPreparationMode, record: RoomRecord) => {
+    const focus = new Map(record.focus);
+    const videos = mode === 'animated' ? new Map<string, HeroPreparedVideo>(record.videos) : new Map();
+    const bundle: HeroPreparedRoom = { room, mode, poster: record.poster!, focus, videos };
+    record.bundles[mode] = bundle;
+    return bundle;
+  };
+
+  const isReady = (room: PilotHeroRoomId, mode: HeroPreparationMode, record: RoomRecord) => {
+    if (!record.poster || !record.posterReady) return false;
+    if (HERO_ROOMS[room].productIds.some((productId) => !record.focusReady.has(productId))) return false;
+    if (
+      mode === 'animated' &&
+      allEntries(room).some((entry) => !isVideoComplete(record.videos.get(keyOf(entry.productId, entry.direction))))
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const prepare = async (
+    room: PilotHeroRoomId,
+    mode: HeroPreparationMode,
+    operationId: number,
+    signal: AbortSignal,
+  ): Promise<HeroPreparedRoom> => {
+    const record = getRoomRecord(rooms, room);
+    const existing = get(room, mode);
+    if (existing) return existing;
+    if (signal.aborted) throw createAbortError();
+    if (record.attempt) {
+      if (record.attempt.operationId === operationId && record.attempt.mode === mode) return record.attempt.promise;
+      const previous = record.attempt;
+      previous.controller.abort();
+      try {
+        await previous.promise;
+      } catch {
+        // Stale attempts are intentionally discarded before replacement starts.
+      }
+    }
+
+    const controller = new AbortController();
+    const attempt: Attempt = {
+      room,
+      mode,
+      operationId,
+      controller,
+      signal: controller.signal,
+      activeResource: 'registration' as HeroPreparationFailure['resource'],
+      deadlineFailure: null,
+      createdFocus: new Map<HeroProductId, HTMLImageElement>(),
+      createdVideos: new Map<string, VideoRecord>(),
+      promise: Promise.resolve(null as unknown as HeroPreparedRoom),
+    } satisfies Attempt;
+    const abortExternal = () => controller.abort();
+    signal.addEventListener('abort', abortExternal, { once: true });
+    const roomDeadline = setTimeout(() => {
+      attempt.deadlineFailure = createPreparationFailure(
+        room,
+        attempt.activeResource,
+        'Hero room preparation deadline exceeded',
+      );
+      controller.abort();
+    }, ROOM_PREPARATION_TIMEOUT_MS);
+
+    const run = async () => {
+      try {
+        await awaitCondition(attempt, () => Boolean(host));
+        await awaitCondition(attempt, () => Boolean(record.poster));
+        attempt.activeResource = 'poster';
+        await decodeImage(attempt, record.poster!, 'poster');
+        assertAttemptActive(attempt);
+        record.posterReady = true;
+
+        for (const productId of HERO_ROOMS[room].productIds) {
+          if (!record.focus.has(productId)) {
+            if (!host) throw createPreparationFailure(room, 'registration', 'Hero media host is not registered');
+            const image = document.createElement('img');
+            image.alt = '';
+            image.setAttribute('aria-hidden', 'true');
+            image.src = HERO_PRODUCTS[productId].focusSrc;
+            appendToHost(host, image);
+            record.focus.set(productId, image);
+            attempt.createdFocus.set(productId, image);
+          }
+          attempt.activeResource = 'focus';
+          await decodeImage(attempt, record.focus.get(productId)!, 'focus');
+          assertAttemptActive(attempt);
+          record.focusReady.add(productId);
+        }
+
+        if (mode === 'animated') {
+          for (const entry of allEntries(room)) await prepareVideo(attempt, record, entry);
+        }
+        if (!isReady(room, mode, record))
+          throw createPreparationFailure(room, 'registration', 'Hero room resources are incomplete');
+        return makeBundle(room, mode, record);
+      } catch (error) {
+        for (const [productId, image] of attempt.createdFocus) {
+          if (record.focus.get(productId) !== image) continue;
+          image.remove();
+          record.focus.delete(productId);
+          record.focusReady.delete(productId);
+        }
+        for (const [key, video] of attempt.createdVideos) disposeUncommittedVideo(record, key, video);
+        if (attempt.deadlineFailure) throw attempt.deadlineFailure;
+        if (attempt.signal.aborted || isAbortError(error)) throw createAbortError();
+        if (error instanceof Error && error.name === 'HeroPreparationFailure') throw error;
+        throw createPreparationFailure(room, attempt.activeResource, 'Hero room preparation failed', error);
+      } finally {
+        clearTimeout(roomDeadline);
+        signal.removeEventListener('abort', abortExternal);
+        if (record.attempt === attempt) record.attempt = null;
+      }
+    };
+
+    attempt.promise = run();
+    record.attempt = attempt;
+    return attempt.promise;
+  };
+
+  const get = (room: PilotHeroRoomId, mode: HeroPreparationMode) => {
+    const record = rooms.get(room);
+    if (!record || !isReady(room, mode, record)) return null;
+    return record.bundles[mode] ?? makeBundle(room, mode, record);
+  };
+
+  const invalidateVideoMedia = (room: PilotHeroRoomId, productId: HeroProductId, direction: HeroVideoDirection) => {
+    const record = rooms.get(room);
+    const key = keyOf(productId, direction);
+    const video = record?.videos.get(key);
+    if (!record || !video) return;
+    detachVideo(video.element);
+    record.videos.set(key, { ...video, mediaReady: false, sourceGeneration: video.sourceGeneration + 1 });
+    delete record.bundles.animated;
+  };
+
+  const disposeVideoResource = (room: PilotHeroRoomId, productId: HeroProductId, direction: HeroVideoDirection) => {
+    const record = rooms.get(room);
+    const key = keyOf(productId, direction);
+    const video = record?.videos.get(key);
+    if (!record || !video) return;
+    if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
+    removeVideoElement(video.element);
+    record.videos.delete(key);
+    delete record.bundles.animated;
+  };
+
+  const setHost = (nextHost: HTMLDivElement | null) => {
+    if (disposed) return;
+    host = nextHost;
+    if (host) {
+      for (const record of rooms.values()) {
+        for (const image of record.focus.values()) appendToHost(host, image);
+        for (const video of record.videos.values()) appendToHost(host, video.element);
+      }
+    }
+    notify();
+  };
+
+  const setPoster = (room: PilotHeroRoomId, image: HTMLImageElement | null) => {
+    if (disposed) return;
+    const record = getRoomRecord(rooms, room);
+    record.poster = image;
+    record.posterReady = false;
+    delete record.bundles.static;
+    delete record.bundles.animated;
+    notify();
+  };
+
+  const getUnreadyVideo = (room: PilotHeroRoomId) => {
+    const record = rooms.get(room);
+    for (const entry of allEntries(room)) {
+      if (!isVideoComplete(record?.videos.get(keyOf(entry.productId, entry.direction)))) return entry;
+    }
+    return null;
+  };
+
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    for (const record of rooms.values()) {
+      record.attempt?.controller.abort();
+      for (const video of record.videos.values()) {
+        if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
+        removeVideoElement(video.element);
+      }
+      for (const image of record.focus.values()) image.remove();
+    }
+    rooms.clear();
+    waiters.clear();
+    host = null;
+  };
+
+  return { setHost, setPoster, get, getUnreadyVideo, prepare, invalidateVideoMedia, disposeVideoResource, dispose };
+}

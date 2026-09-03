@@ -40,4 +40,46 @@ describe('security headers', () => {
     expect(headers).toContainEqual({ key: 'X-Frame-Options', value: 'DENY' });
     expect(csp).not.toContain('https://vercel.live');
   });
+
+  it.each([
+    ['preview', true],
+    ['production', false],
+  ])('adds exact Blob media source in %s CSP without changing other directives', async (_name, allowVercelLive) => {
+    const { buildContentSecurityPolicy } = await import('../lib/security/headers.mjs');
+    const csp = buildContentSecurityPolicy({ allowVercelLive });
+    const directives = csp.split('; ');
+
+    expect(directives).toContain("media-src 'self' blob:");
+    expect(directives.filter((directive) => !directive.startsWith('media-src '))).toEqual(
+      allowVercelLive
+        ? [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "img-src 'self' data: blob: https://res.cloudinary.com",
+            "font-src 'self' https://fonts.gstatic.com data:",
+            "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://suggestions.dadata.ru https://api.cloudinary.com https://vercel.live wss://vercel.live",
+            "frame-src 'self' https://yoomoney.ru https://*.yookassa.ru https://vercel.live",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            'upgrade-insecure-requests',
+          ]
+        : [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "img-src 'self' data: blob: https://res.cloudinary.com",
+            "font-src 'self' https://fonts.gstatic.com data:",
+            "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://suggestions.dadata.ru https://api.cloudinary.com",
+            "frame-src 'self' https://yoomoney.ru https://*.yookassa.ru",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            'upgrade-insecure-requests',
+          ],
+    );
+  });
 });

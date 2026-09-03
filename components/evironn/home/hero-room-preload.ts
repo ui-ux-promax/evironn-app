@@ -427,6 +427,8 @@ export function createHeroRoomMediaCache(
         firstFrameGeneration = generation;
         return result;
       });
+      assertAttemptActive(attempt);
+      if (!mediaReady) throw new Error('Hero video media is not ready');
     } catch (error) {
       if (retained) {
         detachVideo(retained.element);
@@ -437,8 +439,6 @@ export function createHeroRoomMediaCache(
       throw error;
     }
 
-    assertAttemptActive(attempt);
-    if (!mediaReady) throw new Error('Hero video media is not ready');
     return {
       entry,
       format: selected.format,
@@ -453,11 +453,15 @@ export function createHeroRoomMediaCache(
     };
   };
 
+  const disposeVideoRecord = (video: VideoRecord) => {
+    if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
+    removeVideoElement(video.element);
+  };
+
   const disposeUncommittedVideo = (record: RoomRecord, key: string, expected?: VideoRecord) => {
     const video = record.videos.get(key);
     if (!video || (expected && video !== expected)) return;
-    if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
-    removeVideoElement(video.element);
+    disposeVideoRecord(video);
     record.videos.delete(key);
   };
 
@@ -486,9 +490,17 @@ export function createHeroRoomMediaCache(
     while (true) {
       try {
         const prepared = await bindVideo(attempt, entry, selected, retained);
-        assertAttemptCurrent(attempt, record);
-        record.videos.set(key, prepared);
         if (!committedMediaRepair) attempt.createdVideos.set(key, prepared);
+        try {
+          assertAttemptCurrent(attempt, record);
+          record.videos.set(key, prepared);
+        } catch (error) {
+          if (!committedMediaRepair) {
+            disposeVideoRecord(prepared);
+            attempt.createdVideos.delete(key);
+          }
+          throw error;
+        }
         return prepared;
       } catch (error) {
         if (isAbortError(error) || attempt.signal.aborted) throw error;
@@ -682,8 +694,7 @@ export function createHeroRoomMediaCache(
     const key = keyOf(productId, direction);
     const video = record?.videos.get(key);
     if (!record || !video) return;
-    if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
-    removeVideoElement(video.element);
+    disposeVideoRecord(video);
     record.videos.delete(key);
     delete record.bundles.animated;
   };
@@ -724,8 +735,7 @@ export function createHeroRoomMediaCache(
     for (const record of rooms.values()) {
       record.attempt?.controller.abort();
       for (const video of record.videos.values()) {
-        if (video.objectUrl) URL.revokeObjectURL(video.objectUrl);
-        removeVideoElement(video.element);
+        disposeVideoRecord(video);
       }
       for (const image of record.focus.values()) image.remove();
     }

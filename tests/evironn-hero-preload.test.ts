@@ -28,10 +28,23 @@ function makePoster() {
   const image = document.createElement('img');
   Object.defineProperty(image, 'complete', { configurable: true, value: true });
   Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 1440 });
+  Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 1000 });
   return image;
 }
 
 function makeReadyMedia() {
+  Object.defineProperty(HTMLImageElement.prototype, 'complete', {
+    configurable: true,
+    value: true,
+  });
+  Object.defineProperty(HTMLImageElement.prototype, 'naturalWidth', {
+    configurable: true,
+    value: 1440,
+  });
+  Object.defineProperty(HTMLImageElement.prototype, 'naturalHeight', {
+    configurable: true,
+    value: 1000,
+  });
   Object.defineProperty(HTMLImageElement.prototype, 'decode', {
     configurable: true,
     writable: true,
@@ -48,6 +61,7 @@ function makeReadyMedia() {
     });
   });
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+  vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
 }
 
 describe('hero room media preload cache', () => {
@@ -62,10 +76,15 @@ describe('hero room media preload cache', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectUrl });
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(makeResponse());
     makeReadyMedia();
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      return setTimeout(() => callback(performance.now()), 0);
+    });
+    vi.stubGlobal('cancelAnimationFrame', (handle: number) => clearTimeout(handle));
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('does not treat an empty buffered range as loss of a retained Blob', () => {
@@ -75,6 +94,58 @@ describe('hero room media preload cache', () => {
       readyState: { value: 2 },
     });
     expect(isHeroVideoMediaReady(video, true)).toBe(true);
+  });
+
+  it('requires image.decode fulfillment and positive dimensions for cached images', async () => {
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    const poster = makePoster();
+    Object.defineProperty(poster, 'naturalWidth', { configurable: true, value: 0 });
+    cache.setPoster('living-room', poster);
+
+    await expect(cache.prepare('living-room', 'static', 1, new AbortController().signal)).rejects.toMatchObject({
+      resource: 'poster',
+    });
+    expect(HTMLImageElement.prototype.decode).toHaveBeenCalled();
+    expect(cache.get('living-room', 'static')).toBeNull();
+  });
+
+  it('waits for a guarded next animation frame after poster decode', async () => {
+    vi.useFakeTimers();
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const preparation = cache.prepare('living-room', 'static', 1, new AbortController().signal);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(frames).toHaveLength(1);
+    expect(fetch).not.toHaveBeenCalled();
+    frames[0](0);
+    await preparation;
+
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('uses cancellable 100ms frame fallback without exceeding room deadline', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    );
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const preparation = cache.prepare('living-room', 'static', 1, new AbortController().signal);
+
+    await vi.advanceTimersByTimeAsync(99);
+    expect(cache.get('living-room', 'static')).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(preparation).resolves.toMatchObject({ mode: 'static' });
   });
 
   it('rejects nonfinite duration, missing metadata, and missing first-frame proof', () => {
@@ -116,8 +187,10 @@ describe('hero room media preload cache', () => {
     expect(room.videos.size).toBe(4);
     expect([...room.videos.values()].every((video) => video.blob.size === blobBytes.length)).toBe(true);
     expect(createObjectUrl).toHaveBeenCalledTimes(4);
+    expect(vi.mocked(fetch).mock.results).toHaveLength(4);
     expect(new Set([...room.videos.values()].map((video) => video.objectUrl)).size).toBe(4);
     expect([...room.videos.values()].every((video) => video.mediaReady)).toBe(true);
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
   });
 
   it('serializes video fetches and separates queue from active deadlines', async () => {
@@ -190,6 +263,19 @@ describe('hero room media preload cache', () => {
     );
   });
 
+  it('rejects stale source or replaced element despite historical media readiness', async () => {
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const room = await cache.prepare('living-room', 'animated', 1, new AbortController().signal);
+    const video = room.videos.get('chair:forward')?.element;
+    expect(video).toBeDefined();
+
+    video!.setAttribute('src', 'blob:stale-source');
+    expect(cache.get('living-room', 'animated')).toBeNull();
+    expect(cache.getUnreadyVideo('living-room')).toEqual({ productId: 'chair', direction: 'forward' });
+  });
+
   it('falls back once with fresh Blob/media proof', async () => {
     const calls: string[] = [];
     vi.mocked(fetch).mockImplementation(async (input) => {
@@ -232,6 +318,53 @@ describe('hero room media preload cache', () => {
     expect(revokeObjectUrl).toHaveBeenCalledTimes(1);
   });
 
+  it('does not fallback or refetch a committed WebM during media-only repair', async () => {
+    vi.spyOn(HTMLVideoElement.prototype, 'canPlayType').mockReturnValue('probably');
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const first = await cache.prepare('living-room', 'animated', 1, new AbortController().signal);
+    const fetchCount = vi.mocked(fetch).mock.calls.length;
+    const urlCount = createObjectUrl.mock.calls.length;
+    let loadCount = 0;
+    vi.spyOn(HTMLVideoElement.prototype, 'load').mockImplementation(function load(this: HTMLVideoElement) {
+      loadCount += 1;
+      if (loadCount === 1) return;
+      queueMicrotask(() => this.dispatchEvent(new Event('error')));
+    });
+    cache.invalidateVideoMedia('living-room', 'chair', 'forward');
+
+    await expect(cache.prepare('living-room', 'animated', 2, new AbortController().signal)).rejects.toMatchObject({
+      resource: 'video',
+    });
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(fetchCount);
+    expect(createObjectUrl).toHaveBeenCalledTimes(urlCount);
+    expect(vi.mocked(fetch).mock.calls.some(([src]) => String(src).endsWith('.mp4'))).toBe(false);
+    expect(first.videos.get('chair:forward')?.blob).toBeInstanceOf(Blob);
+  });
+
+  it('allows one initial WebM fallback and stops after fallback failure', async () => {
+    vi.spyOn(HTMLVideoElement.prototype, 'canPlayType').mockReturnValue('probably');
+    let loadCount = 0;
+    vi.spyOn(HTMLVideoElement.prototype, 'load').mockImplementation(function load(this: HTMLVideoElement) {
+      loadCount += 1;
+      queueMicrotask(() => this.dispatchEvent(new Event('error')));
+    });
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+
+    await expect(cache.prepare('living-room', 'animated', 1, new AbortController().signal)).rejects.toMatchObject({
+      resource: 'video',
+    });
+    expect(loadCount).toBe(2);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls.map(([src]) => String(src))).toEqual([
+      '/assets/hero/chair-forward.webm',
+      '/assets/hero/chair-forward.mp4',
+    ]);
+  });
+
   it('times out and retries without stale completion', async () => {
     vi.useFakeTimers();
     let resolveFetch!: (response: Response) => void;
@@ -249,13 +382,18 @@ describe('hero room media preload cache', () => {
       () => null,
       (error) => error,
     );
-    await vi.advanceTimersByTimeAsync(15_000);
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(15_001);
     expect(await firstOutcome).toMatchObject({ resource: 'video' });
     resolveFetch(makeResponse());
     expect(createObjectUrl).not.toHaveBeenCalled();
 
     vi.mocked(fetch).mockResolvedValue(makeResponse());
     const second = cache.prepare('living-room', 'animated', 2, new AbortController().signal);
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(100);
     await second;
     expect(fetch).toHaveBeenCalledTimes(5);
   });
@@ -288,6 +426,47 @@ describe('hero room media preload cache', () => {
     cache.disposeVideoResource('living-room', 'sofa', 'reverse');
     expect(revokeObjectUrl).toHaveBeenCalledTimes(1);
     expect(cache.getUnreadyVideo('living-room')).toEqual({ productId: 'sofa', direction: 'reverse' });
+  });
+
+  it('preserves decoded focus and static readiness when video preparation fails', async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error('network failure'));
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+
+    await expect(cache.prepare('living-room', 'animated', 1, new AbortController().signal)).rejects.toMatchObject({
+      resource: 'video',
+    });
+    const staticRoom = cache.get('living-room', 'static');
+    expect(staticRoom).not.toBeNull();
+    expect(staticRoom?.focus.size).toBe(2);
+    expect([...staticRoom!.focus.values()].every((image) => image.naturalWidth > 0)).toBe(true);
+  });
+
+  it('serializes replacement attempts and rejects stale work after dispose', async () => {
+    let releaseDecode!: () => void;
+    vi.mocked(HTMLImageElement.prototype.decode).mockImplementation(
+      () => new Promise<void>((resolve) => (releaseDecode = resolve)),
+    );
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const first = cache.prepare('living-room', 'static', 1, new AbortController().signal);
+    const second = cache.prepare('living-room', 'static', 2, new AbortController().signal);
+    cache.dispose();
+    releaseDecode?.();
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(second).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetch).not.toHaveBeenCalled();
+
+    const freshCache = createHeroRoomMediaCache(createSelector());
+    freshCache.setHost(document.createElement('div'));
+    freshCache.setPoster('living-room', makePoster());
+    vi.mocked(HTMLImageElement.prototype.decode).mockResolvedValue(undefined);
+    await expect(freshCache.prepare('living-room', 'static', 3, new AbortController().signal)).resolves.toMatchObject({
+      mode: 'static',
+    });
   });
 
   it('aborts, unmounts, and remounts without losing retained resources', async () => {

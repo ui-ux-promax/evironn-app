@@ -47,7 +47,12 @@ export type HeroRoomMediaCache = {
   dispose(): void;
 };
 
-type VideoRecord = HeroPreparedVideo & { sourceGeneration: number };
+type VideoRecord = HeroPreparedVideo & {
+  sourceGeneration: number;
+  assignedSource: string;
+  metadataGeneration: number;
+  firstFrameGeneration: number;
+};
 
 type RoomRecord = {
   poster: HTMLImageElement | null;
@@ -57,6 +62,7 @@ type RoomRecord = {
   videos: Map<string, VideoRecord>;
   bundles: Partial<Record<HeroPreparationMode, HeroPreparedRoom>>;
   attempt: Attempt | null;
+  latestOperationId: number;
 };
 
 type Attempt = {
@@ -103,25 +109,35 @@ function createPreparationFailure(
 }
 
 function isCompleteImage(image: HTMLImageElement | undefined) {
-  return Boolean(image?.complete && image.naturalWidth > 0);
+  return Boolean(image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
 }
 
-function isVideoComplete(video: HeroPreparedVideo | undefined) {
-  return Boolean(video?.blob && video.objectUrl && video.element && video.mediaReady);
+function isVideoComplete(video: VideoRecord | undefined) {
+  return Boolean(
+    video?.blob &&
+    video.objectUrl &&
+    video.element &&
+    video.element.getAttribute('src') === video.objectUrl &&
+    video.mediaReady &&
+    video.assignedSource === video.objectUrl &&
+    isHeroVideoMediaReady(video.element, video.metadataGeneration === video.sourceGeneration) &&
+    video.metadataGeneration === video.sourceGeneration &&
+    video.firstFrameGeneration === video.sourceGeneration,
+  );
 }
 
 function appendToHost(host: HTMLDivElement, element: HTMLElement) {
   if (element.parentElement !== host) host.appendChild(element);
 }
 
-function detachVideo(video: HTMLVideoElement) {
+function detachVideo(video: HTMLVideoElement, reload = true) {
   video.pause();
   video.removeAttribute('src');
-  video.load();
+  if (reload) video.load();
 }
 
-function removeVideoElement(video: HTMLVideoElement) {
-  detachVideo(video);
+function removeVideoElement(video: HTMLVideoElement, reload = true) {
+  detachVideo(video, reload);
   video.remove();
 }
 
@@ -136,6 +152,7 @@ function getRoomRecord(rooms: Map<PilotHeroRoomId, RoomRecord>, room: PilotHeroR
       videos: new Map(),
       bundles: {},
       attempt: null,
+      latestOperationId: 0,
     };
     rooms.set(room, record);
   }
@@ -198,6 +215,17 @@ export function createHeroRoomMediaCache(
     if (attempt.signal.aborted) throw createAbortError();
   };
 
+  const assertAttemptCurrent = (attempt: Attempt, record: RoomRecord) => {
+    if (
+      disposed ||
+      attempt.signal.aborted ||
+      record.attempt !== attempt ||
+      record.latestOperationId !== attempt.operationId
+    ) {
+      throw createAbortError();
+    }
+  };
+
   const runActive = async <T>(
     attempt: Attempt,
     resource: HeroPreparationFailure['resource'],
@@ -238,26 +266,75 @@ export function createHeroRoomMediaCache(
   };
 
   const decodeImage = async (attempt: Attempt, image: HTMLImageElement, resource: 'poster' | 'focus') => {
-    if (isCompleteImage(image)) return;
-    if (typeof image.decode !== 'function') {
-      await runActive(attempt, resource, async (signal) => {
-        await awaitCondition(attempt, () => isCompleteImage(image));
-        if (signal.aborted) throw createAbortError();
-      });
-      return;
-    }
     await runActive(attempt, resource, async (signal) => {
-      const decoded = image.decode();
-      await decoded;
+      if (typeof image.decode === 'function') {
+        await image.decode();
+      } else if (!isCompleteImage(image)) {
+        await new Promise<void>((resolve, reject) => {
+          const cleanup = () => {
+            image.removeEventListener('load', onLoad);
+            image.removeEventListener('error', onError);
+            signal.removeEventListener('abort', onAbort);
+          };
+          const onLoad = () => {
+            cleanup();
+            resolve();
+          };
+          const onError = () => {
+            cleanup();
+            reject(new Error('Hero image load failed'));
+          };
+          const onAbort = () => {
+            cleanup();
+            reject(createAbortError());
+          };
+          image.addEventListener('load', onLoad);
+          image.addEventListener('error', onError);
+          signal.addEventListener('abort', onAbort, { once: true });
+          if (isCompleteImage(image)) onLoad();
+        });
+      }
       if (signal.aborted) throw createAbortError();
+      if (!isCompleteImage(image)) {
+        throw createPreparationFailure(attempt.room, resource, 'Hero image is not decoded');
+      }
     });
   };
+
+  const waitForPostPosterFrame = (attempt: Attempt) =>
+    new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let frameId: number | undefined;
+      let fallbackId: ReturnType<typeof setTimeout> | undefined;
+      const cleanup = () => {
+        if (frameId !== undefined && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frameId);
+        if (fallbackId !== undefined) clearTimeout(fallbackId);
+        attempt.signal.removeEventListener('abort', onAbort);
+      };
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve();
+      };
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(createAbortError());
+      };
+      attempt.signal.addEventListener('abort', onAbort, { once: true });
+      if (typeof requestAnimationFrame === 'function') frameId = requestAnimationFrame(finish);
+      if (!settled) fallbackId = setTimeout(finish, 100);
+    });
 
   const fetchBlob = async (attempt: Attempt, src: string) =>
     runActive(attempt, 'video', async (signal) => {
       const response = await fetch(src, { signal });
+      if (signal.aborted) throw createAbortError();
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
+      if (signal.aborted) throw createAbortError();
       if (blob.size === 0) throw new Error('Empty video Blob');
       return blob;
     });
@@ -268,7 +345,7 @@ export function createHeroRoomMediaCache(
     selected: SelectedSource,
     retained: VideoRecord | null,
   ): Promise<VideoRecord> => {
-    const video = retained?.element ?? document.createElement('video');
+    let video = retained?.element ?? null;
     let objectUrl = retained?.objectUrl ?? '';
     let blob = retained?.blob;
     const generation = (retained?.sourceGeneration ?? 0) + 1;
@@ -279,6 +356,8 @@ export function createHeroRoomMediaCache(
       assertAttemptActive(attempt);
       objectUrl = URL.createObjectURL(blob);
     }
+
+    video ??= document.createElement('video');
 
     if (!host) {
       if (!isRetained && objectUrl) URL.revokeObjectURL(objectUrl);
@@ -292,6 +371,8 @@ export function createHeroRoomMediaCache(
     video.setAttribute('aria-hidden', 'true');
 
     let mediaReady: boolean;
+    let metadataGeneration = 0;
+    let firstFrameGeneration = 0;
     try {
       mediaReady = await runActive(attempt, 'video', async (signal) => {
         let metadataSeen = false;
@@ -315,14 +396,19 @@ export function createHeroRoomMediaCache(
           cleanup();
           callback();
         };
+        const isCurrentSource = () => video.getAttribute('src') === objectUrl;
         const checkReady = () => {
-          if (firstFrameSeen && isHeroVideoMediaReady(video, metadataSeen)) settle(() => resolveReady(true));
+          if (isCurrentSource() && firstFrameSeen && isHeroVideoMediaReady(video, metadataSeen)) {
+            settle(() => resolveReady(true));
+          }
         };
         const onMetadata = () => {
+          if (!isCurrentSource()) return;
           metadataSeen = true;
           checkReady();
         };
         const onData = () => {
+          if (!isCurrentSource()) return;
           firstFrameSeen = true;
           checkReady();
         };
@@ -336,14 +422,17 @@ export function createHeroRoomMediaCache(
         if (attempt.signal.aborted) throw createAbortError();
         video.setAttribute('src', objectUrl);
         video.load();
-        return ready;
+        const result = await ready;
+        metadataGeneration = generation;
+        firstFrameGeneration = generation;
+        return result;
       });
     } catch (error) {
       if (retained) {
         detachVideo(retained.element);
       } else {
         if (objectUrl) URL.revokeObjectURL(objectUrl);
-        removeVideoElement(video);
+        removeVideoElement(video, false);
       }
       throw error;
     }
@@ -358,6 +447,9 @@ export function createHeroRoomMediaCache(
       element: video,
       mediaReady: true,
       sourceGeneration: generation,
+      assignedSource: objectUrl,
+      metadataGeneration,
+      firstFrameGeneration,
     };
   };
 
@@ -380,6 +472,7 @@ export function createHeroRoomMediaCache(
       retained = null;
     }
 
+    const committedMediaRepair = Boolean(retained?.blob && retained?.objectUrl && retained?.element);
     let selected = retained
       ? { format: retained.format, src: retained.objectUrl }
       : selectSource(sources, (mime) => {
@@ -393,15 +486,26 @@ export function createHeroRoomMediaCache(
     while (true) {
       try {
         const prepared = await bindVideo(attempt, entry, selected, retained);
+        assertAttemptCurrent(attempt, record);
         record.videos.set(key, prepared);
-        if (!retained) attempt.createdVideos.set(key, prepared);
+        if (!committedMediaRepair) attempt.createdVideos.set(key, prepared);
         return prepared;
       } catch (error) {
         if (isAbortError(error) || attempt.signal.aborted) throw error;
-        if (retained && selected.src === retained.objectUrl) {
-          detachVideo(retained.element);
-          record.videos.set(key, { ...retained, mediaReady: false, sourceGeneration: retained.sourceGeneration + 1 });
-        } else if (record.videos.has(key)) {
+        if (committedMediaRepair && retained) {
+          if (record.videos.get(key) === retained) {
+            record.videos.set(key, {
+              ...retained,
+              mediaReady: false,
+              sourceGeneration: retained.sourceGeneration + 1,
+              metadataGeneration: 0,
+              firstFrameGeneration: 0,
+            });
+            delete record.bundles.animated;
+          }
+          throw createPreparationFailure(attempt.room, 'video', 'Hero video media repair failed', error);
+        }
+        if (record.videos.has(key)) {
           disposeUncommittedVideo(record, key);
         }
         if (selected.format === 'webm' && !fallbackAttempted && sources.mp4 && sources.mp4 !== selected.src) {
@@ -425,8 +529,13 @@ export function createHeroRoomMediaCache(
   };
 
   const isReady = (room: PilotHeroRoomId, mode: HeroPreparationMode, record: RoomRecord) => {
-    if (!record.poster || !record.posterReady) return false;
-    if (HERO_ROOMS[room].productIds.some((productId) => !record.focusReady.has(productId))) return false;
+    if (!record.poster || !record.posterReady || !isCompleteImage(record.poster)) return false;
+    if (
+      HERO_ROOMS[room].productIds.some(
+        (productId) => !record.focusReady.has(productId) || !isCompleteImage(record.focus.get(productId)),
+      )
+    )
+      return false;
     if (
       mode === 'animated' &&
       allEntries(room).some((entry) => !isVideoComplete(record.videos.get(keyOf(entry.productId, entry.direction))))
@@ -443,11 +552,13 @@ export function createHeroRoomMediaCache(
     signal: AbortSignal,
   ): Promise<HeroPreparedRoom> => {
     const record = getRoomRecord(rooms, room);
+    if (disposed || operationId < record.latestOperationId) throw createAbortError();
     const existing = get(room, mode);
     if (existing) return existing;
     if (signal.aborted) throw createAbortError();
     if (record.attempt) {
       if (record.attempt.operationId === operationId && record.attempt.mode === mode) return record.attempt.promise;
+      if (operationId > record.latestOperationId) record.latestOperationId = operationId;
       const previous = record.attempt;
       previous.controller.abort();
       try {
@@ -455,7 +566,10 @@ export function createHeroRoomMediaCache(
       } catch {
         // Stale attempts are intentionally discarded before replacement starts.
       }
+      if (disposed || signal.aborted || operationId < record.latestOperationId) throw createAbortError();
     }
+
+    record.latestOperationId = Math.max(record.latestOperationId, operationId);
 
     const controller = new AbortController();
     const attempt: Attempt = {
@@ -485,10 +599,14 @@ export function createHeroRoomMediaCache(
       try {
         await awaitCondition(attempt, () => Boolean(host));
         await awaitCondition(attempt, () => Boolean(record.poster));
+        assertAttemptCurrent(attempt, record);
+        const poster = record.poster!;
         attempt.activeResource = 'poster';
-        await decodeImage(attempt, record.poster!, 'poster');
-        assertAttemptActive(attempt);
+        await decodeImage(attempt, poster, 'poster');
+        assertAttemptCurrent(attempt, record);
         record.posterReady = true;
+        await waitForPostPosterFrame(attempt);
+        assertAttemptCurrent(attempt, record);
 
         for (const productId of HERO_ROOMS[room].productIds) {
           if (!record.focus.has(productId)) {
@@ -503,22 +621,28 @@ export function createHeroRoomMediaCache(
           }
           attempt.activeResource = 'focus';
           await decodeImage(attempt, record.focus.get(productId)!, 'focus');
-          assertAttemptActive(attempt);
+          assertAttemptCurrent(attempt, record);
           record.focusReady.add(productId);
         }
 
         if (mode === 'animated') {
           for (const entry of allEntries(room)) await prepareVideo(attempt, record, entry);
         }
+        assertAttemptCurrent(attempt, record);
         if (!isReady(room, mode, record))
           throw createPreparationFailure(room, 'registration', 'Hero room resources are incomplete');
         return makeBundle(room, mode, record);
       } catch (error) {
-        for (const [productId, image] of attempt.createdFocus) {
-          if (record.focus.get(productId) !== image) continue;
-          image.remove();
-          record.focus.delete(productId);
-          record.focusReady.delete(productId);
+        const preserveStatic = attempt.activeResource === 'video' && isReady(room, 'static', record);
+        if (!preserveStatic) {
+          for (const [productId, image] of attempt.createdFocus) {
+            if (record.focus.get(productId) !== image) continue;
+            image.remove();
+            record.focus.delete(productId);
+            record.focusReady.delete(productId);
+          }
+        } else {
+          makeBundle(room, 'static', record);
         }
         for (const [key, video] of attempt.createdVideos) disposeUncommittedVideo(record, key, video);
         if (attempt.deadlineFailure) throw attempt.deadlineFailure;

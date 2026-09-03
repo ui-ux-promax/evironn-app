@@ -609,11 +609,14 @@ describe('hero room media preload cache', () => {
   });
 
   it('cleans newly owned media when cancellation follows readiness before registration', async () => {
+    vi.useFakeTimers();
     const cache = createHeroRoomMediaCache(createSelector());
     const host = document.createElement('div');
     cache.setHost(host);
     cache.setPoster('living-room', makePoster());
     const controller = new AbortController();
+    const addListener = vi.spyOn(HTMLVideoElement.prototype, 'addEventListener');
+    const removeListener = vi.spyOn(HTMLVideoElement.prototype, 'removeEventListener');
     let lateCompletion!: () => void;
     let cancelAtFinalActiveCheck = false;
     const originalAbortedGetter = Object.getOwnPropertyDescriptor(AbortSignal.prototype, 'aborted')!.get!;
@@ -639,11 +642,23 @@ describe('hero room media preload cache', () => {
       });
     });
     const preparation = cache.prepare('living-room', 'animated', 1, controller.signal);
-    await expect(preparation).rejects.toMatchObject({ name: 'AbortError' });
+    const outcome = preparation.then(
+      () => null,
+      (error) => error,
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await outcome).toMatchObject({ name: 'AbortError' });
     abortedGetter.mockRestore();
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
     expect(revokeObjectUrl).toHaveBeenCalledTimes(1);
     expect(host.querySelectorAll('video')).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+    for (const type of ['loadedmetadata', 'loadeddata', 'error']) {
+      expect(removeListener.mock.calls.filter(([event]) => event === type)).toHaveLength(
+        addListener.mock.calls.filter(([event]) => event === type).length,
+      );
+    }
 
     lateCompletion();
     expect(createObjectUrl).toHaveBeenCalledTimes(1);

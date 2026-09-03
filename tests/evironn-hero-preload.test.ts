@@ -618,15 +618,6 @@ describe('hero room media preload cache', () => {
     const addListener = vi.spyOn(HTMLVideoElement.prototype, 'addEventListener');
     const removeListener = vi.spyOn(HTMLVideoElement.prototype, 'removeEventListener');
     let lateCompletion!: () => void;
-    let cancelAtFinalActiveCheck = false;
-    const originalAbortedGetter = Object.getOwnPropertyDescriptor(AbortSignal.prototype, 'aborted')!.get!;
-    const abortedGetter = vi.spyOn(AbortSignal.prototype, 'aborted', 'get').mockImplementation(function aborted(
-      this: AbortSignal,
-    ) {
-      const value = originalAbortedGetter.call(this);
-      if (cancelAtFinalActiveCheck && !value) controller.abort();
-      return originalAbortedGetter.call(this);
-    });
     vi.mocked(HTMLVideoElement.prototype.load).mockImplementation(function load(this: HTMLVideoElement) {
       Object.defineProperties(this, {
         duration: { configurable: true, value: 6 },
@@ -638,7 +629,7 @@ describe('hero room media preload cache', () => {
       };
       queueMicrotask(() => {
         lateCompletion();
-        cancelAtFinalActiveCheck = true;
+        queueMicrotask(() => controller.abort());
       });
     });
     const preparation = cache.prepare('living-room', 'animated', 1, controller.signal);
@@ -649,7 +640,6 @@ describe('hero room media preload cache', () => {
     await vi.advanceTimersByTimeAsync(0);
     await vi.advanceTimersByTimeAsync(100);
     expect(await outcome).toMatchObject({ name: 'AbortError' });
-    abortedGetter.mockRestore();
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
     expect(revokeObjectUrl).toHaveBeenCalledTimes(1);
     expect(host.querySelectorAll('video')).toHaveLength(0);

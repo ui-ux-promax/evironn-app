@@ -144,10 +144,13 @@ function fireHeroAnimationStart(image: HTMLImageElement, animationName = 'hero-r
   fireEvent(image, event);
 }
 
-function createPreparedAnimatedCache() {
+function createPreparedAnimatedCache(
+  productId: 'sofa' | 'chair' | 'kitchen-dining' | 'kitchen-island' = 'sofa',
+  direction: 'forward' | 'reverse' = 'forward',
+) {
   const video = document.createElement('video');
   const prepared = {
-    entry: { productId: 'sofa' as const, direction: 'forward' as const },
+    entry: { productId, direction },
     format: 'mp4' as const,
     blob: new Blob(['hero-video']),
     objectUrl: 'blob:timer-sofa-forward',
@@ -158,8 +161,8 @@ function createPreparedAnimatedCache() {
     room: 'living-room' as const,
     mode: 'animated' as const,
     poster: document.createElement('img'),
-    focus: new Map([['sofa' as const, document.createElement('img')]]),
-    videos: new Map([['sofa:forward', prepared]]),
+    focus: new Map([[productId, document.createElement('img')]]),
+    videos: new Map([[`${productId}:${direction}`, prepared]]),
   };
   Object.defineProperties(video, {
     readyState: { configurable: true, value: 2 },
@@ -171,10 +174,57 @@ function createPreparedAnimatedCache() {
     getUnreadyVideo: vi.fn().mockReturnValue(null),
     setHost: vi.fn(),
   } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
-  return { cache, video };
+  return { cache, video, bundle };
 }
 
 describe('Evironn interactive hero shell', () => {
+  for (const productId of ['sofa', 'chair', 'kitchen-dining', 'kitchen-island'] as const) {
+    for (const direction of ['forward', 'reverse'] as const) {
+      it(`hands off ${productId} ${direction} without rewinding the finished video`, () => {
+        const { cache, video, bundle } = createPreparedAnimatedCache(productId, direction);
+        const focus = bundle.focus.get(productId)!;
+        const complete = vi.fn(() => ({
+          focusVisible: focus.classList.contains('is-visible'),
+          videoVisible: video.classList.contains('is-visible'),
+          time: video.currentTime,
+        }));
+        const { unmount } = render(
+          <HeroProductMedia
+            cache={cache}
+            room={productId.startsWith('kitchen') ? 'kitchen' : 'living-room'}
+            roomOperationId={1}
+            playbackGeneration={1}
+            phase={direction === 'forward' ? `entering-${productId}` : `returning-${productId}`}
+            reducedMotion={false}
+            onProgress={vi.fn()}
+            onForwardComplete={complete}
+            onReverseComplete={complete}
+            onPlaybackUnavailable={vi.fn()}
+          />,
+        );
+        firePlaying(video);
+        video.currentTime = 6;
+        fireEnded(video);
+        expect(complete).toHaveBeenCalledOnce();
+        expect(complete.mock.results[0].value).toEqual({
+          focusVisible: direction === 'forward',
+          videoVisible: false,
+          time: 6,
+        });
+        unmount();
+        expect(video.currentTime).toBe(6);
+      });
+    }
+  }
+
+  it('shows only the Fade Arc while preparing, with an accessible nonvisual label', () => {
+    render(<Hero />);
+    const status = screen.getByRole('status', { name: 'Загрузка комнаты…' });
+    expect(status.textContent).toBe('');
+    expect(status.querySelector('svg')).not.toBeNull();
+    expect(status.closest('.furni-hero-preparation-overlay__panel')).toBeNull();
+  });
+
   it('does not mount unrequested room posters', () => {
     render(<Hero />);
     const hero = document.querySelector('#evironn-hero')!;
@@ -182,6 +232,37 @@ describe('Evironn interactive hero shell', () => {
     expect(hero.querySelector('img[src="/assets/hero/kitchen-idle.webp"]')).toBeNull();
     expect(screen.getByRole('button', { name: 'СПАЛЬНЯ' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'ТЕРРАСА' })).toBeDisabled();
+  });
+
+  it('prepares bedroom and terrace only after selection and retains their media for revisits', async () => {
+    render(<Hero />);
+    await waitForLivingBundle();
+    const initialFetchCount = fetchMock.mock.calls.length;
+    expect(fetchMock.mock.calls.flat().join(' ')).not.toMatch(/bedroom|terrace/);
+
+    for (const room of ['bedroom', 'terrace'] as const) {
+      fireEvent.click(screen.getByRole('button', { name: room === 'bedroom' ? 'СПАЛЬНЯ' : 'ТЕРРАСА' }));
+      await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'true'));
+      if (room === 'bedroom') expect(document.querySelector('.furni-hero-stack--living-room')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false'));
+      await waitFor(() => expect(document.querySelector(`.furni-hero-stack--${room}`)).toBeInTheDocument());
+      const incoming = document.querySelector<HTMLImageElement>('.furni-hero-room-media__image.is-incoming');
+      expect(incoming).not.toBeNull();
+      fireHeroAnimationEnd(incoming!);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: room === 'bedroom' ? 'СПАЛЬНЯ' : 'ТЕРРАСА' })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        ),
+      );
+      expect(document.querySelectorAll('#evironn-hero video')).toHaveLength((room === 'bedroom' ? 2 : 3) * 4);
+    }
+
+    const preparedFetchCount = fetchMock.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'СПАЛЬНЯ' }));
+    await waitFor(() => expect(document.querySelector('.furni-hero-stack--bedroom')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(preparedFetchCount);
+    expect(fetchMock.mock.calls.length).toBe(initialFetchCount + 8);
   });
 
   it('keeps living preparation usable across StrictMode effect remounts', async () => {
@@ -1397,7 +1478,7 @@ describe('Evironn interactive hero shell', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'КУХНЯ' })).toBeEnabled());
   });
 
-  it('keeps canonical links, disabled bedroom and terrace controls, and scoped recovery CSS', async () => {
+  it('keeps canonical links, enables all manifested room controls, and scoped recovery CSS', async () => {
     render(<Hero />);
     const hero = screen.getByRole('region', { name: 'Мебель с душой, созданная поколениями' });
     expect(within(hero).getByRole('heading', { name: /Мебель с душой/ })).toBeInTheDocument();
@@ -1405,10 +1486,10 @@ describe('Evironn interactive hero shell', () => {
       'href',
       '/catalog?room=living',
     );
-    expect(screen.getByRole('button', { name: 'СПАЛЬНЯ' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'ТЕРРАСА' })).toBeDisabled();
     expect(document.querySelector('.furni-hero-preparation-overlay')).toBeInTheDocument();
     await waitForLivingBundle();
+    expect(screen.getByRole('button', { name: 'СПАЛЬНЯ' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'ТЕРРАСА' })).toBeEnabled();
   });
 
   it('selects WebM when VP9 is supported and keeps MP4 fallback contract exported', async () => {

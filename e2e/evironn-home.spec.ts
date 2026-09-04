@@ -207,18 +207,18 @@ test.describe('Evironn home desktop', () => {
     await expectNoBrowserErrors(errors);
   });
 
-  test('keeps pilot hero room controls scoped once idle media is ready', async ({ page }) => {
+  test('keeps hero room controls scoped once idle media is ready', async ({ page }) => {
     const errors = collectBrowserErrors(page);
     await page.goto('/', { waitUntil: 'networkidle' });
 
     const roomButtons = page.locator('#evironn-hero .seg-control .seg-item');
     await expect(roomButtons).toHaveCount(4);
-    // Regression: SSR-loaded idle images finished before hydration, so their onLoad was
-    // missed and the pilot living/kitchen pills were stuck disabled and unclickable.
+    // Regression: SSR-loaded idle images finished before hydration, so the room pills were
+    // stuck disabled and unclickable after the initial living bundle became ready.
     await expect(roomButtons.nth(0)).toBeEnabled();
     await expect(roomButtons.nth(1)).toBeEnabled();
-    await expect(roomButtons.nth(2)).toBeDisabled();
-    await expect(roomButtons.nth(3)).toBeDisabled();
+    await expect(roomButtons.nth(2)).toBeEnabled();
+    await expect(roomButtons.nth(3)).toBeEnabled();
 
     // Clicking a non-active, now-enabled pill must start a room transition.
     await roomButtons.nth(1).click();

@@ -127,6 +127,9 @@ function isVideoComplete(video: VideoRecord | undefined) {
 }
 
 function appendToHost(host: HTMLDivElement, element: HTMLElement) {
+  // Preparation attaches native nodes before React receives the ready bundle.
+  // Apply the hidden base style before insertion, not in a later render effect.
+  element.classList.add('furni-hero-product-media__asset');
   if (element.parentElement !== host) host.appendChild(element);
 }
 

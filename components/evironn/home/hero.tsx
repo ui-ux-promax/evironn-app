@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { catalogRoomPath } from '@/components/evironn/public-routes';
 import { HeroProductCard } from './hero-product-card';
 import { HeroProductMedia, selectHeroVideoSource, type HeroPlaybackUnavailable } from './hero-product-media';
@@ -40,6 +41,8 @@ import {
 const HERO_ROOM_CATALOG_SLUGS: Record<PilotHeroRoomId, string> = {
   'living-room': 'living',
   kitchen: 'dining',
+  bedroom: 'bedroom',
+  terrace: 'terrace',
 };
 
 const ROOM_ERROR_MESSAGE = 'Не удалось загрузить комнату. Повторить загрузку?';
@@ -68,7 +71,6 @@ export function Hero() {
   const [roomState, setRoomState] = useState(INITIAL_HERO_ROOM_STATE);
   const [requestedRooms, setRequestedRooms] = useState<readonly PilotHeroRoomId[]>(['living-room']);
   const [posterVersions, setPosterVersions] = useState<Partial<Record<PilotHeroRoomId, number>>>({});
-  const [kitchenEnabled, setKitchenEnabled] = useState(false);
   const [stackRoom, setStackRoom] = useState<PilotHeroRoomId>(INITIAL_HERO_ROOM_STATE.activeRoom);
   const [stackFade, setStackFade] = useState<'idle' | 'out' | 'in'>('idle');
   const [phase, setPhase] = useState<HeroPhase>('idle');
@@ -152,7 +154,6 @@ export function Hero() {
             return;
           preparationRef.current = null;
           delete posterFailureRef.current[room];
-          if (room === 'living-room') setKitchenEnabled(true);
           if (direct) {
             setPhase((current) => cancelHeroProduct(current));
             setCardVisible(false);
@@ -169,7 +170,6 @@ export function Hero() {
           if ((error as Partial<HeroPreparationFailure>).resource === 'poster') {
             posterFailureRef.current[room] = true;
           }
-          if (room === 'living-room') setKitchenEnabled(true);
           setRoomState((current) => {
             if (current.phase !== 'preparing' || current.operationId !== operationId || current.targetRoom !== room)
               return current;
@@ -328,7 +328,6 @@ export function Hero() {
         return;
       }
 
-      if (room === 'kitchen') setKitchenEnabled(true);
       setRequestedRooms((current) => (current.includes(room) ? current : [...current, room]));
       const operationId = nextOperationId();
       const direct = phase !== 'idle';
@@ -584,12 +583,7 @@ export function Hero() {
               <div className="seg-indicator" aria-hidden="true" />
               {HERO_ROOM_OPTIONS.map((room) => {
                 const selected = room.id === selectedRoom;
-                const roomLocked =
-                  !room.available ||
-                  (room.id === 'kitchen' && !kitchenEnabled) ||
-                  preparing ||
-                  roomChanging ||
-                  productChanging;
+                const roomLocked = !room.available || preparing || roomChanging || productChanging;
                 return (
                   <button
                     key={room.id}
@@ -632,13 +626,12 @@ export function Hero() {
       {preparing ? (
         <div className="furni-hero-preparation-overlay" aria-hidden="false">
           <div
-            className="furni-hero-preparation-overlay__panel"
+            className="furni-hero-preparation-overlay__status"
             role="status"
             aria-label="Загрузка комнаты…"
             tabIndex={-1}
           >
-            <span className="furni-hero-preparation-overlay__spinner" aria-hidden="true" />
-            Загрузка комнаты…
+            <FadeArc className="furni-hero-preparation-overlay__spinner" aria-hidden="true" />
           </div>
         </div>
       ) : null}

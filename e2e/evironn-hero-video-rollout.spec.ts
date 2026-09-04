@@ -10,7 +10,24 @@ const KITCHEN_PRODUCTS = [
   { room: 'КУХНЯ', name: 'Барный стул Aster', id: 'kitchen-island' },
 ] as const;
 
-const ALL_PRODUCTS = [...LIVING_PRODUCTS, ...KITCHEN_PRODUCTS];
+const BEDROOM_PRODUCTS = [
+  { room: 'СПАЛЬНЯ', name: 'Кресло Elara Bouclé', id: 'bedroom-chair' },
+  { room: 'СПАЛЬНЯ', name: 'Кровать Maren на платформе', id: 'bedroom-bed' },
+] as const;
+
+const TERRACE_PRODUCTS = [
+  { room: 'ТЕРРАСА', name: 'Уличное кресло Sora', id: 'terrace-chair' },
+  { room: 'ТЕРРАСА', name: 'Уличный диван Vale', id: 'terrace-sofa' },
+] as const;
+
+const ROOM_GROUPS = [
+  { id: 'living-room', label: 'ГОСТИНАЯ', products: LIVING_PRODUCTS },
+  { id: 'kitchen', label: 'КУХНЯ', products: KITCHEN_PRODUCTS },
+  { id: 'bedroom', label: 'СПАЛЬНЯ', products: BEDROOM_PRODUCTS },
+  { id: 'terrace', label: 'ТЕРРАСА', products: TERRACE_PRODUCTS },
+] as const;
+
+const ALL_PRODUCTS = ROOM_GROUPS.flatMap(({ products }) => products);
 const VIDEO_DIRECTIONS = ['forward', 'reverse'] as const;
 const KNOWN_NON_BLOCKING_DIAGNOSTIC = 'Received the string `%s` for the boolean attribute `%s`.';
 const browserNetworkByPage = new WeakMap<Page, BrowserNetworkRequest[]>();
@@ -285,11 +302,11 @@ async function attachEvidence(page: Page, label: string) {
   });
 }
 
-async function waitForHeroReady(page: Page, room: 'living-room' | 'kitchen' = 'living-room', videoCount = 4) {
+async function waitForHeroReady(page: Page, room: (typeof ROOM_GROUPS)[number]['id'] = 'living-room', videoCount = 4) {
+  const roomGroup = ROOM_GROUPS.find((candidate) => candidate.id === room);
+  if (!roomGroup) throw new Error(`Unknown hero room ${room}`);
   await expect(page.locator('#evironn-hero')).toHaveAttribute('aria-busy', 'false');
-  await expect(
-    page.locator(`#evironn-hero .furni-hero-hotspot-${room === 'living-room' ? 'sofa' : 'kitchen-island'}`),
-  ).toBeEnabled();
+  await expect(page.locator(`#evironn-hero .furni-hero-hotspot-${roomGroup.products[0].id}`)).toBeEnabled();
   await expect(page.locator('#evironn-hero video')).toHaveCount(videoCount);
 }
 
@@ -405,10 +422,10 @@ async function nodeIdentity(page: Page, product: Product['id'], direction: Direc
   );
 }
 
-async function assertNoUnscopedRoomRequests(page: Page) {
+async function assertNoRoomRequests(page: Page, rooms: readonly string[]) {
   const data = await instrumentation(page);
   const heroPaths = [...data.requests, ...data.networkRequests].map(({ path }) => path);
-  expect(heroPaths.some((path) => /\/assets\/hero\/(?:bedroom|terrace)-/u.test(path))).toBe(false);
+  for (const room of rooms) expect(heroPaths.some((path) => path.includes(`/assets/hero/${room}-`))).toBe(false);
 }
 
 function isRetryRoomPath(path: string) {
@@ -446,10 +463,10 @@ async function runNormalViewport(page: Page, viewport: Viewport) {
   });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await waitForHeroReady(page);
-  const beforeKitchen = await instrumentation(page);
-  expect(beforeKitchen.networkRequests.some((request) => request.path.includes('/assets/hero/kitchen-'))).toBe(false);
-  expect(beforeKitchen.objectUrls).toHaveLength(4);
-  assertDecodedImages(beforeKitchen, ['/assets/hero/sofa-focus.webp', '/assets/hero/chair-focus.webp']);
+  const beforeAdditionalRooms = await instrumentation(page);
+  await assertNoRoomRequests(page, ['kitchen', 'bedroom', 'terrace']);
+  expect(beforeAdditionalRooms.objectUrls).toHaveLength(4);
+  assertDecodedImages(beforeAdditionalRooms, ['/assets/hero/sofa-focus.webp', '/assets/hero/chair-focus.webp']);
 
   for (const product of LIVING_PRODUCTS) {
     await activateAndComplete(page, product, 'forward');
@@ -496,6 +513,58 @@ async function runNormalViewport(page: Page, viewport: Viewport) {
     await expect(page.getByRole('complementary', { name: product.name })).toHaveCount(0);
   }
 
+  let releaseBedroom!: () => void;
+  let bedroomRequest!: () => void;
+  const bedroomGate = new Promise<void>((resolve) => (releaseBedroom = resolve));
+  const bedroomStarted = new Promise<void>((resolve) => (bedroomRequest = resolve));
+  await page.route('**/assets/hero/bedroom-bed-reverse.webm', async (route) => {
+    bedroomRequest();
+    await bedroomGate;
+    await route.continue();
+  });
+  try {
+    await page.getByRole('button', { name: 'СПАЛЬНЯ' }).click();
+    await bedroomStarted;
+    await expect(page.locator('#evironn-hero')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('#evironn-hero .furni-hero-stack--kitchen')).toHaveCount(1);
+    await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-incoming')).toHaveCount(0);
+    releaseBedroom();
+    await completeRoomSelection(page, 'СПАЛЬНЯ');
+  } finally {
+    releaseBedroom();
+    await page.unroute('**/assets/hero/bedroom-bed-reverse.webm');
+  }
+  await waitForHeroReady(page, 'bedroom', 12);
+  const afterBedroom = await instrumentation(page);
+  expect(afterBedroom.objectUrls).toHaveLength(12);
+  expect(
+    afterBedroom.requests.map(({ path }) => path).filter((path) => path.includes('/assets/hero/bedroom-')),
+  ).toHaveLength(4);
+  assertDecodedImages(afterBedroom, ['/assets/hero/bedroom-chair-focus.webp', '/assets/hero/bedroom-bed-focus.webp']);
+
+  for (const product of BEDROOM_PRODUCTS) {
+    await activateAndComplete(page, product, 'forward');
+    await expect(page.getByRole('complementary', { name: product.name })).toBeVisible();
+    await returnAndComplete(page, product);
+    await expect(page.getByRole('complementary', { name: product.name })).toHaveCount(0);
+  }
+
+  await completeRoomSelection(page, 'ТЕРРАСА');
+  await waitForHeroReady(page, 'terrace', 16);
+  const afterTerrace = await instrumentation(page);
+  expect(afterTerrace.objectUrls).toHaveLength(16);
+  expect(
+    afterTerrace.requests.map(({ path }) => path).filter((path) => path.includes('/assets/hero/terrace-')),
+  ).toHaveLength(4);
+  assertDecodedImages(afterTerrace, ['/assets/hero/terrace-chair-focus.webp', '/assets/hero/terrace-sofa-focus.webp']);
+
+  for (const product of TERRACE_PRODUCTS) {
+    await activateAndComplete(page, product, 'forward');
+    await expect(page.getByRole('complementary', { name: product.name })).toBeVisible();
+    await returnAndComplete(page, product);
+    await expect(page.getByRole('complementary', { name: product.name })).toHaveCount(0);
+  }
+
   const identities = new Map<string, string>();
   for (const product of ALL_PRODUCTS) {
     for (const direction of VIDEO_DIRECTIONS)
@@ -506,6 +575,8 @@ async function runNormalViewport(page: Page, viewport: Viewport) {
   await activateAndComplete(page, LIVING_PRODUCTS[0], 'forward');
   await returnAndComplete(page, LIVING_PRODUCTS[0]);
   await completeRoomSelection(page, 'КУХНЯ');
+  await completeRoomSelection(page, 'СПАЛЬНЯ');
+  await completeRoomSelection(page, 'ТЕРРАСА');
   await completeRoomSelection(page, 'ГОСТИНАЯ');
   await expect(page.getByRole('button', { name: 'Смотреть Диван Linden на два места' })).toBeVisible();
   const finalData = await instrumentation(page);
@@ -517,8 +588,7 @@ async function runNormalViewport(page: Page, viewport: Viewport) {
       expect(await nodeIdentity(page, product.id, direction)).toBe(identities.get(`${product.id}:${direction}`));
     }
   }
-  expect(finalData.events.filter(({ type }) => type === 'ended').length).toBeGreaterThanOrEqual(10);
-  await assertNoUnscopedRoomRequests(page);
+  expect(finalData.events.filter(({ type }) => type === 'ended').length).toBeGreaterThanOrEqual(18);
   await attachEvidence(page, `${viewport.label}-normal`);
   expect(errors).toEqual([]);
 }
@@ -537,13 +607,14 @@ async function runCapabilityCase(page: Page, viewport: Viewport, capability: str
     .map(({ path }) => path)
     .filter((path) => path.includes('/assets/hero/'));
   expect(livingPaths.every((path) => path.endsWith(capability === '' ? '.mp4' : '.webm'))).toBe(true);
-  await completeRoomSelection(page, 'КУХНЯ');
-  const kitchenPaths = (await instrumentation(page)).requests
-    .map(({ path }) => path)
-    .filter((path) => path.includes('/assets/hero/kitchen-'));
-  expect(kitchenPaths).toHaveLength(4);
-  expect(kitchenPaths.every((path) => path.endsWith(capability === '' ? '.mp4' : '.webm'))).toBe(true);
-  await assertNoUnscopedRoomRequests(page);
+  for (const room of ROOM_GROUPS.slice(1)) {
+    await completeRoomSelection(page, room.label);
+    const roomPaths = (await instrumentation(page)).requests
+      .map(({ path }) => path)
+      .filter((path) => path.includes(`/assets/hero/${room.id}-`));
+    expect(roomPaths).toHaveLength(4);
+    expect(roomPaths.every((path) => path.endsWith(capability === '' ? '.mp4' : '.webm'))).toBe(true);
+  }
   await attachEvidence(page, `${viewport.label}-${capability === '' ? 'mp4' : 'webm'}-capability`);
 }
 
@@ -606,8 +677,44 @@ async function runInitialFailureRecovery(page: Page, viewport: Viewport) {
     expect(await nodeIdentity(page, product, direction)).toBe(identity);
   }
   await activateAndComplete(page, KITCHEN_PRODUCTS[0], 'forward');
-  await assertNoUnscopedRoomRequests(page);
+  await assertNoRoomRequests(page, ['bedroom', 'terrace']);
   await attachEvidence(page, `${viewport.label}-failure-recovery`);
+}
+
+async function runNewRoomFailureRecovery(page: Page, viewport: Viewport) {
+  await page.setViewportSize(viewport);
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await waitForHeroReady(page);
+  const livingBeforeBedroom = await instrumentation(page);
+  await page.route('**/assets/hero/bedroom-chair-forward.webm', (route) => route.abort('failed'));
+  await page.route('**/assets/hero/bedroom-chair-forward.mp4', (route) => route.abort('failed'));
+  try {
+    await page.getByRole('button', { name: 'СПАЛЬНЯ' }).click();
+    await expect(page.locator('#evironn-hero')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('#evironn-hero .furni-hero-stack--living-room')).toHaveCount(1);
+    await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-incoming')).toHaveCount(0);
+    await expect(page.locator('#evironn-hero .furni-hero-recovery p')).toHaveText(
+      'Не удалось загрузить комнату. Повторить загрузку?',
+    );
+    await expect(page.locator('#evironn-hero')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-stable')).toHaveCount(1);
+    const failed = await instrumentation(page);
+    expect(failed.objectUrls).toEqual(livingBeforeBedroom.objectUrls);
+  } finally {
+    await page.unroute('**/assets/hero/bedroom-chair-forward.webm');
+    await page.unroute('**/assets/hero/bedroom-chair-forward.mp4');
+  }
+  await page.getByRole('button', { name: 'Повторить' }).click();
+  await waitForHeroReady(page, 'bedroom', 8);
+  const afterRetry = await instrumentation(page);
+  const bedroomRequests = afterRetry.requests.filter(({ path }) => path.includes('/assets/hero/bedroom-'));
+  expect(bedroomRequests).toHaveLength(6);
+  expect(bedroomRequests.slice(-4).every(({ path }) => path.endsWith('.webm'))).toBe(true);
+  await completeRoomSelection(page, 'СПАЛЬНЯ');
+  await activateAndComplete(page, BEDROOM_PRODUCTS[0], 'forward');
+  await returnAndComplete(page, BEDROOM_PRODUCTS[0]);
+  await assertNoRoomRequests(page, ['terrace']);
+  await attachEvidence(page, `${viewport.label}-new-room-failure-recovery`);
 }
 
 test('real media rollout at desktop 1440x1000', async ({ page }) => {
@@ -628,4 +735,8 @@ test('uses WebM when VP9 is supported at mobile 390x844', async ({ page }) => {
 
 test('recovers an initial terminal video failure at desktop 1440x1000', async ({ page }) => {
   await runInitialFailureRecovery(page, { width: 1440, height: 1000, label: 'desktop' });
+});
+
+test('recovers a bedroom resource failure after explicit retry at desktop 1440x1000', async ({ page }) => {
+  await runNewRoomFailureRecovery(page, { width: 1440, height: 1000, label: 'desktop' });
 });

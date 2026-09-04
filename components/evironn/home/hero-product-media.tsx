@@ -146,7 +146,7 @@ export function HeroProductMedia({
     }
 
     return () => {
-      for (const prepared of animatedBundle?.videos.values() ?? []) resetVideo(prepared.element);
+      for (const prepared of animatedBundle?.videos.values() ?? []) prepared.element.pause();
     };
   }, [activeProductId, animatedBundle, phase, reducedMotion, staticBundle]);
 
@@ -214,14 +214,20 @@ export function HeroProductMedia({
     function cleanup() {
       clearTimers();
       removeListeners();
-      resetVideo(video);
       video.classList.remove('is-visible');
+      // Retain the final decoded frame. Rewind only before the next hidden play;
+      // seeking here can expose the first frame during the image handoff.
+      video.pause();
       activePlaybackRef.current = null;
     }
     cleanupPlayback = cleanup;
     const complete = () => {
       if (!isCurrent() || settled) return;
       settled = true;
+      // The focus image is already decoded by room preparation. Reveal it
+      // before removing the video, without waiting for the React phase effect.
+      const focus = bundle.focus.get(activeTransition.productId);
+      focus?.classList.toggle('is-visible', activeTransition.direction === 'forward');
       cleanup();
       if (activeTransition.direction === 'forward') onForwardComplete();
       else onReverseComplete();

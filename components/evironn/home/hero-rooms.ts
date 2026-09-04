@@ -18,8 +18,8 @@ export type HeroRoom = {
 export const HERO_ROOM_OPTIONS: HeroRoomOption[] = [
   { id: 'living-room', label: 'ГОСТИНАЯ', available: true },
   { id: 'kitchen', label: 'КУХНЯ', available: true },
-  { id: 'bedroom', label: 'СПАЛЬНЯ', available: false },
-  { id: 'terrace', label: 'ТЕРРАСА', available: false },
+  { id: 'bedroom', label: 'СПАЛЬНЯ', available: true },
+  { id: 'terrace', label: 'ТЕРРАСА', available: true },
 ];
 
 export const HERO_ROOMS: Record<AvailableHeroRoomId, HeroRoom> = {

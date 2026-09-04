@@ -146,3 +146,31 @@ Preserve these pre-existing untracked Phase 2 plans without modification, stagin
 - Corrected the final `inert` representation to `inert={preparing}` in `components/evironn/home/hero.tsx`. The earlier empty-string workaround was rejected by Next's bundled React DOM as false; the real Chromium console guard now runs without suppressing inert diagnostics.
 - Verification: local home Chromium `5/5`; shell `49/49`; Prettier, ESLint, `tsc --noEmit`, and `git diff --check` passed. React 18 jsdom still reports its separate non-boolean inert warning because its runtime metadata differs from Next's bundled client; no browser claim is based on that warning-bearing environment.
 - Follow-up is local-only and does not change deployment, database, environment, provider, asset, release, or visual-acceptance state.
+
+## Hero preparation visual correction — 2026-09-04
+
+- User recording exposed unstyled native media during bootstrap and kitchen preparation. The cache appended focus images and videos before the ready-bundle React effect assigned their hidden asset class. A real Chromium regression reproduced two visible images and three visible videos while the fourth video was held.
+- The cache now assigns the existing hidden base asset class before DOM insertion. Retained node identity, Blob ownership, fetching, readiness gates, and transition behavior remain unchanged. Desktop and mobile tests hold the fourth resource and verify hidden product media, unchanged current-room poster, and no room transition until readiness.
+- Replaced the preparation panel and visible loading text with the official Loading UI Fade Arc geometry, manually installed from its registry with its MIT notice. Animation uses a CSS module rather than an inline style block; CSP and package configuration are unchanged. The 40px spinner is centered in hero; the accessible nonvisual loading label and error/retry UI remain.
+- Verification: both new focused tests failed before correction; the affected Vitest suites then passed 74/74. Local Chromium passed 3/3: desktop/mobile held-resource visual checks and the existing desktop real-media rollout. Inspected the preparation screenshots. Scoped ESLint, Prettier, and `git diff --check` passed. No full gate/build or deployed-performance claim.
+- Changes remain uncommitted for user visual acceptance at localhost:3000. No push, PR, deployment, merge, database/provider operation, asset replacement, or protected-plan modification.
+
+## Hero product end-frame handoff — 2026-09-04
+
+- Removed completion/effect-cleanup rewinds from retained product videos. Playback now rewinds only before the next hidden start. Forward completion reveals the already-decoded focus image before hiding the finished video; reverse completion exposes the existing room poster without seeking back to the close-up frame.
+- Eight regression cases (all four pilot products, both directions) failed against the previous handoff, then passed after correction. Focused Vitest suites passed 82/82; scoped ESLint, Prettier and diff checks passed. Desktop Chromium real-media rollout passed 1/1, covering all four products, forward/reverse playback and repeat navigation with retained media.
+- The automated evidence verifies lifecycle behavior, not a frame-perfect visual acceptance claim. User confirmation of the reported sub-second flicker remains pending on localhost. No assets, providers, database, deployment or Git history changed.
+
+## Hero bedroom and terrace expansion — 2026-09-04
+
+- Extended the existing hero room availability contract from the two-room pilot to all four manifested rooms. Bedroom and terrace keep demand-only poster/video mounting; initial render still requests only the living bundle. The existing Blob cache, selected WebM/MP4 source policy, readiness gates, serial preparation queue, stale-operation guards, recovery/retry flow, reduced-motion path, Fade Arc overlay, hidden native-media class, end-frame handoff, and retained node/object-URL lifecycle were reused without a parallel mechanism.
+- Added explicit bedroom/terrace catalog-room mappings and removed the kitchen-only enablement flag. Accepted room/product manifests and assets were not replaced or recoded; product copy, composition, card positioning, hotspot rules, and existing animation behavior remain unchanged.
+- Updated pilot assertions to require all four controls after living readiness while retaining no-request coverage before bedroom/terrace selection. Added focused coverage for complete bedroom/terrace four-video bundles and retained-media revisits.
+- Focused Vitest passed 4 files / 100 tests. Scoped ESLint passed with zero errors. TypeScript `tsc --noEmit` passed. Scoped Prettier write/check and `git diff --check` passed.
+- Local Chromium browser coverage passed 11 scenarios across desktop `1440x1000` and mobile `390x844`: all four rooms, both products and forward/reverse transitions, sequential traversal, repeated visits without new Blob/object-URL/source work, codec selection, held slow bedroom preparation, initial kitchen recovery, and bedroom resource failure with explicit retry. The first full run was 10/11 because the new retry assertion counted two intentionally failed WebM/MP4 requests; the corrected focused retry scenario passed 1/1. This is automated local evidence, not user visual acceptance.
+- No commit, push, PR, deploy, merge, database/provider/environment change, asset replacement, or protected-plan modification was made. User should review the result locally at `http://localhost:3000/` on desktop and mobile, especially preparation blur/Fade Arc, room switching, hotspot/card layering, and bedroom/terrace retries.
+
+## Four-room hero visual acceptance — 2026-09-04
+
+- User confirmed local visual acceptance of all four rooms and authorized pushing the existing phase branch. This supersedes the pending visual-acceptance notes above, including preparation artifacts, Fade Arc, end-frame flicker and Aster card spacing.
+- Delivery includes the accepted pilot implementation and follow-up fixes plus bedroom/terrace expansion. Temporary local Playwright configuration and both protected Phase 2 plans are excluded from the commit. No PR or merge is authorized; this is a preview push, not full Phase 6 release acceptance.

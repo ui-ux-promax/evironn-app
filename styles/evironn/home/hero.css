@@ -607,7 +607,7 @@
 
 #evironn-hero .furni-hero-product--kitchen-island {
   right: 5%;
-  bottom: 12%;
+  bottom: calc(12% - 24px);
 }
 
 #evironn-hero .is-bedroom {
@@ -736,7 +736,6 @@
   pointer-events: auto;
 }
 
-#evironn-hero .furni-hero-preparation-overlay__panel,
 #evironn-hero .furni-hero-recovery {
   display: grid;
   gap: 12px;
@@ -750,12 +749,10 @@
 }
 
 #evironn-hero .furni-hero-preparation-overlay__spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid rgb(31 28 24 / 22%);
-  border-top-color: hsl(var(--ev-text));
-  border-radius: 50%;
-  animation: furni-hero-preparation-spin 0.9s linear infinite;
+  display: block;
+  width: 40px;
+  height: 40px;
+  color: hsl(var(--ev-text));
 }
 
 #evironn-hero .furni-hero-recovery {
@@ -777,12 +774,6 @@
   border-radius: var(--ev-radius-pill);
   background: hsl(var(--ev-text));
   color: hsl(var(--ev-background));
-}
-
-@keyframes furni-hero-preparation-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,11 +2,11 @@ export const HERO_ROOM_IDS = ['living-room', 'kitchen', 'bedroom', 'terrace'] as
 
 export type HeroRoomId = (typeof HERO_ROOM_IDS)[number];
 
-export const PILOT_HERO_ROOM_IDS = ['living-room', 'kitchen'] as const;
-export type PilotHeroRoomId = (typeof PILOT_HERO_ROOM_IDS)[number];
-
-export const AVAILABLE_HERO_ROOM_IDS = PILOT_HERO_ROOM_IDS;
+export const AVAILABLE_HERO_ROOM_IDS = HERO_ROOM_IDS;
 export type AvailableHeroRoomId = HeroRoomId;
+// Kept as a source-compatible alias for the preload pilot implementation;
+// runtime availability now covers every manifested room.
+export type PilotHeroRoomId = AvailableHeroRoomId;
 
 export type HeroRoomState = {
   activeRoom: PilotHeroRoomId;
@@ -27,7 +27,7 @@ export const INITIAL_HERO_ROOM_STATE: HeroRoomState = {
 };
 
 export function isAvailableHeroRoom(room: HeroRoomId): room is PilotHeroRoomId {
-  return (PILOT_HERO_ROOM_IDS as readonly HeroRoomId[]).includes(room);
+  return (AVAILABLE_HERO_ROOM_IDS as readonly HeroRoomId[]).includes(room);
 }
 
 export function isHeroRoomTransitioning(state: HeroRoomState) {

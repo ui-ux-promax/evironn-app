@@ -201,6 +201,54 @@ describe('hero room media preload cache', () => {
     expect(host.querySelectorAll('video')).toHaveLength(4);
   });
 
+  it('prepares the complete four-video bundle for bedroom and terrace on demand', async () => {
+    const cache = createHeroRoomMediaCache(createSelector());
+    const host = document.createElement('div');
+    cache.setHost(host);
+
+    for (const [operationId, room] of [
+      [2, 'bedroom'],
+      [3, 'terrace'],
+    ] as const) {
+      cache.setPoster(room, makePoster());
+      const prepared = await cache.prepare(room, 'animated', operationId, new AbortController().signal);
+      expect(prepared.focus).toHaveProperty('size', 2);
+      expect(prepared.videos).toHaveProperty('size', 4);
+      expect([...prepared.videos.keys()].sort()).toEqual(
+        expect.arrayContaining([
+          `${room === 'bedroom' ? 'bedroom-chair' : 'terrace-chair'}:forward`,
+          `${room === 'bedroom' ? 'bedroom-chair' : 'terrace-chair'}:reverse`,
+          `${room === 'bedroom' ? 'bedroom-bed' : 'terrace-sofa'}:forward`,
+          `${room === 'bedroom' ? 'bedroom-bed' : 'terrace-sofa'}:reverse`,
+        ]),
+      );
+    }
+
+    expect(fetch).toHaveBeenCalledTimes(8);
+  });
+
+  it('attaches preparation media with the hidden asset class already present', async () => {
+    const cache = createHeroRoomMediaCache(createSelector());
+    const host = document.createElement('div');
+    const inserted: boolean[] = [];
+    const append = host.appendChild.bind(host);
+    vi.spyOn(host, 'appendChild').mockImplementation((node) => {
+      inserted.push((node as HTMLElement).classList.contains('furni-hero-product-media__asset'));
+      return append(node);
+    });
+    cache.setHost(host);
+    cache.setPoster('living-room', makePoster());
+    cache.setPoster('kitchen', makePoster());
+    try {
+      await cache.prepare('living-room', 'animated', 1, new AbortController().signal);
+      await cache.prepare('kitchen', 'animated', 2, new AbortController().signal);
+      expect(inserted).toHaveLength(12);
+      expect(inserted.every(Boolean)).toBe(true);
+    } finally {
+      cache.dispose();
+    }
+  });
+
   it('stores one full Blob and one object URL per video', async () => {
     const cache = createHeroRoomMediaCache(createSelector());
     cache.setHost(document.createElement('div'));

@@ -29,7 +29,8 @@ import {
   createHeroCardItemVariants,
 } from '@/components/evironn/home/hero-product-motion';
 import { HERO_PRODUCTS } from '@/components/evironn/home/hero-products';
-import { HERO_ROOMS } from '@/components/evironn/home/hero-rooms';
+import { HERO_ROOMS, HERO_ROOM_OPTIONS } from '@/components/evironn/home/hero-rooms';
+import { AVAILABLE_HERO_ROOM_IDS } from '@/components/evironn/home/hero-room-state';
 import { selectHeroVideoSource } from '@/components/evironn/home/hero-product-media';
 
 describe('Evironn hero pure state', () => {
@@ -83,15 +84,29 @@ describe('Evironn hero pure state', () => {
     expect(recoverHeroRoomTransition(changing)).toEqual({ ...ready, operationId: 1 });
   });
 
-  it('waits for the matching complete kitchen bundle', () => {
+  it('waits for the matching complete room bundle', () => {
     const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
     const pending = requestHeroRoom(ready, 'kitchen', false, false, 1);
     expect(pending.phase).toBe('preparing');
     expect(pending.activeRoom).toBe('living-room');
     expect(completeHeroRoomPreparation(pending, 0)).toBe(pending);
     expect(completeHeroRoomPreparation(pending, 1).phase).toBe('changing');
-    expect(requestHeroRoom(ready, 'bedroom', true)).toBe(ready);
-    expect(requestHeroRoom(ready, 'terrace', true)).toBe(ready);
+    expect(requestHeroRoom(ready, 'bedroom', true)).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'bedroom',
+      phase: 'changing',
+      direct: false,
+      operationId: 1,
+      error: null,
+    });
+    expect(requestHeroRoom(ready, 'terrace', true)).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'terrace',
+      phase: 'changing',
+      direct: false,
+      operationId: 1,
+      error: null,
+    });
   });
 
   it('supports same-room preparation retry with monotonic operation IDs', () => {
@@ -159,7 +174,7 @@ describe('Evironn hero pure state', () => {
     expect(dismissHeroRoomError(ready, 'living-room', true)).toBe(ready);
   });
 
-  it('retries failed preparation and accepts an alternate pilot room from error', () => {
+  it('retries failed preparation and accepts any alternate room from error', () => {
     const ready = completeHeroRoomPreparation(INITIAL_HERO_ROOM_STATE, 0);
     const failedKitchen = failHeroRoomPreparation(
       requestHeroRoom(ready, 'kitchen', false, false, 1),
@@ -177,7 +192,14 @@ describe('Evironn hero pure state', () => {
       error: null,
     });
     expect(requestHeroRoom(failedKitchen, 'living-room', true, false, 2)).toBe(failedKitchen);
-    expect(requestHeroRoom(failedKitchen, 'bedroom', true, false, 2)).toBe(failedKitchen);
+    expect(requestHeroRoom(failedKitchen, 'bedroom', true, false, 2)).toEqual({
+      activeRoom: 'living-room',
+      targetRoom: 'bedroom',
+      phase: 'changing',
+      direct: false,
+      operationId: 2,
+      error: null,
+    });
 
     const failedLiving = failHeroRoomPreparation(
       requestHeroRoom(ready, 'living-room', false, false, 1),
@@ -298,10 +320,10 @@ describe('Evironn hero pure state', () => {
     });
   });
 
-  it('limits runtime room availability to the living room and kitchen pilot', () => {
-    expect(isAvailableHeroRoom('living-room')).toBe(true);
-    expect(isAvailableHeroRoom('kitchen')).toBe(true);
-    expect(isAvailableHeroRoom('bedroom')).toBe(false);
-    expect(isAvailableHeroRoom('terrace')).toBe(false);
+  it('makes every manifested room available to the runtime state machine', () => {
+    expect(AVAILABLE_HERO_ROOM_IDS).toEqual(['living-room', 'kitchen', 'bedroom', 'terrace']);
+    expect(HERO_ROOM_OPTIONS).toHaveLength(4);
+    expect(HERO_ROOM_OPTIONS.every((room) => room.available)).toBe(true);
+    for (const room of AVAILABLE_HERO_ROOM_IDS) expect(isAvailableHeroRoom(room)).toBe(true);
   });
 });

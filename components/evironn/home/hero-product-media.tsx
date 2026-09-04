@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { getHeroProduct, type HeroPhase } from './hero-product-state';
 import { HERO_PRODUCTS, type HeroVideoSources } from './hero-products';
 import {
-  isHeroVideoMediaReady,
   type HeroPreparedRoom,
   type HeroRoomMediaCache,
   type HeroVideoEntryId,
@@ -74,8 +73,7 @@ function isPreparedEntry(bundle: HeroPreparedRoom | null, entry: HeroVideoEntryI
     prepared.objectUrl &&
     prepared.element &&
     prepared.element.getAttribute('src') === prepared.objectUrl &&
-    prepared.mediaReady &&
-    isHeroVideoMediaReady(prepared.element, prepared.mediaReady),
+    prepared.mediaReady,
   );
 }
 
@@ -165,7 +163,7 @@ export function HeroProductMedia({
       productId: activeTransition.productId,
       direction: activeTransition.direction,
     };
-    const bundle = cache.get(room, 'animated');
+    const bundle = animatedBundle;
     const prepared = bundle?.videos.get(entryKey(entry));
     const isCurrent = () => operationRef.current === operationId;
     let cleanupPlayback: () => void = () => undefined;
@@ -244,7 +242,7 @@ export function HeroProductMedia({
     const onEnded = () => complete();
     const onError = () => fail();
 
-    const currentBundle = cache.get(room, 'animated');
+    const currentBundle = animatedBundle;
     if (!currentBundle || !isPreparedEntry(currentBundle, entry)) {
       if (preparationPending) return;
       queueMicrotask(() => fail(cache.getUnreadyVideo(room) ?? entry));
@@ -272,6 +270,7 @@ export function HeroProductMedia({
     };
   }, [
     cache,
+    animatedBundle,
     onForwardComplete,
     onPlaybackUnavailable,
     onProgress,
@@ -287,7 +286,7 @@ export function HeroProductMedia({
   useEffect(() => {
     if (!reducedMotion || !activeProductId || (!phase.startsWith('entering-') && !phase.startsWith('returning-')))
       return;
-    const bundle = cache.get(room, 'static');
+    const bundle = staticBundle;
     if (!bundle?.focus.has(activeProductId)) return;
     const token = playbackGeneration;
     const operationId = operationRef.current;
@@ -300,7 +299,7 @@ export function HeroProductMedia({
     return () => {
       cancelled = true;
     };
-  }, [activeProductId, cache, onForwardComplete, onReverseComplete, phase, playbackGeneration, reducedMotion, room]);
+  }, [activeProductId, onForwardComplete, onReverseComplete, phase, playbackGeneration, reducedMotion, staticBundle]);
 
   return <div ref={hostRef} className="furni-hero-product-media" aria-hidden="true" />;
 }

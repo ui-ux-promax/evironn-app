@@ -913,7 +913,7 @@ describe('Evironn interactive hero shell', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('repairs a direction that becomes unavailable between activation and playback entry', async () => {
+  it('starts a retained direction while native media rehydrates after cleanup', async () => {
     const video = document.createElement('video');
     const prepared = {
       entry: { productId: 'sofa' as const, direction: 'forward' as const },
@@ -931,21 +931,12 @@ describe('Evironn interactive hero shell', () => {
       videos: new Map([['sofa:forward', prepared]]),
     };
     Object.defineProperties(video, {
-      readyState: { configurable: true, value: 2 },
+      readyState: { configurable: true, value: 1 },
       duration: { configurable: true, value: 6 },
     });
     video.setAttribute('src', prepared.objectUrl);
-    let animatedReads = 0;
-    const onPlaybackUnavailable = vi.fn();
     const cache = {
-      get: vi.fn((_room: string, mode: string) => {
-        if (mode === 'animated') {
-          animatedReads += 1;
-          if (animatedReads === 2) video.removeAttribute('src');
-        }
-        return mode === 'animated' ? bundle : null;
-      }),
-      getUnreadyVideo: vi.fn().mockReturnValue(prepared.entry),
+      get: vi.fn().mockReturnValue(bundle),
       setHost: vi.fn(),
     } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
 
@@ -960,17 +951,11 @@ describe('Evironn interactive hero shell', () => {
         onProgress={vi.fn()}
         onForwardComplete={vi.fn()}
         onReverseComplete={vi.fn()}
-        onPlaybackUnavailable={onPlaybackUnavailable}
+        onPlaybackUnavailable={vi.fn()}
       />,
     );
 
-    await waitFor(() => expect(onPlaybackUnavailable).toHaveBeenCalledTimes(1));
-    expect(onPlaybackUnavailable).toHaveBeenCalledWith(
-      expect.objectContaining({
-        entry: { productId: 'sofa', direction: 'forward' },
-        stage: 'playback-entry',
-      }),
-    );
+    await waitFor(() => expect(playMock).toHaveBeenCalledWith());
   });
 
   it('retries a failed kitchen request while preserving the active living room', async () => {

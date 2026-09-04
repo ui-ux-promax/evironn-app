@@ -553,7 +553,7 @@ export function Hero() {
       />
       <div
         className="furni-hero-controls"
-        inert={preparing ? ('true' as unknown as boolean) : undefined}
+        inert={preparing ? ('' as unknown as boolean) : undefined}
         data-hero-controls-locked={preparing ? 'true' : 'false'}
       >
         <div

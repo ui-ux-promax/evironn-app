@@ -6,7 +6,7 @@ import { catalogRoomPath } from '@/components/evironn/public-routes';
 import { HeroProductCard } from './hero-product-card';
 import { HeroProductMedia, selectHeroVideoSource, type HeroPlaybackUnavailable } from './hero-product-media';
 import { HeroRoomMedia } from './hero-room-media';
-import { createHeroRoomMediaCache, type HeroPreparationMode } from './hero-room-preload';
+import { createHeroRoomMediaCache, type HeroPreparationFailure, type HeroPreparationMode } from './hero-room-preload';
 import { HERO_PRODUCTS } from './hero-products';
 import { HERO_ROOM_OPTIONS, HERO_ROOMS } from './hero-rooms';
 import {
@@ -47,7 +47,6 @@ const ROOM_ERROR_MESSAGE = 'Не удалось загрузить комнат�
 export function Hero() {
   const segRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
-  const roomButtonRefs = useRef<Partial<Record<HeroRoomId, HTMLButtonElement>>>({});
   const cache = useState(() => createHeroRoomMediaCache(selectHeroVideoSource))[0];
   const operationRef = useRef(INITIAL_HERO_ROOM_STATE.operationId);
   const playbackGenerationRef = useRef(0);
@@ -59,7 +58,13 @@ export function Hero() {
     operationId: number;
   } | null>(null);
   const posterElementsRef = useRef<Partial<Record<PilotHeroRoomId, HTMLImageElement>>>({});
-  const focusBeforePrepareRef = useRef<HTMLElement | null>(null);
+  const posterFailureRef = useRef<Partial<Record<PilotHeroRoomId, boolean>>>({});
+  const focusTransferRef = useRef<{
+    control: HTMLElement;
+    status: HTMLElement;
+    userMoved: boolean;
+  } | null>(null);
+  const focusCandidateRef = useRef<HTMLElement | null>(null);
   const [roomState, setRoomState] = useState(INITIAL_HERO_ROOM_STATE);
   const [requestedRooms, setRequestedRooms] = useState<readonly PilotHeroRoomId[]>(['living-room']);
   const [posterVersions, setPosterVersions] = useState<Partial<Record<PilotHeroRoomId, number>>>({});
@@ -71,8 +76,10 @@ export function Hero() {
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
+  const motionPreferenceRef = useRef(reducedMotion);
   const roomStateRef = useRef(roomState);
   const reducedMotionRef = useRef(reducedMotion);
+  const lifecycleRef = useRef(0);
   roomStateRef.current = roomState;
   reducedMotionRef.current = reducedMotion;
 
@@ -85,7 +92,15 @@ export function Hero() {
   const locked = preparing || roomChanging || productChanging || roomState.phase === 'error';
   const hotspotsVisible = roomState.phase === 'idle' && phase === 'idle';
 
-  useEffect(() => () => cache.dispose(), [cache]);
+  useEffect(() => {
+    const lifecycle = ++lifecycleRef.current;
+    const isCurrentLifecycle = () => lifecycleRef.current === lifecycle;
+    return () => {
+      queueMicrotask(() => {
+        if (isCurrentLifecycle()) cache.dispose();
+      });
+    };
+  }, [cache]);
 
   useEffect(() => {
     const control = segRef.current;
@@ -136,7 +151,12 @@ export function Hero() {
           if (preparationRef.current?.key !== key || controller.signal.aborted || operationRef.current !== operationId)
             return;
           preparationRef.current = null;
+          delete posterFailureRef.current[room];
           if (room === 'living-room') setKitchenEnabled(true);
+          if (direct) {
+            setPhase((current) => cancelHeroProduct(current));
+            setCardVisible(false);
+          }
           setRoomState((current) => {
             if (current.phase !== 'preparing' || current.operationId !== operationId || current.targetRoom !== room)
               return current;
@@ -146,6 +166,9 @@ export function Hero() {
         .catch((error: unknown) => {
           if (preparationRef.current?.key !== key || controller.signal.aborted) return;
           preparationRef.current = null;
+          if ((error as Partial<HeroPreparationFailure>).resource === 'poster') {
+            posterFailureRef.current[room] = true;
+          }
           if (room === 'living-room') setKitchenEnabled(true);
           setRoomState((current) => {
             if (current.phase !== 'preparing' || current.operationId !== operationId || current.targetRoom !== room)
@@ -164,6 +187,45 @@ export function Hero() {
     },
     [abortPreparation, cache],
   );
+
+  useEffect(() => {
+    const previous = motionPreferenceRef.current;
+    if (previous === reducedMotion) return;
+    motionPreferenceRef.current = reducedMotion;
+
+    abortPreparation();
+    const current = roomStateRef.current;
+    const room = current.targetRoom ?? current.activeRoom;
+    const mode = reducedMotion ? 'static' : 'animated';
+    const operationId = nextOperationId();
+    playbackGenerationRef.current += 1;
+    const ready = Boolean(cache.get(room, mode));
+    const recoveredPhase = isHeroTransitioning(phase) ? recoverHeroMediaFailure(phase) : phase;
+    if (recoveredPhase !== phase) {
+      setPhase(recoveredPhase);
+      setCardVisible(recoveredPhase !== 'idle');
+    }
+
+    if (ready) {
+      setRoomState((state) => ({ ...state, operationId }));
+      return;
+    }
+
+    setRoomState((state) => {
+      if (state.phase === 'idle' || state.phase === 'error') {
+        return requestHeroRoom(state, room, false, false, operationId);
+      }
+      return {
+        ...state,
+        targetRoom: room,
+        phase: 'preparing',
+        direct: false,
+        operationId,
+        error: null,
+      };
+    });
+    prepareRoom(room, operationId, mode, false);
+  }, [abortPreparation, cache, nextOperationId, phase, prepareRoom, reducedMotion]);
 
   const onPosterElement = useCallback(
     (room: PilotHeroRoomId, image: HTMLImageElement | null) => {
@@ -196,19 +258,37 @@ export function Hero() {
   useEffect(() => {
     if (!preparing) return;
     const active = document.activeElement as HTMLElement | null;
-    if (active && heroRef.current?.contains(active)) focusBeforePrepareRef.current = active;
+    const candidate =
+      (active && heroRef.current?.contains(active) && active.closest('.furni-hero-controls') && active) ||
+      focusCandidateRef.current;
     const status = heroRef.current?.querySelector<HTMLElement>('[role="status"]');
-    if (active && active.closest('.furni-hero-controls') && status) status.focus();
+    if (candidate && status) {
+      const owner = { control: candidate, status, userMoved: false };
+      focusTransferRef.current = owner;
+      focusCandidateRef.current = null;
+      const onFocusIn = (event: FocusEvent) => {
+        if (event.target !== status) owner.userMoved = true;
+      };
+      document.addEventListener('focusin', onFocusIn);
+      status.focus();
+      return () => document.removeEventListener('focusin', onFocusIn);
+    }
   }, [preparing]);
 
   useEffect(() => {
-    if (preparing) return;
-    const previous = focusBeforePrepareRef.current;
-    if (previous && heroRef.current?.contains(document.activeElement) && document.activeElement === heroRef.current) {
-      previous.focus();
+    if (preparing || roomChanging) return;
+    const owner = focusTransferRef.current;
+    if (
+      owner &&
+      !owner.userMoved &&
+      owner.control.isConnected &&
+      heroRef.current?.contains(owner.control) &&
+      (!document.activeElement || document.activeElement === document.body)
+    ) {
+      owner.control.focus();
     }
-    focusBeforePrepareRef.current = null;
-  }, [preparing]);
+    focusTransferRef.current = null;
+  }, [preparing, roomChanging]);
 
   useEffect(() => {
     if (!roomChanging || !roomState.targetRoom) {
@@ -254,6 +334,16 @@ export function Hero() {
       abortPreparation();
       const next = requestHeroRoom(roomState, room, ready, direct, operationId);
       if (next === roomState) return;
+      if (!ready) {
+        const activeElement = document.activeElement as HTMLElement | null;
+        if (
+          activeElement &&
+          heroRef.current?.contains(activeElement) &&
+          activeElement.closest('.furni-hero-controls')
+        ) {
+          focusCandidateRef.current = activeElement;
+        }
+      }
       setRoomState(next);
       if (ready) {
         if (direct) {
@@ -278,17 +368,29 @@ export function Hero() {
   );
 
   const finishRoomTransition = useCallback((operationId: number) => {
+    const focusOwner = focusTransferRef.current;
     setRoomState((current) => {
       if (current.phase !== 'changing' || current.operationId !== operationId) return current;
       const completed = completeHeroRoomTransition(current);
-      queueMicrotask(() => roomButtonRefs.current[completed.activeRoom]?.focus());
+      if (focusOwner && !focusOwner.userMoved) {
+        window.setTimeout(() => {
+          if (operationRef.current !== operationId || !focusOwner.control.isConnected) return;
+          focusOwner.control.focus();
+          focusTransferRef.current = null;
+        });
+      }
       return completed;
     });
   }, []);
 
-  const handleRoomFailure = useCallback((operationId: number) => {
+  const handleRoomFailure = useCallback((operationId: number, resource?: 'poster') => {
     setRoomState((current) => {
-      if (current.operationId !== operationId || current.phase !== 'changing') return current;
+      if (current.operationId !== operationId) return current;
+      if (resource === 'poster' && current.phase === 'preparing' && current.targetRoom) {
+        posterFailureRef.current[current.targetRoom] = true;
+        return failHeroRoomPreparation(current, operationId, ROOM_ERROR_MESSAGE);
+      }
+      if (current.phase !== 'changing') return current;
       return recoverHeroRoomTransition(current);
     });
   }, []);
@@ -306,7 +408,19 @@ export function Hero() {
       if (phase !== expectedPhase) return;
 
       abortPreparation();
-      cache.invalidateVideoMedia(failure.room, failure.entry.productId, failure.entry.direction);
+      const failedEntry =
+        failure.stage === 'before-activation' ? (cache.getUnreadyVideo(failure.room) ?? failure.entry) : failure.entry;
+      if (failure.stage === 'playback-entry') {
+        cache.invalidateVideoMedia(failure.room, failedEntry.productId, failedEntry.direction);
+      } else {
+        const failedVideo = [...document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')].find(
+          (video) =>
+            video.dataset.heroDirection === failedEntry.direction &&
+            video.classList.contains(`is-product-${failedEntry.productId}`),
+        );
+        if (failedVideo) cache.invalidateVideoMedia(failure.room, failedEntry.productId, failedEntry.direction);
+        else cache.disposeVideoResource(failure.room, failedEntry.productId, failedEntry.direction);
+      }
       const operationId = nextOperationId();
       playbackGenerationRef.current += 1;
       const recovered = recoverHeroMediaFailure(failure.failedPhase);
@@ -325,19 +439,21 @@ export function Hero() {
   );
 
   const retryRoom = useCallback(() => {
-    if (roomState.phase !== 'error' || !roomState.error || roomState.error.room !== roomState.activeRoom) return;
-    const room = roomState.activeRoom;
+    if (roomState.phase !== 'error' || !roomState.error) return;
+    const room = roomState.error.room;
     const mode = reducedMotion ? 'static' : 'animated';
-    const shouldRefreshPoster = !cache.get(room, 'static');
+    const shouldRefreshPoster = posterFailureRef.current[room] === true;
     const operationId = nextOperationId();
     abortPreparation();
     if (shouldRefreshPoster) {
+      posterElementsRef.current[room] = undefined;
+      delete posterFailureRef.current[room];
       setPosterVersions((current) => ({ ...current, [room]: (current[room] ?? 0) + 1 }));
     }
-    const next = restartHeroRoomPreparation(roomState, operationId);
+    const next = restartHeroRoomPreparation({ ...roomState, targetRoom: room }, operationId);
     setRoomState(next);
     prepareRoom(room, operationId, mode, false);
-  }, [abortPreparation, cache, nextOperationId, prepareRoom, reducedMotion, roomState]);
+  }, [abortPreparation, nextOperationId, prepareRoom, reducedMotion, roomState]);
 
   const activateHeroProduct = useCallback(
     (product: HeroProductId, direction: 'forward' | 'reverse') => {
@@ -473,10 +589,6 @@ export function Hero() {
                 return (
                   <button
                     key={room.id}
-                    ref={(node) => {
-                      if (node) roomButtonRefs.current[room.id] = node;
-                      else delete roomButtonRefs.current[room.id];
-                    }}
                     className={`seg-item${selected ? ' active' : ''}`}
                     type="button"
                     aria-pressed={selected}

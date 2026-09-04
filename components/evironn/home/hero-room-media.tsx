@@ -10,7 +10,7 @@ type HeroRoomMediaProps = {
   posterVersions: Readonly<Partial<Record<PilotHeroRoomId, number>>>;
   onPosterElement: (room: PilotHeroRoomId, image: HTMLImageElement | null) => void;
   onTransitionComplete: (operationId: number) => void;
-  onTransitionFailure: (operationId: number) => void;
+  onTransitionFailure: (operationId: number, resource?: 'poster') => void;
 };
 
 type HeroPosterImageProps = {
@@ -19,7 +19,7 @@ type HeroPosterImageProps = {
   state: HeroRoomState;
   onPosterElement: (room: PilotHeroRoomId, image: HTMLImageElement | null) => void;
   onTransitionComplete: (operationId: number) => void;
-  onTransitionFailure: (operationId: number) => void;
+  onTransitionFailure: (operationId: number, resource?: 'poster') => void;
 };
 
 function HeroPosterImage({
@@ -56,11 +56,11 @@ function HeroPosterImage({
     loading: 'eager' as const,
     onError: () => {
       if (state.targetRoom === room || (state.phase === 'preparing' && state.activeRoom === room)) {
-        onTransitionFailure(state.operationId);
+        onTransitionFailure(state.operationId, 'poster');
       }
     },
     onAnimationEnd: (event: React.AnimationEvent<HTMLImageElement>) => {
-      if (isIncoming && event.currentTarget === event.target && event.animationName?.startsWith('hero-room-enter')) {
+      if (isIncoming && event.currentTarget === event.target) {
         onTransitionComplete(state.operationId);
       }
     },

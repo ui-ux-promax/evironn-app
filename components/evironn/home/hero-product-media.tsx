@@ -114,7 +114,8 @@ export function HeroProductMedia({
   const operationRef = useRef(0);
   const activePlaybackRef = useRef<{ video: HTMLVideoElement; generation: number } | null>(null);
   const activeProductId = getHeroProduct(phase);
-  const bundle = cache.get(room, reducedMotion ? 'static' : 'animated');
+  const staticBundle = cache.get(room, 'static');
+  const animatedBundle = reducedMotion ? null : cache.get(room, 'animated');
 
   useEffect(() => {
     cache.setHost(hostRef.current);
@@ -122,12 +123,12 @@ export function HeroProductMedia({
   }, [cache]);
 
   useEffect(() => {
-    if (!bundle) return;
+    if (!staticBundle && !animatedBundle) return;
 
-    for (const [productId, image] of bundle.focus) {
+    for (const [productId, image] of staticBundle?.focus ?? []) {
       applyMediaClass(image, productId, HERO_PRODUCTS[productId].mediaClassName, false);
     }
-    for (const prepared of bundle.videos.values()) {
+    for (const prepared of animatedBundle?.videos.values() ?? []) {
       applyMediaClass(
         prepared.element,
         prepared.entry.productId,
@@ -139,15 +140,15 @@ export function HeroProductMedia({
     }
 
     if (activeProductId) {
-      const focus = bundle.focus.get(activeProductId);
+      const focus = staticBundle?.focus.get(activeProductId);
       const focusVisible = phase === activeProductId || phase.startsWith('returning-') || reducedMotion;
       if (focus) applyMediaClass(focus, activeProductId, HERO_PRODUCTS[activeProductId].mediaClassName, focusVisible);
     }
 
     return () => {
-      for (const prepared of bundle.videos.values()) resetVideo(prepared.element);
+      for (const prepared of animatedBundle?.videos.values() ?? []) resetVideo(prepared.element);
     };
-  }, [activeProductId, bundle, phase, reducedMotion]);
+  }, [activeProductId, animatedBundle, phase, reducedMotion, staticBundle]);
 
   useEffect(() => {
     operationRef.current += 1;
@@ -165,9 +166,10 @@ export function HeroProductMedia({
     const bundle = cache.get(room, 'animated');
     const prepared = bundle?.videos.get(entryKey(entry));
     const isCurrent = () => operationRef.current === operationId;
+    let cleanupPlayback: () => void = () => undefined;
     const fail = () => {
       if (!isCurrent()) return;
-      cleanup();
+      cleanupPlayback();
       onPlaybackUnavailable({
         room,
         entry,
@@ -215,6 +217,7 @@ export function HeroProductMedia({
       video.classList.remove('is-visible');
       activePlaybackRef.current = null;
     }
+    cleanupPlayback = cleanup;
     const complete = () => {
       if (!isCurrent() || settled) return;
       settled = true;

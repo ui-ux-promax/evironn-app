@@ -551,11 +551,7 @@ export function Hero() {
         onReverseComplete={finishReverse}
         onPlaybackUnavailable={handleHeroPlaybackUnavailable}
       />
-      <div
-        className="furni-hero-controls"
-        inert={preparing ? ('' as unknown as boolean) : undefined}
-        data-hero-controls-locked={preparing ? 'true' : 'false'}
-      >
+      <div className="furni-hero-controls" inert={preparing} data-hero-controls-locked={preparing ? 'true' : 'false'}>
         <div
           className={[
             'furni-hero-stack',

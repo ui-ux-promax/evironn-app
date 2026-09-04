@@ -672,3 +672,9 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - Focused checks: shell `npx vitest run tests/evironn-hero-shell.test.tsx --reporter=dot --testTimeout=20000` — `49/49`; touched-file Prettier passed; touched-file ESLint passed with zero errors; `npx tsc --noEmit` passed; `git diff --check` passed. No full gate, build, push, PR, deploy, merge, database/env/provider operation, asset modification, or visual acceptance is claimed.
 - Fresh Sol Medium final re-review: `PASS/READY`, Critical 0 / Important 0 / Minor 1. The minor generic hydration filter was narrowed to the reduced-motion test only; affected home browser verification passed `5/5`. Final user visual acceptance remains the next gate.
 - Task 4: complete locally; local commit is pending after the documented checks. Protected Phase 2 plan files remain untracked, unchanged, and unstaged.
+
+## Hero inert console warning correction — 2026-09-04
+
+- Reproduced the follow-up warning after the initial workaround: `inert=""` is treated as false by the Next bundled React DOM client. The production owner now passes the native boolean form `inert={preparing}`; the browser test no longer filters any inert diagnostic. The direct boolean form is accepted by Next's bundled runtime and preserves the preparation lock.
+- TDD evidence: the interim string-presence test was RED for the actual Next-compatible boolean contract; the final production form is verified by the browser console guard. Local home Chromium suite passed `5/5` in `37.6s`; shell behavior passed `49/49`. Prettier, ESLint, `tsc --noEmit`, and `git diff --check` passed. The shell's React 18 jsdom emits its known non-boolean inert warning because it does not share Next's bundled React DOM property table; this is not used as browser evidence.
+- Follow-up remains local-only; no push, PR, deploy, merge, database/env/provider operation, or visual acceptance occurred.

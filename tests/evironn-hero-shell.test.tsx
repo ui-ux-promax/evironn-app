@@ -1225,7 +1225,7 @@ describe('Evironn interactive hero shell', () => {
 
   it('prepares living poster, focus images, and four retained directional videos before enabling controls', async () => {
     render(<Hero />);
-    expect(document.querySelector('.furni-hero-controls')).toHaveAttribute('inert', '');
+    expect(document.querySelector('.furni-hero-controls')).toHaveAttribute('data-hero-controls-locked', 'true');
     expect(screen.getByRole('status', { name: 'Загрузка комнаты…' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'КУХНЯ' })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -1236,17 +1236,6 @@ describe('Evironn interactive hero shell', () => {
     expect(objectUrlMock).toHaveBeenCalledTimes(4);
     expect(document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')).toHaveLength(4);
     expect(screen.getByRole('button', { name: 'КУХНЯ' })).toBeEnabled();
-  });
-
-  it('passes inert as a boolean without the React string warning', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    render(<Hero />);
-
-    await waitFor(() => expect(document.querySelector('.furni-hero-controls')).toHaveAttribute('inert', ''));
-    expect(consoleError.mock.calls.flat().join(' ')).not.toContain(
-      'Received the string `true` for the boolean attribute',
-    );
-    consoleError.mockRestore();
   });
 
   it('keeps room controls inert while preparing and exposes exact retry UI on failure', async () => {

@@ -26,7 +26,6 @@ const expectedFooterHrefs = [
   '/catalog',
   '/catalog',
 ];
-const KNOWN_BOOLEAN_ATTRIBUTE_DIAGNOSTIC = 'Received the string `%s` for the boolean attribute `%s`.';
 const KNOWN_REDUCED_MOTION_HYDRATION_DIAGNOSTIC =
   "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.";
 
@@ -67,8 +66,7 @@ function collectBrowserErrors(
     if (message.type() !== 'error') return;
     const text = message.text();
     const knownDiagnostic =
-      text.includes(KNOWN_BOOLEAN_ATTRIBUTE_DIAGNOSTIC) ||
-      (options.allowReducedMotionHydrationMismatch && text.includes(KNOWN_REDUCED_MOTION_HYDRATION_DIAGNOSTIC));
+      options.allowReducedMotionHydrationMismatch && text.includes(KNOWN_REDUCED_MOTION_HYDRATION_DIAGNOSTIC);
     if (!knownDiagnostic) consoleErrors.push(text);
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));

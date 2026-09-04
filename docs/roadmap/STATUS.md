@@ -140,3 +140,9 @@ Preserve these pre-existing untracked Phase 2 plans without modification, stagin
 - A reproducible retained-bundle/native-readiness race was fixed in `components/evironn/home/hero-product-media.tsx`; no public API, asset, registry, CSP, database, env, provider, or deployment change was introduced. Focused shell `49/49`, Prettier, ESLint, `tsc --noEmit`, and `git diff --check` passed.
 - Final Sol Medium re-review: `PASS/READY`, Critical 0 / Important 0 / Minor 1. The only minor (generic hydration-warning filtering) was narrowed to the reduced-motion test; the affected browser subset passed. This is local evidence only, not a production or visual-acceptance claim.
 - No full Phase 6 gate/build, push, PR, deploy, merge, database/provider operation, or release action occurred. Protected Phase 2 plan files remain untracked and unchanged. Next gate: user desktop/mobile visual acceptance.
+
+## Hero inert warning correction — 2026-09-04
+
+- Corrected the final `inert` representation to `inert={preparing}` in `components/evironn/home/hero.tsx`. The earlier empty-string workaround was rejected by Next's bundled React DOM as false; the real Chromium console guard now runs without suppressing inert diagnostics.
+- Verification: local home Chromium `5/5`; shell `49/49`; Prettier, ESLint, `tsc --noEmit`, and `git diff --check` passed. React 18 jsdom still reports its separate non-boolean inert warning because its runtime metadata differs from Next's bundled client; no browser claim is based on that warning-bearing environment.
+- Follow-up is local-only and does not change deployment, database, environment, provider, asset, release, or visual-acceptance state.

@@ -544,6 +544,56 @@ describe('Evironn interactive hero shell', () => {
     expect(onTransitionFailure).not.toHaveBeenCalled();
   });
 
+  it('cancels a reduced-motion product completion queued for a superseded retry', async () => {
+    const cache = {
+      get: vi.fn().mockImplementation((_room: string, mode: string) =>
+        mode === 'static'
+          ? {
+              room: 'living-room',
+              mode: 'static',
+              poster: document.createElement('img'),
+              focus: new Map([['sofa', document.createElement('img')]]),
+              videos: new Map(),
+            }
+          : null,
+      ),
+      setHost: vi.fn(),
+    } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
+    const onForwardComplete = vi.fn();
+    const onReverseComplete = vi.fn();
+    const { rerender } = render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion
+        onProgress={vi.fn()}
+        onForwardComplete={onForwardComplete}
+        onReverseComplete={onReverseComplete}
+        onPlaybackUnavailable={vi.fn()}
+      />,
+    );
+    rerender(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={5}
+        playbackGeneration={8}
+        phase="idle"
+        reducedMotion
+        onProgress={vi.fn()}
+        onForwardComplete={onForwardComplete}
+        onReverseComplete={onReverseComplete}
+        onPlaybackUnavailable={vi.fn()}
+      />,
+    );
+    await Promise.resolve();
+    expect(onForwardComplete).not.toHaveBeenCalled();
+    expect(onReverseComplete).not.toHaveBeenCalled();
+  });
+
   it('recovers when an entering playback entry is unavailable before play', async () => {
     const onPlaybackUnavailable = vi.fn();
     const cache = {
@@ -788,7 +838,10 @@ describe('Evironn interactive hero shell', () => {
   it('invalidates pending playback callbacks and deadlines across recovery and retry', async () => {
     vi.useFakeTimers();
     const { cache, video } = createPreparedAnimatedCache();
-    const onPlaybackUnavailable = vi.fn();
+    const onPlaybackUnavailableOld = vi.fn();
+    const onPlaybackUnavailableNew = vi.fn();
+    const onProgressOld = vi.fn();
+    const onProgressNew = vi.fn();
     const onForwardComplete = vi.fn();
     let rejectOldPlay!: (reason: Error) => void;
     playMock.mockImplementationOnce(() => new Promise<void>((_, reject) => (rejectOldPlay = reject)));
@@ -800,14 +853,16 @@ describe('Evironn interactive hero shell', () => {
         playbackGeneration={7}
         phase="entering-sofa"
         reducedMotion={false}
-        onProgress={vi.fn()}
+        onProgress={onProgressOld}
         onForwardComplete={onForwardComplete}
         onReverseComplete={vi.fn()}
-        onPlaybackUnavailable={onPlaybackUnavailable}
+        onPlaybackUnavailable={onPlaybackUnavailableOld}
       />,
     );
     await Promise.resolve();
     expect(rejectOldPlay).toEqual(expect.any(Function));
+    firePlaying(video);
+    expect(vi.getTimerCount()).toBe(1);
     rerender(
       <HeroProductMedia
         cache={cache}
@@ -816,10 +871,10 @@ describe('Evironn interactive hero shell', () => {
         playbackGeneration={8}
         phase="idle"
         reducedMotion={false}
-        onProgress={vi.fn()}
+        onProgress={onProgressOld}
         onForwardComplete={onForwardComplete}
         onReverseComplete={vi.fn()}
-        onPlaybackUnavailable={onPlaybackUnavailable}
+        onPlaybackUnavailable={onPlaybackUnavailableOld}
       />,
     );
     expect(vi.getTimerCount()).toBe(0);
@@ -831,20 +886,29 @@ describe('Evironn interactive hero shell', () => {
         playbackGeneration={9}
         phase="entering-sofa"
         reducedMotion={false}
-        onProgress={vi.fn()}
+        onProgress={onProgressNew}
         onForwardComplete={onForwardComplete}
         onReverseComplete={vi.fn()}
-        onPlaybackUnavailable={onPlaybackUnavailable}
+        onPlaybackUnavailable={onPlaybackUnavailableNew}
       />,
     );
     await Promise.resolve();
     expect(playMock).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(1);
     firePlaying(video);
+    Object.defineProperties(video, {
+      currentTime: { configurable: true, value: 3 },
+      duration: { configurable: true, value: 6 },
+    });
+    fireEvent.timeUpdate(video);
     fireEnded(video);
     rejectOldPlay(new Error('late play rejection'));
     await Promise.resolve();
     expect(onForwardComplete).toHaveBeenCalledTimes(1);
-    expect(onPlaybackUnavailable).not.toHaveBeenCalled();
+    expect(onProgressOld).not.toHaveBeenCalled();
+    expect(onProgressNew).toHaveBeenCalledWith(3, 6);
+    expect(onPlaybackUnavailableOld).not.toHaveBeenCalled();
+    expect(onPlaybackUnavailableNew).not.toHaveBeenCalled();
     unmount();
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -960,18 +1024,28 @@ describe('Evironn interactive hero shell', () => {
     });
     render(<Hero />);
     await waitForLivingBundle();
+    await waitFor(() =>
+      expect(document.querySelector('[data-hero-direction="forward"].is-product-sofa')).toBeInTheDocument(),
+    );
     const sofaForward = [...document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')].find(
       (video) => video.dataset.heroDirection === 'forward' && video.className.includes('is-product-sofa'),
     )!;
     const sofaFocus = document.querySelector<HTMLImageElement>('img.furni-hero-product-media__asset.is-product-sofa')!;
+    const livingPoster = document.querySelector<HTMLImageElement>('[data-hero-room="living-room"]')!;
+    const livingStack = document.querySelector('.furni-hero-stack--living-room')!;
+    const livingPosterSrc = livingPoster.getAttribute('src');
+    const sofaForwardSrc = sofaForward.getAttribute('src');
+    const livingStackClassName = livingStack.className;
     fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
     firePlaying(sofaForward);
     fireEnded(sofaForward);
     await waitFor(() => expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument());
+    const livingCard = screen.getByRole('complementary', { name: /Диван Linden/ });
 
     fireEvent.click(screen.getByRole('button', { name: 'КУХНЯ' }));
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument();
+    const failedKitchenPoster = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
 
     fireEvent.click(screen.getByRole('button', { name: 'ГОСТИНАЯ' }));
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
@@ -980,6 +1054,14 @@ describe('Evironn interactive hero shell', () => {
     expect(document.querySelector('.furni-hero-stack--kitchen')).toBeNull();
     expect(sofaForward).toBe(document.querySelector('[data-hero-direction="forward"].is-product-sofa'));
     expect(sofaFocus).toBe(document.querySelector('img.furni-hero-product-media__asset.is-product-sofa'));
+    expect(livingPoster).toBe(document.querySelector('[data-hero-room="living-room"]'));
+    expect(livingPoster).toHaveAttribute('src', livingPosterSrc);
+    expect(livingCard).toBe(screen.getByRole('complementary', { name: /Диван Linden/ }));
+    expect(livingStack).toBe(document.querySelector('.furni-hero-stack--living-room'));
+    expect(livingStack).toHaveClass('furni-hero-stack--living-room');
+    expect(livingStack.className).toBe(livingStackClassName);
+    expect(sofaForward).toHaveAttribute('src', sofaForwardSrc);
+    fireHeroAnimationEnd(failedKitchenPoster);
     firePlaying(sofaForward);
     fireEnded(sofaForward);
     fireEvent.error(sofaForward);
@@ -993,6 +1075,10 @@ describe('Evironn interactive hero shell', () => {
     await waitFor(() => expect(releaseSuccessfulRetry).toEqual(expect.any(Function)));
     expect(sofaForward).toBe(document.querySelector('[data-hero-direction="forward"].is-product-sofa'));
     expect(sofaFocus).toBe(document.querySelector('img.furni-hero-product-media__asset.is-product-sofa'));
+    expect(livingPoster).toBe(document.querySelector('[data-hero-room="living-room"]'));
+    expect(livingCard).toBe(screen.getByRole('complementary', { name: /Диван Linden/ }));
+    expect(livingStack.className).toBe(livingStackClassName);
+    expect(failedKitchenPoster).toBe(document.querySelector('[data-hero-room="kitchen"]'));
     expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument();
     expect(document.querySelector('.furni-hero-stack--kitchen')).toBeNull();
     firePlaying(sofaForward);

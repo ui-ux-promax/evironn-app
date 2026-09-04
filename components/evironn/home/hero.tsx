@@ -391,17 +391,25 @@ export function Hero() {
     });
   }, []);
 
-  const handleRoomFailure = useCallback((operationId: number, resource?: 'poster') => {
-    setRoomState((current) => {
-      if (current.operationId !== operationId) return current;
-      if (resource === 'poster' && current.phase === 'preparing' && current.targetRoom) {
+  const handleRoomFailure = useCallback(
+    (operationId: number, resource?: 'poster') => {
+      if (resource === 'poster') {
+        const current = roomStateRef.current;
+        if (current.operationId !== operationId || current.phase !== 'preparing' || !current.targetRoom) return;
+        abortPreparation();
         posterFailureRef.current[current.targetRoom] = true;
-        return failHeroRoomPreparation(current, operationId, ROOM_ERROR_MESSAGE);
       }
-      if (current.phase !== 'changing') return current;
-      return recoverHeroRoomTransition(current);
-    });
-  }, []);
+      setRoomState((current) => {
+        if (current.operationId !== operationId) return current;
+        if (resource === 'poster' && current.phase === 'preparing' && current.targetRoom) {
+          return failHeroRoomPreparation(current, operationId, ROOM_ERROR_MESSAGE);
+        }
+        if (current.phase !== 'changing') return current;
+        return recoverHeroRoomTransition(current);
+      });
+    },
+    [abortPreparation],
+  );
 
   const handleHeroPlaybackUnavailable = useCallback(
     (failure: HeroPlaybackUnavailable) => {

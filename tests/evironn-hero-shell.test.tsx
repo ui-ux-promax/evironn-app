@@ -212,12 +212,40 @@ describe('Evironn interactive hero shell', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
     await waitForLivingBundle();
+    unmount();
     firePlaying(sofaForward);
+    Object.defineProperty(sofaForward, 'currentTime', { configurable: true, value: 5.5 });
+    fireEvent.timeUpdate(sofaForward);
     fireEnded(sofaForward);
     fireEvent.error(sofaForward);
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    await waitFor(() => {
+      expect(revokeObjectUrlMock.mock.calls.map(([url]) => url).sort()).toEqual([...ownedObjectUrls].sort());
+    });
+  });
 
+  it('disposes pending StrictMode room work and ignores late fetch delivery after unmount', async () => {
+    let releaseKitchen!: () => void;
+    fetchMock.mockImplementation(async (input) => {
+      if (String(input).includes('/assets/hero/kitchen-dining-forward')) {
+        await new Promise<void>((resolve) => {
+          releaseKitchen = resolve;
+        });
+      }
+      return new Response(new Blob(['hero-video']));
+    });
+    const { unmount } = render(
+      <StrictMode>
+        <Hero />
+      </StrictMode>,
+    );
+    await waitForLivingBundle();
+    fireEvent.click(screen.getByRole('button', { name: 'КУХНЯ' }));
+    await waitFor(() => expect(releaseKitchen).toEqual(expect.any(Function)));
+    const ownedObjectUrls = objectUrlMock.mock.results.map(({ value }) => value as string);
     unmount();
+    releaseKitchen();
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
     await waitFor(() => {
       expect(revokeObjectUrlMock.mock.calls.map(([url]) => url).sort()).toEqual([...ownedObjectUrls].sort());
     });
@@ -256,6 +284,31 @@ describe('Evironn interactive hero shell', () => {
     setMotionPreference(true);
     await waitFor(() => expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument());
     expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false');
+  });
+
+  it('cancels held animated room preparation when reduced motion is enabled', async () => {
+    let releaseKitchen!: () => void;
+    let holdKitchen = true;
+    fetchMock.mockImplementation(async (input) => {
+      if (holdKitchen && String(input).includes('/assets/hero/kitchen-dining-forward')) {
+        await new Promise<void>((resolve) => {
+          releaseKitchen = resolve;
+        });
+        holdKitchen = false;
+      }
+      return new Response(new Blob(['hero-video']));
+    });
+    render(<Hero />);
+    await waitForLivingBundle();
+    fireEvent.click(screen.getByRole('button', { name: 'КУХНЯ' }));
+    await waitFor(() => expect(releaseKitchen).toEqual(expect.any(Function)));
+    setMotionPreference(true);
+    await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'КУХНЯ' })).toHaveAttribute('aria-pressed', 'true'));
+    releaseKitchen();
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(document.querySelector('.furni-hero-stack--kitchen')).toBeInTheDocument();
   });
 
   it('repairs a detached media binding from the retained Blob without refetching', async () => {
@@ -306,6 +359,9 @@ describe('Evironn interactive hero shell', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    await waitFor(() =>
+      expect(document.querySelector('[data-hero-room="living-room"]')).toHaveAttribute('data-hero-poster-version', '1'),
+    );
     await waitForLivingBundle();
     expect(document.querySelector('[data-hero-room="living-room"]')).not.toBe(poster);
   });
@@ -422,6 +478,32 @@ describe('Evironn interactive hero shell', () => {
     vi.advanceTimersByTime(1_400);
     expect(onTransitionFailure).not.toHaveBeenCalled();
     expect(onTransitionComplete).not.toHaveBeenCalled();
+  });
+
+  it('recovers a room transition when its animation reaches the bounded timeout', async () => {
+    vi.useFakeTimers();
+    const onTransitionFailure = vi.fn();
+    const state = {
+      ...INITIAL_HERO_ROOM_STATE,
+      targetRoom: 'kitchen' as const,
+      phase: 'changing' as const,
+      operationId: 1,
+    };
+    render(
+      <HeroRoomMedia
+        state={state}
+        reducedMotion={false}
+        requestedRooms={['living-room', 'kitchen']}
+        posterVersions={{}}
+        onPosterElement={vi.fn()}
+        onTransitionComplete={vi.fn()}
+        onTransitionFailure={onTransitionFailure}
+      />,
+    );
+    vi.advanceTimersByTime(1_399);
+    expect(onTransitionFailure).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(onTransitionFailure).toHaveBeenCalledWith(1);
   });
 
   it('cancels a reduced-motion completion queued for a superseded room operation', async () => {
@@ -703,6 +785,130 @@ describe('Evironn interactive hero shell', () => {
     expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument();
   });
 
+  it('invalidates pending playback callbacks and deadlines across recovery and retry', async () => {
+    vi.useFakeTimers();
+    const { cache, video } = createPreparedAnimatedCache();
+    const onPlaybackUnavailable = vi.fn();
+    const onForwardComplete = vi.fn();
+    let rejectOldPlay!: (reason: Error) => void;
+    playMock.mockImplementationOnce(() => new Promise<void>((_, reject) => (rejectOldPlay = reject)));
+    const { rerender, unmount } = render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={onForwardComplete}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+    await Promise.resolve();
+    expect(rejectOldPlay).toEqual(expect.any(Function));
+    rerender(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={5}
+        playbackGeneration={8}
+        phase="idle"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={onForwardComplete}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+    expect(vi.getTimerCount()).toBe(0);
+    rerender(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={6}
+        playbackGeneration={9}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={onForwardComplete}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+    await Promise.resolve();
+    expect(playMock).toHaveBeenCalledTimes(2);
+    firePlaying(video);
+    fireEnded(video);
+    rejectOldPlay(new Error('late play rejection'));
+    await Promise.resolve();
+    expect(onForwardComplete).toHaveBeenCalledTimes(1);
+    expect(onPlaybackUnavailable).not.toHaveBeenCalled();
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('repairs a direction that becomes unavailable between activation and playback entry', async () => {
+    const video = document.createElement('video');
+    const prepared = {
+      entry: { productId: 'sofa' as const, direction: 'forward' as const },
+      format: 'mp4' as const,
+      blob: new Blob(['hero-video']),
+      objectUrl: 'blob:between-activation-and-play',
+      element: video,
+      mediaReady: true,
+    };
+    const bundle = {
+      room: 'living-room' as const,
+      mode: 'animated' as const,
+      poster: document.createElement('img'),
+      focus: new Map(),
+      videos: new Map([['sofa:forward', prepared]]),
+    };
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 2 },
+      duration: { configurable: true, value: 6 },
+    });
+    video.setAttribute('src', prepared.objectUrl);
+    let animatedReads = 0;
+    const onPlaybackUnavailable = vi.fn();
+    const cache = {
+      get: vi.fn((_room: string, mode: string) => {
+        if (mode === 'animated') {
+          animatedReads += 1;
+          if (animatedReads === 2) video.removeAttribute('src');
+        }
+        return mode === 'animated' ? bundle : null;
+      }),
+      getUnreadyVideo: vi.fn().mockReturnValue(prepared.entry),
+      setHost: vi.fn(),
+    } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
+
+    render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={vi.fn()}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+
+    await waitFor(() => expect(onPlaybackUnavailable).toHaveBeenCalledTimes(1));
+    expect(onPlaybackUnavailable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entry: { productId: 'sofa', direction: 'forward' },
+        stage: 'playback-entry',
+      }),
+    );
+  });
+
   it('retries a failed kitchen request while preserving the active living room', async () => {
     let failKitchen = true;
     fetchMock.mockImplementation(async (input) => {
@@ -737,10 +943,18 @@ describe('Evironn interactive hero shell', () => {
 
   it('dismisses a failed kitchen request, then completes a fresh failure-retry cycle', async () => {
     let kitchenFailures = 2;
+    let holdSuccessfulRetry = false;
+    let releaseSuccessfulRetry!: () => void;
     fetchMock.mockImplementation(async (input) => {
       if (kitchenFailures > 0 && String(input).includes('/assets/hero/kitchen-dining-forward')) {
         kitchenFailures -= 1;
         throw new Error('kitchen unavailable');
+      }
+      if (holdSuccessfulRetry && String(input).includes('/assets/hero/kitchen-dining-forward')) {
+        await new Promise<void>((resolve) => {
+          releaseSuccessfulRetry = resolve;
+        });
+        holdSuccessfulRetry = false;
       }
       return new Response(new Blob(['hero-video']));
     });
@@ -749,6 +963,7 @@ describe('Evironn interactive hero shell', () => {
     const sofaForward = [...document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')].find(
       (video) => video.dataset.heroDirection === 'forward' && video.className.includes('is-product-sofa'),
     )!;
+    const sofaFocus = document.querySelector<HTMLImageElement>('img.furni-hero-product-media__asset.is-product-sofa')!;
     fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
     firePlaying(sofaForward);
     fireEnded(sofaForward);
@@ -763,12 +978,27 @@ describe('Evironn interactive hero shell', () => {
     expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'СМОТРЕТЬ КОЛЛЕКЦИЮ' })).toHaveAttribute('href', '/catalog?room=living');
     expect(document.querySelector('.furni-hero-stack--kitchen')).toBeNull();
+    expect(sofaForward).toBe(document.querySelector('[data-hero-direction="forward"].is-product-sofa'));
+    expect(sofaFocus).toBe(document.querySelector('img.furni-hero-product-media__asset.is-product-sofa'));
+    firePlaying(sofaForward);
+    fireEnded(sofaForward);
+    fireEvent.error(sofaForward);
 
+    holdSuccessfulRetry = true;
     fireEvent.click(screen.getByRole('button', { name: 'КУХНЯ' }));
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    await waitFor(() => expect(releaseSuccessfulRetry).toEqual(expect.any(Function)));
+    expect(sofaForward).toBe(document.querySelector('[data-hero-direction="forward"].is-product-sofa'));
+    expect(sofaFocus).toBe(document.querySelector('img.furni-hero-product-media__asset.is-product-sofa'));
+    expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument();
+    expect(document.querySelector('.furni-hero-stack--kitchen')).toBeNull();
+    firePlaying(sofaForward);
+    fireEnded(sofaForward);
+    fireEvent.error(sofaForward);
+    releaseSuccessfulRetry();
     await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false'));
     const kitchenImage = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
     await waitFor(() => expect(document.querySelector('.furni-hero-stack--kitchen')).toBeInTheDocument());
@@ -886,6 +1116,20 @@ describe('Evironn interactive hero shell', () => {
     expect(kitchen).toHaveFocus();
   });
 
+  it('restores initiating focus after room preparation fails', async () => {
+    fetchMock.mockImplementation(async (input) => {
+      if (String(input).includes('/assets/hero/kitchen-dining-forward')) throw new Error('kitchen unavailable');
+      return new Response(new Blob(['hero-video']));
+    });
+    render(<Hero />);
+    await waitForLivingBundle();
+    const kitchen = screen.getByRole('button', { name: 'КУХНЯ' });
+    kitchen.focus();
+    fireEvent.click(kitchen);
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(kitchen).toHaveFocus();
+  });
+
   it('preserves outside focus after room readiness and before queued restoration', async () => {
     render(
       <>
@@ -900,9 +1144,9 @@ describe('Evironn interactive hero shell', () => {
     fireEvent.click(kitchen);
     await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false'));
     await waitFor(() => expect(document.querySelector('.furni-hero-stack--kitchen')).toBeInTheDocument());
-    header.focus();
     const kitchenImage = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
     fireHeroAnimationEnd(kitchenImage);
+    header.focus();
     await waitFor(() => expect(kitchen).toBeEnabled());
     await new Promise<void>((resolve) => queueMicrotask(resolve));
     expect(header).toHaveFocus();

@@ -35,6 +35,7 @@ type HeroProductMediaProps = {
   playbackGeneration: number;
   phase: HeroPhase;
   reducedMotion: boolean;
+  preparationPending?: boolean;
   onProgress: (currentTime: number, duration: number) => void;
   onForwardComplete: () => void;
   onReverseComplete: () => void;
@@ -105,6 +106,7 @@ export function HeroProductMedia({
   playbackGeneration,
   phase,
   reducedMotion,
+  preparationPending = false,
   onProgress,
   onForwardComplete,
   onReverseComplete,
@@ -167,12 +169,12 @@ export function HeroProductMedia({
     const prepared = bundle?.videos.get(entryKey(entry));
     const isCurrent = () => operationRef.current === operationId;
     let cleanupPlayback: () => void = () => undefined;
-    const fail = () => {
+    const fail = (failedEntry: HeroVideoEntryId = entry) => {
       if (!isCurrent()) return;
       cleanupPlayback();
       onPlaybackUnavailable({
         room,
-        entry,
+        entry: failedEntry,
         failedPhase: phase,
         stage: 'playback-entry',
         roomOperationId,
@@ -181,8 +183,9 @@ export function HeroProductMedia({
     };
 
     if (!bundle || !prepared || !isPreparedEntry(bundle, entry)) {
+      if (preparationPending) return;
       queueMicrotask(() => {
-        if (isCurrent()) fail();
+        if (isCurrent()) fail(cache.getUnreadyVideo(room) ?? entry);
       });
       return () => {
         if (isCurrent()) operationRef.current += 1;
@@ -243,7 +246,8 @@ export function HeroProductMedia({
 
     const currentBundle = cache.get(room, 'animated');
     if (!currentBundle || !isPreparedEntry(currentBundle, entry)) {
-      queueMicrotask(fail);
+      if (preparationPending) return;
+      queueMicrotask(() => fail(cache.getUnreadyVideo(room) ?? entry));
       return () => {
         cleanup();
         if (isCurrent()) operationRef.current += 1;
@@ -273,6 +277,7 @@ export function HeroProductMedia({
     onProgress,
     onReverseComplete,
     phase,
+    preparationPending,
     playbackGeneration,
     reducedMotion,
     room,
@@ -285,11 +290,16 @@ export function HeroProductMedia({
     const bundle = cache.get(room, 'static');
     if (!bundle?.focus.has(activeProductId)) return;
     const token = playbackGeneration;
+    const operationId = operationRef.current;
+    let cancelled = false;
     queueMicrotask(() => {
-      if (token !== playbackGeneration) return;
+      if (cancelled || token !== playbackGeneration || operationRef.current !== operationId) return;
       if (phase.startsWith('entering-')) onForwardComplete();
       else onReverseComplete();
     });
+    return () => {
+      cancelled = true;
+    };
   }, [activeProductId, cache, onForwardComplete, onReverseComplete, phase, playbackGeneration, reducedMotion, room]);
 
   return <div ref={hostRef} className="furni-hero-product-media" aria-hidden="true" />;

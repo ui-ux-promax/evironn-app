@@ -197,14 +197,10 @@ export function Hero() {
     const current = roomStateRef.current;
     const room = current.targetRoom ?? current.activeRoom;
     const mode = reducedMotion ? 'static' : 'animated';
+    const direct = room !== current.activeRoom && phase !== 'idle';
     const operationId = nextOperationId();
     playbackGenerationRef.current += 1;
     const ready = Boolean(cache.get(room, mode));
-    const recoveredPhase = isHeroTransitioning(phase) ? recoverHeroMediaFailure(phase) : phase;
-    if (recoveredPhase !== phase) {
-      setPhase(recoveredPhase);
-      setCardVisible(recoveredPhase !== 'idle');
-    }
 
     if (ready) {
       setRoomState((state) => ({ ...state, operationId }));
@@ -219,12 +215,12 @@ export function Hero() {
         ...state,
         targetRoom: room,
         phase: 'preparing',
-        direct: false,
+        direct,
         operationId,
         error: null,
       };
     });
-    prepareRoom(room, operationId, mode, false);
+    prepareRoom(room, operationId, mode, direct);
   }, [abortPreparation, cache, nextOperationId, phase, prepareRoom, reducedMotion]);
 
   const onPosterElement = useCallback(
@@ -266,14 +262,19 @@ export function Hero() {
       const owner = { control: candidate, status, userMoved: false };
       focusTransferRef.current = owner;
       focusCandidateRef.current = null;
-      const onFocusIn = (event: FocusEvent) => {
-        if (event.target !== status) owner.userMoved = true;
-      };
-      document.addEventListener('focusin', onFocusIn);
       status.focus();
-      return () => document.removeEventListener('focusin', onFocusIn);
     }
   }, [preparing]);
+
+  useEffect(() => {
+    const owner = focusTransferRef.current;
+    if (!owner || (!preparing && !roomChanging)) return;
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target !== owner.status) owner.userMoved = true;
+    };
+    document.addEventListener('focusin', onFocusIn);
+    return () => document.removeEventListener('focusin', onFocusIn);
+  }, [preparing, roomChanging]);
 
   useEffect(() => {
     if (preparing || roomChanging) return;
@@ -374,7 +375,14 @@ export function Hero() {
       const completed = completeHeroRoomTransition(current);
       if (focusOwner && !focusOwner.userMoved) {
         window.setTimeout(() => {
-          if (operationRef.current !== operationId || !focusOwner.control.isConnected) return;
+          const active = document.activeElement as HTMLElement | null;
+          if (
+            operationRef.current !== operationId ||
+            focusTransferRef.current !== focusOwner ||
+            !focusOwner.control.isConnected ||
+            (active && active !== document.body && active !== focusOwner.status && active !== focusOwner.control)
+          )
+            return;
           focusOwner.control.focus();
           focusTransferRef.current = null;
         });
@@ -410,17 +418,7 @@ export function Hero() {
       abortPreparation();
       const failedEntry =
         failure.stage === 'before-activation' ? (cache.getUnreadyVideo(failure.room) ?? failure.entry) : failure.entry;
-      if (failure.stage === 'playback-entry') {
-        cache.invalidateVideoMedia(failure.room, failedEntry.productId, failedEntry.direction);
-      } else {
-        const failedVideo = [...document.querySelectorAll<HTMLVideoElement>('#evironn-hero video')].find(
-          (video) =>
-            video.dataset.heroDirection === failedEntry.direction &&
-            video.classList.contains(`is-product-${failedEntry.productId}`),
-        );
-        if (failedVideo) cache.invalidateVideoMedia(failure.room, failedEntry.productId, failedEntry.direction);
-        else cache.disposeVideoResource(failure.room, failedEntry.productId, failedEntry.direction);
-      }
+      cache.invalidateVideoMedia(failure.room, failedEntry.productId, failedEntry.direction);
       const operationId = nextOperationId();
       playbackGenerationRef.current += 1;
       const recovered = recoverHeroMediaFailure(failure.failedPhase);
@@ -442,6 +440,7 @@ export function Hero() {
     if (roomState.phase !== 'error' || !roomState.error) return;
     const room = roomState.error.room;
     const mode = reducedMotion ? 'static' : 'animated';
+    const direct = room !== roomState.activeRoom && phase !== 'idle';
     const shouldRefreshPoster = posterFailureRef.current[room] === true;
     const operationId = nextOperationId();
     abortPreparation();
@@ -452,8 +451,8 @@ export function Hero() {
     }
     const next = restartHeroRoomPreparation({ ...roomState, targetRoom: room }, operationId);
     setRoomState(next);
-    prepareRoom(room, operationId, mode, false);
-  }, [abortPreparation, nextOperationId, prepareRoom, reducedMotion, roomState]);
+    prepareRoom(room, operationId, mode, direct);
+  }, [abortPreparation, nextOperationId, phase, prepareRoom, reducedMotion, roomState]);
 
   const activateHeroProduct = useCallback(
     (product: HeroProductId, direction: 'forward' | 'reverse') => {
@@ -538,6 +537,7 @@ export function Hero() {
         playbackGeneration={playbackGenerationRef.current}
         phase={phase}
         reducedMotion={reducedMotion}
+        preparationPending={preparing}
         onProgress={handleProgress}
         onForwardComplete={finishForward}
         onReverseComplete={finishReverse}

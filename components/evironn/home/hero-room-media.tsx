@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { HERO_ROOMS } from './hero-rooms';
 import type { PilotHeroRoomId, HeroRoomState } from './hero-room-state';
@@ -31,6 +31,7 @@ function HeroPosterImage({
   onTransitionFailure,
 }: HeroPosterImageProps) {
   const roomConfig = HERO_ROOMS[room];
+  const transitionOperationRef = useRef<number | null>(null);
   const isStable = state.activeRoom === room && ['idle', 'preparing', 'error'].includes(state.phase);
   const isOutgoing = state.phase === 'changing' && state.activeRoom === room && !state.direct;
   const isIncoming = state.phase === 'changing' && state.targetRoom === room;
@@ -60,11 +61,20 @@ function HeroPosterImage({
       }
     },
     onAnimationEnd: (event: React.AnimationEvent<HTMLImageElement>) => {
-      if (isIncoming && event.currentTarget === event.target) {
+      if (
+        isIncoming &&
+        transitionOperationRef.current === state.operationId &&
+        event.currentTarget === event.target &&
+        event.animationName?.startsWith('hero-room-enter')
+      ) {
         onTransitionComplete(state.operationId);
       }
     },
   };
+
+  useEffect(() => {
+    transitionOperationRef.current = isIncoming ? state.operationId : null;
+  }, [isIncoming, state.operationId]);
 
   useEffect(() => {
     const image = document.querySelector<HTMLImageElement>(

@@ -31,7 +31,7 @@ function HeroPosterImage({
   onTransitionFailure,
 }: HeroPosterImageProps) {
   const roomConfig = HERO_ROOMS[room];
-  const transitionOperationRef = useRef<number | null>(null);
+  const animationInstanceRef = useRef<{ operationId: number; element: HTMLImageElement } | null>(null);
   const isStable = state.activeRoom === room && ['idle', 'preparing', 'error'].includes(state.phase);
   const isOutgoing = state.phase === 'changing' && state.activeRoom === room && !state.direct;
   const isIncoming = state.phase === 'changing' && state.targetRoom === room;
@@ -60,10 +60,16 @@ function HeroPosterImage({
         onTransitionFailure(state.operationId, 'poster');
       }
     },
+    onAnimationStart: (event: React.AnimationEvent<HTMLImageElement>) => {
+      if (isIncoming && event.currentTarget === event.target && event.animationName?.startsWith('hero-room-enter')) {
+        animationInstanceRef.current = { operationId: state.operationId, element: event.currentTarget };
+      }
+    },
     onAnimationEnd: (event: React.AnimationEvent<HTMLImageElement>) => {
       if (
         isIncoming &&
-        transitionOperationRef.current === state.operationId &&
+        animationInstanceRef.current?.operationId === state.operationId &&
+        animationInstanceRef.current.element === event.currentTarget &&
         event.currentTarget === event.target &&
         event.animationName?.startsWith('hero-room-enter')
       ) {
@@ -73,7 +79,9 @@ function HeroPosterImage({
   };
 
   useEffect(() => {
-    transitionOperationRef.current = isIncoming ? state.operationId : null;
+    if (!isIncoming || animationInstanceRef.current?.operationId !== state.operationId) {
+      animationInstanceRef.current = null;
+    }
   }, [isIncoming, state.operationId]);
 
   useEffect(() => {

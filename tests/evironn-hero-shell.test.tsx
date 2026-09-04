@@ -92,6 +92,8 @@ HTMLImageElement.prototype.decode = vi.fn().mockResolvedValue(undefined);
 
 import { Hero } from '@/components/evironn/home/hero';
 import { HeroProductMedia } from '@/components/evironn/home/hero-product-media';
+import { HeroRoomMedia } from '@/components/evironn/home/hero-room-media';
+import { INITIAL_HERO_ROOM_STATE } from '@/components/evironn/home/hero-room-state';
 
 beforeEach(() => {
   vi.stubGlobal('matchMedia', createMatchMedia(false));
@@ -126,7 +128,16 @@ function fireEnded(video: HTMLVideoElement) {
 }
 
 function fireHeroAnimationEnd(image: HTMLImageElement, animationName = 'hero-room-enter') {
+  const start = new Event('animationstart', { bubbles: true });
+  Object.defineProperty(start, 'animationName', { value: animationName });
+  fireEvent(image, start);
   const event = new Event('animationend', { bubbles: true });
+  Object.defineProperty(event, 'animationName', { value: animationName });
+  fireEvent(image, event);
+}
+
+function fireHeroAnimationStart(image: HTMLImageElement, animationName = 'hero-room-enter') {
+  const event = new Event('animationstart', { bubbles: true });
   Object.defineProperty(event, 'animationName', { value: animationName });
   fireEvent(image, event);
 }
@@ -228,6 +239,13 @@ describe('Evironn interactive hero shell', () => {
     expect(document.querySelector('[data-hero-room="living-room"]')).toBe(poster);
   });
 
+  it('releases retained media on actual unmount', async () => {
+    const { unmount } = render(<Hero />);
+    await waitForLivingBundle();
+    unmount();
+    expect(revokeObjectUrlMock).toHaveBeenCalledTimes(4);
+  });
+
   it('does not steal focus from a page control during room transition completion', async () => {
     const { getByRole } = render(
       <>
@@ -249,6 +267,46 @@ describe('Evironn interactive hero shell', () => {
     fireHeroAnimationEnd(kitchenImage);
     await waitFor(() => expect(kitchen).toBeEnabled());
     expect(header).toHaveFocus();
+  });
+
+  it('ignores a same-name animation end from the previous room operation', async () => {
+    const onTransitionComplete = vi.fn();
+    const state = {
+      ...INITIAL_HERO_ROOM_STATE,
+      targetRoom: 'kitchen' as const,
+      phase: 'changing' as const,
+      operationId: 1,
+    };
+    const { rerender } = render(
+      <HeroRoomMedia
+        state={state}
+        reducedMotion={false}
+        requestedRooms={['living-room', 'kitchen']}
+        posterVersions={{}}
+        onPosterElement={vi.fn()}
+        onTransitionComplete={onTransitionComplete}
+        onTransitionFailure={vi.fn()}
+      />,
+    );
+    const kitchenImage = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
+    fireHeroAnimationStart(kitchenImage);
+    rerender(
+      <HeroRoomMedia
+        state={{ ...state, operationId: 2 }}
+        reducedMotion={false}
+        requestedRooms={['living-room', 'kitchen']}
+        posterVersions={{}}
+        onPosterElement={vi.fn()}
+        onTransitionComplete={onTransitionComplete}
+        onTransitionFailure={vi.fn()}
+      />,
+    );
+    const staleEnd = new Event('animationend', { bubbles: true });
+    Object.defineProperty(staleEnd, 'animationName', { value: 'hero-room-enter' });
+    fireEvent(kitchenImage, staleEnd);
+    expect(onTransitionComplete).not.toHaveBeenCalled();
+    fireHeroAnimationEnd(kitchenImage);
+    expect(onTransitionComplete).toHaveBeenCalledWith(2);
   });
 
   it('recovers when an entering playback entry is unavailable before play', async () => {
@@ -278,6 +336,60 @@ describe('Evironn interactive hero shell', () => {
     expect(onPlaybackUnavailable).toHaveBeenCalledWith(
       expect.objectContaining({
         failedPhase: 'entering-sofa',
+        stage: 'playback-entry',
+      }),
+    );
+  });
+
+  it('reports the selected entry when playback rejects', async () => {
+    const onPlaybackUnavailable = vi.fn();
+    const video = document.createElement('video');
+    const prepared = {
+      entry: { productId: 'sofa' as const, direction: 'forward' as const },
+      format: 'mp4' as const,
+      blob: new Blob(['hero-video']),
+      objectUrl: 'blob:selected-sofa-forward',
+      element: video,
+      mediaReady: true,
+    };
+    const bundle = {
+      room: 'living-room' as const,
+      mode: 'animated' as const,
+      poster: document.createElement('img'),
+      focus: new Map(),
+      videos: new Map([['sofa:forward', prepared]]),
+    };
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 2 },
+      duration: { configurable: true, value: 6 },
+    });
+    video.setAttribute('src', prepared.objectUrl);
+    const cache = {
+      get: vi.fn().mockReturnValue(bundle),
+      getUnreadyVideo: vi.fn().mockReturnValue(null),
+      setHost: vi.fn(),
+    } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
+    playMock.mockRejectedValueOnce(new Error('play rejected'));
+
+    render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={vi.fn()}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+
+    await waitFor(() => expect(onPlaybackUnavailable).toHaveBeenCalledTimes(1));
+    expect(onPlaybackUnavailable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entry: { productId: 'sofa', direction: 'forward' },
         stage: 'playback-entry',
       }),
     );

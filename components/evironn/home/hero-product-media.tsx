@@ -264,7 +264,7 @@ export function HeroProductMedia({
     video.addEventListener('error', onError);
     listenersBound = true;
     startupTimer = window.setTimeout(fail, 5_000);
-    void video.play().catch(fail);
+    void video.play().catch(() => fail());
 
     return () => {
       cleanup();

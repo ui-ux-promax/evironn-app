@@ -31,7 +31,11 @@ function HeroPosterImage({
   onTransitionFailure,
 }: HeroPosterImageProps) {
   const roomConfig = HERO_ROOMS[room];
-  const animationInstanceRef = useRef<{ operationId: number; element: HTMLImageElement } | null>(null);
+  const animationInstanceRef = useRef<{
+    operationId: number;
+    element: HTMLImageElement;
+    startedAt: number;
+  } | null>(null);
   const isStable = state.activeRoom === room && ['idle', 'preparing', 'error'].includes(state.phase);
   const isOutgoing = state.phase === 'changing' && state.activeRoom === room && !state.direct;
   const isIncoming = state.phase === 'changing' && state.targetRoom === room;
@@ -62,7 +66,11 @@ function HeroPosterImage({
     },
     onAnimationStart: (event: React.AnimationEvent<HTMLImageElement>) => {
       if (isIncoming && event.currentTarget === event.target && event.animationName?.startsWith('hero-room-enter')) {
-        animationInstanceRef.current = { operationId: state.operationId, element: event.currentTarget };
+        animationInstanceRef.current = {
+          operationId: state.operationId,
+          element: event.currentTarget,
+          startedAt: event.timeStamp,
+        };
       }
     },
     onAnimationEnd: (event: React.AnimationEvent<HTMLImageElement>) => {
@@ -70,6 +78,7 @@ function HeroPosterImage({
         isIncoming &&
         animationInstanceRef.current?.operationId === state.operationId &&
         animationInstanceRef.current.element === event.currentTarget &&
+        event.timeStamp >= animationInstanceRef.current.startedAt &&
         event.currentTarget === event.target &&
         event.animationName?.startsWith('hero-room-enter')
       ) {

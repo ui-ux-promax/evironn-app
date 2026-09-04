@@ -127,18 +127,18 @@ function fireEnded(video: HTMLVideoElement) {
   fireEvent.ended(video);
 }
 
-function fireHeroAnimationEnd(image: HTMLImageElement, animationName = 'hero-room-enter') {
-  const start = new Event('animationstart', { bubbles: true });
-  Object.defineProperty(start, 'animationName', { value: animationName });
-  fireEvent(image, start);
+function fireHeroAnimationEnd(image: HTMLImageElement, animationName = 'hero-room-enter', timeStamp = Date.now()) {
+  fireHeroAnimationStart(image, animationName, timeStamp - 1);
   const event = new Event('animationend', { bubbles: true });
   Object.defineProperty(event, 'animationName', { value: animationName });
+  Object.defineProperty(event, 'timeStamp', { value: timeStamp });
   fireEvent(image, event);
 }
 
-function fireHeroAnimationStart(image: HTMLImageElement, animationName = 'hero-room-enter') {
+function fireHeroAnimationStart(image: HTMLImageElement, animationName = 'hero-room-enter', timeStamp = Date.now()) {
   const event = new Event('animationstart', { bubbles: true });
   Object.defineProperty(event, 'animationName', { value: animationName });
+  Object.defineProperty(event, 'timeStamp', { value: timeStamp });
   fireEvent(image, event);
 }
 
@@ -243,7 +243,7 @@ describe('Evironn interactive hero shell', () => {
     const { unmount } = render(<Hero />);
     await waitForLivingBundle();
     unmount();
-    expect(revokeObjectUrlMock).toHaveBeenCalledTimes(4);
+    await waitFor(() => expect(revokeObjectUrlMock).toHaveBeenCalledTimes(4));
   });
 
   it('does not steal focus from a page control during room transition completion', async () => {
@@ -289,7 +289,7 @@ describe('Evironn interactive hero shell', () => {
       />,
     );
     const kitchenImage = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
-    fireHeroAnimationStart(kitchenImage);
+    fireHeroAnimationStart(kitchenImage, 'hero-room-enter', 100);
     rerender(
       <HeroRoomMedia
         state={{ ...state, operationId: 2 }}
@@ -301,8 +301,10 @@ describe('Evironn interactive hero shell', () => {
         onTransitionFailure={vi.fn()}
       />,
     );
+    fireHeroAnimationStart(kitchenImage, 'hero-room-enter', 200);
     const staleEnd = new Event('animationend', { bubbles: true });
     Object.defineProperty(staleEnd, 'animationName', { value: 'hero-room-enter' });
+    Object.defineProperty(staleEnd, 'timeStamp', { value: 150 });
     fireEvent(kitchenImage, staleEnd);
     expect(onTransitionComplete).not.toHaveBeenCalled();
     fireHeroAnimationEnd(kitchenImage);
@@ -393,6 +395,58 @@ describe('Evironn interactive hero shell', () => {
         stage: 'playback-entry',
       }),
     );
+  });
+
+  it('ignores a late play rejection after playback unmount', async () => {
+    const onPlaybackUnavailable = vi.fn();
+    const video = document.createElement('video');
+    const prepared = {
+      entry: { productId: 'sofa' as const, direction: 'forward' as const },
+      format: 'mp4' as const,
+      blob: new Blob(['hero-video']),
+      objectUrl: 'blob:late-sofa-forward',
+      element: video,
+      mediaReady: true,
+    };
+    const bundle = {
+      room: 'living-room' as const,
+      mode: 'animated' as const,
+      poster: document.createElement('img'),
+      focus: new Map(),
+      videos: new Map([['sofa:forward', prepared]]),
+    };
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 2 },
+      duration: { configurable: true, value: 6 },
+    });
+    video.setAttribute('src', prepared.objectUrl);
+    const cache = {
+      get: vi.fn().mockReturnValue(bundle),
+      getUnreadyVideo: vi.fn().mockReturnValue(null),
+      setHost: vi.fn(),
+    } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
+    let rejectPlay!: (reason: Error) => void;
+    playMock.mockImplementationOnce(() => new Promise<void>((_, reject) => (rejectPlay = reject)));
+
+    const { unmount } = render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={vi.fn()}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+    await waitFor(() => expect(rejectPlay).toEqual(expect.any(Function)));
+    unmount();
+    rejectPlay(new Error('late play rejected'));
+    await Promise.resolve();
+    expect(onPlaybackUnavailable).not.toHaveBeenCalled();
   });
 
   it('retries a failed kitchen request while preserving the active living room', async () => {

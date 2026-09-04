@@ -102,6 +102,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.clearAllMocks();
   canPlayTypeMock.mockReturnValue('');
   playMock.mockResolvedValue(undefined);
@@ -140,6 +141,36 @@ function fireHeroAnimationStart(image: HTMLImageElement, animationName = 'hero-r
   Object.defineProperty(event, 'animationName', { value: animationName });
   Object.defineProperty(event, 'timeStamp', { value: timeStamp });
   fireEvent(image, event);
+}
+
+function createPreparedAnimatedCache() {
+  const video = document.createElement('video');
+  const prepared = {
+    entry: { productId: 'sofa' as const, direction: 'forward' as const },
+    format: 'mp4' as const,
+    blob: new Blob(['hero-video']),
+    objectUrl: 'blob:timer-sofa-forward',
+    element: video,
+    mediaReady: true,
+  };
+  const bundle = {
+    room: 'living-room' as const,
+    mode: 'animated' as const,
+    poster: document.createElement('img'),
+    focus: new Map([['sofa' as const, document.createElement('img')]]),
+    videos: new Map([['sofa:forward', prepared]]),
+  };
+  Object.defineProperties(video, {
+    readyState: { configurable: true, value: 2 },
+    duration: { configurable: true, value: 6 },
+  });
+  video.setAttribute('src', prepared.objectUrl);
+  const cache = {
+    get: vi.fn().mockReturnValue(bundle),
+    getUnreadyVideo: vi.fn().mockReturnValue(null),
+    setHost: vi.fn(),
+  } as unknown as Parameters<typeof HeroProductMedia>[0]['cache'];
+  return { cache, video };
 }
 
 describe('Evironn interactive hero shell', () => {
@@ -449,6 +480,60 @@ describe('Evironn interactive hero shell', () => {
     expect(onPlaybackUnavailable).not.toHaveBeenCalled();
   });
 
+  it('fails a stalled playback at the bounded startup deadline', async () => {
+    vi.useFakeTimers();
+    const { cache } = createPreparedAnimatedCache();
+    const onPlaybackUnavailable = vi.fn();
+    render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={vi.fn()}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+    expect(playMock).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(4_999);
+    expect(onPlaybackUnavailable).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(onPlaybackUnavailable).toHaveBeenCalledWith(
+      expect.objectContaining({ entry: { productId: 'sofa', direction: 'forward' } }),
+    );
+  });
+
+  it('fails a playback that never ends at its duration-derived deadline and clears it on end', async () => {
+    vi.useFakeTimers();
+    const { cache, video } = createPreparedAnimatedCache();
+    const onPlaybackUnavailable = vi.fn();
+    const onForwardComplete = vi.fn();
+    render(
+      <HeroProductMedia
+        cache={cache}
+        room="living-room"
+        roomOperationId={4}
+        playbackGeneration={7}
+        phase="entering-sofa"
+        reducedMotion={false}
+        onProgress={vi.fn()}
+        onForwardComplete={onForwardComplete}
+        onReverseComplete={vi.fn()}
+        onPlaybackUnavailable={onPlaybackUnavailable}
+      />,
+    );
+    firePlaying(video);
+    vi.advanceTimersByTime(12_999);
+    expect(onPlaybackUnavailable).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(onPlaybackUnavailable).toHaveBeenCalledTimes(1);
+    expect(onForwardComplete).not.toHaveBeenCalled();
+  });
+
   it('retries a failed kitchen request while preserving the active living room', async () => {
     let failKitchen = true;
     fetchMock.mockImplementation(async (input) => {
@@ -603,8 +688,31 @@ describe('Evironn interactive hero shell', () => {
     expect(kitchen).toHaveFocus();
   });
 
+  it('preserves outside focus after room readiness and before queued restoration', async () => {
+    render(
+      <>
+        <button type="button">Шапка</button>
+        <Hero />
+      </>,
+    );
+    await waitForLivingBundle();
+    const kitchen = screen.getByRole('button', { name: 'КУХНЯ' });
+    const header = screen.getByRole('button', { name: 'Шапка' });
+    kitchen.focus();
+    fireEvent.click(kitchen);
+    await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false'));
+    await waitFor(() => expect(document.querySelector('.furni-hero-stack--kitchen')).toBeInTheDocument());
+    header.focus();
+    const kitchenImage = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
+    fireHeroAnimationEnd(kitchenImage);
+    await waitFor(() => expect(kitchen).toBeEnabled());
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect(header).toHaveFocus();
+  });
+
   it('prepares living poster, focus images, and four retained directional videos before enabling controls', async () => {
     render(<Hero />);
+    expect(document.querySelector('.furni-hero-controls')).toHaveAttribute('inert', 'true');
     expect(screen.getByRole('status', { name: 'Загрузка комнаты…' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'КУХНЯ' })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -630,6 +738,7 @@ describe('Evironn interactive hero shell', () => {
     );
     expect(screen.getByRole('button', { name: /Диван Linden/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'КУХНЯ' })).toBeEnabled();
+    expect(document.querySelector('.furni-hero-controls')).not.toHaveAttribute('inert');
   });
 
   it('retains Blob-backed nodes across repeated forward and reverse playback', async () => {
@@ -655,10 +764,21 @@ describe('Evironn interactive hero shell', () => {
     fireEnded(sofaReverse);
     await waitFor(() => expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument());
 
+    fireEvent.click(screen.getByRole('button', { name: /Диван Linden/ }));
+    firePlaying(sofaForward);
+    fireEnded(sofaForward);
+    await waitFor(() => expect(screen.getByRole('button', { name: /Назад/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Назад/ }));
+    firePlaying(sofaReverse);
+    fireEnded(sofaReverse);
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Назад/ })).not.toBeInTheDocument());
+
     expect(fetchMock).toHaveBeenCalledTimes(fetchCount);
     expect(objectUrlMock).toHaveBeenCalledTimes(urlCount);
     expect(loadMock).toHaveBeenCalledTimes(4);
     expect(pauseMock).toHaveBeenCalled();
+    expect(sofaForward).toBe(document.querySelector('[data-hero-direction="forward"].is-product-sofa'));
+    expect(sofaReverse).toBe(document.querySelector('[data-hero-direction="reverse"].is-product-sofa'));
   });
 
   it('does not treat empty buffered ranges as cache loss', async () => {
@@ -717,6 +837,32 @@ describe('Evironn interactive hero shell', () => {
     fireHeroAnimationEnd(kitchenImage);
     await waitFor(() => expect(document.querySelector('.furni-hero-stack--kitchen')).toBeInTheDocument());
     expect(fetchMock).toHaveBeenCalledTimes(8);
+  });
+
+  it('does not expose or transition to kitchen with only three of four videos ready', async () => {
+    let releaseFourth!: () => void;
+    let held = true;
+    fetchMock.mockImplementation(async (input) => {
+      if (held && String(input).includes('/assets/hero/kitchen-island-reverse')) {
+        await new Promise<void>((resolve) => {
+          releaseFourth = resolve;
+        });
+        held = false;
+      }
+      return new Response(new Blob(['hero-video']));
+    });
+    render(<Hero />);
+    await waitForLivingBundle();
+    fireEvent.click(screen.getByRole('button', { name: 'КУХНЯ' }));
+    await waitFor(() => expect(releaseFourth).toEqual(expect.any(Function)));
+    expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'true');
+    expect(document.querySelector('.furni-hero-stack--kitchen')).toBeNull();
+    releaseFourth();
+    await waitFor(() => expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false'));
+    const kitchenImage = document.querySelector<HTMLImageElement>('[data-hero-room="kitchen"]')!;
+    await waitFor(() => expect(document.querySelector('.furni-hero-stack--kitchen')).toBeInTheDocument());
+    fireHeroAnimationEnd(kitchenImage);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'КУХНЯ' })).toBeEnabled());
   });
 
   it('keeps canonical links, disabled bedroom and terrace controls, and scoped recovery CSS', async () => {

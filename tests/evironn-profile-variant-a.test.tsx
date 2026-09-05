@@ -222,6 +222,92 @@ describe('Profile Variant A', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Адрес недоступен');
   });
 
+  it('isolates password save progress, preserves the sending label, and restores after rejection', async () => {
+    let rejectPassword: ((reason?: unknown) => void) | undefined;
+    mocks.updatePassword.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectPassword = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Профиль');
+    fireEvent.change(screen.getByLabelText('Текущий пароль'), { target: { value: 'old-password' } });
+    fireEvent.change(screen.getByLabelText('Новый пароль'), { target: { value: 'new-password' } });
+    fireEvent.change(screen.getByLabelText('Повторите пароль'), { target: { value: 'new-password' } });
+
+    const save = screen.getByRole('button', { name: 'Изменить пароль' });
+    fireEvent.click(save);
+    fireEvent.click(save);
+    await waitFor(() => {
+      expect(mocks.updatePassword).toHaveBeenCalledTimes(1);
+      expect(save).toBeDisabled();
+      expect(save).toHaveAttribute('aria-busy', 'true');
+      expect(save).toHaveTextContent('Сохраняем…');
+      expect(save.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(screen.getByRole('button', { name: 'Сохранить изменения' })).toBeEnabled();
+
+    rejectPassword?.(new Error('Пароль недоступен'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Изменить пароль' })).toBeEnabled());
+    expect(screen.getByRole('alert')).toHaveTextContent('Пароль недоступен');
+  });
+
+  it('isolates default-address progress from sibling address controls and restores after rejection', async () => {
+    let rejectDefault: ((reason?: unknown) => void) | undefined;
+    mocks.setDefaultAddress.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectDefault = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Адреса');
+
+    const makeDefault = screen.getByRole('button', { name: 'Сделать адрес Дача основным' });
+    fireEvent.click(makeDefault);
+    fireEvent.click(makeDefault);
+    await waitFor(() => {
+      expect(mocks.setDefaultAddress).toHaveBeenCalledTimes(1);
+      expect(makeDefault).toBeDisabled();
+      expect(makeDefault).toHaveAttribute('aria-busy', 'true');
+      expect(makeDefault).toHaveTextContent('Основной');
+      expect(makeDefault.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(screen.getByRole('button', { name: 'Удалить Дача' })).toBeEnabled();
+
+    rejectDefault?.(new Error('Адрес по умолчанию недоступен'));
+    await waitFor(() => expect(makeDefault).toBeEnabled());
+    expect(screen.getByRole('alert')).toHaveTextContent('Адрес по умолчанию недоступен');
+  });
+
+  it('isolates address-delete progress from sibling address controls and restores after rejection', async () => {
+    let rejectDelete: ((reason?: unknown) => void) | undefined;
+    mocks.deleteAddress.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectDelete = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Адреса');
+
+    const remove = screen.getByRole('button', { name: 'Удалить Дача' });
+    fireEvent.click(remove);
+    fireEvent.click(remove);
+    await waitFor(() => {
+      expect(mocks.deleteAddress).toHaveBeenCalledTimes(1);
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute('aria-busy', 'true');
+      expect(remove.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(screen.getByRole('button', { name: 'Удалить Дом' })).toBeEnabled();
+
+    rejectDelete?.(new Error('Удаление адреса недоступно'));
+    await waitFor(() => expect(remove).toBeEnabled());
+    expect(screen.getByRole('alert')).toHaveTextContent('Удаление адреса недоступно');
+  });
+
   it('isolates favorite cart progress and prevents duplicate requests', async () => {
     let rejectAdd: ((reason?: unknown) => void) | undefined;
     mocks.addCartItem.mockImplementationOnce(
@@ -230,10 +316,21 @@ describe('Profile Variant A', () => {
           rejectAdd = reject;
         }),
     );
-    render(<ProfileVariantA dto={dto} />);
+    const secondAvailableFavorite = { ...favorite, id: 'product-3', name: 'Luna', primarySkuId: 'sku-3' };
+    render(
+      <ProfileVariantA
+        dto={{
+          ...dto,
+          favorites: [favorite, secondAvailableFavorite, soldOutFavorite],
+          stats: { ...dto.stats, favorites: 3 },
+        }}
+      />,
+    );
     openSection('Избранное');
 
     const add = screen.getAllByRole('button', { name: 'В корзину' })[0];
+    const siblingAdd = screen.getAllByRole('button', { name: 'В корзину' })[1];
+    const soldOutAdd = screen.getAllByRole('button', { name: 'В корзину' })[2];
     fireEvent.click(add);
     fireEvent.click(add);
     await waitFor(() => {
@@ -243,7 +340,11 @@ describe('Profile Variant A', () => {
       expect(add).toHaveTextContent('В корзину');
       expect(add.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     });
-    expect(screen.getAllByRole('button', { name: 'В корзину' })[1]).toBeDisabled();
+    expect(siblingAdd).toBeEnabled();
+    expect(siblingAdd).not.toHaveAttribute('aria-busy', 'true');
+    expect(siblingAdd.querySelector('svg')).toBeNull();
+    expect(soldOutAdd).toBeDisabled();
+    expect(soldOutAdd).not.toHaveAttribute('aria-busy', 'true');
 
     rejectAdd?.(new Error('Корзина недоступна'));
     await waitFor(() => expect(add).toBeEnabled());

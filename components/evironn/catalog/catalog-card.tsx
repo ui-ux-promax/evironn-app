@@ -24,6 +24,7 @@ type CatalogCardProps = {
   wishlisted: boolean;
   onWishlistToggle: (productId: string) => Promise<WishlistMutationResult>;
   wishlistPending?: boolean;
+  wishlistAriaLabel?: string;
   eager?: boolean;
 };
 
@@ -37,6 +38,7 @@ export function CatalogCard({
   wishlisted,
   onWishlistToggle,
   wishlistPending: externalWishlistPending,
+  wishlistAriaLabel,
   eager = false,
 }: CatalogCardProps): React.ReactElement {
   const [frameReady, setFrameReady] = useState(false);
@@ -189,7 +191,10 @@ export function CatalogCard({
         className={`cat-card__fav${wishlisted ? ' is-on' : ''}`}
         type="button"
         aria-pressed={wishlisted}
-        aria-label={wishlisted ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`}
+        aria-label={
+          wishlistAriaLabel ??
+          (wishlisted ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`)
+        }
         disabled={isWishlistPending}
         aria-busy={isWishlistPending || undefined}
         onClick={async () => {

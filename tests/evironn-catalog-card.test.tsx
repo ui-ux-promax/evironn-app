@@ -75,6 +75,7 @@ function renderCard(
     eager?: boolean;
     wishlisted?: boolean;
     wishlistPending?: boolean;
+    wishlistAriaLabel?: string;
     onWishlistToggle?: WishlistToggle;
   } = {},
 ) {
@@ -84,6 +85,7 @@ function renderCard(
       eager={options.eager}
       wishlisted={options.wishlisted ?? false}
       wishlistPending={options.wishlistPending}
+      wishlistAriaLabel={options.wishlistAriaLabel}
       onWishlistToggle={options.onWishlistToggle ?? defaultWishlistToggle}
     />,
   );
@@ -202,9 +204,13 @@ describe('CatalogCard', () => {
 
   it('uses an externally owned pending state without starting a second local request', () => {
     const onWishlistToggle = vi.fn<WishlistToggle>();
-    renderCard(cardFixture, { wishlistPending: true, onWishlistToggle });
+    renderCard(cardFixture, {
+      wishlistPending: true,
+      wishlistAriaLabel: 'Убрать Noma Woven Lounge из избранного',
+      onWishlistToggle,
+    });
 
-    const favorite = screen.getByRole('button', { name: /Добавить Noma Woven Lounge/i });
+    const favorite = screen.getByRole('button', { name: 'Убрать Noma Woven Lounge из избранного' });
     expect(favorite).toBeDisabled();
     expect(favorite).toHaveAttribute('aria-busy', 'true');
     expect(favorite.querySelector('svg')).toHaveClass('h-[18px]', 'w-[18px]');

@@ -386,6 +386,7 @@ function Favorites({ profile }: { profile: ReturnType<typeof useProfileVariantA>
                 product={product}
                 wishlisted={!removePending}
                 wishlistPending={removePending}
+                wishlistAriaLabel={removePending ? `Убрать ${product.name} из избранного` : undefined}
                 eager={index < 4}
                 onWishlistToggle={profile.actions.toggleFavorite}
               />

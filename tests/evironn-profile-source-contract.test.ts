@@ -58,6 +58,9 @@ describe('production profile Variant A source contract', () => {
   it('keeps profile favorite removal under one pending owner', () => {
     expect(component).toContain('wishlisted={!removePending}');
     expect(component).toContain('wishlistPending={removePending}');
+    expect(component).toContain(
+      'wishlistAriaLabel={removePending ? `Убрать ${product.name} из избранного` : undefined}',
+    );
     expect(component).toContain('disabled={removePending}');
     expect(component).toContain('aria-busy={removePending || undefined}');
     expect(component).not.toMatch(/removePending\s*\?\s*<FadeArc/);

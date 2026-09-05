@@ -18,6 +18,20 @@ describe('storefront async action primitives', () => {
     expect(button).toHaveTextContent('Сохранить');
   });
 
+  it('keeps an asChild loading Button as one slotted element', () => {
+    expect(() =>
+      render(
+        <Button asChild loading>
+          <a href="/save">Сохранить</a>
+        </Button>,
+      ),
+    ).not.toThrow();
+    const link = screen.getByRole('link', { name: 'Сохранить' });
+    expect(link).toHaveAttribute('disabled');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+    expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('uses FadeArc with progress copy in the Evironn submit primitive', () => {
     render(<SubmitButton status="sending" disabled={false} label="Войти" sendingLabel="Входим…" />);
     const button = screen.getByRole('button', { name: 'Входим…' });

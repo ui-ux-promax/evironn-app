@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { cn } from '@/lib/utils';
@@ -40,7 +40,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(buttonVariants({ variant, size }), className)}
       >
         {loading && <FadeArc className="h-5 w-5 shrink-0" aria-hidden="true" />}
-        {children}
+        {asChild ? <Slottable>{children}</Slottable> : children}
       </Comp>
     );
   },

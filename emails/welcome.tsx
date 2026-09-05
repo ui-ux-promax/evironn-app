@@ -1,7 +1,7 @@
 import { Button, Heading, Text } from '@react-email/components';
 import { EmailLayout } from './_layout';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cloudd3r.eu.cc';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://evironn-app.vercel.app';
 
 export function WelcomeEmail({ name }: { name?: string }) {
   return (

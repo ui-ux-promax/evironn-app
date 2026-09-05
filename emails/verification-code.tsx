@@ -1,4 +1,4 @@
-import { Heading, Text } from '@react-email/components';
+import { Heading, Hr, Section, Text } from '@react-email/components';
 import { EmailLayout } from './_layout';
 
 export function VerificationCodeEmail({ code }: { code: string }) {
@@ -6,39 +6,67 @@ export function VerificationCodeEmail({ code }: { code: string }) {
     <EmailLayout preview={`Код подтверждения Evironn: ${code}`}>
       <Text
         style={{
-          color: '#2f8f66',
-          fontSize: 12,
+          color: '#48564E',
+          fontSize: 11,
           fontWeight: 700,
-          letterSpacing: '1.2px',
-          margin: '0 0 10px',
+          letterSpacing: '1.3px',
+          margin: '0 0 12px',
           textTransform: 'uppercase',
         }}
       >
-        Evironn account
+        Регистрация
       </Text>
-      <Heading style={{ color: '#171717', fontSize: 26, lineHeight: '32px', margin: '0 0 12px' }}>
-        Подтвердите почту
+      <Heading style={{ color: '#2F2D2B', fontSize: 28, fontWeight: 500, lineHeight: '31px', margin: '0 0 14px' }}>
+        Подтвердите
+        <br />
+        почту
       </Heading>
-      <Text style={{ color: '#5f5a53', fontSize: 15, lineHeight: '23px', margin: '0 0 24px' }}>
-        Введите этот код в окне регистрации, чтобы завершить создание аккаунта.
+      <Text style={{ color: '#6F6A64', fontSize: 15, lineHeight: '23px', margin: '0 0 26px' }}>
+        Введите код в окне регистрации, чтобы завершить создание аккаунта.
       </Text>
-      <Text
+      <Section
         style={{
-          backgroundColor: '#f3f0e9',
-          borderRadius: 12,
-          color: '#171717',
-          fontSize: 32,
-          fontWeight: 700,
-          letterSpacing: 8,
-          margin: '0 0 24px',
-          padding: '18px 16px',
-          textAlign: 'center',
+          backgroundColor: '#211F1D',
+          borderRadius: 16,
+          margin: '0 0 22px',
+          padding: '18px 14px 17px',
         }}
       >
-        {code}
+        <Text
+          style={{
+            color: '#A8AAA7',
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '1.2px',
+            margin: '0 0 8px',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+          }}
+        >
+          Код подтверждения
+        </Text>
+        <Text
+          style={{
+            color: '#FFFFFF',
+            fontSize: 32,
+            fontVariantNumeric: 'tabular-nums',
+            fontWeight: 700,
+            letterSpacing: '7px',
+            lineHeight: '38px',
+            margin: 0,
+            textAlign: 'center',
+            textIndent: '7px',
+          }}
+        >
+          {code}
+        </Text>
+      </Section>
+      <Text style={{ color: '#817B74', fontSize: 13, lineHeight: '20px', margin: 0 }}>
+        Код действует 10 минут. Никому его не передавайте.
       </Text>
-      <Text style={{ color: '#746f67', fontSize: 13, lineHeight: '20px', margin: 0 }}>
-        Код действует 10 минут. Если вы не создавали аккаунт в Evironn, просто проигнорируйте это письмо.
+      <Hr style={{ borderColor: '#E9E4DC', margin: '22px 0 16px' }} />
+      <Text style={{ color: '#817B74', fontSize: 13, lineHeight: '20px', margin: 0 }}>
+        Не регистрировались в Evironn? Просто проигнорируйте это письмо.
       </Text>
     </EmailLayout>
   );

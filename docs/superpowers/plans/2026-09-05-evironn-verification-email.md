@@ -66,6 +66,7 @@ describe('Evironn email templates', () => {
 
     expect(html).toContain('481034');
     expect(html).toContain('Код подтверждения');
+    expect(html).toContain('Подтвердите<br/>почту');
     expect(html).toContain('Никому его не передавайте.');
     expect(html).toContain('Не регистрировались в Evironn?');
     expect(html.toLowerCase()).toContain('background-color:#211f1d');
@@ -197,7 +198,9 @@ export function VerificationCodeEmail({ code }: { code: string }) {
         Регистрация
       </Text>
       <Heading style={{ color: '#2F2D2B', fontSize: 28, fontWeight: 500, lineHeight: '31px', margin: '0 0 14px' }}>
-        Подтвердите почту
+        Подтвердите
+        <br />
+        почту
       </Heading>
       <Text style={{ color: '#6F6A64', fontSize: 15, lineHeight: '23px', margin: '0 0 26px' }}>
         Введите код в окне регистрации, чтобы завершить создание аккаунта.

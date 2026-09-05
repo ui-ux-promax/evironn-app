@@ -46,6 +46,9 @@ type RolloutManifest = RolloutContext['manifest'];
 type PromotionEntry = { state: 'INTENT' | 'COMPLETED' };
 
 const HERO_SOURCES = HERO_VIDEO_SOURCES as readonly HeroVideoSource[];
+const REPOSITORY_ROOT = path.resolve('/repo').replaceAll('\\', '/');
+const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null';
+const relativeToRepository = (target: string) => target.replace(`${REPOSITORY_ROOT}/`, '').replaceAll('\\', '/');
 
 const EXPECTED_MP4 = [
   'public/assets/hero/bedroom-bed-forward.mp4',
@@ -89,7 +92,7 @@ const EXPECTED_BYTES = [
   7382094, 9941316, 8627076,
 ] as const;
 const source = HERO_SOURCES[0];
-const paths = resolveRolloutPaths('D:/repo', 'phase-6c-rollout-20260901-01');
+const paths = resolveRolloutPaths(REPOSITORY_ROOT, 'phase-6c-rollout-20260901-01');
 const passingCandidate = {
   sourceId: source.id,
   format: 'webm' as const,
@@ -174,8 +177,8 @@ function makeDependencies(
     rejectReadOnlyFileSync?: boolean;
   } = Object.create(null),
 ) {
-  const paths = resolveRolloutPaths('D:/repo', 'phase-6c-rollout-20260901-01');
-  const productionDirectory = path.resolve('D:/repo/public/assets/hero').replaceAll('\\', '/');
+  const paths = resolveRolloutPaths(REPOSITORY_ROOT, 'phase-6c-rollout-20260901-01');
+  const productionDirectory = path.resolve(REPOSITORY_ROOT, 'public/assets/hero').replaceAll('\\', '/');
   const acceptedCandidates = options.acceptedCandidates ?? [];
   const productionMutations: string[] = [];
   const workspaceMutations: string[] = [];
@@ -298,7 +301,7 @@ function makeDependencies(
     preflight: vi.fn(async () => options.preflightFailure ?? null),
     exists: vi.fn(async (target: string) => {
       markObservation('exists', target);
-      const normalized = target.replace('D:/repo/', '').replaceAll('\\', '/');
+      const normalized = relativeToRepository(target);
       if (normalized.startsWith('public/assets/hero/') && normalized.endsWith('.webm'))
         return productionWebm.has(normalized);
       if (normalized.endsWith('.tmp')) return temporaryIdentity.has(target.replaceAll('\\', '/'));
@@ -387,7 +390,7 @@ function makeDependencies(
           injectedRenameFailure = true;
           throw new Error('Injected final completion receipt failure.');
         }
-      } else if (/^D:\/repo\/public\/assets\/hero\/.+\.(mp4|webm)$/u.test(normalizedTo)) {
+      } else if (normalizedTo.startsWith(`${productionDirectory}/`) && /\.(mp4|webm)$/u.test(normalizedTo)) {
         if (from.endsWith('.phase-6c-rollout.tmp')) productionPromotionRenameCalls += 1;
         if (from.endsWith('.phase-6c-rollback.tmp')) productionRollbackRenameCalls += 1;
       }
@@ -396,7 +399,7 @@ function makeDependencies(
         throw new Error(`Injected production rename failure ${productionPromotionRenameCalls}.`);
       }
       const identity = identityFor(from);
-      const relative = to.replace('D:/repo/', '').replaceAll('\\', '/');
+      const relative = relativeToRepository(to);
       if (relative.endsWith('.webm')) productionWebm.add(relative);
       if (relative.endsWith('.mp4')) productionMp4.set(relative, identity.sha256);
       temporaryIdentity.delete(from.replaceAll('\\', '/'));
@@ -407,7 +410,7 @@ function makeDependencies(
         throw new Error('Injected partial cleanup failure.');
       markMutation('unlink', target);
       if (target.includes('/.superpowers/sdd/phase-6c-hero-video-rollout/')) removedWorkspacePaths.push(target);
-      productionWebm.delete(target.replace('D:/repo/', ''));
+      productionWebm.delete(relativeToRepository(target));
       temporaryIdentity.delete(target.replaceAll('\\', '/'));
       temporaryFiles.delete(target.replaceAll('\\', '/'));
     }),
@@ -470,7 +473,7 @@ function makeDependencies(
   };
   return {
     context: {
-      repositoryRoot: 'D:/repo',
+      repositoryRoot: REPOSITORY_ROOT,
       runId: 'phase-6c-rollout-20260901-01',
       implementationBaseline: '1111111111111111111111111111111111111111',
       paths,
@@ -530,10 +533,10 @@ describe('hero video rollout harness', () => {
     expect(MP4_PROMOTION_ALLOWLIST).toEqual(EXPECTED_MP4);
     expect(WEBM_PROMOTION_ALLOWLIST).toEqual(EXPECTED_MP4.map((file) => file.replace(/\.mp4$/, '.webm')));
     expect(new Set([...MP4_PROMOTION_ALLOWLIST, ...WEBM_PROMOTION_ALLOWLIST]).size).toBe(32);
-    const absence = buildWebmAbsenceGates('D:/repo', '1'.repeat(40));
+    const absence = buildWebmAbsenceGates(REPOSITORY_ROOT, '1'.repeat(40));
     expect(absence.gitChecks).toHaveLength(48);
     expect(absence.worktreeWebmTargets).toEqual(
-      WEBM_PROMOTION_ALLOWLIST.map((relative) => path.resolve('D:/repo', relative)),
+      WEBM_PROMOTION_ALLOWLIST.map((relative) => path.resolve(REPOSITORY_ROOT, relative)),
     );
     expect(absence.temporarySiblings).toHaveLength(64);
   });
@@ -550,7 +553,7 @@ describe('hero video rollout harness', () => {
   });
 
   it('rejects lexical symlink, non-file, and realpath-escaping artifacts before resolution', async () => {
-    const sourceTarget = path.resolve('D:/repo', source.sourcePath).replaceAll('\\', '/');
+    const sourceTarget = path.resolve(REPOSITORY_ROOT, source.sourcePath).replaceAll('\\', '/');
     const candidateTarget = path.resolve(paths.runRoot, passingCandidate.candidatePath).replaceAll('\\', '/');
     const backupTarget = path.resolve(paths.runRoot, `backups/${source.sourcePath}`).replaceAll('\\', '/');
     for (const target of [sourceTarget, candidateTarget, backupTarget]) {
@@ -631,7 +634,7 @@ describe('hero video rollout harness', () => {
           '6.041667',
           '-f',
           'null',
-          'NUL',
+          NULL_DEVICE,
         ],
         passlogPath: expectedPasslog,
         candidatePath: expectedOutput,
@@ -731,7 +734,7 @@ describe('hero video rollout harness', () => {
           '6.041667',
           '-f',
           'null',
-          'NUL',
+          NULL_DEVICE,
         ],
         passlogPath: expectedCq24Passlog,
         candidatePath: expectedOutput,
@@ -1071,7 +1074,7 @@ describe('hero video rollout harness', () => {
       `[0:v][1:v]libvmaf=log_fmt=json:log_path=${source.id}-webm-28.json`,
       '-f',
       'null',
-      'NUL',
+      NULL_DEVICE,
     ]);
     expect(metric.args.filter((argument) => argument === '-lavfi')).toHaveLength(1);
     expect(metric.args).not.toContain('[0:v][1:v]libvmaf');
@@ -1080,7 +1083,7 @@ describe('hero video rollout harness', () => {
     const filter = metric.args[metric.args.indexOf('-lavfi') + 1];
     expect(filter).toBe(`[0:v][1:v]libvmaf=log_fmt=json:log_path=${source.id}-webm-28.json`);
     expect(filter).not.toMatch(/[A-Z]:|\\\\/u);
-    expect(metric.args.at(-1)).toBe('NUL');
+    expect(metric.args.at(-1)).toBe(NULL_DEVICE);
     const promoted = buildPromotedMetricInvocation(
       source,
       {
@@ -1102,7 +1105,7 @@ describe('hero video rollout harness', () => {
       `[0:v][1:v]libvmaf=log_fmt=json:log_path=${source.id}-webm-post-promotion.json`,
       '-f',
       'null',
-      'NUL',
+      NULL_DEVICE,
     ]);
   });
 
@@ -1229,7 +1232,7 @@ describe('hero video rollout harness', () => {
       fixture.context.manifest.promotionAttempt?.entries.every(({ state }: PromotionEntry) => state === 'COMPLETED'),
     ).toBe(true);
     const firstProductionCopy = fixture.filesystemReceipts.findIndex(
-      ({ operation, path }) => operation === 'copyFile' && path.startsWith('D:/repo/public/assets/hero/'),
+      ({ operation, path }) => operation === 'copyFile' && path.startsWith(`${REPOSITORY_ROOT}/public/assets/hero/`),
     );
     expect(firstProductionCopy).toBeGreaterThan(0);
     expect(
@@ -1238,7 +1241,7 @@ describe('hero video rollout harness', () => {
         .some(({ operation, path }) => operation === 'writeFile' && path === `${paths.manifest}.partial`),
     ).toBe(true);
     await expect(
-      writeJsonAtomic(paths.runRoot, 'D:/repo/outside.json', {}, fixture.context.dependencies),
+      writeJsonAtomic(paths.runRoot, `${REPOSITORY_ROOT}/outside.json`, {}, fixture.context.dependencies),
     ).rejects.toThrow('New path parent escapes owned root.');
   });
 
@@ -1337,7 +1340,7 @@ describe('hero video rollout harness', () => {
       .filter(({ target }) => target.includes('/public/assets/hero/') && target.endsWith('.phase-6c-rollout.tmp'));
     expect(productionFileOpens).toHaveLength(32);
     expect(productionFileOpens.every(({ flags }) => flags === 'r+')).toBe(true);
-    const productionDirectory = path.resolve('D:/repo/public/assets/hero').replaceAll('\\', '/');
+    const productionDirectory = path.resolve(REPOSITORY_ROOT, 'public/assets/hero').replaceAll('\\', '/');
     expect(fixture.openFlags().find(({ target }) => target === productionDirectory)).toEqual({
       target: productionDirectory,
       flags: 'r',
@@ -1476,9 +1479,9 @@ describe('hero video rollout harness', () => {
     const rollbackUnlinks = postPromotion.filesystemReceipts
       .filter(
         ({ operation, path }) =>
-          operation === 'unlink' && path.startsWith('D:/repo/public/assets/hero/') && path.endsWith('.webm'),
+          operation === 'unlink' && path.startsWith(`${REPOSITORY_ROOT}/public/assets/hero/`) && path.endsWith('.webm'),
       )
-      .map(({ path }) => path.replace('D:/repo/', ''))
+      .map(({ path }) => relativeToRepository(path))
       .sort();
     expect(rollbackUnlinks).toEqual([...WEBM_PROMOTION_ALLOWLIST].sort());
     const observedOperations = new Set(postPromotion.filesystemReceipts.map(({ operation }) => operation));
@@ -1538,12 +1541,12 @@ describe('hero video rollout harness', () => {
     );
     expect(fixture.productionMutations).toEqual([]);
     expect(fixture.removedWorkspacePaths).toEqual([
-      'D:/repo/.superpowers/sdd/phase-6c-hero-video-rollout/runs/phase-6c-rollout-20260901-01/candidates/bedroom-bed-forward.webm',
-      'D:/repo/.superpowers/sdd/phase-6c-hero-video-rollout/runs/phase-6c-rollout-20260901-01/passlogs/bedroom-bed-forward-webm-28-0.log',
-      'D:/repo/.superpowers/sdd/phase-6c-hero-video-rollout/runs/phase-6c-rollout-20260901-01/passlogs/bedroom-bed-forward-webm-28-0.log.mbtree',
-      'D:/repo/.superpowers/sdd/phase-6c-hero-video-rollout/runs/phase-6c-rollout-20260901-01/candidates/bedroom-bed-forward.webm',
-      'D:/repo/.superpowers/sdd/phase-6c-hero-video-rollout/runs/phase-6c-rollout-20260901-01/passlogs/bedroom-bed-forward-webm-24-0.log',
-      'D:/repo/.superpowers/sdd/phase-6c-hero-video-rollout/runs/phase-6c-rollout-20260901-01/passlogs/bedroom-bed-forward-webm-24-0.log.mbtree',
+      `${paths.candidates}/bedroom-bed-forward.webm`,
+      `${paths.passlogs}/bedroom-bed-forward-webm-28-0.log`,
+      `${paths.passlogs}/bedroom-bed-forward-webm-28-0.log.mbtree`,
+      `${paths.candidates}/bedroom-bed-forward.webm`,
+      `${paths.passlogs}/bedroom-bed-forward-webm-24-0.log`,
+      `${paths.passlogs}/bedroom-bed-forward-webm-24-0.log.mbtree`,
     ]);
   });
 

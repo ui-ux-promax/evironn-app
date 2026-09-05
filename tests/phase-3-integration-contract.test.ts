@@ -49,6 +49,13 @@ const forbiddenDeliveryPathPattern =
   /(?:^|\/)(?:\((?:checkout|payment|payments|order|orders|admin|admins|perf|performance)\)|(?:checkout|payment|payments|order|orders|admin|admins|perf|performance)(?:[-._/]|$)|[^/]*(?:checkout|payment|payments|order|orders|admin|admins|perf|performance)(?:[-._/]|$))/i;
 
 const legacyReadCompatibilityPaths = new Set(['lib/cart-merge.ts', 'lib/order.ts', 'tests/cart-presentation.test.ts']);
+const approvedPhase6AssetReplacements = new Map([
+  [
+    'public/assets/products/05-graphite-walnut-room-integrated-v2.png',
+    'public/assets/products/05-graphite-walnut-room-integrated-v2.webp',
+  ],
+  ['public/assets/products/05-ivory-walnut-chair-alpha.png', 'public/assets/products/05-ivory-walnut-chair-alpha.webp'],
+]);
 const normalizePath = (file: string) => file.replaceAll('\\', '/');
 const isForbiddenDeliveryPath = (file: string) => {
   const normalized = normalizePath(file);
@@ -77,7 +84,10 @@ function validateDeliveryManifest(files: DeliveryManifestEntry[]): string[] {
   for (const { path, status } of files) {
     const normalized = normalizePath(path);
     if (normalized !== path) errors.push(`non-canonical path: ${path}`);
-    if (status === 'D' ? existsSync(resolve(root, normalized)) : !existsSync(resolve(root, normalized))) {
+    const pathExists = existsSync(resolve(root, normalized));
+    const approvedReplacement = approvedPhase6AssetReplacements.get(normalized);
+    const replacementExists = approvedReplacement ? existsSync(resolve(root, approvedReplacement)) : false;
+    if (status === 'D' ? pathExists : !pathExists && !replacementExists) {
       errors.push(`status/existence mismatch: ${status} ${normalized}`);
     }
     if (status !== 'D' && isForbiddenDeliveryPath(normalized)) errors.push(`forbidden delivery path: ${normalized}`);

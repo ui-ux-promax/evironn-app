@@ -6,6 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
+
+// Objective harness tests exercise real filesystem and child-process boundaries.
+// Keep their suite-local budget above the repository's 5-second default.
+vi.setConfig({ testTimeout: 30_000 });
 import {
   ENCODE_SOURCE_CONTRACTS,
   PAIR_CONTRACTS,

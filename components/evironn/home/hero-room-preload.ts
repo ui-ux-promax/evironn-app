@@ -112,18 +112,29 @@ function isCompleteImage(image: HTMLImageElement | undefined) {
   return Boolean(image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
 }
 
-function isVideoComplete(video: VideoRecord | undefined) {
+function hasRetainedVideoSource(video: VideoRecord | undefined) {
   return Boolean(
     video?.blob &&
     video.objectUrl &&
     video.element &&
+    !video.element.error &&
     video.element.getAttribute('src') === video.objectUrl &&
-    video.mediaReady &&
-    video.assignedSource === video.objectUrl &&
-    isHeroVideoMediaReady(video.element, video.metadataGeneration === video.sourceGeneration) &&
+    video.assignedSource === video.objectUrl,
+  );
+}
+
+function isRetainedVideo(video: VideoRecord | undefined) {
+  return Boolean(
+    hasRetainedVideoSource(video) &&
+    video?.mediaReady &&
     video.metadataGeneration === video.sourceGeneration &&
     video.firstFrameGeneration === video.sourceGeneration,
   );
+}
+
+function isVideoComplete(video: VideoRecord | undefined) {
+  if (!isRetainedVideo(video) || !video) return false;
+  return isHeroVideoMediaReady(video.element, video.metadataGeneration === video.sourceGeneration);
 }
 
 function appendToHost(host: HTMLDivElement, element: HTMLElement) {
@@ -553,7 +564,7 @@ export function createHeroRoomMediaCache(
       return false;
     if (
       mode === 'animated' &&
-      allEntries(room).some((entry) => !isVideoComplete(record.videos.get(keyOf(entry.productId, entry.direction))))
+      allEntries(room).some((entry) => !isRetainedVideo(record.videos.get(keyOf(entry.productId, entry.direction))))
     ) {
       return false;
     }
@@ -727,7 +738,7 @@ export function createHeroRoomMediaCache(
   const getUnreadyVideo = (room: PilotHeroRoomId) => {
     const record = rooms.get(room);
     for (const entry of allEntries(room)) {
-      if (!isVideoComplete(record?.videos.get(keyOf(entry.productId, entry.direction)))) return entry;
+      if (!isRetainedVideo(record?.videos.get(keyOf(entry.productId, entry.direction)))) return entry;
     }
     return null;
   };

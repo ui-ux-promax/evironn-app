@@ -44,12 +44,8 @@
       ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-20000ms.png",
       ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-30000ms.png"
     ],
-    "comparison": [
-      ".superpowers/sdd/phase-6c-remediation/primary-comparison.json"
-    ],
-    "localClassification": [
-      "controlled-local-diagnostic-only"
-    ]
+    "comparison": [".superpowers/sdd/phase-6c-remediation/primary-comparison.json"],
+    "localClassification": ["controlled-local-diagnostic-only"]
   },
   "nextStep": "separate evidence/plan cycle required"
 }

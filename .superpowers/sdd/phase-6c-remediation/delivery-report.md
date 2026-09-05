@@ -17,31 +17,31 @@ Local classification: `controlled-local-diagnostic-only`. No deployed or product
 
 ## Home medians
 
-| Metric | Before | After | Lower-is-better change |
-| --- | ---: | ---: | ---: |
-| Request starts | 5 | 4 | 20.0000% |
-| FCP | 2648 ms | 2668 ms | -0.755287% |
-| Observed LCP candidate | 2648 ms | 2668 ms | -0.755287% |
-| TBT | 483 ms | 492 ms | -1.863354% |
+| Metric                 |  Before |   After | Lower-is-better change |
+| ---------------------- | ------: | ------: | ---------------------: |
+| Request starts         |       5 |       4 |               20.0000% |
+| FCP                    | 2648 ms | 2668 ms |             -0.755287% |
+| Observed LCP candidate | 2648 ms | 2668 ms |             -0.755287% |
+| TBT                    |  483 ms |  492 ms |             -1.863354% |
 
 All six home runs were comparable. Request reduction failed before performance retention could pass.
 
 ## Guardrails
 
-| Route | Metric | Before | After | Regression | Gate |
-| --- | --- | ---: | ---: | ---: | --- |
-| `/catalog` | TTFB | 102.40000000596046 ms | 101.69999998807907 ms | 0% | pass |
-| `/catalog` | FCP | 1932 ms | 1912 ms | 0% | pass |
-| `/catalog` | Observed LCP candidate | 2540 ms | 2504 ms | 0% | pass |
-| `/catalog` | TBT | 424 ms | 439 ms | 3.537736% | pass |
-| `/catalog` | CLS | 0.00031452583741812417 | 0.00031452583741812417 | 0% | pass |
-| `/catalog` | Request starts | 18 | 18 | 0% | pass |
-| Selected PDP | TTFB | 116.80000001192093 ms | 116.80000001192093 ms | 0% | pass |
-| Selected PDP | FCP | 1892 ms | 1940 ms | 2.536998% | pass |
-| Selected PDP | Observed LCP candidate | 1892 ms | 1940 ms | 2.536998% | pass |
-| Selected PDP | TBT | 126 ms | 131 ms | 3.968254% | pass |
-| Selected PDP | CLS | 0 | 0 | 0% | pass |
-| Selected PDP | Request starts | 25 | 25 | 0% | pass |
+| Route        | Metric                 |                 Before |                  After | Regression | Gate |
+| ------------ | ---------------------- | ---------------------: | ---------------------: | ---------: | ---- |
+| `/catalog`   | TTFB                   |  102.40000000596046 ms |  101.69999998807907 ms |         0% | pass |
+| `/catalog`   | FCP                    |                1932 ms |                1912 ms |         0% | pass |
+| `/catalog`   | Observed LCP candidate |                2540 ms |                2504 ms |         0% | pass |
+| `/catalog`   | TBT                    |                 424 ms |                 439 ms |  3.537736% | pass |
+| `/catalog`   | CLS                    | 0.00031452583741812417 | 0.00031452583741812417 |         0% | pass |
+| `/catalog`   | Request starts         |                     18 |                     18 |         0% | pass |
+| Selected PDP | TTFB                   |  116.80000001192093 ms |  116.80000001192093 ms |         0% | pass |
+| Selected PDP | FCP                    |                1892 ms |                1940 ms |  2.536998% | pass |
+| Selected PDP | Observed LCP candidate |                1892 ms |                1940 ms |  2.536998% | pass |
+| Selected PDP | TBT                    |                 126 ms |                 131 ms |  3.968254% | pass |
+| Selected PDP | CLS                    |                      0 |                      0 |         0% | pass |
+| Selected PDP | Request starts         |                     25 |                     25 |         0% | pass |
 
 Both guardrail routes were comparable and had no median regression greater than 10%.
 

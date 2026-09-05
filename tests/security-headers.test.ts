@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('security headers', () => {
   it('includes CSP and production HSTS', async () => {
@@ -39,6 +43,15 @@ describe('security headers', () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(headers).toContainEqual({ key: 'X-Frame-Options', value: 'DENY' });
     expect(csp).not.toContain('https://vercel.live');
+  });
+
+  it('omits HTTPS upgrade only for explicit local HTTP E2E process', async () => {
+    vi.stubEnv('E2E_HTTP_LOCAL', 'true');
+    const { buildContentSecurityPolicy } = await import('../lib/security/headers.mjs');
+    const csp = buildContentSecurityPolicy({ allowVercelLive: false });
+
+    expect(csp).not.toContain('upgrade-insecure-requests');
+    expect(csp).toContain("frame-ancestors 'none'");
   });
 
   it.each([

@@ -21,15 +21,7 @@
     "queryCacheBuster": null,
     "queryCacheBusterReason": null,
     "browser": "chromium",
-    "screenshots": [
-      500,
-      1500,
-      2500,
-      5000,
-      10000,
-      20000,
-      30000
-    ]
+    "screenshots": [500, 1500, 2500, 5000, 10000, 20000, 30000]
   },
   "home": {
     "runs": [

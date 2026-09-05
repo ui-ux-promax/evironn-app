@@ -7,7 +7,7 @@
 - The accepted Evironn admin redesign follow-up merged through PR #11 at merge commit `e06ae9c` on 2026-08-29.
 - Current integration branch: `origin/dev` at exact commit `e06ae9c`.
 - Current local delivery branch: `phase/06-hardening-release`, created from exact `origin/dev` commit `e06ae9c`.
-- Phase 6A and 6B are user-accepted on the local branch. Phase 6C implementation/checkpoint and final review are complete, pending user approval. Phase 6D has not started.
+- Phase 6A and 6B are user-accepted on the local branch. Phase 6C implementation/checkpoint and final review are complete. Phase 6D closeout/remediation is locally verified but remains uncommitted and unpushed, pending a new Preview cycle.
 - Current release branch: `origin/main` at `162a35e`. The final `dev` to `main` release remains pending.
 
 ## Completed merges
@@ -71,7 +71,7 @@ Historical delivery details for Phases 1–4 are summarized in `docs/roadmap/arc
 
 ## Next action
 
-1. Wait for explicit user approval before beginning Phase 6D.
+1. Complete Phase 6D only through the authorized local closeout; request explicit user authorization before commit/push for a new Preview.
 
 ## Phase 6B focused checkpoint — 2026-08-30
 
@@ -174,3 +174,23 @@ Preserve these pre-existing untracked Phase 2 plans without modification, stagin
 
 - User confirmed local visual acceptance of all four rooms and authorized pushing the existing phase branch. This supersedes the pending visual-acceptance notes above, including preparation artifacts, Fade Arc, end-frame flicker and Aster card spacing.
 - Delivery includes the accepted pilot implementation and follow-up fixes plus bedroom/terrace expansion. Temporary local Playwright configuration and both protected Phase 2 plans are excluded from the commit. No PR or merge is authorized; this is a preview push, not full Phase 6 release acceptance.
+
+## Phase 6D release closeout — 2026-09-04
+
+- Closeout report: `.superpowers/sdd/phase-6d-closeout-report.md`. Branch `phase/06-hardening-release` and `origin/phase/06-hardening-release` both point to `4d9e8e6421b792a16eb4d2e12c42301b3321c201`; `origin/dev` remains `e06ae9c6e91190ddb98569305c36411104a047d8`.
+- Verdict: `NOT READY FOR PR`. No commit, push, PR, merge, deploy, database/provider operation, seed/reset/migration, or branch cleanup occurred. The two protected Phase 2 plans and temporary hero Playwright config remain preserved and untracked.
+- Fresh Vitest passed 235 files / 1,612 tests after two verification-only test fixes; `npm run typecheck` passed; clean production `npm run build` passed. `npm run gate` remains blocked at the known repository-wide Prettier baseline (257 files), so it did not reach later gate stages.
+- Read-only Preview HTTP smoke, representative WebM/WebP asset/type checks, sampled local/Preview WebM byte/SHA equality, six security-header presence checks, stale raster-reference scan, and path-only secret scan passed. No values or credentials were printed.
+- Exact Preview hero desktop E2E reproduced a retained-resource replay failure after deferred room traversal: sofa forward had previously played successfully, then its retained video node later had `src=null` and timed out on replay. A smaller one-off initial sofa forward/reverse probe passed; this does not clear the full matrix. Local production browser run was 6/11 because `.env.local` `AUTH_TRUST_HOST=true` redirected anonymous HTTP `/profile` prefetch to HTTPS localhost, producing `ERR_SSL_PROTOCOL_ERROR`; this is recorded as an environment boundary.
+- Final Sol Medium review: `REMEDIATE`, Critical 0 / Important 2 / Minor 3. Reviewer confirmed the Preview retained-video replay as a Phase 6 regression and identified the suspect path: transient native readiness loss makes the cache reject the retained record, activation invalidates/detaches its source, and replay sees `src=null`; existing rehydration coverage mocks cache readiness. PR remains blocked on this fix, inclusion of the uncommitted test corrections, and completion-gate formatting state. Accepted four-room visual review remains valid but is not treated as automated production-readiness evidence.
+
+## Phase 6D remediation continuation — 2026-09-04
+
+- The retained hero replay blocker is fixed locally. Root cause was a real cache-boundary race: temporary native readiness loss rejected a retained Blob/object URL, activation invalidated it, and the retained video later had `src=null`. The cache now preserves an owned source across transient readiness loss while still rejecting native media errors, stale source/element state, explicit invalidation, cancellation, retry failures, and disposal paths.
+- TDD evidence: real cache-boundary readiness regression RED at 25/26, then GREEN; native-error regression RED, then GREEN. Final focused hero/security suites passed 5 files / 171 tests. Fresh bounded Sol re-review passed Critical 0 / Important 0 / Minor 0.
+- Local production E2E now uses `playwright.local-production.config.ts` and `scripts/local-production-e2e-server.mjs`. The dedicated process sets `AUTH_TRUST_HOST=true`, `NEXTAUTH_URL=http://localhost:<port>`, and `E2E_HTTP_LOCAL=true` without editing `.env.local`. The explicit flag removes only HTTP-incompatible CSP `upgrade-insecure-requests`; production/Preview auth, cookies, middleware, CSP defaults, and redirect policy remain unchanged.
+- Exact local production browser matrix passed `11/11` in 6.8 minutes: desktop/mobile, all four rooms, both products and directions, repeat traversal, source/Blob/object-URL reuse without refetch, codec selection, fallback, retry, and resilience.
+- Final local evidence: full Vitest 235 files / 1,615 tests, `npm run typecheck`, ordinary `npm run build`, bounded ESLint, targeted Prettier, and `git diff --check` passed. Exact `npm run gate` was rerun but remains blocked at Prettier by 157 ignored `.superpowers` artifacts; they and the protected Phase 2 plans were not formatted, added, or deleted. This is baseline debt, not a functional failure.
+- Formatting changes are recorded separately from functional changes. Two previously authorized test-only fixes remain uncommitted and preserved. No commit, push, deploy, PR, merge, database/provider/payment/email operation, seed/reset, or migration occurred.
+- Preview status: old Preview SHA `4d9e8e6421b792a16eb4d2e12c42301b3321c201` remains stale historical evidence. No new Preview was created, so Preview blocker is not cleared. Unverified items: new exact-SHA Preview matrix, user visual acceptance of that deployment, and comparable public after-performance measurement.
+- Next action: request user authorization to commit and push the current phase branch for a new Preview. Do not claim READY FOR PR or merge before that deployment passes the critical matrix and receives user acceptance.

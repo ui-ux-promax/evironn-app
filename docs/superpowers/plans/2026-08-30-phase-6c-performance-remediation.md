@@ -34,13 +34,13 @@
 
 Four implementation tasks plus Task 0 approval gate. No task owns another production candidate.
 
-| Task | Owner | Result | Commit subject |
-| --- | --- | --- | --- |
-| 0 | Coordinator | Approval gate; no implementation | none before approval |
-| 1 | Luna High measurement owner | Minimal five-image collector extension, config, immutable before evidence | `test: measure phase 6c primary image candidate` |
-| 2 | Luna High primary owner | RED/GREEN source/viewport test and exact three-attribute production edit; no commit | none |
-| 3 | Luna High comparison owner | One after measurement; retain or restore only primary owner | RETAIN: `perf: defer below-fold editorial images`; REJECT: `docs: record phase 6c primary candidate result` |
-| 4 | Luna High closeout owner plus focused reviewer | Guardrails, allowlist, scan, durable report, approval stop | `docs: checkpoint phase 6c primary remediation` |
+| Task | Owner                                          | Result                                                                              | Commit subject                                                                                              |
+| ---- | ---------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 0    | Coordinator                                    | Approval gate; no implementation                                                    | none before approval                                                                                        |
+| 1    | Luna High measurement owner                    | Minimal five-image collector extension, config, immutable before evidence           | `test: measure phase 6c primary image candidate`                                                            |
+| 2    | Luna High primary owner                        | RED/GREEN source/viewport test and exact three-attribute production edit; no commit | none                                                                                                        |
+| 3    | Luna High comparison owner                     | One after measurement; retain or restore only primary owner                         | RETAIN: `perf: defer below-fold editorial images`; REJECT: `docs: record phase 6c primary candidate result` |
+| 4    | Luna High closeout owner plus focused reviewer | Guardrails, allowlist, scan, durable report, approval stop                          | `docs: checkpoint phase 6c primary remediation`                                                             |
 
 ## Exact Files
 
@@ -90,7 +90,7 @@ $AfterEvidence = $BeforeEvidence.ForEach({ $_ -replace '/before/', '/after/' })
   '/assets/editorial/images/category-reading-chair.png',
   '/assets/editorial/images/category-bedside.png',
   '/assets/editorial/images/71c2b8589fc6.png',
-]
+];
 ```
 
 Exact source/alt pairs: `category-sofa.png` / `Светлый диван букле в интерьере`; `category-console.png` / `Дубовая консоль со скульптурным светильником`; `category-reading-chair.png` / `Плетёное кресло в светлом интерьере`; `category-bedside.png` / `Прикроватная тумба в спальне`; `71c2b8589fc6.png` / empty alt. Do not broaden this set.
@@ -171,6 +171,7 @@ export default defineConfig({
 ```
 
 No global setup and no webServer field permitted.
+
 - [ ] **Step 4: Add exact controlled-run wrapper.** Create ignored `.superpowers/sdd/phase-6c-remediation/run-controlled-primary.ps1` with this complete flow:
 
 ```powershell
@@ -216,6 +217,7 @@ try {
 ```
 
 The wrapper starts `npm.cmd run dev -- --hostname 127.0.0.1 --port 3106`, polls the static readiness asset until HTTP `200` or 3-minute failure, warms exact routes, runs one exact collector or Playwright command, and tears down the recorded process tree in `finally`. Collector output writes only the exact evidence filenames; wrapper stdout/stderr redirects create only the eight named transient logs, which Task 4 deletes after validation. It has no global setup/webServer and prints no environment value or server log.
+
 - [ ] **Step 5: Run RED and syntax.** Run `node --check '.superpowers/sdd/phase-6c-baseline/collect-phase-6c.mjs'` and `node --check '.superpowers/sdd/phase-6c-baseline/playwright-phase-6c.config.mjs'`. Validate `.superpowers/sdd/phase-6c-remediation/run-controlled-primary.ps1` without printing its source:
 
 ```powershell
@@ -232,6 +234,7 @@ if ($Errors.Count -ne 0) {
 ```
 
 Then run `node --test '.superpowers/sdd/phase-6c-baseline/collect-phase-6c.test.mjs'`, which also parses the test module. Expected: syntax checks pass; existing tests pass; new narrow contracts fail only because exports are absent. Runner failure is not RED.
+
 - [ ] **Step 6: Implement narrow collector behavior.** Reuse existing navigation/throttling/request/screenshot primitives. Add CLI `--primary-series --label before --output-root '.superpowers/sdd/phase-6c-remediation/before' --host 'http://127.0.0.1:3106'` and the same command with `--label after --output-root '.superpowers/sdd/phase-6c-remediation/after'`; require the supplied host to be `http://127.0.0.1:3106` for this local diagnostic and route every collector URL through it, rejecting any public/deployed origin. Count only exact five paths through `domContentLoadedEventEnd + 2500 ms`; read five DOM nodes, loading, rect class, readiness, FCP/LCP/TBT/CLS, fixed screenshots. Record exact TTFB/FCP/LCP/TBT/CLS/request starts for catalog/PDP only. Add no CDP ownership graph, source-map/hydration attribution, fallback ranker, archive manager, or generic owner type.
 - [ ] **Step 7: Run GREEN focused collector checks.** Run collector tests. Run Prettier only on `.superpowers/sdd/phase-6c-baseline/collect-phase-6c.mjs`, `.superpowers/sdd/phase-6c-baseline/collect-phase-6c.test.mjs`, and `.superpowers/sdd/phase-6c-baseline/playwright-phase-6c.config.mjs`. Validate `.superpowers/sdd/phase-6c-remediation/run-controlled-primary.ps1` only with the PowerShell parser command from Step 5; Prettier must not receive the `.ps1` path. Expected: focused checks pass; no generic ownership/fallback symbols added.
 - [ ] **Step 8: Capture one controlled before series.** Run `powershell -NoProfile -ExecutionPolicy Bypass -File '.superpowers/sdd/phase-6c-remediation/run-controlled-primary.ps1' -Action before`; wrapper writes only the exact before filenames listed under Exact Files and labels every summary `controlled-local-diagnostic-only`. No public request.
@@ -299,6 +302,7 @@ if ($UnexpectedPaths.Count -gt 0) { $UnexpectedPaths | ForEach-Object { Write-Ou
 ```
 
 Task 1 cached set must equal its explicit collector/config/wrapper/before-evidence list. Task 3 RETAIN cached set must equal only new production/test/after/comparison paths; Task 3 REJECT cached set must equal only after/comparison/rejection paths. The rejected production path is restored to baseline and the candidate test is removed, so neither has a remaining diff or belongs in the rejection cache set. Protected Phase 2 files are hash-checked exceptions, never staged. Non-ignored untracked files are collected repo-wide. Ignored files are collected only inside the two exact owned scopes, avoiding unrelated ignored dependencies, caches, local tools, and environment files while still detecting stale or unexpected remediation evidence.
+
 - [ ] **Step 2: Run final focused validation.** Run `node --test '.superpowers/sdd/phase-6c-baseline/collect-phase-6c.test.mjs'`; run the focused Playwright command only when RETAIN; run existing contracts `npx --no-install vitest run 'tests/evironn-home-shell.test.tsx' 'tests/evironn-phase-2a-source-contract.test.ts'`; when RETAIN, run Prettier on `components/evironn/home/furniture-editorial-sections.tsx` and `e2e/performance/furniture-editorial-lazy.spec.ts`; always run Prettier only on the two collector `.mjs` files and dedicated config `.mjs`; validate the PowerShell wrapper only with the Step 5 parser command; run `git diff --check`. No build/gate/complete Vitest/broad E2E/deploy.
 - [ ] **Step 3: Write provisional closeout artifacts.** Write `changed-paths.txt` with selected allowlist plus the exact observed tracked/staged/working/ignored path sets; write `delivery-report.md` with decision, local classification, before/after medians, guardrail medians, deterministic visual result, focused checks, restore proof when rejected, protected hashes, and `reviewStatus: 'pending'`; update only Phase 6C sections of `.superpowers/sdd/progress.md` and `docs/roadmap/STATUS.md`, preserving Phase 6D pending and historical `NO_CHANGE`. Recompute `$ObservedPaths`; require no unexpected non-protected path, but defer final equality until all closeout files exist.
 - [ ] **Step 4: Scan and stage provisional closeout.** Set `$OutcomePaths = if ($Decision -eq 'RETAIN') { $RetainPaths } else { $RejectPaths }`; set `$ScanPaths = @($OutcomePaths | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Sort-Object -Unique)` and require no missing path. Run the exact value-free scan below; ripgrep exit `1` means no match, any other execution code fails, and only relative paths print on a hit. Then define `$CloseoutPaths = @('.superpowers/sdd/phase-6c-remediation/changed-paths.txt', '.superpowers/sdd/phase-6c-remediation/delivery-report.md', '.superpowers/sdd/progress.md', 'docs/roadmap/STATUS.md')`; run `git add -f -- $CloseoutPaths`; assert `@(git diff --cached --name-only | Sort-Object)` equals `@($CloseoutPaths | Sort-Object)` exactly. Do not commit yet.

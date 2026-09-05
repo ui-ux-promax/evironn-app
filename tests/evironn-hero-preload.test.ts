@@ -359,6 +359,49 @@ describe('hero room media preload cache', () => {
     expect(revokeObjectUrl).toHaveBeenCalledTimes(revokeCount);
   });
 
+  it('keeps a retained animated bundle usable during temporary native readiness loss', async () => {
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const room = await cache.prepare('living-room', 'animated', 1, new AbortController().signal);
+    const retained = room.videos.get('sofa:forward');
+    expect(retained).toBeDefined();
+    const source = retained!.element.getAttribute('src');
+    const fetchCount = vi.mocked(fetch).mock.calls.length;
+    const urlCount = createObjectUrl.mock.calls.length;
+
+    Object.defineProperty(retained!.element, 'readyState', {
+      configurable: true,
+      value: HTMLMediaElement.HAVE_METADATA,
+    });
+
+    expect(cache.get('living-room', 'animated')).toBe(room);
+    expect(cache.getUnreadyVideo('living-room')).toBeNull();
+    await expect(cache.prepare('living-room', 'animated', 2, new AbortController().signal)).resolves.toBe(room);
+
+    expect(retained!.element.getAttribute('src')).toBe(source);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(fetchCount);
+    expect(createObjectUrl).toHaveBeenCalledTimes(urlCount);
+    expect(revokeObjectUrl).not.toHaveBeenCalled();
+  });
+
+  it('rejects a retained bundle after a native media error', async () => {
+    const cache = createHeroRoomMediaCache(createSelector());
+    cache.setHost(document.createElement('div'));
+    cache.setPoster('living-room', makePoster());
+    const room = await cache.prepare('living-room', 'animated', 1, new AbortController().signal);
+    const retained = room.videos.get('sofa:forward');
+    expect(retained).toBeDefined();
+
+    Object.defineProperty(retained!.element, 'error', {
+      configurable: true,
+      value: { code: 3 },
+    });
+
+    expect(cache.get('living-room', 'animated')).toBeNull();
+    expect(cache.getUnreadyVideo('living-room')).toEqual({ productId: 'sofa', direction: 'forward' });
+  });
+
   it('rejects stale source or replaced element despite historical media readiness', async () => {
     const cache = createHeroRoomMediaCache(createSelector());
     cache.setHost(document.createElement('div'));

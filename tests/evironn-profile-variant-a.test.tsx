@@ -184,7 +184,7 @@ describe('Profile Variant A', () => {
       expect(save).toBeDisabled();
       expect(save).toHaveAttribute('aria-busy', 'true');
       expect(save).toHaveTextContent('Сохранить изменения');
-      expect(save.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(save.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
     expect(screen.getByRole('button', { name: 'Изменить пароль' })).toBeEnabled();
 
@@ -213,7 +213,7 @@ describe('Profile Variant A', () => {
       expect(save).toBeDisabled();
       expect(save).toHaveAttribute('aria-busy', 'true');
       expect(save).toHaveTextContent('Сохранить адрес');
-      expect(save.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(save.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
     expect(screen.getByRole('button', { name: 'Сделать адрес Дача основным' })).toBeEnabled();
 
@@ -244,9 +244,12 @@ describe('Profile Variant A', () => {
       expect(save).toBeDisabled();
       expect(save).toHaveAttribute('aria-busy', 'true');
       expect(save).toHaveTextContent('Сохраняем…');
-      expect(save.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(save.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
-    expect(screen.getByRole('button', { name: 'Сохранить изменения' })).toBeEnabled();
+    const profileSave = screen.getByRole('button', { name: 'Сохранить изменения' });
+    expect(profileSave).toBeEnabled();
+    expect(profileSave).not.toHaveAttribute('aria-busy', 'true');
+    expect(profileSave.querySelector('svg[class*="_spinner_"]')).toBeNull();
 
     rejectPassword?.(new Error('Пароль недоступен'));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Изменить пароль' })).toBeEnabled());
@@ -272,9 +275,12 @@ describe('Profile Variant A', () => {
       expect(makeDefault).toBeDisabled();
       expect(makeDefault).toHaveAttribute('aria-busy', 'true');
       expect(makeDefault).toHaveTextContent('Основной');
-      expect(makeDefault.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(makeDefault.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
-    expect(screen.getByRole('button', { name: 'Удалить Дача' })).toBeEnabled();
+    const siblingRemove = screen.getByRole('button', { name: 'Удалить Дача' });
+    expect(siblingRemove).toBeEnabled();
+    expect(siblingRemove).not.toHaveAttribute('aria-busy', 'true');
+    expect(siblingRemove.querySelector('svg[class*="_spinner_"]')).toBeNull();
 
     rejectDefault?.(new Error('Адрес по умолчанию недоступен'));
     await waitFor(() => expect(makeDefault).toBeEnabled());
@@ -299,9 +305,12 @@ describe('Profile Variant A', () => {
       expect(mocks.deleteAddress).toHaveBeenCalledTimes(1);
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute('aria-busy', 'true');
-      expect(remove.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(remove.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
-    expect(screen.getByRole('button', { name: 'Удалить Дом' })).toBeEnabled();
+    const siblingRemove = screen.getByRole('button', { name: 'Удалить Дом' });
+    expect(siblingRemove).toBeEnabled();
+    expect(siblingRemove).not.toHaveAttribute('aria-busy', 'true');
+    expect(siblingRemove.querySelector('svg[class*="_spinner_"]')).toBeNull();
 
     rejectDelete?.(new Error('Удаление адреса недоступно'));
     await waitFor(() => expect(remove).toBeEnabled());
@@ -338,11 +347,11 @@ describe('Profile Variant A', () => {
       expect(add).toBeDisabled();
       expect(add).toHaveAttribute('aria-busy', 'true');
       expect(add).toHaveTextContent('В корзину');
-      expect(add.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(add.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
     expect(siblingAdd).toBeEnabled();
     expect(siblingAdd).not.toHaveAttribute('aria-busy', 'true');
-    expect(siblingAdd.querySelector('svg')).toBeNull();
+    expect(siblingAdd.querySelector('svg[class*="_spinner_"]')).toBeNull();
     expect(soldOutAdd).toBeDisabled();
     expect(soldOutAdd).not.toHaveAttribute('aria-busy', 'true');
 
@@ -369,7 +378,7 @@ describe('Profile Variant A', () => {
       expect(mocks.toggleWishlist).toHaveBeenCalledTimes(1);
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute('aria-busy', 'true');
-      expect(remove.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(remove.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
       expect(screen.getByText('Noma')).toBeInTheDocument();
     });
     expect(screen.getByRole('button', { name: 'Убрать Sold out из избранного' })).toBeEnabled();
@@ -398,7 +407,7 @@ describe('Profile Variant A', () => {
       expect(logout).toBeDisabled();
       expect(logout).toHaveAttribute('aria-busy', 'true');
       expect(logout).toHaveTextContent('Выйти');
-      expect(logout.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(logout.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
     });
 
     rejectLogout?.(new Error('Выход недоступен'));

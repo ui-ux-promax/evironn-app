@@ -852,31 +852,12 @@ input:focus-visible + .chk-check {
   cursor: progress;
 }
 
-.chk-submit__spin {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgb(255 255 255 / 0.34);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: chk-spin 760ms linear infinite;
-}
-
-@keyframes chk-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .chk-submit--dark {
   background: #f6f2ea;
   color: #221f1b;
 }
 .chk-submit--dark:hover:not(:disabled) {
   background: #fff;
-}
-.chk-submit--dark .chk-submit__spin {
-  border-color: rgb(34 31 27 / 0.3);
-  border-top-color: #221f1b;
 }
 
 /* ---------- Order lines ---------- */

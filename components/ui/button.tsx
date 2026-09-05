@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Loader2 } from 'lucide-react';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva('btn', {
@@ -34,11 +34,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         ref={ref}
-        disabled={disabled || loading}
-        className={cn(buttonVariants({ variant, size }), className)}
         {...props}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        className={cn(buttonVariants({ variant, size }), className)}
       >
-        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : children}
+        {loading && <FadeArc className="h-5 w-5 shrink-0" aria-hidden="true" />}
+        {children}
       </Comp>
     );
   },

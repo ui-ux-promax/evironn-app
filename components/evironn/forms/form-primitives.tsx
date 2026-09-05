@@ -2,6 +2,7 @@
 
 import { useId, type ReactNode } from 'react';
 import { FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 
 type Tone = 'light' | 'dark';
 
@@ -138,7 +139,7 @@ export function SubmitButton({
     >
       {sending ? (
         <>
-          <span className="chk-submit__spin" aria-hidden="true" />
+          <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
           {sendingLabel}
         </>
       ) : (

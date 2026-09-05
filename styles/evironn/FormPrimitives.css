@@ -222,18 +222,3 @@ input:focus-visible + .chk-check {
   opacity: 1;
   cursor: progress;
 }
-
-.chk-submit__spin {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgb(255 255 255 / 0.34);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: chk-spin 760ms linear infinite;
-}
-
-@keyframes chk-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}

@@ -372,7 +372,12 @@ export function AuthVariantB({
                 <span>или</span>
               </div>
               <div className="auth-social">
-                <button type="button" onClick={onGoogle} disabled={busy || oauthBusy} aria-busy={busy || oauthBusy}>
+                <button
+                  type="button"
+                  onClick={onGoogle}
+                  disabled={busy || oauthBusy}
+                  aria-busy={oauthBusy || undefined}
+                >
                   {oauthBusy ? (
                     <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
                   ) : (

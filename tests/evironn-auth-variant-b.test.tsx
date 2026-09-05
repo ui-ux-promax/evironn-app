@@ -236,6 +236,25 @@ describe('Auth Variant B', () => {
     resolveGoogle({ ok: true });
   });
 
+  it('disables Google without OAuth busy feedback during credential submit', () => {
+    let resolveLogin!: (value: { ok: true }) => void;
+    signIn.mockReturnValue(
+      new Promise<{ ok: true }>((resolve) => {
+        resolveLogin = resolve;
+      }),
+    );
+    render(<AuthVariantBController {...props} />);
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'user@example.com' } });
+    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+
+    const google = screen.getByRole('button', { name: 'Google' });
+    expect(google).toBeDisabled();
+    expect(google).not.toHaveAttribute('aria-busy', 'true');
+    expect(google.querySelector('svg')).not.toHaveAttribute('class', expect.stringContaining('spinner'));
+    resolveLogin({ ok: true });
+  });
+
   it('invokes only Google OAuth with callback and preserves provider error copy', async () => {
     render(<AuthVariantBController {...props} oauthError="OAuthAccountNotLinked" />);
     expect(screen.getByRole('alert')).toHaveTextContent('Этот email уже зарегистрирован через пароль');

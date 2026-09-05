@@ -19,8 +19,8 @@ vi.mock('@/components/evironn/home/interactive-furniture-cards', () => ({
 
 const turntable = {
   videoUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm',
-  posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
-  fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+  posterUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
+  fallbackUrl: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
   alt: 'Noma 360',
 };
 
@@ -55,7 +55,7 @@ const model: ShowcaseProductPageDto = {
     categoryName: 'Кресла',
     categorySlug: 'armchairs',
   },
-  sceneBackgroundUrl: '/assets/products/05-graphite-walnut-room-background-fixed.png',
+  sceneBackgroundUrl: '/assets/products/05-graphite-walnut-room-background-fixed.webp',
   selected: combinations[1],
   combinations,
   turntable,

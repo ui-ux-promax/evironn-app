@@ -1,155 +1,311 @@
-import { useEffect, useRef, useState } from 'react';
-import { getHeroProduct, HERO_PRODUCT_IDS, type HeroPhase } from './hero-product-state';
-import { HERO_PRODUCTS } from './hero-products';
+import { useEffect, useRef } from 'react';
+import { getHeroProduct, type HeroPhase } from './hero-product-state';
+import { HERO_PRODUCTS, type HeroVideoSources } from './hero-products';
+import {
+  type HeroPreparedRoom,
+  type HeroRoomMediaCache,
+  type HeroVideoEntryId,
+  type HeroVideoDirection,
+} from './hero-room-preload';
+import type { PilotHeroRoomId } from './hero-room-state';
 
-type Direction = 'forward' | 'reverse';
-type VideoKey = string;
-type VisibleLayer = string | null;
+type HeroProductTransition = {
+  direction: HeroVideoDirection;
+  productId: NonNullable<ReturnType<typeof getHeroProduct>>;
+  sources: HeroVideoSources;
+};
+
+export type HeroVideoFormat = 'webm' | 'mp4';
+export type SelectedHeroVideoSource = Readonly<{ format: HeroVideoFormat; src: string }>;
+
+export type HeroPlaybackUnavailable = Readonly<{
+  room: PilotHeroRoomId;
+  entry: HeroVideoEntryId;
+  failedPhase: HeroPhase;
+  stage: 'before-activation' | 'playback-entry';
+  roomOperationId: number;
+  playbackGeneration: number;
+}>;
 
 type HeroProductMediaProps = {
+  cache: HeroRoomMediaCache;
+  room: PilotHeroRoomId;
+  roomOperationId: number;
+  playbackGeneration: number;
   phase: HeroPhase;
   reducedMotion: boolean;
+  preparationPending?: boolean;
   onProgress: (currentTime: number, duration: number) => void;
   onForwardComplete: () => void;
   onReverseComplete: () => void;
-  onFailure: (failedPhase: HeroPhase) => void;
+  onPlaybackUnavailable: (failure: HeroPlaybackUnavailable) => void;
 };
 
+export function selectHeroVideoSource(
+  sources: HeroVideoSources,
+  canPlayType: (mime: string) => string,
+): SelectedHeroVideoSource {
+  return sources.webm && canPlayType('video/webm; codecs="vp9"') !== ''
+    ? { format: 'webm', src: sources.webm }
+    : { format: 'mp4', src: sources.mp4 };
+}
+
+function getActiveTransition(phase: HeroPhase): HeroProductTransition | null {
+  if (phase.startsWith('entering-')) {
+    const productId = getHeroProduct(phase);
+    return productId ? { direction: 'forward', productId, sources: HERO_PRODUCTS[productId].forward } : null;
+  }
+  if (phase.startsWith('returning-')) {
+    const productId = getHeroProduct(phase);
+    return productId ? { direction: 'reverse', productId, sources: HERO_PRODUCTS[productId].reverse } : null;
+  }
+  return null;
+}
+
+function entryKey(entry: HeroVideoEntryId) {
+  return `${entry.productId}:${entry.direction}`;
+}
+
+function isPreparedEntry(bundle: HeroPreparedRoom | null, entry: HeroVideoEntryId) {
+  const prepared = bundle?.videos.get(entryKey(entry));
+  return Boolean(
+    prepared?.blob &&
+    prepared.objectUrl &&
+    prepared.element &&
+    prepared.element.getAttribute('src') === prepared.objectUrl &&
+    prepared.mediaReady,
+  );
+}
+
+function resetVideo(video: HTMLVideoElement) {
+  video.pause();
+  try {
+    video.currentTime = 0;
+  } catch {
+    // jsdom and an evicted native media binding may reject currentTime writes.
+  }
+}
+
+function applyMediaClass(element: HTMLElement, productId: string, mediaClassName: string, visible: boolean) {
+  element.className = [
+    'furni-hero-product-media__asset',
+    mediaClassName,
+    `is-product-${productId}`,
+    visible ? 'is-visible' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 export function HeroProductMedia({
+  cache,
+  room,
+  roomOperationId,
+  playbackGeneration,
   phase,
   reducedMotion,
+  preparationPending = false,
   onProgress,
   onForwardComplete,
   onReverseComplete,
-  onFailure,
+  onPlaybackUnavailable,
 }: HeroProductMediaProps) {
-  const [visibleLayer, setVisibleLayer] = useState<VisibleLayer>(null);
-  const videoRefs = useRef<Partial<Record<VideoKey, HTMLVideoElement>>>({});
-  const operation = useRef(0);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const operationRef = useRef(0);
+  const activePlaybackRef = useRef<{ video: HTMLVideoElement; generation: number } | null>(null);
+  const activeProductId = getHeroProduct(phase);
+  const staticBundle = cache.get(room, 'static');
+  const animatedBundle = reducedMotion ? null : cache.get(room, 'animated');
 
   useEffect(() => {
-    const productId = getHeroProduct(phase);
-    if (!productId) {
-      operation.current += 1;
-      Object.values(videoRefs.current).forEach((video) => video?.pause());
-      setVisibleLayer(null);
-      return;
+    cache.setHost(hostRef.current);
+    return () => cache.setHost(null);
+  }, [cache]);
+
+  useEffect(() => {
+    if (!staticBundle && !animatedBundle) return;
+
+    for (const [productId, image] of staticBundle?.focus ?? []) {
+      applyMediaClass(image, productId, HERO_PRODUCTS[productId].mediaClassName, false);
     }
-    const product = HERO_PRODUCTS[productId];
-
-    const entering = phase === `entering-${productId}`;
-    const returning = phase === `returning-${productId}`;
-    if (!entering && !returning) return;
-
-    if (reducedMotion) {
-      setVisibleLayer(entering ? `${productId}-focus` : null);
-      queueMicrotask(entering ? onForwardComplete : onReverseComplete);
-      return;
-    }
-
-    const direction: Direction = entering ? 'forward' : 'reverse';
-    const key: VideoKey = `${productId}-${direction}`;
-    const video = videoRefs.current[key];
-    if (!video) {
-      onFailure(phase);
-      return;
+    for (const prepared of animatedBundle?.videos.values() ?? []) {
+      applyMediaClass(
+        prepared.element,
+        prepared.entry.productId,
+        HERO_PRODUCTS[prepared.entry.productId].mediaClassName,
+        false,
+      );
+      prepared.element.setAttribute('aria-hidden', 'true');
+      prepared.element.dataset.heroDirection = prepared.entry.direction;
     }
 
-    operation.current += 1;
-    const currentOperation = operation.current;
-    video.pause();
-    video.currentTime = 0;
+    if (activeProductId) {
+      const focus = staticBundle?.focus.get(activeProductId);
+      const focusVisible = phase === activeProductId || phase.startsWith('returning-') || reducedMotion;
+      if (focus) applyMediaClass(focus, activeProductId, HERO_PRODUCTS[activeProductId].mediaClassName, focusVisible);
+    }
 
-    const fail = () => {
-      if (operation.current !== currentOperation) return;
-      setVisibleLayer(entering ? null : `${productId}-focus`);
-      onFailure(phase);
+    return () => {
+      for (const prepared of animatedBundle?.videos.values() ?? []) prepared.element.pause();
+    };
+  }, [activeProductId, animatedBundle, phase, reducedMotion, staticBundle]);
+
+  useEffect(() => {
+    operationRef.current += 1;
+    const operationId = operationRef.current;
+    const activeTransition = reducedMotion ? null : getActiveTransition(phase);
+    if (!activeTransition) {
+      activePlaybackRef.current = null;
+      return;
+    }
+
+    const entry: HeroVideoEntryId = {
+      productId: activeTransition.productId,
+      direction: activeTransition.direction,
+    };
+    const bundle = animatedBundle;
+    const prepared = bundle?.videos.get(entryKey(entry));
+    const isCurrent = () => operationRef.current === operationId;
+    let cleanupPlayback: () => void = () => undefined;
+    const fail = (failedEntry: HeroVideoEntryId = entry) => {
+      if (!isCurrent()) return;
+      cleanupPlayback();
+      onPlaybackUnavailable({
+        room,
+        entry: failedEntry,
+        failedPhase: phase,
+        stage: 'playback-entry',
+        roomOperationId,
+        playbackGeneration,
+      });
     };
 
-    const revealAndPlay = () => {
-      if (operation.current !== currentOperation) return;
-      setVisibleLayer(key);
-      video.playbackRate = product.playbackRate;
-      void video.play().catch(fail);
-    };
-
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      revealAndPlay();
-    } else {
-      video.addEventListener('loadeddata', revealAndPlay, { once: true });
-      video.load();
+    if (!bundle || !prepared || !isPreparedEntry(bundle, entry)) {
+      if (preparationPending) return;
+      queueMicrotask(() => {
+        if (isCurrent()) fail(cache.getUnreadyVideo(room) ?? entry);
+      });
+      return () => {
+        if (isCurrent()) operationRef.current += 1;
+      };
     }
 
-    return () => video.removeEventListener('loadeddata', revealAndPlay);
-  }, [phase, reducedMotion, onFailure, onForwardComplete, onReverseComplete]);
+    const video = prepared.element;
+    const product = HERO_PRODUCTS[activeTransition.productId];
+    let startupTimer: number | undefined;
+    let completionTimer: number | undefined;
+    let listenersBound = false;
+    let settled = false;
 
-  const activeProduct = getHeroProduct(phase);
+    const clearTimers = () => {
+      if (startupTimer !== undefined) window.clearTimeout(startupTimer);
+      if (completionTimer !== undefined) window.clearTimeout(completionTimer);
+      startupTimer = undefined;
+      completionTimer = undefined;
+    };
+    const removeListeners = () => {
+      if (!listenersBound) return;
+      video.removeEventListener('playing', onPlaying);
+      video.removeEventListener('timeupdate', onTimeUpdate);
+      video.removeEventListener('ended', onEnded);
+      video.removeEventListener('error', onError);
+      listenersBound = false;
+    };
+    function cleanup() {
+      clearTimers();
+      removeListeners();
+      video.classList.remove('is-visible');
+      // Retain the final decoded frame. Rewind only before the next hidden play;
+      // seeking here can expose the first frame during the image handoff.
+      video.pause();
+      activePlaybackRef.current = null;
+    }
+    cleanupPlayback = cleanup;
+    const complete = () => {
+      if (!isCurrent() || settled) return;
+      settled = true;
+      // The focus image is already decoded by room preparation. Reveal it
+      // before removing the video, without waiting for the React phase effect.
+      const focus = bundle.focus.get(activeTransition.productId);
+      focus?.classList.toggle('is-visible', activeTransition.direction === 'forward');
+      cleanup();
+      if (activeTransition.direction === 'forward') onForwardComplete();
+      else onReverseComplete();
+    };
+    const onPlaying = () => {
+      if (!isCurrent() || settled || video.getAttribute('src') !== prepared.objectUrl) return;
+      clearTimers();
+      video.classList.add('is-visible');
+      const focus = bundle.focus.get(activeTransition.productId);
+      if (focus) focus.classList.remove('is-visible');
+      const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+      const durationBound = 5_000 + Math.ceil((duration / product.playbackRate) * 1_000) + 2_000;
+      completionTimer = window.setTimeout(fail, durationBound);
+    };
+    const onTimeUpdate = () => {
+      if (isCurrent() && activeTransition.direction === 'forward') onProgress(video.currentTime, video.duration);
+    };
+    const onEnded = () => complete();
+    const onError = () => fail();
 
-  return (
-    <div className="furni-hero-product-media" aria-hidden="true">
-      {HERO_PRODUCT_IDS.map((id) => {
-        const product = HERO_PRODUCTS[id];
-        return (
-          <img
-            key={`${id}-focus`}
-            className={[
-              'furni-hero-product-media__asset',
-              product.mediaClassName,
-              `is-product-${id}`,
-              visibleLayer === `${id}-focus` ? 'is-visible' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            src={product.focusSrc}
-            alt=""
-          />
-        );
-      })}
-      {HERO_PRODUCT_IDS.flatMap((id) =>
-        (['forward', 'reverse'] as const).map((direction) => {
-          const product = HERO_PRODUCTS[id];
-          const key: VideoKey = `${id}-${direction}`;
-          const activePhase = `${direction === 'forward' ? 'entering' : 'returning'}-${id}`;
-          const isActive = phase === activePhase;
+    const currentBundle = animatedBundle;
+    if (!currentBundle || !isPreparedEntry(currentBundle, entry)) {
+      if (preparationPending) return;
+      queueMicrotask(() => fail(cache.getUnreadyVideo(room) ?? entry));
+      return () => {
+        cleanup();
+        if (isCurrent()) operationRef.current += 1;
+      };
+    }
 
-          return (
-            <video
-              key={key}
-              ref={(node) => {
-                if (node) videoRefs.current[key] = node;
-                else delete videoRefs.current[key];
-              }}
-              className={[
-                'furni-hero-product-media__asset',
-                product.mediaClassName,
-                `is-product-${id}`,
-                visibleLayer === key ? 'is-visible' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              src={direction === 'forward' ? product.forwardSrc : product.reverseSrc}
-              muted
-              playsInline
-              preload="auto"
-              onTimeUpdate={(event) => {
-                if (direction === 'forward' && activeProduct === id) {
-                  onProgress(event.currentTarget.currentTime, event.currentTarget.duration);
-                }
-              }}
-              onEnded={() => {
-                if (!isActive) return;
-                if (direction === 'forward') onForwardComplete();
-                else onReverseComplete();
-              }}
-              onError={() => {
-                if (!isActive) return;
-                setVisibleLayer(direction === 'forward' ? null : `${id}-focus`);
-                onFailure(phase);
-              }}
-            />
-          );
-        }),
-      )}
-    </div>
-  );
+    activePlaybackRef.current = { video, generation: playbackGeneration };
+    video.classList.remove('is-visible');
+    resetVideo(video);
+    video.playbackRate = product.playbackRate;
+    video.addEventListener('playing', onPlaying);
+    video.addEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('ended', onEnded);
+    video.addEventListener('error', onError);
+    listenersBound = true;
+    startupTimer = window.setTimeout(fail, 5_000);
+    void video.play().catch(() => fail());
+
+    return () => {
+      cleanup();
+      if (isCurrent()) operationRef.current += 1;
+    };
+  }, [
+    cache,
+    animatedBundle,
+    onForwardComplete,
+    onPlaybackUnavailable,
+    onProgress,
+    onReverseComplete,
+    phase,
+    preparationPending,
+    playbackGeneration,
+    reducedMotion,
+    room,
+    roomOperationId,
+  ]);
+
+  useEffect(() => {
+    if (!reducedMotion || !activeProductId || (!phase.startsWith('entering-') && !phase.startsWith('returning-')))
+      return;
+    const bundle = staticBundle;
+    if (!bundle?.focus.has(activeProductId)) return;
+    const token = playbackGeneration;
+    const operationId = operationRef.current;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled || token !== playbackGeneration || operationRef.current !== operationId) return;
+      if (phase.startsWith('entering-')) onForwardComplete();
+      else onReverseComplete();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeProductId, onForwardComplete, onReverseComplete, phase, playbackGeneration, reducedMotion, staticBundle]);
+
+  return <div ref={hostRef} className="furni-hero-product-media" aria-hidden="true" />;
 }

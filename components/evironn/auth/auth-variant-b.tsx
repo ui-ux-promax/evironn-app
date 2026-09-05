@@ -165,7 +165,7 @@ export function AuthVariantB({
     return (
       <main className="auth-page auth-page--b" id="main-content">
         <div className="auth-page__stage" aria-hidden="true">
-          <img src="/assets/products/05-graphite-walnut-room-integrated-v2.png" alt="" />
+          <img src="/assets/products/05-graphite-walnut-room-integrated-v2.webp" alt="" />
           <p>Место для вещей, к которым хочется возвращаться.</p>
         </div>
         <section className="auth-page__shell" aria-live="polite">
@@ -214,16 +214,16 @@ export function AuthVariantB({
   return (
     <main className="auth-page auth-page--b" id="main-content">
       <div className="auth-page__stage" aria-hidden="true">
-        <img src="/assets/products/05-graphite-walnut-room-integrated-v2.png" alt="" />
+        <img src="/assets/products/05-graphite-walnut-room-integrated-v2.webp" alt="" />
         <p>Место для вещей, к которым хочется возвращаться.</p>
       </div>
       <div className="auth-page__composition" aria-hidden="true">
         <img
           className="auth-page__composition-one"
-          src="/assets/products/05-terracotta-walnut-chair-alpha.png"
+          src="/assets/products/05-terracotta-walnut-chair-alpha.webp"
           alt=""
         />
-        <img className="auth-page__composition-two" src="/assets/products/05-ivory-walnut-chair-alpha.png" alt="" />
+        <img className="auth-page__composition-two" src="/assets/products/05-ivory-walnut-chair-alpha.webp" alt="" />
       </div>
       <section className="auth-page__shell" aria-live="polite">
         <header className="auth-page__head">

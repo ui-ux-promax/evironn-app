@@ -1,0 +1,817 @@
+{
+  "schemaVersion": 1,
+  "label": "before",
+  "classification": "controlled-local-diagnostic-only",
+  "host": "http://127.0.0.1:3106",
+  "conditions": {
+    "host": "http://127.0.0.1:3106",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runsPerRoute": 3,
+    "cpuSlowdownMultiplier": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750,
+    "serviceWorkers": "block",
+    "waitUntil": "domcontentloaded",
+    "observationWindowAfterDomContentLoadedMs": 2500,
+    "cacheDisabled": true,
+    "queryCacheBuster": null,
+    "queryCacheBusterReason": null,
+    "browser": "chromium",
+    "screenshots": [500, 1500, 2500, 5000, 10000, 20000, 30000]
+  },
+  "home": {
+    "runs": [
+      {
+        "comparable": true,
+        "reason": null,
+        "requestStarts": 5,
+        "observedBytes": null,
+        "targets": [
+          {
+            "pathname": "/assets/editorial/images/category-sofa.png",
+            "requestStarts": 1,
+            "observedBytes": 502503,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-console.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-reading-chair.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-bedside.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          }
+        ],
+        "metrics": {
+          "ttfbMs": 304.40000000596046,
+          "fcpMs": 2788,
+          "lcpMs": 2788,
+          "tbtMs": 483,
+          "cls": 0.0003425781783186154
+        },
+        "visual": {
+          "screenshotPaths": [
+            "screenshots/home-00500ms.png",
+            "screenshots/home-01500ms.png",
+            "screenshots/home-02500ms.png",
+            "screenshots/home-05000ms.png",
+            "screenshots/home-10000ms.png",
+            "screenshots/home-20000ms.png",
+            "screenshots/home-30000ms.png"
+          ],
+          "samples": [
+            {
+              "timeMs": 500,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-00500ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            },
+            {
+              "timeMs": 1500,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-01500ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            },
+            {
+              "timeMs": 2500,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-02500ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            },
+            {
+              "timeMs": 5000,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-05000ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            },
+            {
+              "timeMs": 10000,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-10000ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            },
+            {
+              "timeMs": 20000,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-20000ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            },
+            {
+              "timeMs": 30000,
+              "screenshotWidth": 390,
+              "screenshotHeight": 844,
+              "screenshotPath": "screenshots/home-30000ms.png",
+              "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+            }
+          ],
+          "aboveFoldBoxes": [
+            {
+              "timeMs": 500,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 500,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 500,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 500,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 500,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 1500,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 1500,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 1500,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 1500,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 1500,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 2500,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 2500,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 2500,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 2500,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 2500,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 5000,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 5000,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 5000,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 5000,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 5000,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 10000,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 10000,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 10000,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 10000,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 10000,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 20000,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 20000,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 20000,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 20000,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 20000,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 30000,
+              "selector": "header",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 71,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 30000,
+              "selector": "#evironn-hero",
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgb(186, 184, 181)"
+            },
+            {
+              "timeMs": 30000,
+              "selector": "#evironn-hero h1",
+              "x": 41,
+              "y": 126.265625,
+              "width": 308,
+              "height": 92.15625,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 30000,
+              "selector": "#evironn-hero img",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "visible",
+              "opacity": "1",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            },
+            {
+              "timeMs": 30000,
+              "selector": "#evironn-hero video",
+              "x": -0.975006103515625,
+              "y": -2.1099853515625,
+              "width": 391.95001220703125,
+              "height": 848.219970703125,
+              "visibility": "hidden",
+              "opacity": "0",
+              "backgroundColor": "rgba(0, 0, 0, 0)"
+            }
+          ],
+          "heroReadiness": [
+            {
+              "timeMs": 500,
+              "ready": false
+            },
+            {
+              "timeMs": 1500,
+              "ready": false
+            },
+            {
+              "timeMs": 2500,
+              "ready": false
+            },
+            {
+              "timeMs": 5000,
+              "ready": false
+            },
+            {
+              "timeMs": 10000,
+              "ready": false
+            },
+            {
+              "timeMs": 20000,
+              "ready": false
+            },
+            {
+              "timeMs": 30000,
+              "ready": false
+            }
+          ]
+        }
+      },
+      {
+        "comparable": true,
+        "reason": null,
+        "requestStarts": 5,
+        "observedBytes": null,
+        "targets": [
+          {
+            "pathname": "/assets/editorial/images/category-sofa.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-console.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-reading-chair.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-bedside.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          }
+        ],
+        "metrics": {
+          "ttfbMs": 183.69999998807907,
+          "fcpMs": 2648,
+          "lcpMs": 2648,
+          "tbtMs": 479,
+          "cls": 0.0003425781783186154
+        },
+        "visual": {
+          "screenshotPaths": [],
+          "samples": [],
+          "aboveFoldBoxes": [],
+          "heroReadiness": []
+        }
+      },
+      {
+        "comparable": true,
+        "reason": null,
+        "requestStarts": 5,
+        "observedBytes": null,
+        "targets": [
+          {
+            "pathname": "/assets/editorial/images/category-sofa.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-console.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-reading-chair.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/category-bedside.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          },
+          {
+            "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+            "requestStarts": 1,
+            "observedBytes": null,
+            "loading": null,
+            "viewportClass": "below-fold",
+            "complete": false,
+            "naturalWidth": 0,
+            "naturalHeight": 0
+          }
+        ],
+        "metrics": {
+          "ttfbMs": 170.2999999821186,
+          "fcpMs": 2644,
+          "lcpMs": 2644,
+          "tbtMs": 485,
+          "cls": 0.0003425781783186154
+        },
+        "visual": {
+          "screenshotPaths": [],
+          "samples": [],
+          "aboveFoldBoxes": [],
+          "heroReadiness": []
+        }
+      }
+    ],
+    "medians": {
+      "requestStarts": 5,
+      "fcpMs": 2648,
+      "lcpMs": 2648,
+      "tbtMs": 483
+    },
+    "comparable": true
+  },
+  "catalog": {
+    "runs": [
+      {
+        "comparable": true,
+        "endpointMs": 4655.0999999940395,
+        "ttfbMs": 123.69999998807907,
+        "fcpMs": 1872,
+        "lcpMs": 2608,
+        "tbtMs": 424,
+        "cls": 0.00031452583741812417,
+        "requestStarts": 18
+      },
+      {
+        "comparable": true,
+        "endpointMs": 4487.0999999940395,
+        "ttfbMs": 98.40000000596046,
+        "fcpMs": 1932,
+        "lcpMs": 2540,
+        "tbtMs": 456,
+        "cls": 0.00031452583741812417,
+        "requestStarts": 18
+      },
+      {
+        "comparable": true,
+        "endpointMs": 4499,
+        "ttfbMs": 102.40000000596046,
+        "fcpMs": 1940,
+        "lcpMs": 2524,
+        "tbtMs": 418,
+        "cls": 0.00031452583741812417,
+        "requestStarts": 18
+      }
+    ],
+    "medians": {
+      "ttfbMs": 102.40000000596046,
+      "fcpMs": 1932,
+      "lcpMs": 2540,
+      "tbtMs": 424,
+      "cls": 0.00031452583741812417,
+      "requestStarts": 18
+    },
+    "comparable": true
+  },
+  "pdp": {
+    "runs": [
+      {
+        "comparable": true,
+        "endpointMs": 4432.700000017881,
+        "ttfbMs": 116.80000001192093,
+        "fcpMs": 1892,
+        "lcpMs": 1892,
+        "tbtMs": 125,
+        "cls": 0,
+        "requestStarts": 25
+      },
+      {
+        "comparable": true,
+        "endpointMs": 4589,
+        "ttfbMs": 110.2000000178814,
+        "fcpMs": 1992,
+        "lcpMs": 1992,
+        "tbtMs": 217,
+        "cls": 0,
+        "requestStarts": 25
+      },
+      {
+        "comparable": true,
+        "endpointMs": 4433.699999988079,
+        "ttfbMs": 122.30000001192093,
+        "fcpMs": 1892,
+        "lcpMs": 1892,
+        "tbtMs": 126,
+        "cls": 0,
+        "requestStarts": 25
+      }
+    ],
+    "medians": {
+      "ttfbMs": 116.80000001192093,
+      "fcpMs": 1892,
+      "lcpMs": 1892,
+      "tbtMs": 126,
+      "cls": 0,
+      "requestStarts": 25
+    },
+    "comparable": true
+  },
+  "exactPrimaryImageTargets": [
+    "/assets/editorial/images/category-sofa.png",
+    "/assets/editorial/images/category-console.png",
+    "/assets/editorial/images/category-reading-chair.png",
+    "/assets/editorial/images/category-bedside.png",
+    "/assets/editorial/images/71c2b8589fc6.png"
+  ],
+  "comparableReason": "all controlled local diagnostic observations comparable"
+}

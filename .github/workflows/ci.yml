@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      POSTGRES_URL: postgresql://user:pass@localhost:5432/ritm_build
-      POSTGRES_URL_NON_POOLING: postgresql://user:pass@localhost:5432/ritm_build
+      POSTGRES_URL: postgresql://user:pass@localhost:5432/evironn_build
+      POSTGRES_URL_NON_POOLING: postgresql://user:pass@localhost:5432/evironn_build
     steps:
       - uses: actions/checkout@v6
         with:

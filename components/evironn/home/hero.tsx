@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { catalogRoomPath } from '@/components/evironn/public-routes';
 import { HeroProductCard } from './hero-product-card';
-import { HeroProductMedia } from './hero-product-media';
+import { HeroProductMedia, selectHeroVideoSource, type HeroPlaybackUnavailable } from './hero-product-media';
 import { HeroRoomMedia } from './hero-room-media';
+import { createHeroRoomMediaCache, type HeroPreparationFailure, type HeroPreparationMode } from './hero-room-preload';
 import { HERO_PRODUCTS } from './hero-products';
 import { HERO_ROOM_OPTIONS, HERO_ROOMS } from './hero-rooms';
 import {
@@ -22,63 +24,101 @@ import {
   type HeroProductId,
 } from './hero-product-state';
 import {
+  completeHeroRoomPreparation,
   completeHeroRoomTransition,
+  dismissHeroRoomError,
+  failHeroRoomPreparation,
   INITIAL_HERO_ROOM_STATE,
   isAvailableHeroRoom,
   isHeroRoomTransitioning,
   recoverHeroRoomTransition,
   requestHeroRoom,
-  type AvailableHeroRoomId,
+  restartHeroRoomPreparation,
   type HeroRoomId,
+  type PilotHeroRoomId,
 } from './hero-room-state';
 
-const HERO_ROOM_CATALOG_SLUGS: Record<AvailableHeroRoomId, string> = {
+const HERO_ROOM_CATALOG_SLUGS: Record<PilotHeroRoomId, string> = {
   'living-room': 'living',
   kitchen: 'dining',
   bedroom: 'bedroom',
   terrace: 'terrace',
 };
 
+const ROOM_ERROR_MESSAGE = 'Не удалось загрузить комнату. Повторить загрузку?';
+
 export function Hero() {
   const segRef = useRef<HTMLDivElement>(null);
-  const roomButtonRefs = useRef<Partial<Record<HeroRoomId, HTMLButtonElement>>>({});
+  const heroRef = useRef<HTMLElement>(null);
+  const cache = useState(() => createHeroRoomMediaCache(selectHeroVideoSource))[0];
+  const operationRef = useRef(INITIAL_HERO_ROOM_STATE.operationId);
+  const playbackGenerationRef = useRef(0);
+  const preparationRef = useRef<{
+    key: string;
+    room: PilotHeroRoomId;
+    mode: HeroPreparationMode;
+    controller: AbortController;
+    operationId: number;
+  } | null>(null);
+  const posterElementsRef = useRef<Partial<Record<PilotHeroRoomId, HTMLImageElement>>>({});
+  const posterFailureRef = useRef<Partial<Record<PilotHeroRoomId, boolean>>>({});
+  const focusTransferRef = useRef<{
+    control: HTMLElement;
+    status: HTMLElement;
+    userMoved: boolean;
+  } | null>(null);
+  const focusCandidateRef = useRef<HTMLElement | null>(null);
   const [roomState, setRoomState] = useState(INITIAL_HERO_ROOM_STATE);
-  const [stackRoom, setStackRoom] = useState<AvailableHeroRoomId>(INITIAL_HERO_ROOM_STATE.activeRoom);
+  const [requestedRooms, setRequestedRooms] = useState<readonly PilotHeroRoomId[]>(['living-room']);
+  const [posterVersions, setPosterVersions] = useState<Partial<Record<PilotHeroRoomId, number>>>({});
+  const [stackRoom, setStackRoom] = useState<PilotHeroRoomId>(INITIAL_HERO_ROOM_STATE.activeRoom);
   const [stackFade, setStackFade] = useState<'idle' | 'out' | 'in'>('idle');
-  const [readyRooms, setReadyRooms] = useState<Set<AvailableHeroRoomId>>(() => new Set(['living-room']));
   const [phase, setPhase] = useState<HeroPhase>('idle');
   const [cardVisible, setCardVisible] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
+  const motionPreferenceRef = useRef(reducedMotion);
+  const roomStateRef = useRef(roomState);
+  const reducedMotionRef = useRef(reducedMotion);
+  const lifecycleRef = useRef(0);
+  roomStateRef.current = roomState;
+  reducedMotionRef.current = reducedMotion;
 
   const selectedRoom = roomState.targetRoom ?? roomState.activeRoom;
   const activeRoom = HERO_ROOMS[roomState.activeRoom];
   const visualRoom = HERO_ROOMS[stackRoom];
   const roomChanging = isHeroRoomTransitioning(roomState);
   const productChanging = isHeroTransitioning(phase);
-  const locked = roomChanging || productChanging;
+  const preparing = roomState.phase === 'preparing';
+  const locked = preparing || roomChanging || productChanging || roomState.phase === 'error';
   const hotspotsVisible = roomState.phase === 'idle' && phase === 'idle';
+
+  useEffect(() => {
+    const lifecycle = ++lifecycleRef.current;
+    const isCurrentLifecycle = () => lifecycleRef.current === lifecycle;
+    return () => {
+      queueMicrotask(() => {
+        if (isCurrentLifecycle()) cache.dispose();
+      });
+    };
+  }, [cache]);
 
   useEffect(() => {
     const control = segRef.current;
     if (!control) return;
     const indicator = control.querySelector('.seg-indicator') as HTMLElement;
     if (!indicator) return;
-
     const move = (item: HTMLElement) => {
       indicator.style.left = item.offsetLeft + 'px';
       indicator.style.width = item.offsetWidth + 'px';
     };
-
     const activeItem = control.querySelector('.seg-item.active') as HTMLElement;
     if (activeItem) requestAnimationFrame(() => move(activeItem));
-
     const onResize = () => {
       const item = control.querySelector('.seg-item.active') as HTMLElement;
       if (item) move(item);
     };
-
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [selectedRoom]);
@@ -90,6 +130,167 @@ export function Hero() {
     return () => query.removeEventListener('change', update);
   }, []);
 
+  const nextOperationId = useCallback(() => {
+    operationRef.current += 1;
+    return operationRef.current;
+  }, []);
+
+  const abortPreparation = useCallback(() => {
+    preparationRef.current?.controller.abort();
+    preparationRef.current = null;
+  }, []);
+
+  const prepareRoom = useCallback(
+    (room: PilotHeroRoomId, operationId: number, mode: HeroPreparationMode, direct: boolean) => {
+      const key = `${room}:${mode}:${operationId}`;
+      if (preparationRef.current?.key === key) return;
+      abortPreparation();
+      const controller = new AbortController();
+      preparationRef.current = { key, room, mode, controller, operationId };
+      void cache
+        .prepare(room, mode, operationId, controller.signal)
+        .then(() => {
+          if (preparationRef.current?.key !== key || controller.signal.aborted || operationRef.current !== operationId)
+            return;
+          preparationRef.current = null;
+          delete posterFailureRef.current[room];
+          if (direct) {
+            setPhase((current) => cancelHeroProduct(current));
+            setCardVisible(false);
+          }
+          setRoomState((current) => {
+            if (current.phase !== 'preparing' || current.operationId !== operationId || current.targetRoom !== room)
+              return current;
+            return completeHeroRoomPreparation(current, operationId);
+          });
+        })
+        .catch((error: unknown) => {
+          if (preparationRef.current?.key !== key || controller.signal.aborted) return;
+          preparationRef.current = null;
+          if ((error as Partial<HeroPreparationFailure>).resource === 'poster') {
+            posterFailureRef.current[room] = true;
+          }
+          setRoomState((current) => {
+            if (current.phase !== 'preparing' || current.operationId !== operationId || current.targetRoom !== room)
+              return current;
+            return failHeroRoomPreparation(
+              current,
+              operationId,
+              error instanceof Error ? ROOM_ERROR_MESSAGE : ROOM_ERROR_MESSAGE,
+            );
+          });
+        });
+      const currentState = roomStateRef.current;
+      if (currentState.phase !== 'preparing' || currentState.operationId !== operationId) {
+        setRoomState((current) => requestHeroRoom(current, room, false, direct, operationId));
+      }
+    },
+    [abortPreparation, cache],
+  );
+
+  useEffect(() => {
+    const previous = motionPreferenceRef.current;
+    if (previous === reducedMotion) return;
+    motionPreferenceRef.current = reducedMotion;
+
+    abortPreparation();
+    const current = roomStateRef.current;
+    const room = current.targetRoom ?? current.activeRoom;
+    const mode = reducedMotion ? 'static' : 'animated';
+    const direct = room !== current.activeRoom && phase !== 'idle';
+    const operationId = nextOperationId();
+    playbackGenerationRef.current += 1;
+    const ready = Boolean(cache.get(room, mode));
+
+    if (ready) {
+      setRoomState((state) => ({ ...state, operationId }));
+      return;
+    }
+
+    setRoomState((state) => {
+      if (state.phase === 'idle' || state.phase === 'error') {
+        return requestHeroRoom(state, room, false, false, operationId);
+      }
+      return {
+        ...state,
+        targetRoom: room,
+        phase: 'preparing',
+        direct,
+        operationId,
+        error: null,
+      };
+    });
+    prepareRoom(room, operationId, mode, direct);
+  }, [abortPreparation, cache, nextOperationId, phase, prepareRoom, reducedMotion]);
+
+  const onPosterElement = useCallback(
+    (room: PilotHeroRoomId, image: HTMLImageElement | null) => {
+      if (!image || posterElementsRef.current[room] === image) return;
+      posterElementsRef.current[room] = image;
+      cache.setPoster(room, image);
+      const current = preparationRef.current;
+      const currentState = roomStateRef.current;
+      const currentReducedMotion = reducedMotionRef.current;
+      if (
+        image &&
+        currentState.phase === 'preparing' &&
+        currentState.targetRoom === room &&
+        (!current || current.room !== room)
+      ) {
+        prepareRoom(room, currentState.operationId, currentReducedMotion ? 'static' : 'animated', currentState.direct);
+      }
+    },
+    [cache, prepareRoom],
+  );
+
+  useEffect(() => {
+    if (roomState.phase !== 'preparing' || !roomState.targetRoom) return;
+    const mode = reducedMotion ? 'static' : 'animated';
+    const current = preparationRef.current;
+    if (current && current.mode === mode && current.operationId === roomState.operationId) return;
+    prepareRoom(roomState.targetRoom, roomState.operationId, mode, roomState.direct);
+  }, [prepareRoom, reducedMotion, roomState.direct, roomState.operationId, roomState.phase, roomState.targetRoom]);
+
+  useEffect(() => {
+    if (!preparing) return;
+    const active = document.activeElement as HTMLElement | null;
+    const candidate =
+      (active && heroRef.current?.contains(active) && active.closest('.furni-hero-controls') && active) ||
+      focusCandidateRef.current;
+    const status = heroRef.current?.querySelector<HTMLElement>('[role="status"]');
+    if (candidate && status) {
+      const owner = { control: candidate, status, userMoved: false };
+      focusTransferRef.current = owner;
+      focusCandidateRef.current = null;
+      status.focus();
+    }
+  }, [preparing]);
+
+  useEffect(() => {
+    const owner = focusTransferRef.current;
+    if (!owner || (!preparing && !roomChanging)) return;
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target !== owner.status) owner.userMoved = true;
+    };
+    document.addEventListener('focusin', onFocusIn);
+    return () => document.removeEventListener('focusin', onFocusIn);
+  }, [preparing, roomChanging]);
+
+  useEffect(() => {
+    if (preparing || roomChanging) return;
+    const owner = focusTransferRef.current;
+    if (
+      owner &&
+      !owner.userMoved &&
+      owner.control.isConnected &&
+      heroRef.current?.contains(owner.control) &&
+      (!document.activeElement || document.activeElement === document.body)
+    ) {
+      owner.control.focus();
+    }
+    focusTransferRef.current = null;
+  }, [preparing, roomChanging]);
+
   useEffect(() => {
     if (!roomChanging || !roomState.targetRoom) {
       if (!roomChanging) {
@@ -98,200 +299,350 @@ export function Hero() {
       }
       return;
     }
-
     const target = roomState.targetRoom;
+    if (reducedMotion) {
+      setStackRoom(target);
+      setStackFade('in');
+      return;
+    }
     setStackFade('out');
     const moveStack = window.setTimeout(() => {
       setStackRoom(target);
       setStackFade('in');
     }, 360);
-
     return () => window.clearTimeout(moveStack);
-  }, [roomChanging, roomState.activeRoom, roomState.targetRoom]);
+  }, [reducedMotion, roomChanging, roomState.activeRoom, roomState.targetRoom]);
 
-  const markRoomReady = useCallback((room: AvailableHeroRoomId) => {
-    setReadyRooms((current) => {
-      if (current.has(room)) return current;
-      const next = new Set(current);
-      next.add(room);
-      return next;
-    });
-  }, []);
+  const handleRoomClick = useCallback(
+    (room: HeroRoomId) => {
+      if (!isAvailableHeroRoom(room) || roomChanging || productChanging) return;
+      const mode = reducedMotion ? 'static' : 'animated';
+      const ready = Boolean(cache.get(room, mode));
+      if (room === roomState.activeRoom) {
+        if (roomState.phase === 'error' && ready) {
+          abortPreparation();
+          const dismissed = dismissHeroRoomError(roomState, room, ready);
+          operationRef.current = dismissed.operationId;
+          setRoomState(dismissed);
+        }
+        return;
+      }
 
-  const beginRoomChange = useCallback(
-    (target: AvailableHeroRoomId, direct = false) => {
-      setCardVisible(false);
-      setRoomState((current) => requestHeroRoom(current, target, readyRooms.has(target), direct));
+      setRequestedRooms((current) => (current.includes(room) ? current : [...current, room]));
+      const operationId = nextOperationId();
+      const direct = phase !== 'idle';
+      abortPreparation();
+      const next = requestHeroRoom(roomState, room, ready, direct, operationId);
+      if (next === roomState) return;
+      if (!ready) {
+        const activeElement = document.activeElement as HTMLElement | null;
+        if (
+          activeElement &&
+          heroRef.current?.contains(activeElement) &&
+          activeElement.closest('.furni-hero-controls')
+        ) {
+          focusCandidateRef.current = activeElement;
+        }
+      }
+      setRoomState(next);
+      if (ready) {
+        if (direct) {
+          setPhase((current) => cancelHeroProduct(current));
+          setCardVisible(false);
+        }
+      } else {
+        prepareRoom(room, operationId, mode, direct);
+      }
     },
-    [readyRooms],
+    [
+      abortPreparation,
+      cache,
+      phase,
+      prepareRoom,
+      productChanging,
+      reducedMotion,
+      roomChanging,
+      roomState,
+      nextOperationId,
+    ],
   );
 
-  const handleRoomClick = (room: HeroRoomId) => {
-    if (!isAvailableHeroRoom(room) || roomChanging || room === selectedRoom || !readyRooms.has(room)) {
-      return;
-    }
-
-    if (phase !== 'idle') {
-      setCardVisible(false);
-      setPhase((current) => cancelHeroProduct(current));
-      beginRoomChange(room, true);
-      return;
-    }
-
-    beginRoomChange(room);
-  };
-
-  const finishRoomTransition = useCallback(() => {
+  const finishRoomTransition = useCallback((operationId: number) => {
+    const focusOwner = focusTransferRef.current;
     setRoomState((current) => {
+      if (current.phase !== 'changing' || current.operationId !== operationId) return current;
       const completed = completeHeroRoomTransition(current);
-      queueMicrotask(() => {
-        roomButtonRefs.current[completed.activeRoom]?.focus();
-      });
+      if (focusOwner && !focusOwner.userMoved) {
+        window.setTimeout(() => {
+          const active = document.activeElement as HTMLElement | null;
+          if (
+            operationRef.current !== operationId ||
+            focusTransferRef.current !== focusOwner ||
+            !focusOwner.control.isConnected ||
+            (active && active !== document.body && active !== focusOwner.status && active !== focusOwner.control)
+          )
+            return;
+          focusOwner.control.focus();
+          focusTransferRef.current = null;
+        });
+      }
       return completed;
     });
   }, []);
 
-  const handleRoomFailure = useCallback(() => {
-    setRoomState((current) => recoverHeroRoomTransition(current));
-  }, []);
+  const handleRoomFailure = useCallback(
+    (operationId: number, resource?: 'poster') => {
+      if (resource === 'poster') {
+        const current = roomStateRef.current;
+        if (current.operationId !== operationId || current.phase !== 'preparing' || !current.targetRoom) return;
+        abortPreparation();
+        posterFailureRef.current[current.targetRoom] = true;
+      }
+      setRoomState((current) => {
+        if (current.operationId !== operationId) return current;
+        if (resource === 'poster' && current.phase === 'preparing' && current.targetRoom) {
+          return failHeroRoomPreparation(current, operationId, ROOM_ERROR_MESSAGE);
+        }
+        if (current.phase !== 'changing') return current;
+        return recoverHeroRoomTransition(current);
+      });
+    },
+    [abortPreparation],
+  );
+
+  const handleHeroPlaybackUnavailable = useCallback(
+    (failure: HeroPlaybackUnavailable) => {
+      if (
+        failure.room !== roomState.activeRoom ||
+        failure.roomOperationId !== roomState.operationId ||
+        failure.playbackGeneration !== playbackGenerationRef.current
+      )
+        return;
+      const expectedPhase =
+        failure.stage === 'before-activation' ? recoverHeroMediaFailure(failure.failedPhase) : failure.failedPhase;
+      if (phase !== expectedPhase) return;
+
+      abortPreparation();
+      const failedEntry =
+        failure.stage === 'before-activation' ? (cache.getUnreadyVideo(failure.room) ?? failure.entry) : failure.entry;
+      cache.invalidateVideoMedia(failure.room, failedEntry.productId, failedEntry.direction);
+      const operationId = nextOperationId();
+      playbackGenerationRef.current += 1;
+      const recovered = recoverHeroMediaFailure(failure.failedPhase);
+      setPhase(recovered);
+      setCardVisible(recovered !== 'idle');
+      setRoomState((current) => ({
+        ...current,
+        targetRoom: null,
+        phase: 'error',
+        direct: false,
+        operationId,
+        error: { room: current.activeRoom, message: ROOM_ERROR_MESSAGE },
+      }));
+    },
+    [abortPreparation, cache, nextOperationId, phase, roomState.activeRoom, roomState.operationId],
+  );
+
+  const retryRoom = useCallback(() => {
+    if (roomState.phase !== 'error' || !roomState.error) return;
+    const room = roomState.error.room;
+    const mode = reducedMotion ? 'static' : 'animated';
+    const direct = room !== roomState.activeRoom && phase !== 'idle';
+    const shouldRefreshPoster = posterFailureRef.current[room] === true;
+    const operationId = nextOperationId();
+    abortPreparation();
+    if (shouldRefreshPoster) {
+      posterElementsRef.current[room] = undefined;
+      delete posterFailureRef.current[room];
+      setPosterVersions((current) => ({ ...current, [room]: (current[room] ?? 0) + 1 }));
+    }
+    const next = restartHeroRoomPreparation({ ...roomState, targetRoom: room }, operationId);
+    setRoomState(next);
+    prepareRoom(room, operationId, mode, direct);
+  }, [abortPreparation, nextOperationId, phase, prepareRoom, reducedMotion, roomState]);
+
+  const activateHeroProduct = useCallback(
+    (product: HeroProductId, direction: 'forward' | 'reverse') => {
+      if (locked || !activeRoom.productIds.includes(product)) return;
+      const prospective = direction === 'forward' ? selectHeroProduct(phase, product) : startHeroReturn(phase);
+      if (prospective === phase || reducedMotion) {
+        if (reducedMotion && prospective !== phase) {
+          playbackGenerationRef.current += 1;
+          setPhase(prospective);
+        }
+        return;
+      }
+      const playbackGeneration = ++playbackGenerationRef.current;
+      const bundle = cache.get(roomState.activeRoom, 'animated');
+      const entry = { productId: product, direction } as const;
+      if (!bundle || !bundle.videos.has(`${product}:${direction}`) || !cache.get(roomState.activeRoom, 'animated')) {
+        handleHeroPlaybackUnavailable({
+          room: roomState.activeRoom,
+          entry,
+          failedPhase: prospective,
+          stage: 'before-activation',
+          roomOperationId: roomState.operationId,
+          playbackGeneration,
+        });
+        return;
+      }
+      setCardVisible(false);
+      setPhase(prospective);
+    },
+    [
+      activeRoom.productIds,
+      cache,
+      handleHeroPlaybackUnavailable,
+      locked,
+      phase,
+      reducedMotion,
+      roomState.activeRoom,
+      roomState.operationId,
+    ],
+  );
 
   const selectedId = getHeroProduct(phase);
   const selectedProduct = selectedId ? HERO_PRODUCTS[selectedId] : null;
-
-  const selectProduct = (product: HeroProductId) => {
-    setCardVisible(false);
-    setPhase((current) => selectHeroProduct(current, product));
-  };
-
+  const handleProgress = useCallback((currentTime: number, duration: number) => {
+    if (shouldRevealHeroProduct(currentTime, duration)) setCardVisible(true);
+  }, []);
   const finishForward = useCallback(() => {
     setCardVisible(true);
     setPhase((current) => completeHeroForward(current));
   }, []);
-
   const finishReverse = useCallback(() => {
     setCardVisible(false);
     setPhase((current) => completeHeroReturn(current));
   }, []);
-
-  const handleMediaFailure = useCallback((failedPhase: HeroPhase) => {
-    const recovered = recoverHeroMediaFailure(failedPhase);
-    setCardVisible(recovered !== 'idle');
-    setPhase(recovered);
-  }, []);
-
-  const handleProgress = useCallback((currentTime: number, duration: number) => {
-    if (shouldRevealHeroProduct(currentTime, duration)) setCardVisible(true);
-  }, []);
-
-  const returnToRoom = () => {
-    setCardVisible(false);
-    setPhase((current) => startHeroReturn(current));
-  };
+  const returnToRoom = useCallback(() => {
+    const product = getHeroProduct(phase);
+    if (product) activateHeroProduct(product, 'reverse');
+  }, [activateHeroProduct, phase]);
 
   return (
     <section
+      ref={heroRef}
       id="evironn-hero"
       aria-labelledby="furni-hero-title"
+      aria-busy={preparing}
       className="furni-hero-demo"
       data-hero-font="golos-text"
     >
       <HeroRoomMedia
         state={roomState}
         reducedMotion={reducedMotion}
-        onRoomReady={markRoomReady}
+        requestedRooms={requestedRooms}
+        posterVersions={posterVersions}
+        onPosterElement={onPosterElement}
         onTransitionComplete={finishRoomTransition}
         onTransitionFailure={handleRoomFailure}
       />
       <HeroProductMedia
+        cache={cache}
+        room={roomState.activeRoom}
+        roomOperationId={roomState.operationId}
+        playbackGeneration={playbackGenerationRef.current}
         phase={phase}
         reducedMotion={reducedMotion}
+        preparationPending={preparing}
         onProgress={handleProgress}
         onForwardComplete={finishForward}
         onReverseComplete={finishReverse}
-        onFailure={handleMediaFailure}
+        onPlaybackUnavailable={handleHeroPlaybackUnavailable}
       />
-      <div
-        className={[
-          'furni-hero-stack',
-          `furni-hero-stack--${visualRoom.id}`,
-          stackFade === 'out' ? 'is-room-fading-out' : '',
-          stackFade === 'in' ? 'is-room-fading-in' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        <article className="furni-hero-panel">
-          <h1 className="furni-hero-title" id="furni-hero-title">
-            Мебель с душой, созданная поколениями
-          </h1>
-          <p className="furni-hero-copy">
-            Откройте вневременные предметы, созданные нашей семьёй и наполненные теплом традиций и красотой натурального
-            дерева.
-          </p>
-          <div className="furni-hero-actions">
-            <Link className="btn btn-dark" href={catalogRoomPath(HERO_ROOM_CATALOG_SLUGS[visualRoom.id])}>
-              СМОТРЕТЬ КОЛЛЕКЦИЮ
-            </Link>
-            <button className="btn btn-outline" type="button">
-              ПОСМОТРЕТЬ ИСТОРИЮ
-            </button>
-          </div>
-        </article>
-        <div className="furni-hero-segments">
-          <div className="seg-control" ref={segRef} role="group" aria-label="Категория комнаты">
-            <div className="seg-indicator" aria-hidden="true" />
-            {HERO_ROOM_OPTIONS.map((room) => {
-              const selected = room.id === selectedRoom;
-              const waitingForMedia =
-                room.available &&
-                isAvailableHeroRoom(room.id) &&
-                room.id !== roomState.activeRoom &&
-                !readyRooms.has(room.id);
-              const roomLocked = !room.available || waitingForMedia || roomChanging;
-
-              return (
-                <button
-                  key={room.id}
-                  ref={(node) => {
-                    if (node) roomButtonRefs.current[room.id] = node;
-                    else delete roomButtonRefs.current[room.id];
-                  }}
-                  className={`seg-item${selected ? ' active' : ''}`}
-                  type="button"
-                  aria-pressed={selected}
-                  disabled={roomLocked}
-                  onClick={() => handleRoomClick(room.id)}
-                >
-                  {room.label}
-                </button>
-              );
-            })}
+      <div className="furni-hero-controls" inert={preparing} data-hero-controls-locked={preparing ? 'true' : 'false'}>
+        <div
+          className={[
+            'furni-hero-stack',
+            `furni-hero-stack--${visualRoom.id}`,
+            stackFade === 'out' ? 'is-room-fading-out' : '',
+            stackFade === 'in' ? 'is-room-fading-in' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <article className="furni-hero-panel">
+            <h1 className="furni-hero-title" id="furni-hero-title">
+              Мебель с душой, созданная поколениями
+            </h1>
+            <p className="furni-hero-copy">
+              Откройте вневременные предметы, созданные нашей семьёй и наполненные теплом традиций и красотой
+              натурального дерева.
+            </p>
+            <div className="furni-hero-actions">
+              <Link className="btn btn-dark" href={catalogRoomPath(HERO_ROOM_CATALOG_SLUGS[stackRoom])}>
+                СМОТРЕТЬ КОЛЛЕКЦИЮ
+              </Link>
+              <button className="btn btn-outline" type="button">
+                ПОСМОТРЕТЬ ИСТОРИЮ
+              </button>
+            </div>
+          </article>
+          <div className="furni-hero-segments">
+            <div className="seg-control" ref={segRef} role="group" aria-label="Категория комнаты">
+              <div className="seg-indicator" aria-hidden="true" />
+              {HERO_ROOM_OPTIONS.map((room) => {
+                const selected = room.id === selectedRoom;
+                const roomLocked = !room.available || preparing || roomChanging || productChanging;
+                return (
+                  <button
+                    key={room.id}
+                    className={`seg-item${selected ? ' active' : ''}`}
+                    type="button"
+                    aria-pressed={selected}
+                    disabled={roomLocked}
+                    onClick={() => handleRoomClick(room.id)}
+                  >
+                    {room.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
+        {activeRoom.productIds.map((productId) => {
+          const product = HERO_PRODUCTS[productId];
+          return (
+            <button
+              key={product.id}
+              className={['furni-hero-hotspot', product.hotspotClassName, hotspotsVisible ? '' : 'is-hidden']
+                .filter(Boolean)
+                .join(' ')}
+              type="button"
+              aria-label={`Смотреть ${product.name}`}
+              disabled={locked}
+              onClick={() => activateHeroProduct(product.id, 'forward')}
+            />
+          );
+        })}
+        <HeroProductCard
+          product={selectedProduct}
+          visible={cardVisible}
+          locked={locked}
+          reducedMotion={reducedMotion}
+          onBack={returnToRoom}
+        />
       </div>
-      {activeRoom.productIds.map((productId) => {
-        const product = HERO_PRODUCTS[productId];
-
-        return (
-          <button
-            key={product.id}
-            className={['furni-hero-hotspot', product.hotspotClassName, hotspotsVisible ? '' : 'is-hidden']
-              .filter(Boolean)
-              .join(' ')}
-            type="button"
-            aria-label={`Смотреть ${product.name}`}
-            disabled={locked}
-            onClick={() => selectProduct(product.id)}
-          />
-        );
-      })}
-      <HeroProductCard
-        product={selectedProduct}
-        visible={cardVisible}
-        locked={locked}
-        reducedMotion={reducedMotion}
-        onBack={returnToRoom}
-      />
+      {preparing ? (
+        <div className="furni-hero-preparation-overlay" aria-hidden="false">
+          <div
+            className="furni-hero-preparation-overlay__status"
+            role="status"
+            aria-label="Загрузка комнаты…"
+            tabIndex={-1}
+          >
+            <FadeArc className="furni-hero-preparation-overlay__spinner" aria-hidden="true" />
+          </div>
+        </div>
+      ) : null}
+      {roomState.phase === 'error' ? (
+        <div className="furni-hero-recovery" role="alert">
+          <p>{roomState.error?.message ?? ROOM_ERROR_MESSAGE}</p>
+          <button type="button" onClick={retryRoom}>
+            Повторить
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

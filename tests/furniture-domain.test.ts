@@ -102,7 +102,7 @@ describe('furniture seed integrity', () => {
     expect(noma?.media).toEqual([
       {
         kind: 'IMAGE',
-        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
         alt: 'Noma Woven Lounge',
         sortOrder: 0,
       },
@@ -114,13 +114,13 @@ describe('furniture seed integrity', () => {
       },
       {
         kind: 'TURN_TABLE_POSTER',
-        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
         alt: 'Noma Woven Lounge 360 poster',
         sortOrder: 0,
       },
       {
         kind: 'TURN_TABLE_FALLBACK',
-        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png',
+        url: '/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp',
         alt: 'Noma Woven Lounge static view',
         sortOrder: 0,
       },

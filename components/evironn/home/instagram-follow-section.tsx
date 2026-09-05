@@ -5,9 +5,9 @@ import { PUBLIC_ROUTES } from '@/components/evironn/public-routes';
 import { useEditorialAnimation } from './use-editorial-animation';
 
 const galleryImages = [
-  '/assets/hero/kitchen-idle.jpg',
-  '/assets/hero/bedroom-idle.jpg',
-  '/assets/hero/terrace-idle.jpg',
+  '/assets/hero/kitchen-idle.webp',
+  '/assets/hero/bedroom-idle.webp',
+  '/assets/hero/terrace-idle.webp',
   '/assets/products/01-bar-stool-idle.webp',
   '/assets/products/03-ivory-lounge-idle.webp',
   '/assets/products/05-two-seat-sofa-idle.webp',

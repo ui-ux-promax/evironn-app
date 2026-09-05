@@ -16,6 +16,9 @@ it('smoke script checks public and protected routes', () => {
   ]) {
     expect(source).toContain(path);
   }
+  expect(source).toContain('if (!response.ok)');
+  expect(source).toContain('/admin: expected redirect');
+  expect(source).toContain("redirect: 'manual'");
 });
 
 it('runs smoke after a successful deployment', () => {
@@ -25,6 +28,7 @@ it('runs smoke after a successful deployment', () => {
   expect(yaml).toContain('DEPLOYMENT_STATE: ${{ github.event.deployment_status.state }}');
   expect(yaml).toContain('Deployment status is');
   expect(yaml).toContain('npm run smoke:production');
+  expect(yaml).not.toContain('continue-on-error');
 });
 
 it('does not allow a skipped required smoke job', () => {

@@ -1,0 +1,231 @@
+{
+  "decision": "PRIMARY_CANDIDATE_REJECTED",
+  "reason": "exact five-image request reduction gate failed",
+  "requestReductionFraction": 0.2,
+  "improvements": {
+    "fcp": -0.0075528700906344415,
+    "lcp": -0.0075528700906344415,
+    "tbt": -0.018633540372670808
+  },
+  "homeMedians": {
+    "before": {
+      "requestStarts": 5,
+      "fcpMs": 2648,
+      "lcpMs": 2648,
+      "tbtMs": 483
+    },
+    "after": {
+      "requestStarts": 4,
+      "fcpMs": 2668,
+      "lcpMs": 2668,
+      "tbtMs": 492
+    }
+  },
+  "guardrails": {
+    "catalog": {
+      "comparable": true,
+      "before": {
+        "ttfbMs": 102.40000000596046,
+        "fcpMs": 1932,
+        "lcpMs": 2540,
+        "tbtMs": 424,
+        "cls": 0.00031452583741812417,
+        "requestStarts": 18
+      },
+      "after": {
+        "ttfbMs": 101.69999998807907,
+        "fcpMs": 1912,
+        "lcpMs": 2504,
+        "tbtMs": 439,
+        "cls": 0.00031452583741812417,
+        "requestStarts": 18
+      },
+      "regressionFractions": {
+        "ttfb": 0,
+        "fcp": 0,
+        "lcp": 0,
+        "tbt": 0.03537735849056604,
+        "cls": 0,
+        "requestStarts": 0
+      },
+      "passed": true
+    },
+    "pdp": {
+      "comparable": true,
+      "before": {
+        "ttfbMs": 116.80000001192093,
+        "fcpMs": 1892,
+        "lcpMs": 1892,
+        "tbtMs": 126,
+        "cls": 0,
+        "requestStarts": 25
+      },
+      "after": {
+        "ttfbMs": 116.80000001192093,
+        "fcpMs": 1940,
+        "lcpMs": 1940,
+        "tbtMs": 131,
+        "cls": 0,
+        "requestStarts": 25
+      },
+      "regressionFractions": {
+        "ttfb": 0,
+        "fcp": 0.02536997885835095,
+        "lcp": 0.02536997885835095,
+        "tbt": 0.03968253968253968,
+        "cls": 0,
+        "requestStarts": 0
+      },
+      "passed": true
+    }
+  },
+  "visual": {
+    "comparable": true,
+    "aboveFoldUnchanged": true,
+    "heroReadinessUnchanged": true,
+    "screenshotPairs": [
+      {
+        "timeMs": 500,
+        "before": "screenshots/home-00500ms.png",
+        "after": "screenshots/home-00500ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      },
+      {
+        "timeMs": 1500,
+        "before": "screenshots/home-01500ms.png",
+        "after": "screenshots/home-01500ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      },
+      {
+        "timeMs": 2500,
+        "before": "screenshots/home-02500ms.png",
+        "after": "screenshots/home-02500ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      },
+      {
+        "timeMs": 5000,
+        "before": "screenshots/home-05000ms.png",
+        "after": "screenshots/home-05000ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      },
+      {
+        "timeMs": 10000,
+        "before": "screenshots/home-10000ms.png",
+        "after": "screenshots/home-10000ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      },
+      {
+        "timeMs": 20000,
+        "before": "screenshots/home-20000ms.png",
+        "after": "screenshots/home-20000ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      },
+      {
+        "timeMs": 30000,
+        "before": "screenshots/home-30000ms.png",
+        "after": "screenshots/home-30000ms.png",
+        "beforeSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "afterSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963",
+        "contentHashMatch": true,
+        "geometryDeltaPx": 0,
+        "visibilityMatch": true,
+        "opacityMatch": true,
+        "backgroundColorMatch": true,
+        "heroReadinessMatch": true,
+        "verdict": "PASS"
+      }
+    ],
+    "pass": true
+  },
+  "evidence": {
+    "before": [
+      ".superpowers/sdd/phase-6c-remediation/before/summary.json",
+      ".superpowers/sdd/phase-6c-remediation/before/summary.md",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/home-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/home-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/home-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/catalog-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/before/raw/pdp-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-00500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-01500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-02500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-05000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-10000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-20000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/before/screenshots/home-30000ms.png"
+    ],
+    "after": [
+      ".superpowers/sdd/phase-6c-remediation/after/summary.json",
+      ".superpowers/sdd/phase-6c-remediation/after/summary.md",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/home-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/home-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/home-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/catalog-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-1.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-2.json",
+      ".superpowers/sdd/phase-6c-remediation/after/raw/pdp-run-3.json",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-00500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-01500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-02500ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-05000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-10000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-20000ms.png",
+      ".superpowers/sdd/phase-6c-remediation/after/screenshots/home-30000ms.png"
+    ],
+    "localClassification": "controlled-local-diagnostic-only"
+  }
+}

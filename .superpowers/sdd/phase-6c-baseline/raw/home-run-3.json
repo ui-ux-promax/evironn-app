@@ -1,0 +1,716 @@
+{
+  "schemaVersion": 1,
+  "label": "home-run-3",
+  "classification": "repeat",
+  "capturedAtUtc": "2026-08-30T07:48:10.723Z",
+  "conditions": {
+    "host": "https://evironn-app.vercel.app",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runsPerRoute": 3,
+    "cpuSlowdownMultiplier": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750,
+    "serviceWorkers": "block",
+    "waitUntil": "domcontentloaded",
+    "observationWindowAfterDomContentLoadedMs": 2500,
+    "cacheDisabled": true,
+    "queryCacheBuster": null,
+    "queryCacheBusterReason": null,
+    "browser": "chromium",
+    "playwrightPackageVersion": "1.60.0",
+    "browserVersion": "148.0.7778.96"
+  },
+  "deploymentIdentity": {
+    "platformBuildId": {
+      "available": false,
+      "value": null,
+      "reason": "public build identifier not exposed"
+    },
+    "resourceFingerprint": {
+      "available": true,
+      "algorithm": "sha256",
+      "input": "sorted unique same-origin Script/Stylesheet pathnames without query or fragment",
+      "value": "62a412173e56393e77798852dd3dce7fc43e30a456d8c57d34298afff4246e3f"
+    }
+  },
+  "route": {
+    "key": "home",
+    "requestedPath": "/",
+    "finalPublicUrlWithoutCacheBuster": "https://evironn-app.vercel.app/"
+  },
+  "document": {
+    "status": 200,
+    "markerMatched": true,
+    "readyState": "interactive",
+    "readyStateInformationalOnly": true,
+    "safeHeaders": {
+      "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "text/html; charset=utf-8",
+      "date": "Sun, 30 Aug 2026 07:48:01 GMT",
+      "server": "Vercel",
+      "x-matched-path": "/",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "arn1::iad1::nf92k-1788076081070-49d4708cc07e"
+    }
+  },
+  "observationEndpoint": {
+    "basis": "domContentLoadedEventEnd",
+    "windowMs": 2500,
+    "endpointFromNavigationStartMs": 9091.09999999404,
+    "actualReadFromNavigationStartMs": 9106.79999999702,
+    "markerMatchedAtFromNavigationStartMs": 6762,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true
+  },
+  "comparability": {
+    "httpStatus200": true,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true,
+    "requiredTimingFieldsAvailable": true,
+    "requiredCdpFieldsAvailable": true,
+    "playwrightAndBrowserVersionsMatchSeries": true,
+    "comparable": true,
+    "reason": null
+  },
+  "byteAccountingComparable": false,
+  "metrics": {
+    "ttfbMs": {
+      "available": true,
+      "value": 91.5
+    },
+    "fcpMs": {
+      "available": true,
+      "value": 6356
+    },
+    "lcpObservationWindowCandidateMs": {
+      "available": true,
+      "value": 6356,
+      "windowBasis": "domContentLoadedEventEnd",
+      "windowMs": 2500,
+      "endpointFromNavigationStartMs": 9091.09999999404,
+      "label": "observation-window LCP candidate"
+    },
+    "cls": {
+      "available": true,
+      "value": 0
+    },
+    "tbtMs": {
+      "available": true,
+      "value": 1278
+    },
+    "inpMs": {
+      "available": false,
+      "reason": "no interaction is performed by the fixed anonymous navigation protocol"
+    },
+    "observedBytes": {
+      "available": false,
+      "reason": "encoded byte accounting unavailable or incomparable"
+    },
+    "requestStarts": {
+      "available": true,
+      "value": 83
+    }
+  },
+  "lcpOwner": {
+    "available": true,
+    "tagName": "H1",
+    "selector": "h1",
+    "resourceUrl": null
+  },
+  "dom": {
+    "images": 54,
+    "videos": 21,
+    "scripts": 29,
+    "stylesheets": 8,
+    "preloads": 31
+  },
+  "initialHeroVideos": {
+    "requestStarts": 16,
+    "observedBytes": null,
+    "completedRequests": 0,
+    "failedRequests": 0,
+    "inFlightRequests": 16,
+    "urls": [
+      "https://evironn-app.vercel.app/assets/hero/sofa-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/sofa-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/chair-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/chair-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/kitchen-dining-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/kitchen-dining-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/kitchen-island-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/kitchen-island-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/bedroom-chair-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/bedroom-chair-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/bedroom-bed-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/bedroom-bed-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/terrace-chair-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/terrace-chair-reverse.mp4",
+      "https://evironn-app.vercel.app/assets/hero/terrace-sofa-forward.mp4",
+      "https://evironn-app.vercel.app/assets/hero/terrace-sofa-reverse.mp4"
+    ]
+  },
+  "resourceGroups": {
+    "document": {
+      "requestStarts": 1,
+      "observedBytes": 12782,
+      "completedRequests": 1,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "script": {
+      "requestStarts": 16,
+      "observedBytes": null,
+      "completedRequests": 13,
+      "failedRequests": 0,
+      "inFlightRequests": 3
+    },
+    "stylesheet": {
+      "requestStarts": 8,
+      "observedBytes": 63077,
+      "completedRequests": 8,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "font": {
+      "requestStarts": 7,
+      "observedBytes": null,
+      "completedRequests": 3,
+      "failedRequests": 0,
+      "inFlightRequests": 4
+    },
+    "image": {
+      "requestStarts": 30,
+      "observedBytes": 2925929,
+      "completedRequests": 4,
+      "failedRequests": 0,
+      "inFlightRequests": 26
+    },
+    "heroProductVideo": {
+      "requestStarts": 16,
+      "observedBytes": null,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 16
+    },
+    "otherVideo": {
+      "requestStarts": 5,
+      "observedBytes": null,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 5
+    },
+    "other": {
+      "requestStarts": 0,
+      "observedBytes": 0,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    }
+  },
+  "resources": [
+    {
+      "url": "https://evironn-app.vercel.app/",
+      "pathname": "/",
+      "resourceType": "Document",
+      "group": "document"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/29b98dbfba401fa9-s.p.woff2",
+      "pathname": "/_next/static/media/29b98dbfba401fa9-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/4c9affa5bc8f420e-s.p.woff2",
+      "pathname": "/_next/static/media/4c9affa5bc8f420e-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/875ae681bfde4580-s.p.woff2",
+      "pathname": "/_next/static/media/875ae681bfde4580-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/media/a72d451f1e0337db-s.p.woff2",
+      "pathname": "/_next/static/media/a72d451f1e0337db-s.p.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/dae816e23a484c8f.css",
+      "pathname": "/_next/static/css/dae816e23a484c8f.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/0440d9428bcf26f7.css",
+      "pathname": "/_next/static/css/0440d9428bcf26f7.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/fd92a156d999cb6a.css",
+      "pathname": "/_next/static/css/fd92a156d999cb6a.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/19ddfc3202016e34.css",
+      "pathname": "/_next/static/css/19ddfc3202016e34.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/9d2252355f1fa72e.css",
+      "pathname": "/_next/static/css/9d2252355f1fa72e.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/9fe33aad4a002edf.css",
+      "pathname": "/_next/static/css/9fe33aad4a002edf.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/1a5a44616c33f1f4.css",
+      "pathname": "/_next/static/css/1a5a44616c33f1f4.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/css/ffcbdac47204c18c.css",
+      "pathname": "/_next/static/css/ffcbdac47204c18c.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/evironn-logo.svg",
+      "pathname": "/assets/evironn-logo.svg",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/living-room-idle.png",
+      "pathname": "/assets/hero/living-room-idle.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-idle.jpg",
+      "pathname": "/assets/hero/kitchen-idle.jpg",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-idle.jpg",
+      "pathname": "/assets/hero/bedroom-idle.jpg",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-idle.jpg",
+      "pathname": "/assets/hero/terrace-idle.jpg",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/sofa-focus.webp",
+      "pathname": "/assets/hero/sofa-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/chair-focus.webp",
+      "pathname": "/assets/hero/chair-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-dining-focus.webp",
+      "pathname": "/assets/hero/kitchen-dining-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-island-focus.webp",
+      "pathname": "/assets/hero/kitchen-island-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-chair-focus.webp",
+      "pathname": "/assets/hero/bedroom-chair-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/webpack-6c610d253a66828e.js",
+      "pathname": "/_next/static/chunks/webpack-6c610d253a66828e.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/4bd1b696-b53002d00abacd02.js",
+      "pathname": "/_next/static/chunks/4bd1b696-b53002d00abacd02.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/740-96e2d284b0be96d5.js",
+      "pathname": "/_next/static/chunks/740-96e2d284b0be96d5.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/main-app-4fca8f1791b6a039.js",
+      "pathname": "/_next/static/chunks/main-app-4fca8f1791b6a039.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/59650de3-4ffdccb029028983.js",
+      "pathname": "/_next/static/chunks/59650de3-4ffdccb029028983.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/2619-beb23e0fea18d949.js",
+      "pathname": "/_next/static/chunks/2619-beb23e0fea18d949.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/5937-779976c3e52123d2.js",
+      "pathname": "/_next/static/chunks/5937-779976c3e52123d2.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/3565-e0525bfdf39165f9.js",
+      "pathname": "/_next/static/chunks/3565-e0525bfdf39165f9.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/9366-b247c076bc0c3933.js",
+      "pathname": "/_next/static/chunks/9366-b247c076bc0c3933.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/(shop)/page-e36a8b051ad31a6e.js",
+      "pathname": "/_next/static/chunks/app/(shop)/page-e36a8b051ad31a6e.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/global-error-c3cea2925bd358bf.js",
+      "pathname": "/_next/static/chunks/app/global-error-c3cea2925bd358bf.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/53c13509-f82ac5499a8eac3e.js",
+      "pathname": "/_next/static/chunks/53c13509-f82ac5499a8eac3e.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/2901-47e18a1cfed12005.js",
+      "pathname": "/_next/static/chunks/2901-47e18a1cfed12005.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/6887-a47d2528ac0a9298.js",
+      "pathname": "/_next/static/chunks/6887-a47d2528ac0a9298.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/(auth)/layout-e3fdd3448de015eb.js",
+      "pathname": "/_next/static/chunks/app/(auth)/layout-e3fdd3448de015eb.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/_next/static/chunks/app/not-found-b94a9c778a12ba2b.js",
+      "pathname": "/_next/static/chunks/app/not-found-b94a9c778a12ba2b.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-bed-focus.webp",
+      "pathname": "/assets/hero/bedroom-bed-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-chair-focus.webp",
+      "pathname": "/assets/hero/terrace-chair-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-sofa-focus.webp",
+      "pathname": "/assets/hero/terrace-sofa-focus.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/editorial/images/category-sofa.png",
+      "pathname": "/assets/editorial/images/category-sofa.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/editorial/images/category-console.png",
+      "pathname": "/assets/editorial/images/category-console.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/editorial/images/category-reading-chair.png",
+      "pathname": "/assets/editorial/images/category-reading-chair.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/editorial/images/category-bedside.png",
+      "pathname": "/assets/editorial/images/category-bedside.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/01-bar-stool-idle.webp",
+      "pathname": "/assets/products/01-bar-stool-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/02-rocking-chair-idle.webp",
+      "pathname": "/assets/products/02-rocking-chair-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/03-ivory-lounge-idle.webp",
+      "pathname": "/assets/products/03-ivory-lounge-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/04-dark-accent-idle.webp",
+      "pathname": "/assets/products/04-dark-accent-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/05-two-seat-sofa-idle.webp",
+      "pathname": "/assets/products/05-two-seat-sofa-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/furniture/material-wood-detail.png",
+      "pathname": "/assets/furniture/material-wood-detail.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/furniture/material-textile-detail.png",
+      "pathname": "/assets/furniture/material-textile-detail.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/furniture/material-joinery-detail.png",
+      "pathname": "/assets/furniture/material-joinery-detail.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/furniture/materials-room-wide.png",
+      "pathname": "/assets/furniture/materials-room-wide.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/furniture/craftsmanship-wide.png",
+      "pathname": "/assets/furniture/craftsmanship-wide.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/03-ivory-lounge-cutout.png",
+      "pathname": "/assets/products/03-ivory-lounge-cutout.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/01-bar-stool-cutout.png",
+      "pathname": "/assets/products/01-bar-stool-cutout.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/editorial/images/71c2b8589fc6.png",
+      "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/sofa-forward.mp4",
+      "pathname": "/assets/hero/sofa-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/sofa-reverse.mp4",
+      "pathname": "/assets/hero/sofa-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/chair-forward.mp4",
+      "pathname": "/assets/hero/chair-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/chair-reverse.mp4",
+      "pathname": "/assets/hero/chair-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-dining-forward.mp4",
+      "pathname": "/assets/hero/kitchen-dining-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-dining-reverse.mp4",
+      "pathname": "/assets/hero/kitchen-dining-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-island-forward.mp4",
+      "pathname": "/assets/hero/kitchen-island-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/kitchen-island-reverse.mp4",
+      "pathname": "/assets/hero/kitchen-island-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-chair-forward.mp4",
+      "pathname": "/assets/hero/bedroom-chair-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-chair-reverse.mp4",
+      "pathname": "/assets/hero/bedroom-chair-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-bed-forward.mp4",
+      "pathname": "/assets/hero/bedroom-bed-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/bedroom-bed-reverse.mp4",
+      "pathname": "/assets/hero/bedroom-bed-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-chair-forward.mp4",
+      "pathname": "/assets/hero/terrace-chair-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-chair-reverse.mp4",
+      "pathname": "/assets/hero/terrace-chair-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-sofa-forward.mp4",
+      "pathname": "/assets/hero/terrace-sofa-forward.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/hero/terrace-sofa-reverse.mp4",
+      "pathname": "/assets/hero/terrace-sofa-reverse.mp4",
+      "resourceType": "Media",
+      "group": "heroProductVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/01-bar-stool-forward.mp4",
+      "pathname": "/assets/products/01-bar-stool-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/02-rocking-chair-forward.mp4",
+      "pathname": "/assets/products/02-rocking-chair-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/03-ivory-lounge-forward.mp4",
+      "pathname": "/assets/products/03-ivory-lounge-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/04-dark-accent-forward.mp4",
+      "pathname": "/assets/products/04-dark-accent-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/products/05-two-seat-sofa-forward.mp4",
+      "pathname": "/assets/products/05-two-seat-sofa-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/fonts/golos-text-latin.woff2",
+      "pathname": "/assets/fonts/golos-text-latin.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/fonts/fraunces-latin.woff2",
+      "pathname": "/assets/fonts/fraunces-latin.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "https://evironn-app.vercel.app/assets/fonts/golos-text-cyrillic.woff2",
+      "pathname": "/assets/fonts/golos-text-cyrillic.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    }
+  ],
+  "errors": []
+}

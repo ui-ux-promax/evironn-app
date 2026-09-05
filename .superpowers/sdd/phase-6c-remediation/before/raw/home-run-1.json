@@ -1,0 +1,1628 @@
+{
+  "schemaVersion": 1,
+  "label": "home-run-1",
+  "classification": "controlled-local-diagnostic-only",
+  "capturedAtUtc": "2026-08-31T02:49:38.451Z",
+  "conditions": {
+    "host": "http://127.0.0.1:3106",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runsPerRoute": 3,
+    "cpuSlowdownMultiplier": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750,
+    "serviceWorkers": "block",
+    "waitUntil": "domcontentloaded",
+    "observationWindowAfterDomContentLoadedMs": 2500,
+    "cacheDisabled": true,
+    "queryCacheBuster": null,
+    "queryCacheBusterReason": null,
+    "browser": "chromium",
+    "playwrightPackageVersion": "1.60.0",
+    "browserVersion": "148.0.7778.96"
+  },
+  "route": {
+    "key": "home",
+    "requestedPath": "/",
+    "finalUrl": "http://127.0.0.1:3106/"
+  },
+  "document": {
+    "status": 200,
+    "markerMatched": true,
+    "readyState": "interactive",
+    "readyStateInformationalOnly": true
+  },
+  "observationEndpoint": {
+    "basis": "domContentLoadedEventEnd",
+    "windowMs": 2500,
+    "endpointFromNavigationStartMs": 5286,
+    "actualReadFromNavigationStartMs": 5300.5,
+    "markerMatchedAtFromNavigationStartMs": 2797.0999999940395,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true
+  },
+  "comparability": {
+    "httpStatus200": true,
+    "navigationOriginIsLocal": true,
+    "localOrigin": true,
+    "subrequestsLocalOrigin": true,
+    "comparable": true,
+    "reason": null
+  },
+  "metrics": {
+    "ttfbMs": 304.40000000596046,
+    "fcpMs": 2788,
+    "lcpMs": 2788,
+    "tbtMs": 483,
+    "cls": 0.0003425781783186154
+  },
+  "primaryImageRequests": [
+    {
+      "pathname": "/assets/editorial/images/category-sofa.png",
+      "startTimeMs": 350.0300000014249,
+      "observedBytes": 502503
+    },
+    {
+      "pathname": "/assets/editorial/images/category-console.png",
+      "startTimeMs": 350.4329999850597,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/category-reading-chair.png",
+      "startTimeMs": 350.83000001031905,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/category-bedside.png",
+      "startTimeMs": 351.22599999886006,
+      "observedBytes": null
+    },
+    {
+      "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+      "startTimeMs": 356.0939999879338,
+      "observedBytes": null
+    }
+  ],
+  "primaryImageDom": [
+    {
+      "pathname": "/assets/editorial/images/category-sofa.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/category-console.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/category-reading-chair.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/category-bedside.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+      "loading": null,
+      "viewportClass": "below-fold",
+      "complete": false,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    }
+  ],
+  "visual": {
+    "screenshotPaths": [
+      "screenshots/home-00500ms.png",
+      "screenshots/home-01500ms.png",
+      "screenshots/home-02500ms.png",
+      "screenshots/home-05000ms.png",
+      "screenshots/home-10000ms.png",
+      "screenshots/home-20000ms.png",
+      "screenshots/home-30000ms.png"
+    ],
+    "samples": [
+      {
+        "timeMs": 500,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-00500ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      },
+      {
+        "timeMs": 1500,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-01500ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      },
+      {
+        "timeMs": 2500,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-02500ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      },
+      {
+        "timeMs": 5000,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-05000ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      },
+      {
+        "timeMs": 10000,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-10000ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      },
+      {
+        "timeMs": 20000,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-20000ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      },
+      {
+        "timeMs": 30000,
+        "screenshotWidth": 390,
+        "screenshotHeight": 844,
+        "screenshotPath": "screenshots/home-30000ms.png",
+        "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+      }
+    ],
+    "aboveFoldBoxes": [
+      {
+        "timeMs": 500,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 500,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 500,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 500,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 500,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 1500,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 1500,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 1500,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 1500,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 1500,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 2500,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 2500,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 2500,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 2500,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 2500,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 5000,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 5000,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 5000,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 5000,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 5000,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 10000,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 10000,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 10000,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 10000,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 10000,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 20000,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 20000,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 20000,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 20000,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 20000,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 30000,
+        "selector": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 71,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 30000,
+        "selector": "#evironn-hero",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgb(186, 184, 181)"
+      },
+      {
+        "timeMs": 30000,
+        "selector": "#evironn-hero h1",
+        "x": 41,
+        "y": 126.265625,
+        "width": 308,
+        "height": 92.15625,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 30000,
+        "selector": "#evironn-hero img",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "visible",
+        "opacity": "1",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "timeMs": 30000,
+        "selector": "#evironn-hero video",
+        "x": -0.975006103515625,
+        "y": -2.1099853515625,
+        "width": 391.95001220703125,
+        "height": 848.219970703125,
+        "visibility": "hidden",
+        "opacity": "0",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      }
+    ],
+    "heroReadiness": [
+      {
+        "timeMs": 500,
+        "ready": false
+      },
+      {
+        "timeMs": 1500,
+        "ready": false
+      },
+      {
+        "timeMs": 2500,
+        "ready": false
+      },
+      {
+        "timeMs": 5000,
+        "ready": false
+      },
+      {
+        "timeMs": 10000,
+        "ready": false
+      },
+      {
+        "timeMs": 20000,
+        "ready": false
+      },
+      {
+        "timeMs": 30000,
+        "ready": false
+      }
+    ]
+  },
+  "requestLedger": {
+    "requiredCdpFieldsAvailable": true,
+    "byteAccountingComparable": false,
+    "groups": {
+      "document": {
+        "requestStarts": 1,
+        "observedBytes": 17608,
+        "completedRequests": 1,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      },
+      "script": {
+        "requestStarts": 7,
+        "observedBytes": null,
+        "completedRequests": 3,
+        "failedRequests": 0,
+        "inFlightRequests": 4
+      },
+      "stylesheet": {
+        "requestStarts": 2,
+        "observedBytes": 67548,
+        "completedRequests": 2,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      },
+      "font": {
+        "requestStarts": 3,
+        "observedBytes": 130523,
+        "completedRequests": 3,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      },
+      "image": {
+        "requestStarts": 30,
+        "observedBytes": null,
+        "completedRequests": 12,
+        "failedRequests": 0,
+        "inFlightRequests": 18
+      },
+      "heroProductVideo": {
+        "requestStarts": 16,
+        "observedBytes": null,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 16
+      },
+      "otherVideo": {
+        "requestStarts": 5,
+        "observedBytes": null,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 5
+      },
+      "other": {
+        "requestStarts": 0,
+        "observedBytes": 0,
+        "completedRequests": 0,
+        "failedRequests": 0,
+        "inFlightRequests": 0
+      }
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:3106/",
+        "pathname": "/",
+        "resourceType": "Document",
+        "group": "document"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/css/app/layout.css?v=1788144548081",
+        "pathname": "/_next/static/css/app/layout.css",
+        "resourceType": "Stylesheet",
+        "group": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/css/app/(shop)/layout.css?v=1788144548081",
+        "pathname": "/_next/static/css/app/(shop)/layout.css",
+        "resourceType": "Stylesheet",
+        "group": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/evironn-logo.svg",
+        "pathname": "/assets/evironn-logo.svg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/living-room-idle.png",
+        "pathname": "/assets/hero/living-room-idle.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-idle.jpg",
+        "pathname": "/assets/hero/kitchen-idle.jpg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-idle.jpg",
+        "pathname": "/assets/hero/bedroom-idle.jpg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-idle.jpg",
+        "pathname": "/assets/hero/terrace-idle.jpg",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/sofa-focus.webp",
+        "pathname": "/assets/hero/sofa-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/chair-focus.webp",
+        "pathname": "/assets/hero/chair-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-dining-focus.webp",
+        "pathname": "/assets/hero/kitchen-dining-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-island-focus.webp",
+        "pathname": "/assets/hero/kitchen-island-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-chair-focus.webp",
+        "pathname": "/assets/hero/bedroom-chair-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/webpack.js?v=1788144548081",
+        "pathname": "/_next/static/chunks/webpack.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/main-app.js?v=1788144548081",
+        "pathname": "/_next/static/chunks/main-app.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app-pages-internals.js",
+        "pathname": "/_next/static/chunks/app-pages-internals.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/(shop)/page.js",
+        "pathname": "/_next/static/chunks/app/(shop)/page.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/global-error.js",
+        "pathname": "/_next/static/chunks/app/global-error.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/(shop)/layout.js",
+        "pathname": "/_next/static/chunks/app/(shop)/layout.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/_next/static/chunks/app/not-found.js",
+        "pathname": "/_next/static/chunks/app/not-found.js",
+        "resourceType": "Script",
+        "group": "script"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-bed-focus.webp",
+        "pathname": "/assets/hero/bedroom-bed-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-chair-focus.webp",
+        "pathname": "/assets/hero/terrace-chair-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-sofa-focus.webp",
+        "pathname": "/assets/hero/terrace-sofa-focus.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-sofa.png",
+        "pathname": "/assets/editorial/images/category-sofa.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-console.png",
+        "pathname": "/assets/editorial/images/category-console.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-reading-chair.png",
+        "pathname": "/assets/editorial/images/category-reading-chair.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/category-bedside.png",
+        "pathname": "/assets/editorial/images/category-bedside.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-idle.webp",
+        "pathname": "/assets/products/01-bar-stool-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/02-rocking-chair-idle.webp",
+        "pathname": "/assets/products/02-rocking-chair-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-idle.webp",
+        "pathname": "/assets/products/03-ivory-lounge-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/04-dark-accent-idle.webp",
+        "pathname": "/assets/products/04-dark-accent-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/05-two-seat-sofa-idle.webp",
+        "pathname": "/assets/products/05-two-seat-sofa-idle.webp",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/material-wood-detail.png",
+        "pathname": "/assets/furniture/material-wood-detail.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/material-textile-detail.png",
+        "pathname": "/assets/furniture/material-textile-detail.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/material-joinery-detail.png",
+        "pathname": "/assets/furniture/material-joinery-detail.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/materials-room-wide.png",
+        "pathname": "/assets/furniture/materials-room-wide.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/furniture/craftsmanship-wide.png",
+        "pathname": "/assets/furniture/craftsmanship-wide.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-cutout.png",
+        "pathname": "/assets/products/03-ivory-lounge-cutout.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-cutout.png",
+        "pathname": "/assets/products/01-bar-stool-cutout.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/editorial/images/71c2b8589fc6.png",
+        "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+        "resourceType": "Image",
+        "group": "image"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/sofa-forward.mp4",
+        "pathname": "/assets/hero/sofa-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/sofa-reverse.mp4",
+        "pathname": "/assets/hero/sofa-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/chair-forward.mp4",
+        "pathname": "/assets/hero/chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/chair-reverse.mp4",
+        "pathname": "/assets/hero/chair-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-dining-forward.mp4",
+        "pathname": "/assets/hero/kitchen-dining-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-dining-reverse.mp4",
+        "pathname": "/assets/hero/kitchen-dining-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-island-forward.mp4",
+        "pathname": "/assets/hero/kitchen-island-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/kitchen-island-reverse.mp4",
+        "pathname": "/assets/hero/kitchen-island-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-chair-forward.mp4",
+        "pathname": "/assets/hero/bedroom-chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-chair-reverse.mp4",
+        "pathname": "/assets/hero/bedroom-chair-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-bed-forward.mp4",
+        "pathname": "/assets/hero/bedroom-bed-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/bedroom-bed-reverse.mp4",
+        "pathname": "/assets/hero/bedroom-bed-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-chair-forward.mp4",
+        "pathname": "/assets/hero/terrace-chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-chair-reverse.mp4",
+        "pathname": "/assets/hero/terrace-chair-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-sofa-forward.mp4",
+        "pathname": "/assets/hero/terrace-sofa-forward.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/hero/terrace-sofa-reverse.mp4",
+        "pathname": "/assets/hero/terrace-sofa-reverse.mp4",
+        "resourceType": "Media",
+        "group": "heroProductVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-forward.mp4",
+        "pathname": "/assets/products/01-bar-stool-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/02-rocking-chair-forward.mp4",
+        "pathname": "/assets/products/02-rocking-chair-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-forward.mp4",
+        "pathname": "/assets/products/03-ivory-lounge-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/04-dark-accent-forward.mp4",
+        "pathname": "/assets/products/04-dark-accent-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/products/05-two-seat-sofa-forward.mp4",
+        "pathname": "/assets/products/05-two-seat-sofa-forward.mp4",
+        "resourceType": "Media",
+        "group": "otherVideo"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/fonts/golos-text-latin.woff2",
+        "pathname": "/assets/fonts/golos-text-latin.woff2",
+        "resourceType": "Font",
+        "group": "font"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/fonts/fraunces-latin.woff2",
+        "pathname": "/assets/fonts/fraunces-latin.woff2",
+        "resourceType": "Font",
+        "group": "font"
+      },
+      {
+        "url": "http://127.0.0.1:3106/assets/fonts/golos-text-cyrillic.woff2",
+        "pathname": "/assets/fonts/golos-text-cyrillic.woff2",
+        "resourceType": "Font",
+        "group": "font"
+      }
+    ],
+    "initialHeroVideos": {
+      "requestStarts": 16,
+      "observedBytes": null,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 16,
+      "urls": [
+        "http://127.0.0.1:3106/assets/hero/sofa-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/sofa-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/chair-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/chair-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-dining-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-dining-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-island-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/kitchen-island-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-chair-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-chair-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-bed-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/bedroom-bed-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-chair-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-chair-reverse.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-sofa-forward.mp4",
+        "http://127.0.0.1:3106/assets/hero/terrace-sofa-reverse.mp4"
+      ]
+    }
+  },
+  "errors": [],
+  "primaryImageRun": {
+    "comparable": true,
+    "reason": null,
+    "requestStarts": 5,
+    "observedBytes": null,
+    "targets": [
+      {
+        "pathname": "/assets/editorial/images/category-sofa.png",
+        "requestStarts": 1,
+        "observedBytes": 502503,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/category-console.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/category-reading-chair.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/category-bedside.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      },
+      {
+        "pathname": "/assets/editorial/images/71c2b8589fc6.png",
+        "requestStarts": 1,
+        "observedBytes": null,
+        "loading": null,
+        "viewportClass": "below-fold",
+        "complete": false,
+        "naturalWidth": 0,
+        "naturalHeight": 0
+      }
+    ],
+    "metrics": {
+      "ttfbMs": 304.40000000596046,
+      "fcpMs": 2788,
+      "lcpMs": 2788,
+      "tbtMs": 483,
+      "cls": 0.0003425781783186154
+    },
+    "visual": {
+      "screenshotPaths": [
+        "screenshots/home-00500ms.png",
+        "screenshots/home-01500ms.png",
+        "screenshots/home-02500ms.png",
+        "screenshots/home-05000ms.png",
+        "screenshots/home-10000ms.png",
+        "screenshots/home-20000ms.png",
+        "screenshots/home-30000ms.png"
+      ],
+      "samples": [
+        {
+          "timeMs": 500,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-00500ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        },
+        {
+          "timeMs": 1500,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-01500ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        },
+        {
+          "timeMs": 2500,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-02500ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        },
+        {
+          "timeMs": 5000,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-05000ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        },
+        {
+          "timeMs": 10000,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-10000ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        },
+        {
+          "timeMs": 20000,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-20000ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        },
+        {
+          "timeMs": 30000,
+          "screenshotWidth": 390,
+          "screenshotHeight": 844,
+          "screenshotPath": "screenshots/home-30000ms.png",
+          "screenshotSha256": "b3e5a8ee09aabb518edfe9a512dc3830f291b55c6673b494f7fa01582fc34963"
+        }
+      ],
+      "aboveFoldBoxes": [
+        {
+          "timeMs": 500,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 500,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 500,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 500,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 500,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 1500,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 1500,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 1500,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 1500,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 1500,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 2500,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 2500,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 2500,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 2500,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 2500,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 5000,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 5000,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 5000,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 5000,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 5000,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 10000,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 10000,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 10000,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 10000,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 10000,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 20000,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 20000,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 20000,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 20000,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 20000,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 30000,
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 71,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 30000,
+          "selector": "#evironn-hero",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgb(186, 184, 181)"
+        },
+        {
+          "timeMs": 30000,
+          "selector": "#evironn-hero h1",
+          "x": 41,
+          "y": 126.265625,
+          "width": 308,
+          "height": 92.15625,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 30000,
+          "selector": "#evironn-hero img",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "visible",
+          "opacity": "1",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "timeMs": 30000,
+          "selector": "#evironn-hero video",
+          "x": -0.975006103515625,
+          "y": -2.1099853515625,
+          "width": 391.95001220703125,
+          "height": 848.219970703125,
+          "visibility": "hidden",
+          "opacity": "0",
+          "backgroundColor": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "heroReadiness": [
+        {
+          "timeMs": 500,
+          "ready": false
+        },
+        {
+          "timeMs": 1500,
+          "ready": false
+        },
+        {
+          "timeMs": 2500,
+          "ready": false
+        },
+        {
+          "timeMs": 5000,
+          "ready": false
+        },
+        {
+          "timeMs": 10000,
+          "ready": false
+        },
+        {
+          "timeMs": 20000,
+          "ready": false
+        },
+        {
+          "timeMs": 30000,
+          "ready": false
+        }
+      ]
+    }
+  }
+}

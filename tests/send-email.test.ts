@@ -49,20 +49,22 @@ describe('sendEmail', () => {
   it('Resend вернул error → {ok:false}, не бросает', async () => {
     sendMock.mockResolvedValue({ data: null, error: { message: 'boom' } });
     const r = await sendEmail({ to: 'u@x.com', subject: 'S', react: node });
-    expect(r.ok).toBe(false);
+    expect(r).toEqual({ ok: false, error: 'email_send_failed' });
+    expect(JSON.stringify(r)).not.toContain('boom');
   });
 
   it('не сконфигурирован → {ok:false}, send не вызывается', async () => {
     configured.mockReturnValue(false);
     resendFactory.mockReturnValue(null);
     const r = await sendEmail({ to: 'u@x.com', subject: 'S', react: node });
-    expect(r.ok).toBe(false);
+    expect(r).toEqual({ ok: false, error: 'email_not_configured' });
     expect(sendMock).not.toHaveBeenCalled();
   });
 
   it('send бросил исключение → {ok:false}, не пробрасывает', async () => {
     sendMock.mockRejectedValue(new Error('network'));
     const r = await sendEmail({ to: 'u@x.com', subject: 'S', react: node });
-    expect(r.ok).toBe(false);
+    expect(r).toEqual({ ok: false, error: 'exception' });
+    expect(JSON.stringify(r)).not.toContain('network');
   });
 });

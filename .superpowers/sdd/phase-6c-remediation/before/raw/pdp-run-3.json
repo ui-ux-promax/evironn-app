@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "label": "pdp-run-3",
+  "classification": "repeat",
+  "capturedAtUtc": "2026-08-31T02:50:17.061Z",
+  "conditions": {
+    "host": "http://127.0.0.1:3106",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runsPerRoute": 3,
+    "cpuSlowdownMultiplier": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750,
+    "serviceWorkers": "block",
+    "waitUntil": "domcontentloaded",
+    "observationWindowAfterDomContentLoadedMs": 2500,
+    "cacheDisabled": true,
+    "queryCacheBuster": null,
+    "queryCacheBusterReason": null,
+    "browser": "chromium",
+    "playwrightPackageVersion": "1.60.0",
+    "browserVersion": "148.0.7778.96"
+  },
+  "deploymentIdentity": {
+    "platformBuildId": {
+      "available": false,
+      "value": null,
+      "reason": "public build identifier not exposed"
+    },
+    "resourceFingerprint": {
+      "available": true,
+      "algorithm": "sha256",
+      "input": "sorted unique same-origin Script/Stylesheet pathnames without query or fragment",
+      "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "route": {
+    "key": "pdp",
+    "requestedPath": "/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle",
+    "finalPublicUrlWithoutCacheBuster": "http://127.0.0.1:3106/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle"
+  },
+  "document": {
+    "status": 200,
+    "markerMatched": true,
+    "readyState": "interactive",
+    "readyStateInformationalOnly": true,
+    "safeHeaders": {
+      "cache-control": "no-store, must-revalidate",
+      "content-encoding": "gzip",
+      "content-type": "text/html; charset=utf-8",
+      "date": "Mon, 31 Aug 2026 02:50:12 GMT",
+      "transfer-encoding": "chunked"
+    }
+  },
+  "observationEndpoint": {
+    "basis": "domContentLoadedEventEnd",
+    "windowMs": 2500,
+    "endpointFromNavigationStartMs": 4433.699999988079,
+    "actualReadFromNavigationStartMs": 4441.5999999940395,
+    "markerMatchedAtFromNavigationStartMs": 1993.300000011921,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true
+  },
+  "comparability": {
+    "httpStatus200": true,
+    "markerMatchedBeforeEndpoint": true,
+    "fixedWindowCompleted": true,
+    "requiredTimingFieldsAvailable": true,
+    "requiredCdpFieldsAvailable": true,
+    "navigationOriginIsLocal": true,
+    "subrequestsLocalOrigin": true,
+    "playwrightAndBrowserVersionsMatchSeries": true,
+    "comparable": true,
+    "reason": null
+  },
+  "byteAccountingComparable": false,
+  "metrics": {
+    "ttfbMs": {
+      "available": true,
+      "value": 122.30000001192093
+    },
+    "fcpMs": {
+      "available": true,
+      "value": 1892
+    },
+    "lcpObservationWindowCandidateMs": {
+      "available": true,
+      "value": 1892,
+      "windowBasis": "domContentLoadedEventEnd",
+      "windowMs": 2500,
+      "endpointFromNavigationStartMs": 4433.699999988079,
+      "label": "observation-window LCP candidate"
+    },
+    "cls": {
+      "available": true,
+      "value": 0
+    },
+    "tbtMs": {
+      "available": true,
+      "value": 126
+    },
+    "inpMs": {
+      "available": false,
+      "reason": "no interaction is performed by the fixed anonymous navigation protocol"
+    },
+    "observedBytes": {
+      "available": false,
+      "reason": "encoded byte accounting unavailable or incomparable"
+    },
+    "requestStarts": {
+      "available": true,
+      "value": 25
+    }
+  },
+  "lcpOwner": {
+    "available": true,
+    "tagName": "IMG",
+    "selector": "img",
+    "resourceUrl": "http://127.0.0.1:3106/assets/evironn-logo.svg"
+  },
+  "dom": {
+    "images": 7,
+    "videos": 5,
+    "scripts": 41,
+    "stylesheets": 2,
+    "preloads": 8
+  },
+  "initialHeroVideos": {
+    "requestStarts": 0,
+    "observedBytes": 0,
+    "completedRequests": 0,
+    "failedRequests": 0,
+    "inFlightRequests": 0,
+    "urls": []
+  },
+  "resourceGroups": {
+    "document": {
+      "requestStarts": 1,
+      "observedBytes": 20079,
+      "completedRequests": 1,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "script": {
+      "requestStarts": 7,
+      "observedBytes": null,
+      "completedRequests": 3,
+      "failedRequests": 0,
+      "inFlightRequests": 4
+    },
+    "stylesheet": {
+      "requestStarts": 2,
+      "observedBytes": 67548,
+      "completedRequests": 2,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "font": {
+      "requestStarts": 3,
+      "observedBytes": null,
+      "completedRequests": 1,
+      "failedRequests": 0,
+      "inFlightRequests": 2
+    },
+    "image": {
+      "requestStarts": 7,
+      "observedBytes": null,
+      "completedRequests": 1,
+      "failedRequests": 0,
+      "inFlightRequests": 6
+    },
+    "heroProductVideo": {
+      "requestStarts": 0,
+      "observedBytes": 0,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    },
+    "otherVideo": {
+      "requestStarts": 5,
+      "observedBytes": null,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 5
+    },
+    "other": {
+      "requestStarts": 0,
+      "observedBytes": 0,
+      "completedRequests": 0,
+      "failedRequests": 0,
+      "inFlightRequests": 0
+    }
+  },
+  "resources": [
+    {
+      "url": "http://127.0.0.1:3106/product/noma-woven-lounge?option=finish%3Awalnut%2Cupholstery%3Aivory-boucle",
+      "pathname": "/product/noma-woven-lounge",
+      "resourceType": "Document",
+      "group": "document"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/css/app/layout.css?v=1788144612658",
+      "pathname": "/_next/static/css/app/layout.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/css/app/(shop)/layout.css?v=1788144612658",
+      "pathname": "/_next/static/css/app/(shop)/layout.css",
+      "resourceType": "Stylesheet",
+      "group": "stylesheet"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/evironn-logo.svg",
+      "pathname": "/assets/evironn-logo.svg",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/webpack.js?v=1788144612658",
+      "pathname": "/_next/static/chunks/webpack.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/main-app.js?v=1788144612658",
+      "pathname": "/_next/static/chunks/main-app.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/app-pages-internals.js",
+      "pathname": "/_next/static/chunks/app-pages-internals.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/app/global-error.js",
+      "pathname": "/_next/static/chunks/app/global-error.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/app/(shop)/layout.js",
+      "pathname": "/_next/static/chunks/app/(shop)/layout.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/app/not-found.js",
+      "pathname": "/_next/static/chunks/app/not-found.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/_next/static/chunks/app/(shop)/product/%5Bslug%5D/page.js",
+      "pathname": "/_next/static/chunks/app/(shop)/product/%5Bslug%5D/page.js",
+      "resourceType": "Script",
+      "group": "script"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/05-ivory-walnut-chair-fixed-alpha.png",
+      "pathname": "/assets/products/05-ivory-walnut-chair-fixed-alpha.png",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-idle.webp",
+      "pathname": "/assets/products/01-bar-stool-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/02-rocking-chair-idle.webp",
+      "pathname": "/assets/products/02-rocking-chair-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-idle.webp",
+      "pathname": "/assets/products/03-ivory-lounge-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/04-dark-accent-idle.webp",
+      "pathname": "/assets/products/04-dark-accent-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/05-two-seat-sofa-idle.webp",
+      "pathname": "/assets/products/05-two-seat-sofa-idle.webp",
+      "resourceType": "Image",
+      "group": "image"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/fonts/golos-text-latin.woff2",
+      "pathname": "/assets/fonts/golos-text-latin.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/fonts/fraunces-latin.woff2",
+      "pathname": "/assets/fonts/fraunces-latin.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/fonts/golos-text-cyrillic.woff2",
+      "pathname": "/assets/fonts/golos-text-cyrillic.woff2",
+      "resourceType": "Font",
+      "group": "font"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/01-bar-stool-forward.mp4",
+      "pathname": "/assets/products/01-bar-stool-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/02-rocking-chair-forward.mp4",
+      "pathname": "/assets/products/02-rocking-chair-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/03-ivory-lounge-forward.mp4",
+      "pathname": "/assets/products/03-ivory-lounge-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/04-dark-accent-forward.mp4",
+      "pathname": "/assets/products/04-dark-accent-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    },
+    {
+      "url": "http://127.0.0.1:3106/assets/products/05-two-seat-sofa-forward.mp4",
+      "pathname": "/assets/products/05-two-seat-sofa-forward.mp4",
+      "resourceType": "Media",
+      "group": "otherVideo"
+    }
+  ],
+  "errors": []
+}

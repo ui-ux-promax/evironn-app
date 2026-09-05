@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { scrubPii } from './pii-scrub';
 import { getRequestId } from './request-context';
 
-const SERVICE = 'stride-app';
+const SERVICE = 'evironn-app';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogFields = Record<string, unknown>;

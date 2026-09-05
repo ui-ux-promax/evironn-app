@@ -39,6 +39,17 @@ describe('isStateChangingRequestAllowed', () => {
     ).toBe(true);
   });
 
+  it('rejects malformed explicit origins', () => {
+    expect(
+      isStateChangingRequestAllowed({
+        method: 'POST',
+        pathname: '/api/cart',
+        requestOrigin: 'https://cloudd3r.eu.cc',
+        headers: headers({ origin: 'not-an-origin' }),
+      }),
+    ).toBe(false);
+  });
+
   it('exempts provider webhooks', () => {
     expect(
       isStateChangingRequestAllowed({

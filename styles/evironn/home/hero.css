@@ -607,7 +607,7 @@
 
 #evironn-hero .furni-hero-product--kitchen-island {
   right: 5%;
-  bottom: 12%;
+  bottom: calc(12% - 24px);
 }
 
 #evironn-hero .is-bedroom {
@@ -722,6 +722,63 @@
   #evironn-hero .furni-hero-hotspot,
   #evironn-hero .furni-hero-media :is(img, video) {
     transition: none;
+  }
+}
+
+#evironn-hero .furni-hero-preparation-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: rgb(32 30 26 / 22%);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+#evironn-hero .furni-hero-recovery {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 18px 22px;
+  border: 1px solid rgb(255 255 255 / 52%);
+  border-radius: var(--ev-radius-card);
+  background: rgb(255 255 255 / 78%);
+  color: hsl(var(--ev-text));
+  box-shadow: 0 14px 40px rgb(31 28 24 / 18%);
+}
+
+#evironn-hero .furni-hero-preparation-overlay__spinner {
+  display: block;
+  width: 40px;
+  height: 40px;
+  color: hsl(var(--ev-text));
+}
+
+#evironn-hero .furni-hero-recovery {
+  position: absolute;
+  inset: auto 24px 24px;
+  z-index: 8;
+  justify-items: start;
+  max-width: min(360px, calc(100% - 48px));
+}
+
+#evironn-hero .furni-hero-recovery p {
+  margin: 0;
+}
+
+#evironn-hero .furni-hero-recovery button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid hsl(var(--ev-text));
+  border-radius: var(--ev-radius-pill);
+  background: hsl(var(--ev-text));
+  color: hsl(var(--ev-background));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #evironn-hero .furni-hero-preparation-overlay__spinner {
+    animation: none;
   }
 }
 

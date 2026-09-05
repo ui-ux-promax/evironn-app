@@ -1,4 +1,4 @@
-import { CANONICAL_COUPONS, CANONICAL_INVENTORY } from '@/lib/demo-data/canonical';
+import { CANONICAL_COUPONS, CANONICAL_INVENTORY, PORTFOLIO_FIXTURE_EMAILS } from '@/lib/demo-data/canonical';
 import { resetDemoData } from '@/lib/demo-data/reset';
 import { expect, it, vi } from 'vitest';
 
@@ -28,6 +28,7 @@ function makeDb(calls: string[] = []) {
       ),
     },
     productVariant: { update: op('variant'), count: vi.fn().mockResolvedValue(CANONICAL_INVENTORY.length) },
+    sku: { update: op('sku'), count: vi.fn().mockResolvedValue(CANONICAL_INVENTORY.length) },
     coupon: { upsert: op('coupon') },
     category: { count: vi.fn().mockResolvedValue(4) },
     product: { count: vi.fn().mockResolvedValue(8) },
@@ -45,8 +46,36 @@ it('deletes ephemeral data, restores canonical values, and returns invariants', 
 
   expect(calls.indexOf('orders')).toBeLessThan(calls.indexOf('users'));
   expect(calls.indexOf('markFixtures')).toBeLessThan(calls.indexOf('orders'));
-  expect(calls).toContain('variant');
+  expect(calls).toContain('sku');
   expect(calls).toContain('coupon');
+  expect(db.user.updateMany).toHaveBeenCalledWith({
+    where: { email: { in: [...PORTFOLIO_FIXTURE_EMAILS] } },
+    data: { isPortfolioFixture: true },
+  });
+  expect(db.payment.deleteMany).toHaveBeenCalledWith({
+    where: { order: { is: { user: { is: { role: 'CUSTOMER', isPortfolioFixture: false } } } } },
+  });
+  expect(db.orderItem.deleteMany).toHaveBeenCalledWith({
+    where: { order: { is: { user: { is: { role: 'CUSTOMER', isPortfolioFixture: false } } } } },
+  });
+  expect(db.order.deleteMany).toHaveBeenCalledWith({
+    where: { user: { is: { role: 'CUSTOMER', isPortfolioFixture: false } } },
+  });
+  expect(db.cartItem.deleteMany).toHaveBeenCalledWith({});
+  expect(db.cart.deleteMany).toHaveBeenCalledWith({});
+  expect(db.wishlistItem.deleteMany).toHaveBeenCalledWith({});
+  expect(db.wishlist.deleteMany).toHaveBeenCalledWith({});
+  expect(db.subscriber.deleteMany).toHaveBeenCalledWith({});
+  expect(db.emailVerificationCode.deleteMany).toHaveBeenCalledWith({});
+  expect(db.verificationToken.deleteMany).toHaveBeenCalledWith({});
+  expect(db.user.deleteMany).toHaveBeenCalledWith({ where: { role: 'CUSTOMER', isPortfolioFixture: false } });
+  expect(db.sku.update).toHaveBeenCalledTimes(CANONICAL_INVENTORY.length);
+  CANONICAL_INVENTORY.forEach((row, index) => {
+    expect(db.sku.update).toHaveBeenNthCalledWith(index + 1, {
+      where: { articleNumber: row.sku },
+      data: { price: row.price, oldPrice: row.oldPrice, stock: row.stock, active: row.active },
+    });
+  });
   expect(result).toEqual({
     categories: 4,
     products: 8,
@@ -67,6 +96,6 @@ it('returns equal invariants across repeated resets', async () => {
 
   expect(second).toEqual(first);
   expect(db.user.updateMany).toHaveBeenCalledTimes(2);
-  expect(db.productVariant.update).toHaveBeenCalledTimes(CANONICAL_INVENTORY.length * 2);
+  expect(db.sku.update).toHaveBeenCalledTimes(CANONICAL_INVENTORY.length * 2);
   expect(db.coupon.upsert).toHaveBeenCalledTimes(CANONICAL_COUPONS.length * 2);
 });

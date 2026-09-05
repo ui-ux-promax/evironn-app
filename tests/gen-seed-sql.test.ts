@@ -31,6 +31,6 @@ describe('generateSeedSql', () => {
       expect(sql).toContain(combinationKey);
     }
     expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-alpha.webm');
-    expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.png');
+    expect(sql).toContain('/assets/products/05-graphite-walnut-lounge-chair-turntable-poster.webp');
   });
 });

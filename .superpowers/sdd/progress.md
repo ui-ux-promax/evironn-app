@@ -1,5 +1,52 @@
 # Phase 5 admin and demo-admin progress
 
+## Phase 6B user acceptance and Phase 6C design — 2026-08-30
+
+- User accepted Phase 6B after the final Sol Medium `PASS` and independent root verification of the 9-file / 93-test checkpoint plus the 1-file / 15-test category action suite.
+- Phase 6B accepted range: `568c49ac843b23256622041923a80d7824accc6a..076b06767ef61538d863373d1af61624a67cad9b`.
+- User authorized read-only measurement of the public Vercel deployment and reported Vercel Authentication disabled. `https://evironn-app.vercel.app/` returned HTTP `200`; no Vercel login or token was used.
+- Phase 6C design approved: `/` is the optimization target; `/catalog` and one reachable real PDP are guardrails. Use repeated controlled measurements and median evidence, change only the dominant proven bottleneck, preserve portfolio scope, and allow a no-change diagnosis.
+- Phase 6C has no push or deployment. Phase 6D owns the production build, deployment, comparable public after-measurement, full gate, broad E2E, and final deployed-performance claim.
+- Next: prepare one compact evidence bundle, one fresh Sol Medium plan, one fresh Sol Medium plan review, resolve all Critical/Important findings, then stop for user approval before Phase 6C implementation.
+
+## Phase 6B implementation baseline — 2026-08-30
+
+- Approved-plan baseline: `568c49ac843b23256622041923a80d7824accc6a`.
+- Branch verified: `phase/06-hardening-release`; baseline contains the approved Phase 6B plan and planning brief.
+- Protected untracked Phase 2 plan files preserved unchanged.
+- Phase 6B implementation begins after baseline verification; no provider, database, deployment, build, E2E, full-gate, push, PR, merge, or branch operation performed.
+
+## Phase 6B Task 1 — 2026-08-30
+
+- Name-only environment reader characterization completed. Differences were limited to approved host metadata and compatibility-only declarations; no runtime-only drift found. `.env.example` unchanged.
+- Added compact Local/Preview/Production/Build/Optional smoke environment/provider guidance to `docs/operations/phase-6a-hardening.md`. Presence-only wording retained; no external provider/Vercel presence claim made.
+- Focused checks: required Prettier check passed; required selector matched 13 lines; `git diff --check` passed. No typecheck required for documentation-only change.
+- Fresh Sol Medium task review approved: Critical 0, Important 0, Minor 0. No remediation required.
+- Task 1: complete (commit `568c49a..a750e57`, review clean).
+
+## Phase 6B Task 2 — 2026-08-30
+
+- Cloudinary characterization passed: 13 files / 99 tests. Resend characterization passed: 4 files / 27 tests. All provider/database interactions mocked.
+- Demonstrated owner-local gaps: category deletion ran Cloudinary cleanup before database deletion; Resend provider error exposed provider message. Moved category deletion before best-effort cleanup and sanitized provider failure to `email_send_failed`. Added focused ordering/sanitization assertions; verification persistence ordering assertion added.
+- Final focused union: 17 files / 126 tests passed. Touched-file Prettier and `git diff --check` passed. No typecheck required; no shared contract changed.
+- Fresh Sol Medium task review approved: Critical 0, Important 0, Minor 0. No remediation required.
+- Task 2: complete (commit `a750e57..8c25b9d`, review clean).
+
+## Phase 6B Task 3 — 2026-08-30
+
+- Deterministic DaData RED confirmed missing abort signal after mocked upstream fetch. Added route-local `DADATA_TIMEOUT_MS = 5_000`, `AbortController`, fetch signal, and `finally` timer cleanup. Existing ordering, bounds, filtering, fallback, and scrubbed logging preserved.
+- DaData suite passed: 1 file / 6 tests. YooKassa/payment characterization passed: 10 files / 145 tests. Touched-file Prettier and `git diff --check` passed. No typecheck required; route/shared contracts unchanged.
+- Fresh Sol Medium task review approved: Critical 0, Important 0, Minor 0. No remediation required.
+- Task 3: complete (commit `8c25b9d..5f1874d`, review clean).
+
+## Phase 6B Task 4 checkpoint — 2026-08-30
+
+- Tasks 1–3 complete; final functional/security review complete.
+- Compact cross-boundary checkpoint: `npx vitest run tests/cloudinary-config.test.ts tests/media-delete-route.test.ts tests/send-email.test.ts tests/verification-service.test.ts tests/dadata-suggest-route.test.ts tests/payment-environment.test.ts tests/payment-initialization.test.ts tests/yookassa-webhook.test.ts tests/cancel-order.test.ts` — exit 0, 9 files / 93 tests passed. Provider/database calls remained mocked.
+- Baseline-anchored changed-file secret scan returned only `tests/dadata-suggest-route.test.ts:81`; redacted inspection classified it as a known test-fixture `secret` placeholder. No values printed; no credential hit.
+- Task commits: `a750e57` environment guidance, `8c25b9d` Cloudinary/Resend boundary fixes, `5f1874d` DaData timeout. Reused YooKassa/payment contracts unchanged.
+- Final Sol Medium functional/security review: PASS; Critical 0, Important 0, Minor 0. No remediation required. User approval stop follows; no deployed readiness, provider smoke, release completion, Phase 6C, or Phase 6D work claimed.
+
 ## Current checkpoint
 
 - Status: 5C_USER_ACCEPTED; 5A, 5B, and 5C are user-closed; bounded 5D planning is authorized on `phase/05-admin-demo`.
@@ -504,6 +551,54 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - TDD evidence: `tests/admin-dashboard-loading.test.ts` was observed RED against the old skeleton, then GREEN after the replacement. Focused dashboard loading/render checks passed 2 files / 9 tests. Touched-file Prettier passed and `git diff --check` passed with only existing LF/CRLF conversion warnings.
 - No dashboard data, live presentation, shared shell, DTO, action, API, provider, full gate, build, complete Vitest suite, E2E, reviewer, or commit operation was performed.
 
+## Phase 6A implementation baseline — 2026-08-29
+
+- Approved-plan baseline: `4f4503caf0a812226d6f195e155e09e7504bd499` (`4f4503c`).
+- Branch verified: `phase/06-hardening-release`; approved plan present at the baseline commit.
+- Protected untracked Phase 2 plan files preserved unchanged.
+- Pre-flight plan scan found no internal task/global-constraint contradiction; one marker check used wording not present verbatim (`provider operation` versus the plan's equivalent provider-mutation language), with no substantive conflict.
+
+## Phase 6A Task 1 — 2026-08-29
+
+- Base `4f4503c`; implementation commit `4c3c6d3` (`fix: clean stale hardening identifiers`).
+- Changed active hardening identifiers to Evironn namespaces, updated CI dummy database names, and added focused active-brand assertions. User-authorized narrow expansion updated `e2e/a11y.spec.ts` to use `SHOWCASE_PRODUCT_PATH` and current cart-count state.
+- Focused Vitest: `npx vitest run tests/phase-5-active-brand.test.ts tests/admin-warmup-route.test.ts tests/ci-workflow.test.ts` — exit 0, 3 files / 8 tests passed.
+- Prettier and `git diff --check` passed. Focused checkout E2E was attempted after explicit user authorization, stalled at approximately 60 seconds, was interrupted, and has no green evidence; no background processes remained.
+- Task reviewer re-review: Spec Compliance approved; Code Quality approved; Critical 0, Important 0, Minor 1 (stale test title wording). Task accepted with E2E limitation recorded.
+- Task 1: complete (commits `4f4503c..4c3c6d3`, review clean).
+
+## Phase 6A Task 2 — 2026-08-29
+
+- Base `4c3c6d3`; implementation commit `2e83b0f` (`fix: close critical hardening defects`).
+- Added compact Redis alias/runtime-error characterization, CSRF/middleware ordering coverage, critical CSP/header assertions, logger/Sentry bridge coverage, coarse health-route coverage, and DaData missing-token ordering coverage. Fixed owner-local mixed-alias detection.
+- Focused union: 16 files / 63 tests passed. Remediation checks: `npx vitest run tests/rate-limit.test.ts tests/logger-sentry-bridge.test.ts` — exit 0, 2 files / 5 tests; Prettier and `git diff --check` passed.
+- Task reviewer initial finding: Important ambient Redis environment dependence; Minor console spy cleanup. Implementer amended the single commit, explicitly neutralized all Redis aliases per test and restored mocks in `afterEach`.
+- Task reviewer re-review: Spec Compliance approved; Code Quality approved; Critical 0, Important 0, Minor 0.
+- Task 2: complete (commits `4c3c6d3..2e83b0f`, review clean).
+
+## Phase 6A Task 3 — 2026-08-29
+
+- Base `2e83b0f`; implementation commit `f0867df` (`fix: close demo operations defects`). Original Task 3 commit was amended; no second Task 3 commit exists.
+- Added compact demo-reset lock/configuration coverage, environment guard matrix, CI/cron/smoke contract assertions, and one short operations document. Fixed owner-local mixed Redis alias handling and, after review, strengthened reset tests for the canonical `sku` path and all global temporary-data cleanup predicates.
+- Focused command: `npx vitest run tests/demo-data-canonical.test.ts tests/demo-data-reset.test.ts tests/demo-reset-lock.test.ts tests/demo-reset-route.test.ts tests/ci-workflow.test.ts tests/vercel-cron.test.ts tests/smoke-script.test.ts` — exit 0, 7 files / 18 tests passed.
+- Focused Prettier passed for changed Task 3 files; `git diff --check` exit 0. Path-only secret scan listed only known dummy fixture/config paths: `.github/workflows/ci.yml`, `tests/phase-5-active-brand.test.ts`, `vitest.config.ts`; no unexplained secret-bearing path.
+- Task reviewer initial findings: Important canonical reset-path and cleanup assertion gaps; Minor test-title wording. Remediation added exact coverage; original implementer unavailable, so bounded Luna remediation amended the existing commit. Same Sol reviewer re-review: Spec Compliance approved; Code Quality approved; Critical 0, Important 0, Minor 1 (test-title wording).
+- Task 3: complete (commits `2e83b0f..f0867df`, review clean).
+
+## Phase 6A Task 4 checkpoint — 2026-08-29
+
+- Tasks 1–3 confirmed complete; no stop condition fired.
+- Cross-boundary checkpoint: `npx vitest run tests/phase-5-active-brand.test.ts tests/admin-warmup-route.test.ts tests/rate-limit.test.ts tests/logger-sentry-bridge.test.ts tests/demo-reset-lock.test.ts tests/demo-reset-route.test.ts tests/ci-workflow.test.ts tests/smoke-script.test.ts` — exit 0, 8 files / 24 tests passed.
+- Manual changed-file Prettier check covered all Prettier-supported Task 1–3 files, including authorized `e2e/a11y.spec.ts`; exit 0. `git diff --check` exit 0; only existing LF/CRLF conversion warning.
+- Conditional typecheck: NOT RUN — final diff changes literals, local logic, tests, YAML, Markdown, and E2E route references; no shared TypeScript contract, exported DTO, route signature, Prisma/schema boundary, or framework configuration changed.
+- Task 3 path-only secret scan evidence retained: only known dummy fixture/config paths appeared (`.github/workflows/ci.yml`, `tests/phase-5-active-brand.test.ts`, `vitest.config.ts`); no unexplained secret-bearing path and no matched values printed.
+
+## Phase 6A final review — 2026-08-29
+
+- Single final Sol Medium functional/security review covered exact range `4f4503c..f0867df` and the recorded focused evidence. Verdict: PASS; Critical 0, Important 0, Minor 0; no remediation required.
+- Final review confirmed no high-confidence vulnerabilities, no scope regression, and preservation of Phase 4 payment/stock and Phase 5 ADMIN/demo-admin isolation. Focused checkout E2E remains an explicitly documented limitation because its authorized attempt stalled and was interrupted.
+- Phase 6A local checkpoint complete. Full gate/build/broad E2E/deployed smoke/provider/database operations, performance work, push, PR, merge, and Phase 6B remain excluded.
+
 ## Admin dashboard chart animation timing refinement — 2026-08-28
 
 - User requested a slower revenue-chart entrance so the drawing is observable. Increased only `dashboardChartDraw` duration from `1200ms` to `1800ms`; funnel cascade, data mapping, chart geometry, and reduced-motion behavior remain unchanged.
@@ -516,3 +611,70 @@ Protected-path evidence: `git status --short --untracked-files=all` showed `docs
 - The five funnel stages reveal top-to-bottom with staggered delays; arrows and conversion footer follow. The revenue curve draws with `stroke-dashoffset`, while the area fill fades in. Existing model mapping, SVG path generation, labels, layout, and data behavior remain unchanged.
 - Added `prefers-reduced-motion: reduce` overrides that expose the final state immediately. No client boundary, animation dependency, API, action, or data source was introduced.
 - TDD evidence: dashboard animation assertions were observed RED before JSX/CSS changes, then GREEN. Focused dashboard checks passed 2 files / 20 tests. Touched-file Prettier and `git diff --check` remain required final checks; no reviewer, full gate, build, E2E, or commit was run.
+
+# Phase 6 preparation — 2026-08-29
+
+- Phase 5 merged through PR #10 at `b40b125`; the accepted admin redesign merged through PR #11 at `e06ae9c`. Current `origin/dev` is exact `e06ae9c`.
+- Created `phase/06-hardening-release` from exact `origin/dev` and recorded preparation commit `4316f05` (`docs: prepare phase 6 delivery`). Phase 6 implementation has not started.
+- Added the bounded Phase 6A planning brief and handoff. The next session owns source-parity inventory, one fresh Sol Medium plan, one fresh Sol Medium plan review, remediation of Critical/Important findings, and a stop for user approval.
+- Initial evidence confirms that Evironn already contains the inherited rate-limit, CSRF, CSP/security headers, Sentry, readiness, demo reset, production smoke, CI, and Vercel cron foundation. `fashion-shop` remains the read-only technical comparison source; broad rewrites are forbidden.
+- Presence-only local environment inventory found DB/Auth/Resend/YooKassa/DaData/Cloudinary/Upstash variables and found Google OAuth/Sentry/demo-reset/smoke variables absent. Values were not read or printed. Local absence is not Vercel evidence.
+- No application code, tests, build, E2E, database, external provider, Vercel configuration, push, PR, or merge operation occurred during Phase 6A preparation.
+
+## Phase 6C Task 4 pre-review closeout — 2026-08-30
+
+- Task 1 and Task 2 are complete. Immutable implementation baseline is `a662808d11f7083bbf2ce08573c09b1547498174`; original measurement receipt remains `34b8938574fa4ea5de30a97342f284b1b5029ac9`, recorded by `d0fba2d82023300abfae42f62e20f4260bc6ef88`. Task 2 review remediations are `0e19079dad05ccca1287d232d644219a9cc0d378` and `640e0e131203438462b259336d1bdfa8fee70e43`. Pre-review checkpoint is `137899f691c2ae6361741c49874b8b79ede1abbd`; Task 4 remediation is `8ac25e40b308e4b250fc40708d2de38e37db5fc5`.
+- Task 2 fresh final review passed after root checks: Critical 0 / Important 0 / Minor 0. Evidence paths remain the static 15-path `.superpowers/sdd/phase-6c-baseline/` set plus its measurement receipt. Raw observations are fresh 10/10: one cold candidate and three comparable repeats for home, catalog, and PDP; exact package/browser versions match; cache identity is null and comparable; platform build ID is unavailable; public resource fingerprints are consistent.
+- Decision is `NO_CHANGE`: home TTFB median 91.5 ms; FCP/LCP observation-window candidate median 6272 ms; CLS 0; TBT 1164 ms; total request starts 83. Catalog medians are TTFB 84 ms, FCP 2392 ms, LCP candidate 3608 ms, CLS 0.0003145, TBT 1477 ms, starts 35. PDP medians are TTFB 91.3 ms, FCP/LCP candidate 2316 ms, CLS 0, TBT 384 ms, starts 43. Owner request-start median 16 versus combined non-owner median 67; owner bytes unavailable; strict owner ranking/dominance failed. No deployed improvement claim.
+- Task 3 is skipped and created no application file or test. Task 4 finalization is complete. Task 4 owns only the delivery report, changed-path ledger, this progress entry, and `docs/roadmap/STATUS.md`; no component/test path is authorized.
+- Task 4 focused validation passed: touched-document Prettier; exact final changed-path collection with static baseline directory count 15 and NO_CHANGE owned-path count 22; both protected hashes; value-free secret scan `secret-scan=0 paths`; collector syntax, current 18-test dependency-free suite, existing-evidence validation, final documentation Prettier checks, and absence of both Task 3 application paths. Latest exact-state Sol Medium review passed Critical 0 / Important 0 / Minor 0. Finalization receipt intentionally omits its own SHA. No full gate, build, E2E, deploy, push, PR, merge, or Phase 6D action is authorized. Wait for explicit user approval before Phase 6D.
+
+## Phase 6C primary image remediation implementation — 2026-08-31
+
+- Task 0: approved plan and brief committed as `ef6adf4ead33f7ec5df4ad4acd50bbb369b4ff46`; branch and identity verified; protected files preserved.
+- Task 1: collector/config/wrapper and controlled BEFORE evidence completed in amended commit `9b389efcfff56cfb9ab36d107a68c036de8e635a6`. Focused collector tests passed 32/32 before Task 3 CLI remediation and 33/33 after it; syntax, PowerShell parser, Prettier, and diff checks passed. Sol re-review PASS, Critical 0 / Important 0 / Minor 0.
+- Task 2: genuine RED observed (`Expected: 3`, `Received: 0`), exact three production lazy attributes added, focused five-node test completed. GREEN passed 1/1; existing home/source contracts passed 2 files / 10 tests; Prettier passed. Sol review PASS, Critical 0 / Important 0 / Minor 0.
+- Task 3: one controlled AFTER series completed. Comparator CLI remediation was added to Task 1 commit. Exact result `PRIMARY_CANDIDATE_REJECTED`: request reduction `0.2`; home medians request starts 5 to 4, FCP/LCP 2648 ms to 2668 ms, TBT 483 ms to 492 ms; visual 7/7 pass; catalog/PDP guardrails pass. Rejection restore proof and exact 20-path rejection commit are in `179b8b5ba26ac4b8dcde00c1ac6952eb020c3950`; production/test paths absent from that commit. Sol review PASS, Critical 0 / Important 0 / Minor 2. Minor dispositions recorded in delivery report.
+- Task 4: closeout PASS. Fresh Sol Medium functional/security review: Critical 0 / Important 0 / Minor 0. Final checkpoint commit records the rejected candidate, exact restore, 49-path union (47 allowed outcome + 2 protected), completed value-free scan, and Phase 6D stop boundary.
+
+## Phase 6C WebM hero rollout remediation — 2026-09-02
+
+- User-authorized continuation of existing Phase 6C work. No new plan, research, re-encode, quality change, rollback, push, PR, merge, deployment, provider operation, or database operation.
+- Baseline `6d3b436ed6c6fc0d4a88762c57dd03c2a33ccac9`; existing local commits retained: Task 2 `ccc58dc72ce04e61da1890487dcd910fd87d5172`, Task 3 `9cdc3c9226fb39869fb7528ae609280ab363e0e7`. New remediation `456999a74f84d27e666ea3ff9aa7be479e912be4` fixes only TypeScript inference in the two Phase 6C harness tests. New browser test commit `04dbf173fd59d20a33da52e916b1100054ce49dd` contains only `e2e/evironn-hero-video-rollout.spec.ts`.
+- TypeScript remediation: explicit source/pair/invocation/context types; no assertion weakening, unsafe TypeScript directives, or exclusions. Phase 6C harness errors are gone. A follow-up aligned the test-local DaData captured-signal type with the platform's nullable `RequestInit.signal` contract. DaData passed 1 file / 6 tests and the full TypeScript check now passes.
+- Focused Vitest: 5 files / 126 tests passed. Scoped Prettier passed. Scoped ESLint: 0 errors, 10 warnings. `git diff --check` passed. Production build passed. Hero browser E2E passed 2/2 at desktop `1440x1000` and mobile `390x844`, exercising all 16 directions per viewport plus fallback and unsupported-capability paths.
+- Media evidence: 16 WebM files, 58,525,367 bytes total versus 103,076,167 MP4 bytes; reduction 44,550,800 bytes / 43.221%. Structural ffprobe 16/16 passed. Metadata cleanup was lossless remux only. Fresh normalized sample VMAF `bedroom-bed-forward` mean `95.788844`; full supplied range remains `95.79–99.12` evidence, with no claim of quality improvement.
+- Task 2 and Task 3 reviewers: Critical 0 / Important 0 / Minor 0. Fresh final reviewer was retried once as requested; both attempts technically hung and were stopped. No C/I/M findings returned. Record reviewer infrastructure failure separately.
+- Technical verdict: `READY WITH BASELINE DEBT`. Remaining: unrelated repository Prettier baseline (`npm run lint` reports 242 files), unavailable final-review result, and no Preview/production measurement. Worktree retains only protected Phase 2 plans as untracked after closeout commit.
+
+## Hero room media preload pilot — 2026-09-03
+
+- Plan checkpoint: `745777b5d6b05a01e0a5c9b04df728241cdde509`; fresh Sol Medium plan review finalized `READY`, Critical 0 / Important 0 / Minor 0 after two bounded remediation passes. Plan updates replace native-buffer retention with fetch-to-full-Blob/object-URL retention, separate media readiness from visible playback, add serial queue deadlines, exact Blob CSP scope, and safe focused browser-runner ownership.
+- Task 1: complete. Implementation commit `5151b24` (`feat: define hero preload pilot state`) amended after review finding. Focused state suite passed 14/14; scoped Prettier/ESLint passed; typecheck passed. Fresh Sol Medium task re-review: Spec PASS, Code Quality PASS, Critical 0 / Important 0 / Minor 0.
+- Task 2: complete. Implementation baseline `2aad030`; remediation commits `de4db86`, `ee7bda5`, `9f4b65c`, `e01098b`, and `31f5fb5`. Focused cache+CSP suite passed 28/28; scoped Prettier/ESLint passed; typecheck passed; `git diff --check` passed. Fresh final Sol Medium re-review: Spec PASS, Code Quality PASS, Critical 0 / Important 0 / Minor 0. Protected untracked Phase 2 plans remain untouched and unstaged.
+- Task 3 is next: RED shell regressions, then bounded orchestration/recovery implementation in the five approved paths only.
+
+## Hero room media preload pilot — Task 3 acceptance closeout — 2026-09-04
+
+- Acceptance blocker resolved within the approved five-path Task 3 scope. A reproduced poster-failure race was fixed in `components/evironn/home/hero.tsx`: matching preparation is aborted before the poster failure marker is recorded, so its obsolete success continuation cannot erase retry ownership. Commit: `01ffc63`.
+- Component evidence was expanded without private cache mutation or test-only public APIs: deferred disposal drains before shared mock reset; exact mount-owned Blob URLs are asserted; retained binding repair completes fresh forward and Back activation; stale playback props/promises/deadlines, StrictMode pending unmount, held reduced-motion preparation, room timeout/cancellation, terminal fourth resource, dismissal→fresh failure→retry→readiness→transition, focus, poster, and card threshold cases are covered. Test commits: `92c7efe`, `91375cb`.
+- Final focused command: `npx vitest run tests/evironn-hero-state.test.ts tests/evironn-hero-preload.test.ts tests/evironn-hero-shell.test.tsx tests/evironn-hero-assets.test.ts --reporter=dot --testTimeout=20000` — 4 files / 88 tests passed. Latest shell run: 49/49 passed. Prettier passed; ESLint had 0 errors and one existing `no-img-element` warning; `tsc --noEmit` and `git diff --check` passed.
+- Fresh Sol Medium acceptance review: `.superpowers/sdd/hero-room-media-preload-task-3-final-acceptance-review-5.md` — READY, Critical 0 / Important 0 / Minor 0. Public-contract boundary recorded: component tests do not mutate private committed Blob/object-URL ownership; Task 2 cache tests cover that ownership, while Task 3 proves supported retained-binding recovery. No browser result is claimed from jsdom.
+- Task 3: complete (cumulative remediation commits through `91375cb`; no push, PR, deploy, merge, database/env/provider operation, asset deletion, or build).
+- Next: Task 4 exact Playwright config/spec scope only; list scenarios first, verify an authorized already-running local server, then run the bounded desktop/mobile browser matrix. Stop before user visual acceptance.
+
+## Hero room media preload pilot — Task 4 browser verification closeout — 2026-09-04
+
+- Task 4 used only the approved browser surface: new `playwright.hero.config.ts`, the narrowed `e2e/evironn-hero-video-rollout.spec.ts`, and hero-related assertions/helpers in `e2e/evironn-home.spec.ts`. The runner targets the already-running local `npm run dev` server and has no `webServer`, build, database/API setup, provider call, or deployment hook.
+- During real Chromium playback a retained-bundle/native-readiness race was reproduced after room cleanup: transient `readyState` rehydration made a cache lookup reject a still-retained render bundle before `play()`. The bounded production fix in `components/evironn/home/hero-product-media.tsx` uses the render-captured retained bundle for the current playback/static effect while preserving native `play().catch`, generation, listener, and timer guards. No public test API was added.
+- Browser instrumentation records native direct MP4/WebM requests, fetch/Blob/object-URL/source-assignment/revocation ledgers, native media events, real CSS `animationend`, focus-image decode resolution, node identity, and `aria-busy`. Recovery proves kitchen failure → dismissal through `ГОСТИНАЯ` → fresh kitchen attempt/error → explicit `Повторить` → kitchen readiness; retained living Blob/object-URL/source/node ledgers stay unchanged and retained URLs are not revoked. Image decode matching covers focus assets; idle poster readiness is proven by the ready/stable hero contract because the production path does not invoke `decode()` for an already-complete poster.
+- Exact browser command: `npx playwright test --config=playwright.hero.config.ts e2e/evironn-hero-video-rollout.spec.ts e2e/evironn-home.spec.ts --reporter=line` — `10 passed (3.4m)` on local HTTP 200: desktop `1440x1000`, mobile `390x844`, all four living/kitchen products and both directions, deferred fourth kitchen resource, MP4-only and WebM capability cases, replay/revisit identity, failure recovery, reduced motion, focus, overflow, and home resilience. Focused recovery passed `1/1`; home subset after diagnostic-filter remediation passed `5/5` in `30.3s`. Playwright attachments include JSON ledgers and screenshots under `test-results`.
+- Focused checks: shell `npx vitest run tests/evironn-hero-shell.test.tsx --reporter=dot --testTimeout=20000` — `49/49`; touched-file Prettier passed; touched-file ESLint passed with zero errors; `npx tsc --noEmit` passed; `git diff --check` passed. No full gate, build, push, PR, deploy, merge, database/env/provider operation, asset modification, or visual acceptance is claimed.
+- Fresh Sol Medium final re-review: `PASS/READY`, Critical 0 / Important 0 / Minor 1. The minor generic hydration filter was narrowed to the reduced-motion test only; affected home browser verification passed `5/5`. Final user visual acceptance remains the next gate.
+- Task 4: complete locally; local commit is pending after the documented checks. Protected Phase 2 plan files remain untracked, unchanged, and unstaged.
+
+## Hero inert console warning correction — 2026-09-04
+
+- Reproduced the follow-up warning after the initial workaround: `inert=""` is treated as false by the Next bundled React DOM client. The production owner now passes the native boolean form `inert={preparing}`; the browser test no longer filters any inert diagnostic. The direct boolean form is accepted by Next's bundled runtime and preserves the preparation lock.
+- TDD evidence: the interim string-presence test was RED for the actual Next-compatible boolean contract; the final production form is verified by the browser console guard. Local home Chromium suite passed `5/5` in `37.6s`; shell behavior passed `49/49`. Prettier, ESLint, `tsc --noEmit`, and `git diff --check` passed. The shell's React 18 jsdom emits its known non-boolean inert warning because it does not share Next's bundled React DOM property table; this is not used as browser evidence.
+- Follow-up remains local-only; no push, PR, deploy, merge, database/env/provider operation, or visual acceptance occurred.

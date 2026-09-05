@@ -74,7 +74,7 @@ export function EditorialStatement() {
           <div className="editorial-group editorial-group-primary">
             <Phrase words={['Форма,']} firstOrder={0} />
             <EditorialImage
-              asset="/assets/furniture/material-wood-detail.png"
+              asset="/assets/furniture/material-wood-detail.webp"
               alt="Светлая дубовая деталь мебели"
               order={1}
               rotate={10}
@@ -83,7 +83,7 @@ export function EditorialStatement() {
           <div className="editorial-group editorial-group-secondary">
             <Phrase words={['к которой', 'хочется']} firstOrder={2} />
             <EditorialImage
-              asset="/assets/furniture/material-textile-detail.png"
+              asset="/assets/furniture/material-textile-detail.webp"
               alt="Фактура светлой мебельной обивки"
               order={4}
               rotate={-10}
@@ -92,7 +92,7 @@ export function EditorialStatement() {
           <div className="editorial-group editorial-group-tertiary">
             <Phrase words={['возвращаться.']} firstOrder={5} />
             <EditorialImage
-              asset="/assets/furniture/material-joinery-detail.png"
+              asset="/assets/furniture/material-joinery-detail.webp"
               alt="Точное столярное соединение"
               order={6}
               leaf

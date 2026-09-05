@@ -38,7 +38,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendResult> {
     });
     if (error || !data) {
       logger.error('email_send_failed', error, { to: opts.to, subject: opts.subject });
-      return { ok: false, error: error?.message ?? 'unknown' };
+      return { ok: false, error: 'email_send_failed' };
     }
     logger.info('email_sent', { to: opts.to, subject: opts.subject, id: data.id });
     return { ok: true, id: data.id };

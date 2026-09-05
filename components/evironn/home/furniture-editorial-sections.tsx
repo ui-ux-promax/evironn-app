@@ -16,7 +16,7 @@ const categories: Category[] = [
     href: catalogCategoryPath('sofas'),
     hoverVariant: 1,
     image: {
-      src: '/assets/editorial/images/category-sofa.png',
+      src: '/assets/editorial/images/category-sofa.webp',
       alt: 'Светлый диван букле в интерьере',
       className: 'furniture-category-image--sofa',
     },
@@ -26,7 +26,7 @@ const categories: Category[] = [
     href: '/catalog',
     hoverVariant: 2,
     image: {
-      src: '/assets/editorial/images/category-console.png',
+      src: '/assets/editorial/images/category-console.webp',
       alt: 'Дубовая консоль со скульптурным светильником',
       className: 'furniture-category-image--sidetables',
     },
@@ -37,7 +37,7 @@ const categories: Category[] = [
     href: '/catalog',
     hoverVariant: 4,
     image: {
-      src: '/assets/editorial/images/category-reading-chair.png',
+      src: '/assets/editorial/images/category-reading-chair.webp',
       alt: 'Плетёное кресло в светлом интерьере',
       className: 'furniture-category-image--tables',
     },
@@ -48,7 +48,7 @@ const categories: Category[] = [
     href: '/catalog',
     hoverVariant: 6,
     image: {
-      src: '/assets/editorial/images/category-bedside.png',
+      src: '/assets/editorial/images/category-bedside.webp',
       alt: 'Прикроватная тумба в спальне',
       className: 'furniture-category-image--beds',
     },
@@ -140,7 +140,7 @@ export function FurnitureWorksParallax() {
   return (
     <section className="furniture-works-parallax" id="our-works-header" ref={sectionRef}>
       <div className="furniture-works-parallax__background" ref={layerRef} aria-hidden="true">
-        <img src="/assets/editorial/images/71c2b8589fc6.png" alt="" />
+        <img src="/assets/editorial/images/71c2b8589fc6.webp" alt="" />
         <div className="furniture-works-parallax__scrim" />
       </div>
       <div className="furniture-works-parallax__content">

@@ -31,10 +31,10 @@ const resultFixture: CatalogResult = {
     '/assets/products/03-ivory-lounge-idle.webp',
     '/assets/products/04-dark-accent-idle.webp',
     '/assets/products/05-two-seat-sofa-idle.webp',
-    '/assets/products/01-bar-stool-cutout.png',
+    '/assets/products/01-bar-stool-cutout.webp',
     '/assets/products/04-dark-accent-idle.webp',
-    '/assets/products/03-ivory-lounge-cutout.png',
-    '/assets/products/05-terracotta-walnut-chair-alpha.png',
+    '/assets/products/03-ivory-lounge-cutout.webp',
+    '/assets/products/05-terracotta-walnut-chair-alpha.webp',
     '/assets/products/05-two-seat-sofa-idle.webp',
     '/assets/products/01-bar-stool-idle.webp',
     '/assets/products/02-rocking-chair-idle.webp',
@@ -99,11 +99,11 @@ describe('Catalog Variant B adapter', () => {
     const model = buildCatalogBModel(resultFixture);
 
     expect(model.roomTabs).toEqual([
-      { id: 'all', label: 'Все', image: '/assets/hero/kitchen-idle.jpg' },
-      { id: 'living', label: 'Гостиная', image: '/assets/editorial/images/71c2b8589fc6.png' },
-      { id: 'dining', label: 'Столовая', image: '/assets/hero/kitchen-idle.jpg' },
-      { id: 'bedroom', label: 'Спальня', image: '/assets/hero/bedroom-idle.jpg' },
-      { id: 'terrace', label: 'Терраса', image: '/assets/hero/terrace-idle.jpg' },
+      { id: 'all', label: 'Все', image: '/assets/hero/kitchen-idle.webp' },
+      { id: 'living', label: 'Гостиная', image: '/assets/editorial/images/71c2b8589fc6.webp' },
+      { id: 'dining', label: 'Столовая', image: '/assets/hero/kitchen-idle.webp' },
+      { id: 'bedroom', label: 'Спальня', image: '/assets/hero/bedroom-idle.webp' },
+      { id: 'terrace', label: 'Терраса', image: '/assets/hero/terrace-idle.webp' },
     ]);
     expect(model).toMatchObject({ total: 12, shown: 12, page: 1, totalPages: 2, price: { min: 24900, max: 189000 } });
   });
@@ -115,9 +115,9 @@ describe('Catalog Variant B adapter', () => {
       '03-ivory-lounge-idle.webp',
       '04-dark-accent-idle.webp',
       '05-two-seat-sofa-idle.webp',
-      '01-bar-stool-cutout.png',
-      '03-ivory-lounge-cutout.png',
-      '05-terracotta-walnut-chair-alpha.png',
+      '01-bar-stool-cutout.webp',
+      '03-ivory-lounge-cutout.webp',
+      '05-terracotta-walnut-chair-alpha.webp',
     ];
 
     for (const imageUrl of knownBasenames.map((basename) => `/assets/products/${basename}`)) {

@@ -110,6 +110,7 @@ export async function deleteCategory(id: string): Promise<CategoryActionResult> 
     return { ok: false, error: `Нельзя удалить: ${cat._count.products} товаров` };
   }
 
+  await prisma.category.delete({ where: { id } });
   if (cat.coverImagePublicId) {
     try {
       await deleteAsset(cat.coverImagePublicId);
@@ -117,7 +118,6 @@ export async function deleteCategory(id: string): Promise<CategoryActionResult> 
       /* best-effort */
     }
   }
-  await prisma.category.delete({ where: { id } });
   revalidatePath(LIST_PATH);
   return { ok: true };
 }

@@ -59,11 +59,11 @@ const modelFixture: CatalogBModel = {
   page: 1,
   totalPages: 1,
   roomTabs: [
-    { id: 'all', label: 'Все', image: '/assets/hero/kitchen-idle.jpg' },
-    { id: 'living', label: 'Гостиная', image: '/assets/editorial/images/71c2b8589fc6.png' },
-    { id: 'dining', label: 'Столовая', image: '/assets/hero/kitchen-idle.jpg' },
-    { id: 'bedroom', label: 'Спальня', image: '/assets/hero/bedroom-idle.jpg' },
-    { id: 'terrace', label: 'Терраса', image: '/assets/hero/terrace-idle.jpg' },
+    { id: 'all', label: 'Все', image: '/assets/hero/kitchen-idle.webp' },
+    { id: 'living', label: 'Гостиная', image: '/assets/editorial/images/71c2b8589fc6.webp' },
+    { id: 'dining', label: 'Столовая', image: '/assets/hero/kitchen-idle.webp' },
+    { id: 'bedroom', label: 'Спальня', image: '/assets/hero/bedroom-idle.webp' },
+    { id: 'terrace', label: 'Терраса', image: '/assets/hero/terrace-idle.webp' },
   ],
   facetGroups: [
     {

@@ -41,19 +41,19 @@ test('chooses a touch-friendly drag hint for coarse or touch input', () => {
 });
 
 test('uses one fixed room background with six selectable chair layers', () => {
-  expect(PRODUCT_SCENE_BACKGROUND).toBe('/assets/products/05-graphite-walnut-room-background-fixed.png');
+  expect(PRODUCT_SCENE_BACKGROUND).toBe('/assets/products/05-graphite-walnut-room-background-fixed.webp');
   expect(PRODUCT_SCENE_CHAIRS).toEqual({
     ivory: {
-      walnut: '/assets/products/05-ivory-walnut-chair-fixed-alpha.png',
-      pine: '/assets/products/05-ivory-pine-chair-fixed-alpha.png',
+      walnut: '/assets/products/05-ivory-walnut-chair-fixed-alpha.webp',
+      pine: '/assets/products/05-ivory-pine-chair-fixed-alpha.webp',
     },
     charcoal: {
-      walnut: '/assets/products/05-graphite-walnut-chair-fixed-alpha.png',
-      pine: '/assets/products/05-graphite-pine-chair-fixed-alpha.png',
+      walnut: '/assets/products/05-graphite-walnut-chair-fixed-alpha.webp',
+      pine: '/assets/products/05-graphite-pine-chair-fixed-alpha.webp',
     },
     terracotta: {
-      walnut: '/assets/products/05-terracotta-walnut-chair-fixed-alpha.png',
-      pine: '/assets/products/05-terracotta-pine-chair-fixed-alpha.png',
+      walnut: '/assets/products/05-terracotta-walnut-chair-fixed-alpha.webp',
+      pine: '/assets/products/05-terracotta-pine-chair-fixed-alpha.webp',
     },
   });
 });

@@ -87,7 +87,7 @@ export function NatureSection() {
         <div className="nature-panel">
           <img
             className="nature-background"
-            src="/assets/furniture/materials-room-wide.png"
+            src="/assets/furniture/materials-room-wide.webp"
             alt="Светлая гостиная с дубовым столом и плетёным креслом"
           />
           <div className="nature-scrim" aria-hidden="true" />

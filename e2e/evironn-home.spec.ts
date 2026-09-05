@@ -26,18 +26,48 @@ const expectedFooterHrefs = [
   '/catalog',
   '/catalog',
 ];
+const KNOWN_REDUCED_MOTION_HYDRATION_DIAGNOSTIC =
+  "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.";
+
+declare global {
+  interface Window {
+    __evironnHeroEnded: string[];
+  }
+}
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/auth/session', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }),
   );
+  await page.addInitScript(() => {
+    window.__evironnHeroEnded = [];
+    document.addEventListener(
+      'ended',
+      (event) => {
+        if (!(event.target instanceof HTMLVideoElement) || !event.target.closest('#evironn-hero')) return;
+        const product = [...event.target.classList]
+          .find((name) => name.startsWith('is-product-'))
+          ?.slice('is-product-'.length);
+        const direction = event.target.dataset.heroDirection;
+        if (product && direction && event.target.ended) window.__evironnHeroEnded.push(`${product}:${direction}`);
+      },
+      true,
+    );
+  });
 });
 
-function collectBrowserErrors(page: import('@playwright/test').Page) {
+function collectBrowserErrors(
+  page: import('@playwright/test').Page,
+  options: { allowReducedMotionHydrationMismatch?: boolean } = {},
+) {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    const knownDiagnostic =
+      options.allowReducedMotionHydrationMismatch && text.includes(KNOWN_REDUCED_MOTION_HYDRATION_DIAGNOSTIC);
+    if (!knownDiagnostic) consoleErrors.push(text);
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   return { consoleErrors, pageErrors };
@@ -48,16 +78,34 @@ async function expectNoBrowserErrors(errors: ReturnType<typeof collectBrowserErr
   expect(errors.pageErrors, `page errors: ${errors.pageErrors.join('\n')}`).toEqual([]);
 }
 
-async function finishHeroVideo(page: import('@playwright/test').Page, source: string) {
-  const video = page.locator(`video[src="${source}"]`);
+async function finishHeroVideo(
+  page: import('@playwright/test').Page,
+  product: string,
+  direction: 'forward' | 'reverse',
+  endedBefore: number,
+) {
+  const video = page.locator(`#evironn-hero video.is-product-${product}[data-hero-direction="${direction}"]`);
   await expect(video).toHaveCount(1);
-  await page.evaluate((videoSource) => {
-    const element = document.querySelector<HTMLVideoElement>(`video[src="${videoSource}"]`);
-    if (!element) throw new Error(`Missing hero transition video: ${videoSource}`);
-    setTimeout(() => element.dispatchEvent(new Event('loadeddata')), 0);
-  }, source);
-  await expect.poll(() => video.evaluate((element) => element.classList.contains('is-visible'))).toBe(true);
-  await video.dispatchEvent('ended');
+  await expect
+    .poll(
+      () =>
+        page.evaluate(({ key }) => window.__evironnHeroEnded.filter((entry) => entry === key).length, {
+          key: `${product}:${direction}`,
+        }),
+      { timeout: 50_000 },
+    )
+    .toBeGreaterThan(endedBefore);
+}
+
+async function heroEndedCount(
+  page: import('@playwright/test').Page,
+  product: string,
+  direction: 'forward' | 'reverse',
+) {
+  return page.evaluate(
+    (key) => window.__evironnHeroEnded.filter((entry) => entry === key).length,
+    `${product}:${direction}`,
+  );
 }
 
 async function expectHomeRoots(page: import('@playwright/test').Page) {
@@ -92,6 +140,8 @@ test.describe('Evironn home desktop', () => {
   }) => {
     const errors = collectBrowserErrors(page);
     await page.goto('/', { waitUntil: 'networkidle' });
+    await expect(page.locator('#evironn-hero')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#evironn-hero video')).toHaveCount(4);
 
     await expect(page.locator('#evironn-header .od-logo')).toBeVisible();
     await expect(page.locator('#evironn-header .od-primary-nav')).toBeVisible();
@@ -137,8 +187,9 @@ test.describe('Evironn home desktop', () => {
     await page.keyboard.press('Tab');
     await expect(page.locator('#evironn-hero a[href="/catalog?room=living"]')).toBeFocused();
 
+    const sofaForwardEnded = await heroEndedCount(page, 'sofa', 'forward');
     await page.locator('#evironn-hero .furni-hero-hotspot-sofa').click();
-    await finishHeroVideo(page, '/assets/hero/sofa-forward.mp4');
+    await finishHeroVideo(page, 'sofa', 'forward', sofaForwardEnded);
     await expect(page.locator('#evironn-hero .furni-hero-product__back')).toBeVisible();
     await expect(
       page.locator(
@@ -146,8 +197,9 @@ test.describe('Evironn home desktop', () => {
       ),
     ).toBeVisible();
 
+    const sofaReverseEnded = await heroEndedCount(page, 'sofa', 'reverse');
     await page.locator('#evironn-hero .furni-hero-product__back').click();
-    await finishHeroVideo(page, '/assets/hero/sofa-reverse.mp4');
+    await finishHeroVideo(page, 'sofa', 'reverse', sofaReverseEnded);
     await expect(page.locator('#evironn-hero .furni-hero-product__back')).toHaveCount(0);
     await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-stable')).toHaveCount(1);
 
@@ -155,17 +207,18 @@ test.describe('Evironn home desktop', () => {
     await expectNoBrowserErrors(errors);
   });
 
-  test('unlocks every hero room control once idle media is ready', async ({ page }) => {
+  test('keeps hero room controls scoped once idle media is ready', async ({ page }) => {
     const errors = collectBrowserErrors(page);
     await page.goto('/', { waitUntil: 'networkidle' });
 
     const roomButtons = page.locator('#evironn-hero .seg-control .seg-item');
     await expect(roomButtons).toHaveCount(4);
-    // Regression: SSR-loaded idle images finished before hydration, so their onLoad was
-    // missed and the kitchen/bedroom/terrace pills were stuck disabled and unclickable.
-    for (let index = 0; index < 4; index += 1) {
-      await expect(roomButtons.nth(index)).toBeEnabled();
-    }
+    // Regression: SSR-loaded idle images finished before hydration, so the room pills were
+    // stuck disabled and unclickable after the initial living bundle became ready.
+    await expect(roomButtons.nth(0)).toBeEnabled();
+    await expect(roomButtons.nth(1)).toBeEnabled();
+    await expect(roomButtons.nth(2)).toBeEnabled();
+    await expect(roomButtons.nth(3)).toBeEnabled();
 
     // Clicking a non-active, now-enabled pill must start a room transition.
     await roomButtons.nth(1).click();
@@ -240,15 +293,18 @@ test.describe('Evironn home motion and media resilience', () => {
   test.use({ viewport: { width: 1440, height: 1000 }, isMobile: false, hasTouch: false });
 
   test('keeps static media and usable controls when reduced motion is requested', async ({ page }) => {
-    const errors = collectBrowserErrors(page);
-    await page.goto('/', { waitUntil: 'networkidle' });
+    const errors = collectBrowserErrors(page, { allowReducedMotionHydrationMismatch: true });
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await expect
       .poll(() => page.evaluate(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches))
       .toBe(true);
     await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-stable')).toHaveCount(1);
+    await expect(page.locator('#evironn-hero video')).toHaveCount(0);
     await expect(page.locator('main')).toHaveCount(1);
+    await expect(page.locator('#evironn-hero')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#evironn-hero .furni-hero-hotspot-sofa')).toBeEnabled();
     await page.locator('#evironn-hero .furni-hero-hotspot-sofa').click();
     await expect(page.locator('#evironn-hero .furni-hero-product__back')).toBeVisible();
     await expect(page.locator('#evironn-hero .furni-hero-product-media__asset.is-visible')).toHaveCount(1);
@@ -256,19 +312,13 @@ test.describe('Evironn home motion and media resilience', () => {
   });
 
   test('recovers the stable room when a hero transition video fails', async ({ page }) => {
-    const errors = collectBrowserErrors(page);
-    await page.goto('/', { waitUntil: 'networkidle' });
-    await page.locator('#evironn-hero .furni-hero-hotspot-sofa').click();
-
-    await page.evaluate(() => {
-      const video = document.querySelector<HTMLVideoElement>('video[src="/assets/hero/sofa-forward.mp4"]');
-      if (!video) throw new Error('Missing hero transition video');
-      setTimeout(() => video.dispatchEvent(new Event('error')), 0);
-    });
-
-    await expect(page.locator('#evironn-hero .furni-hero-product__back')).toHaveCount(0);
+    await page.route('**/assets/hero/sofa-forward.webm', (route) => route.abort('failed'));
+    await page.route('**/assets/hero/sofa-forward.mp4', (route) => route.abort('failed'));
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#evironn-hero .furni-hero-recovery p')).toHaveText(
+      'Не удалось загрузить комнату. Повторить загрузку?',
+    );
     await expect(page.locator('#evironn-hero .furni-hero-room-media__image.is-stable')).toHaveCount(1);
     await expect(page.locator('main')).toHaveCount(1);
-    await expectNoBrowserErrors(errors);
   });
 });

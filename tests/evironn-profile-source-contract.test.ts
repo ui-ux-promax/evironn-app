@@ -55,6 +55,15 @@ describe('production profile Variant A source contract', () => {
     expect(component).toContain('CatalogCard');
   });
 
+  it('keeps profile favorite removal under one pending owner', () => {
+    expect(component).toContain('wishlisted={!removePending}');
+    expect(component).toContain('wishlistPending={removePending}');
+    expect(component).toContain('disabled={removePending}');
+    expect(component).toContain('aria-busy={removePending || undefined}');
+    expect(component).not.toMatch(/removePending\s*\?\s*<FadeArc/);
+    expect(controller).toContain('favorite:${productId}:remove');
+  });
+
   it('keeps exact responsive profile CSS and mobile navigation indicator', () => {
     expect(css).toContain('.prf');
     expect(css).toContain('.prf__nav-indicator');

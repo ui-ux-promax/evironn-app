@@ -378,8 +378,9 @@ describe('Profile Variant A', () => {
       expect(mocks.toggleWishlist).toHaveBeenCalledTimes(1);
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute('aria-busy', 'true');
-      expect(remove.querySelector('svg[class*="_spinner_"]')).toHaveAttribute('aria-hidden', 'true');
+      expect(remove.querySelector('svg[class*="_spinner_"]')).toBeNull();
       expect(screen.getByText('Noma')).toBeInTheDocument();
+      expect(screen.getByTestId('wishlisted-product-1')).toHaveTextContent('false');
     });
     expect(screen.getByRole('button', { name: 'Убрать Sold out из избранного' })).toBeEnabled();
 

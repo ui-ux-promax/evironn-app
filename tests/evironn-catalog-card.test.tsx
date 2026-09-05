@@ -71,13 +71,19 @@ const defaultWishlistToggle: WishlistToggle = async () => ({ ok: true, active: f
 
 function renderCard(
   product: CatalogBCard = cardFixture,
-  options: { eager?: boolean; wishlisted?: boolean; onWishlistToggle?: WishlistToggle } = {},
+  options: {
+    eager?: boolean;
+    wishlisted?: boolean;
+    wishlistPending?: boolean;
+    onWishlistToggle?: WishlistToggle;
+  } = {},
 ) {
   return render(
     <CatalogCard
       product={product}
       eager={options.eager}
       wishlisted={options.wishlisted ?? false}
+      wishlistPending={options.wishlistPending}
       onWishlistToggle={options.onWishlistToggle ?? defaultWishlistToggle}
     />,
   );
@@ -192,6 +198,18 @@ describe('CatalogCard', () => {
     await waitFor(() => expect(favorite).not.toBeDisabled());
     expect(favorite).not.toHaveAttribute('aria-busy');
     expect(favorite).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('uses an externally owned pending state without starting a second local request', () => {
+    const onWishlistToggle = vi.fn<WishlistToggle>();
+    renderCard(cardFixture, { wishlistPending: true, onWishlistToggle });
+
+    const favorite = screen.getByRole('button', { name: /Добавить Noma Woven Lounge/i });
+    expect(favorite).toBeDisabled();
+    expect(favorite).toHaveAttribute('aria-busy', 'true');
+    expect(favorite.querySelector('svg')).toHaveClass('h-[18px]', 'w-[18px]');
+    fireEvent.click(favorite);
+    expect(onWishlistToggle).not.toHaveBeenCalled();
   });
 
   it('activates forward playback on fine-pointer hover and reverse on leave', () => {

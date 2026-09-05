@@ -15,21 +15,27 @@ export function ReviewForm({ productId }: { productId: string }) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pending) return;
     setError(null);
     if (rating < 1) {
       setError('Поставьте оценку');
       return;
     }
     setPending(true);
-    const res = await submitReview({ productId, rating, body });
-    setPending(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      const res = await submitReview({ productId, rating, body });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setRating(0);
+      setBody('');
+      router.refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Не удалось отправить отзыв');
+    } finally {
+      setPending(false);
     }
-    setRating(0);
-    setBody('');
-    router.refresh();
   };
 
   return (

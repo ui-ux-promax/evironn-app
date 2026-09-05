@@ -384,7 +384,8 @@ function Favorites({ profile }: { profile: ReturnType<typeof useProfileVariantA>
             <div className="prf__favorite" key={product.id}>
               <CatalogCard
                 product={product}
-                wishlisted
+                wishlisted={!removePending}
+                wishlistPending={removePending}
                 eager={index < 4}
                 onWishlistToggle={profile.actions.toggleFavorite}
               />
@@ -404,7 +405,7 @@ function Favorites({ profile }: { profile: ReturnType<typeof useProfileVariantA>
                   aria-busy={removePending || undefined}
                   onClick={() => void profile.actions.toggleFavorite(product.id)}
                 >
-                  {removePending ? <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" /> : <FiTrash2 />}
+                  <FiTrash2 aria-hidden="true" />
                 </button>
               </div>
             </div>

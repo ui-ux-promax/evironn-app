@@ -23,6 +23,7 @@ type CatalogCardProps = {
   product: CatalogBCard;
   wishlisted: boolean;
   onWishlistToggle: (productId: string) => Promise<WishlistMutationResult>;
+  wishlistPending?: boolean;
   eager?: boolean;
 };
 
@@ -35,11 +36,13 @@ export function CatalogCard({
   product,
   wishlisted,
   onWishlistToggle,
+  wishlistPending: externalWishlistPending,
   eager = false,
 }: CatalogCardProps): React.ReactElement {
   const [frameReady, setFrameReady] = useState(false);
   const [fallback, setFallback] = useState<MediaFallbackMode>('idle');
   const [wishlistPending, setWishlistPending] = useState(false);
+  const isWishlistPending = externalWishlistPending ?? wishlistPending;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const phaseRef = useRef<CardPhase>('idle');
@@ -187,21 +190,21 @@ export function CatalogCard({
         type="button"
         aria-pressed={wishlisted}
         aria-label={wishlisted ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`}
-        disabled={wishlistPending}
-        aria-busy={wishlistPending || undefined}
+        disabled={isWishlistPending}
+        aria-busy={isWishlistPending || undefined}
         onClick={async () => {
-          if (wishlistPending) return;
-          setWishlistPending(true);
+          if (isWishlistPending) return;
+          if (externalWishlistPending === undefined) setWishlistPending(true);
           try {
             await onWishlistToggle(product.id);
           } catch {
             // The controller restores the previous server-backed state.
           } finally {
-            setWishlistPending(false);
+            if (externalWishlistPending === undefined) setWishlistPending(false);
           }
         }}
       >
-        {wishlistPending ? (
+        {isWishlistPending ? (
           <FadeArc className="h-[18px] w-[18px]" aria-hidden="true" />
         ) : (
           <FiHeart aria-hidden="true" />

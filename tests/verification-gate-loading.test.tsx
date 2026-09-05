@@ -1,0 +1,48 @@
+/** @vitest-environment jsdom */
+
+import '@testing-library/jest-dom/vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  resendVerificationCode: vi.fn(),
+  verifyEmailCode: vi.fn(),
+}));
+const { resendVerificationCode: resendVerificationCodeMock, verifyEmailCode: verifyEmailCodeMock } = mocks;
+
+vi.mock('@/app/actions/verification', () => ({
+  resendVerificationCode: mocks.resendVerificationCode,
+  verifyEmailCode: mocks.verifyEmailCode,
+}));
+
+import { VerificationGate } from '@/components/shared/auth/verification-gate';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  verifyEmailCodeMock.mockResolvedValue({ ok: true });
+});
+
+afterEach(cleanup);
+
+describe('VerificationGate async actions', () => {
+  it('shows resend progress and rejects duplicate clicks', () => {
+    let resolveResend!: (value: { ok: true }) => void;
+    resendVerificationCodeMock.mockReturnValue(
+      new Promise<{ ok: true }>((resolve) => {
+        resolveResend = resolve;
+      }),
+    );
+    render(<VerificationGate email="user@example.com" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить код снова' }));
+
+    const resend = screen.getByRole('button', { name: 'Отправляем код…' });
+    expect(resend).toBeDisabled();
+    expect(resend).toHaveAttribute('aria-busy', 'true');
+    expect(resend.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    fireEvent.click(resend);
+    expect(resendVerificationCodeMock).toHaveBeenCalledTimes(1);
+
+    resolveResend({ ok: true });
+  });
+});

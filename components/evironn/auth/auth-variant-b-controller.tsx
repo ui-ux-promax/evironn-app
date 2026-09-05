@@ -52,6 +52,7 @@ export function AuthVariantBController({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [resendBusy, setResendBusy] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
   const safeCallback = safeCallbackUrl(callbackUrl);
 
   useEffect(() => {
@@ -168,6 +169,19 @@ export function AuthVariantBController({
     }
   };
 
+  const onGoogle = async () => {
+    if (oauthBusy || busy) return;
+    setOauthBusy(true);
+    setError(null);
+    try {
+      await signIn('google', { redirectTo: safeCallback });
+    } catch {
+      setError('Не удалось войти через Google');
+    } finally {
+      setOauthBusy(false);
+    }
+  };
+
   return (
     <AuthVariantB
       mode={mode}
@@ -176,6 +190,7 @@ export function AuthVariantBController({
       oauthError={oauthError}
       busy={busy}
       resendBusy={resendBusy}
+      oauthBusy={oauthBusy}
       resendSeconds={resendSeconds}
       passwordVisible={passwordVisible}
       onModeChange={(next) => {
@@ -189,7 +204,7 @@ export function AuthVariantBController({
       onSubmit={onSubmit}
       onVerify={onVerify}
       onResend={onResend}
-      onGoogle={() => void signIn('google', { redirectTo: safeCallback })}
+      onGoogle={() => void onGoogle()}
       error={error}
     />
   );

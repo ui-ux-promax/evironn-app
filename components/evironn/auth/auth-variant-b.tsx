@@ -4,6 +4,7 @@ import { type FormEvent, type KeyboardEvent, type Ref, useRef, useState } from '
 import Link from 'next/link';
 import { FiArrowRight, FiCheck, FiEye, FiEyeOff, FiLock, FiMail, FiRefreshCw, FiShield, FiUser } from 'react-icons/fi';
 import { ConsentBlock, Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import {
   passwordStrength,
   type AuthVariantBErrors,
@@ -19,6 +20,7 @@ export interface AuthVariantBProps {
   oauthError: string | null;
   busy: boolean;
   resendBusy: boolean;
+  oauthBusy: boolean;
   resendSeconds: number;
   passwordVisible: boolean;
   onModeChange: (mode: 'login' | 'register') => void;
@@ -121,6 +123,7 @@ export function AuthVariantB({
   oauthError,
   busy,
   resendBusy,
+  oauthBusy,
   resendSeconds,
   passwordVisible,
   onModeChange,
@@ -195,9 +198,14 @@ export function AuthVariantB({
               className="auth-resend"
               type="button"
               disabled={resendSeconds > 0 || busy || resendBusy}
+              aria-busy={resendBusy}
               onClick={onResend}
             >
-              <FiRefreshCw aria-hidden="true" />
+              {resendBusy ? (
+                <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : (
+                <FiRefreshCw aria-hidden="true" />
+              )}
               {resendBusy
                 ? 'Отправляем код…'
                 : resendSeconds > 0
@@ -364,8 +372,13 @@ export function AuthVariantB({
                 <span>или</span>
               </div>
               <div className="auth-social">
-                <button type="button" onClick={onGoogle}>
-                  <FiMail aria-hidden="true" /> Google
+                <button type="button" onClick={onGoogle} disabled={busy || oauthBusy} aria-busy={busy || oauthBusy}>
+                  {oauthBusy ? (
+                    <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <FiMail aria-hidden="true" />
+                  )}{' '}
+                  Google
                 </button>
               </div>
             </>

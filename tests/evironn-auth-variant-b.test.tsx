@@ -161,6 +161,81 @@ describe('Auth Variant B', () => {
     await waitFor(() => expect(resend).toBeDisabled());
   });
 
+  it('shows progress while login is in flight', () => {
+    let resolveLogin!: (value: { ok: true }) => void;
+    signIn.mockReturnValue(
+      new Promise<{ ok: true }>((resolve) => {
+        resolveLogin = resolve;
+      }),
+    );
+    render(<AuthVariantBController {...props} />);
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'user@example.com' } });
+    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+
+    const submit = screen.getByRole('button', { name: 'Проверяем данные…' });
+    expect(submit).toBeDisabled();
+    expect(submit.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    resolveLogin({ ok: true });
+  });
+
+  it('shows progress while registration is in flight', () => {
+    let resolveRegister!: (value: { ok: true; needsVerification: true }) => void;
+    registerUser.mockReturnValue(
+      new Promise<{ ok: true; needsVerification: true }>((resolve) => {
+        resolveRegister = resolve;
+      }),
+    );
+    render(<AuthVariantBController {...props} initialMode="register" />);
+    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'Neo' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'neo@example.com' } });
+    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Повторите пароль'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /демонстрационного сервиса/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }));
+
+    const submit = screen.getByRole('button', { name: 'Проверяем данные…' });
+    expect(submit).toBeDisabled();
+    expect(submit.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    resolveRegister({ ok: true, needsVerification: true });
+  });
+
+  it('shows FadeArc while resend is in flight', () => {
+    let resolveResend!: (value: { ok: true }) => void;
+    resendVerificationCode.mockReturnValue(
+      new Promise<{ ok: true }>((resolve) => {
+        resolveResend = resolve;
+      }),
+    );
+    render(<AuthVariantBController {...props} initialVerificationPending />);
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить код повторно' }));
+
+    const resend = screen.getByRole('button', { name: 'Отправляем код…' });
+    expect(resend).toBeDisabled();
+    expect(resend.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    resolveResend({ ok: true });
+  });
+
+  it('shows FadeArc and rejects concurrent Google OAuth clicks', () => {
+    let resolveGoogle!: (value: { ok: true }) => void;
+    signIn.mockReturnValue(
+      new Promise<{ ok: true }>((resolve) => {
+        resolveGoogle = resolve;
+      }),
+    );
+    render(<AuthVariantBController {...props} />);
+    const google = screen.getByRole('button', { name: 'Google' });
+    fireEvent.click(google);
+    fireEvent.click(google);
+
+    const busyGoogle = screen.getByRole('button', { name: 'Google' });
+    expect(signIn).toHaveBeenCalledTimes(1);
+    expect(busyGoogle).toBeDisabled();
+    expect(busyGoogle).toHaveAttribute('aria-busy', 'true');
+    expect(busyGoogle.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    resolveGoogle({ ok: true });
+  });
+
   it('invokes only Google OAuth with callback and preserves provider error copy', async () => {
     render(<AuthVariantBController {...props} oauthError="OAuthAccountNotLinked" />);
     expect(screen.getByRole('alert')).toHaveTextContent('Этот email уже зарегистрирован через пароль');

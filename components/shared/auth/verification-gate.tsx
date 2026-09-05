@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { OtpInput } from './otp-input';
 import { verifyEmailCode, resendVerificationCode } from '@/app/actions/verification';
 import { safeCallbackUrl } from '@/lib/safe-redirect';
@@ -27,6 +28,7 @@ export function VerificationGate({ email, callbackUrl }: { email: string; callba
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
@@ -39,16 +41,21 @@ export function VerificationGate({ email, callbackUrl }: { email: string; callba
     if (submitting) return;
     setSubmitting(true);
     setError(null);
-    const res = await verifyEmailCode({ code: value });
-    setSubmitting(false);
-    if (res.ok) {
-      // Сессия заминчена сервером — жёстко уводим на callbackUrl (#4). Полный переход
-      // (а не router.replace+refresh) даёт корректный хедер и не цепляет /login→/profile.
-      window.location.assign(safeCallbackUrl(callbackUrl));
-      return;
+    try {
+      const res = await verifyEmailCode({ code: value });
+      if (res.ok) {
+        // Сессия заминчена сервером — жёстко уводим на callbackUrl (#4). Полный переход
+        // (а не router.replace+refresh) даёт корректный хедер и не цепляет /login→/profile.
+        window.location.assign(safeCallbackUrl(callbackUrl));
+        return;
+      }
+      setError(MESSAGES[res.reason] ?? 'Не удалось подтвердить.');
+      setCode('');
+    } catch {
+      setError('Не удалось подтвердить.');
+    } finally {
+      setSubmitting(false);
     }
-    setError(MESSAGES[res.reason] ?? 'Не удалось подтвердить.');
-    setCode('');
   };
 
   // Авто-сабмит при заполнении всех 6 цифр.
@@ -58,13 +65,21 @@ export function VerificationGate({ email, callbackUrl }: { email: string; callba
   }, [code]);
 
   const resend = async () => {
+    if (cooldown > 0 || submitting || resendBusy) return;
+    setResendBusy(true);
     setError(null);
-    const res = await resendVerificationCode();
-    if (!res.ok) {
-      setError(MESSAGES[res.error ?? ''] ?? 'Не удалось отправить код.');
-      return;
+    try {
+      const res = await resendVerificationCode();
+      if (!res.ok) {
+        setError(MESSAGES[res.error ?? ''] ?? 'Не удалось отправить код.');
+        return;
+      }
+      setCooldown(Math.round(VERIFICATION_RESEND_COOLDOWN_MS / 1000));
+    } catch {
+      setError('Не удалось отправить код.');
+    } finally {
+      setResendBusy(false);
     }
-    setCooldown(Math.round(VERIFICATION_RESEND_COOLDOWN_MS / 1000));
   };
 
   const block = (e: Event) => e.preventDefault();
@@ -104,10 +119,16 @@ export function VerificationGate({ email, callbackUrl }: { email: string; callba
           <button
             type="button"
             onClick={resend}
-            disabled={cooldown > 0}
+            disabled={cooldown > 0 || submitting || resendBusy}
+            aria-busy={resendBusy}
             className="w-full text-center text-sm text-black/60 mt-3 disabled:opacity-50 hover:text-black"
           >
-            {cooldown > 0 ? `Отправить снова через ${cooldown}с` : 'Отправить код снова'}
+            {resendBusy && <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />}
+            {resendBusy
+              ? 'Отправляем код…'
+              : cooldown > 0
+                ? `Отправить снова через ${cooldown}с`
+                : 'Отправить код снова'}
           </button>
         </Dialog.Content>
       </Dialog.Portal>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui';
@@ -17,6 +17,7 @@ export function CancelOrderButton({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,18 +27,25 @@ export function CancelOrderButton({
   };
 
   const confirmCancellation = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setError(null);
-    const res = await cancelOrder(orderId);
-    setBusy(false);
+    try {
+      const res = await cancelOrder(orderId);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
 
-    if (!res.ok) {
-      setError(res.error);
-      return;
+      setConfirmOpen(false);
+      router.refresh();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Не удалось отменить заказ');
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
-
-    setConfirmOpen(false);
-    router.refresh();
   };
 
   return (

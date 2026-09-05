@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/app/actions/checkout', () => ({ getCheckoutQuote: mocks.quote }));
 vi.mock('@/app/actions/order', () => ({ placeOrder: mocks.placeOrder }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }) }));
+vi.mock('@/components/loading-ui/fade-arc', () => ({
+  FadeArc: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="fade-arc" {...props} />,
+}));
 vi.mock('@/services/api-client', () => ({
   Api: {
     cart: {
@@ -547,7 +550,7 @@ describe('Checkout Variant A', () => {
     for (const button of screen.getAllByRole('button', { name: 'Удалить Noma' })) {
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-busy', 'true');
-      expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(button.querySelector('[data-testid="fade-arc"]')).toHaveAttribute('aria-hidden', 'true');
     }
     for (const button of screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' }))
       expect(button).toBeDisabled();
@@ -569,9 +572,10 @@ describe('Checkout Variant A', () => {
     await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
     expect(increases[0]).toBeDisabled();
     expect(increases[0]).toHaveAttribute('aria-busy', 'true');
-    expect(increases[0].querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
-    expect(stepper.querySelector('button[aria-label^="Убрать"]')).not.toHaveAttribute('aria-busy', 'true');
+    expect(increases[0].querySelector('[data-testid="fade-arc"]')).toHaveAttribute('aria-hidden', 'true');
+    expect(stepper.querySelector('button[aria-label^="Убрать"] [data-testid="fade-arc"]')).toBeNull();
     expect(stepper.querySelector('input')).not.toHaveAttribute('aria-busy', 'true');
+    expect(stepper.querySelector('input [data-testid="fade-arc"]')).toBeNull();
 
     await act(async () => resolveUpdate(cart));
   });
@@ -592,7 +596,7 @@ describe('Checkout Variant A', () => {
     for (const button of pending) {
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-busy', 'true');
-      expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(button.querySelector('[data-testid="fade-arc"]')).toHaveAttribute('aria-hidden', 'true');
     }
 
     await act(async () => resolvePlacement({ ok: true, code: 'ORDER_READY', orderNumber: 21 }));

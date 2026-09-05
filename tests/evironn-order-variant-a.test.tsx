@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/app/actions/order', () => ({ resyncOrderPayment: mocks.resyncOrderPayment }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
 vi.mock('@/components/shared/product/review-form', () => ({ ReviewForm: () => null }));
+vi.mock('@/components/loading-ui/fade-arc', () => ({
+  FadeArc: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="fade-arc" {...props} />,
+}));
 
 import { OrderVariantA } from '@/components/evironn/order/order-variant-a';
 
@@ -86,7 +89,7 @@ describe('OrderVariantA', () => {
     expect(resync).toBeDisabled();
     expect(resync).toHaveAttribute('aria-busy', 'true');
     expect(resync).toHaveTextContent('Проверить статус платежа');
-    expect(resync.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(resync.querySelector('[data-testid="fade-arc"]')).toHaveAttribute('aria-hidden', 'true');
 
     resolveResync({ ok: true });
     await waitFor(() => expect(resync).toBeEnabled());

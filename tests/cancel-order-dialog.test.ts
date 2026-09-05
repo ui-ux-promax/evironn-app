@@ -9,5 +9,7 @@ describe('customer order cancellation dialog', () => {
     expect(source).toContain('<Dialog.Root');
     expect(source).toContain('Отменить заказ?');
     expect(source).toContain('Не отменять');
+    expect(source).toContain('<Button variant="danger" onClick={confirmCancellation} loading={busy}>');
+    expect(source).toContain('Отменить заказ');
   });
 });

@@ -149,6 +149,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
   const [quotePending, setQuotePending] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [mutationPending, setMutationPending] = useState(false);
+  const [mutationKey, setMutationKey] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [submitPending, setSubmitPending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -310,9 +311,10 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     [initialData.addressDefaults?.city, initialData.savedAddresses],
   );
 
-  const mutateCart = useCallback(async (operation: () => Promise<unknown>) => {
+  const mutateCart = useCallback(async (key: string, operation: () => Promise<unknown>) => {
     if (mutationPendingRef.current || submitPendingRef.current || submitLockedRef.current) return;
     mutationPendingRef.current = true;
+    setMutationKey(key);
     ++quoteRevisionRef.current;
     setQuote(null);
     setQuotePending(false);
@@ -329,6 +331,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       setMutationError(messageOf(error));
     } finally {
       mutationPendingRef.current = false;
+      setMutationKey(null);
       setMutationPending(false);
     }
   }, []);
@@ -477,6 +480,7 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
     quotePending,
     quoteError,
     mutationPending,
+    mutationKey,
     mutationError,
     submitPending,
     submitError,
@@ -521,8 +525,9 @@ export function useCheckoutVariantA(initialData: CheckoutPageDto) {
       setContactPhone: guardChange(setContactPhone),
       setContactEmail: guardChange(setContactEmail),
       setPaymentMethod: guardChange(setPaymentMethod),
-      step: (id: string, quantity: number) => mutateCart(() => cart.updateItemQuantity(id, quantity)),
-      remove: (id: string) => mutateCart(() => cart.removeCartItem(id)),
+      step: (id: string, quantity: number, source: 'decrement' | 'increment' | 'input') =>
+        mutateCart(`line:${id}:${source}`, () => cart.updateItemQuantity(id, quantity)),
+      remove: (id: string) => mutateCart(`line:${id}:remove`, () => cart.removeCartItem(id)),
       submit,
     },
   };

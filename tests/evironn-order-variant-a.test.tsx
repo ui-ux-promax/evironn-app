@@ -1,7 +1,97 @@
-import { describe, expect, it } from 'vitest';
+/** @vitest-environment jsdom */
+
+import '@testing-library/jest-dom/vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
+import type { OrderPageDto } from '@/services/dto/order-page.dto';
+
+const mocks = vi.hoisted(() => ({
+  resyncOrderPayment: vi.fn(),
+  refresh: vi.fn(),
+}));
+
+vi.mock('@/app/actions/order', () => ({ resyncOrderPayment: mocks.resyncOrderPayment }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
+vi.mock('@/components/shared/product/review-form', () => ({ ReviewForm: () => null }));
+
+import { OrderVariantA } from '@/components/evironn/order/order-variant-a';
+
+const pendingOrder: OrderPageDto = {
+  id: 'order-1',
+  orderNumber: 42,
+  status: 'PAYMENT_PENDING',
+  stage: 'placed',
+  statusLabel: 'Ожидает оплаты',
+  createdAt: '2026-09-05T00:00:00.000Z',
+  createdAtLabel: '5 сентября 2026',
+  contact: { name: 'Anna', phone: '+79991234567', email: 'anna@example.com' },
+  delivery: {
+    method: 'courier',
+    address: 'Tverskaya, 10',
+    date: null,
+    dateLabel: null,
+    window: '10:00–14:00',
+    comment: null,
+    city: 'Moscow',
+    pickupPoint: null,
+    floor: 2,
+    liftType: 'passenger',
+  },
+  items: [],
+  totals: {
+    itemsSubtotal: 100000,
+    discount: 0,
+    delivery: 1900,
+    services: 0,
+    total: 101900,
+    couponCode: null,
+    serviceLines: [],
+  },
+  payment: {
+    kind: 'online',
+    status: 'pending',
+    label: 'Ожидает оплаты',
+    confirmationUrl: null,
+    initialization: {
+      status: 'PAYMENT_INITIALIZATION_PENDING',
+      continuePaymentUrl: null,
+      canRetryCreate: false,
+      allowedActions: ['RESYNC_PAYMENT'],
+    },
+  },
+  reviewTargets: [],
+  canCancel: false,
+};
+
+beforeEach(() => {
+  mocks.resyncOrderPayment.mockReset();
+  mocks.refresh.mockReset();
+});
+
+afterEach(cleanup);
 
 describe('OrderVariantA', () => {
+  it('shows payment resync progress and rejects duplicate activation', async () => {
+    let resolveResync!: (value: { ok: true }) => void;
+    mocks.resyncOrderPayment.mockReturnValue(new Promise((resolve) => (resolveResync = resolve)));
+    render(<OrderVariantA order={pendingOrder} />);
+
+    const resync = screen.getByRole('button', { name: 'Проверить статус платежа' });
+    fireEvent.click(resync);
+    fireEvent.click(resync);
+
+    await waitFor(() => expect(mocks.resyncOrderPayment).toHaveBeenCalledWith(42));
+    expect(mocks.resyncOrderPayment).toHaveBeenCalledTimes(1);
+    expect(resync).toBeDisabled();
+    expect(resync).toHaveAttribute('aria-busy', 'true');
+    expect(resync).toHaveTextContent('Проверить статус платежа');
+    expect(resync.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+
+    resolveResync({ ok: true });
+    await waitFor(() => expect(resync).toBeEnabled());
+  });
+
   it('exports production order shell', () =>
     expect(fs.readFileSync('components/evironn/order/order-variant-a.tsx', 'utf8')).toContain(
       'export function OrderVariantA',

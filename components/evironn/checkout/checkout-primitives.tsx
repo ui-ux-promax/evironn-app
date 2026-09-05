@@ -16,6 +16,7 @@ import {
 import type { CheckoutQuoteDto, DeliveryMethod } from '@/services/dto/checkout-page.dto';
 import type { CheckoutVariantAController } from './use-checkout-variant-a';
 import { countLabel, QtyStepper } from '@/components/evironn/cart/cart-primitives';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { formatPrice } from '@/lib/format';
 import { formatRuPhone } from '@/lib/phone';
 import '../../../styles/evironn/CheckoutPrimitives.css';
@@ -424,7 +425,7 @@ export function PaymentPicker({ controller }: { controller: Controller }) {
 }
 
 export function OrderLines({ controller }: { controller: Controller }) {
-  const { cart, quote, interactionsLocked, actions } = controller;
+  const { cart, quote, interactionsLocked, mutationKey, actions } = controller;
   const lines = quote?.cart.items ?? cart.items;
   return (
     <ul className="chk-lines chk-lines--light">
@@ -439,19 +440,29 @@ export function OrderLines({ controller }: { controller: Controller }) {
               name={line.name}
               max={Math.min(line.stock, 99)}
               disabled={interactionsLocked || !line.available}
-              onStep={(delta) => void actions.step(line.id, line.quantity + delta).catch(() => undefined)}
-              onSet={(quantity) => void actions.step(line.id, quantity).catch(() => undefined)}
+              pending={
+                mutationKey?.startsWith(`line:${line.id}:`)
+                  ? (mutationKey.slice(`line:${line.id}:`.length) as 'decrement' | 'increment' | 'input')
+                  : null
+              }
+              onStep={(delta) =>
+                void actions
+                  .step(line.id, line.quantity + delta, delta < 0 ? 'decrement' : 'increment')
+                  .catch(() => undefined)
+              }
+              onSet={(quantity) => void actions.step(line.id, quantity, 'input').catch(() => undefined)}
             />
           </div>
           <div className="chk-lines__money">
             {formatPrice(line.lineTotal)}
             <button
               type="button"
-              disabled={interactionsLocked}
+              disabled={interactionsLocked || mutationKey === `line:${line.id}:remove`}
+              aria-busy={mutationKey === `line:${line.id}:remove` || undefined}
               onClick={() => void actions.remove(line.id)}
               aria-label={`Удалить ${line.name}`}
             >
-              <FiX aria-hidden="true" />
+              {mutationKey === `line:${line.id}:remove` ? <FadeArc aria-hidden="true" /> : <FiX aria-hidden="true" />}
             </button>
           </div>
         </li>
@@ -506,9 +517,10 @@ export function SubmitButton({ controller }: { controller: Controller }) {
       className="chk-submit chk-submit--light"
       type="button"
       disabled={!quote || quotePending || mutationPending || submitPending || submitLocked}
-      aria-busy={submitPending}
+      aria-busy={submitPending || undefined}
       onClick={() => void actions.submit()}
     >
+      {submitPending && <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />}
       {submitPending
         ? 'Оформляем…'
         : quote

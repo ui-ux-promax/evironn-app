@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { RefreshCw } from 'lucide-react';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { formatPrice } from '@/lib/format';
 import { ReviewForm } from '@/components/shared/product/review-form';
 import { CancelOrderButton } from '@/components/shared/orders/cancel-order-button';
@@ -94,8 +95,14 @@ export function OrderVariantA({ order, placed = false }: { order: OrderPageDto; 
                 </a>
               )}
               {(initialization?.status === 'PAYMENT_INITIALIZATION_PENDING' || blocked) && (
-                <button className="ord-btn" type="button" onClick={controller.resync} disabled={controller.busy}>
-                  <RefreshCw />
+                <button
+                  className="ord-btn"
+                  type="button"
+                  onClick={() => void controller.resync()}
+                  disabled={controller.busy}
+                  aria-busy={controller.busy || undefined}
+                >
+                  {controller.busy ? <FadeArc aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
                   Проверить статус платежа
                 </button>
               )}

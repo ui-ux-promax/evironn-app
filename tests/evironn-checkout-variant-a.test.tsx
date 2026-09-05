@@ -544,12 +544,58 @@ describe('Checkout Variant A', () => {
     await waitFor(() => expect(mocks.removeCartItem).toHaveBeenCalledWith('line-1'));
 
     for (const button of screen.getAllByRole('button', { name: /Оформить заказ/ })) expect(button).toBeDisabled();
-    for (const button of screen.getAllByRole('button', { name: 'Удалить Noma' })) expect(button).toBeDisabled();
+    for (const button of screen.getAllByRole('button', { name: 'Удалить Noma' })) {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    }
     for (const button of screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' }))
       expect(button).toBeDisabled();
     expect(mocks.placeOrder).not.toHaveBeenCalled();
 
     await act(async () => resolveRemove(cart));
+  });
+
+  it('shows FadeArc only on the activated checkout quantity control', async () => {
+    let resolveUpdate!: (value: typeof cart) => void;
+    mocks.updateItemQuantity.mockReturnValue(new Promise((resolve) => (resolveUpdate = resolve)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    const increases = screen.getAllByRole('button', { name: 'Добавить одну штуку Noma' });
+    const stepper = increases[0].closest('.crt-qty') as HTMLElement;
+    fireEvent.click(increases[0]);
+
+    await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
+    expect(increases[0]).toBeDisabled();
+    expect(increases[0]).toHaveAttribute('aria-busy', 'true');
+    expect(increases[0].querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(stepper.querySelector('button[aria-label^="Убрать"]')).not.toHaveAttribute('aria-busy', 'true');
+    expect(stepper.querySelector('input')).not.toHaveAttribute('aria-busy', 'true');
+
+    await act(async () => resolveUpdate(cart));
+  });
+
+  it('shows FadeArc beside the final placement label and blocks duplicate placement', async () => {
+    let resolvePlacement!: (value: { ok: true; code: 'ORDER_READY'; orderNumber: number }) => void;
+    mocks.placeOrder.mockReturnValue(new Promise((resolve) => (resolvePlacement = resolve)));
+    render(<CheckoutVariantA initialData={initialData} />);
+    await screen.findAllByText(/101/);
+
+    const submit = screen.getAllByRole('button', { name: /Оформить заказ/ })[0];
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    const pending = screen.getAllByRole('button', { name: 'Оформляем…' });
+    expect(pending).toHaveLength(3);
+    expect(mocks.placeOrder).toHaveBeenCalledTimes(1);
+    for (const button of pending) {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    }
+
+    await act(async () => resolvePlacement({ ok: true, code: 'ORDER_READY', orderNumber: 21 }));
   });
 
   it('locks cart and quote-changing controls synchronously while placement is pending', async () => {

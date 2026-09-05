@@ -131,6 +131,7 @@ export function PromoField({
   onClear,
   pending = false,
   tone = 'light',
+  id: explicitId,
 }: {
   promo: PromoState;
   onType: (input: string) => void;
@@ -138,8 +139,10 @@ export function PromoField({
   onClear: () => void;
   pending?: boolean;
   tone?: Tone;
+  id?: string;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = explicitId ?? generatedId;
   const message = promo.message ?? promoMessage(promo);
   return (
     <div className={`crt-promo crt-promo--${tone} is-${promo.status}`}>

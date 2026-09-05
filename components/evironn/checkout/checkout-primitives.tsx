@@ -30,6 +30,7 @@ const icons: Record<DeliveryMethod, ReactNode> = {
 };
 
 export function Field({
+  id: explicitId,
   label,
   value,
   onChange,
@@ -40,6 +41,7 @@ export function Field({
   accessory,
   onFocus,
 }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -50,7 +52,8 @@ export function Field({
   accessory?: ReactNode;
   onFocus?: () => void;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = explicitId ?? generatedId;
   const noteId = `${id}-note`;
   return (
     <div className={`chk-field chk-field--light${wide ? ' is-wide' : ''}${error ? ' is-bad' : ''}`}>
@@ -92,6 +95,7 @@ export function ContactFields({ controller }: { controller: Controller }) {
   return (
     <div className="chk-grid">
       <Field
+        id="checkout-contact-name"
         label="Имя и фамилия"
         value={form.contactName}
         onChange={actions.setContactName}
@@ -99,6 +103,7 @@ export function ContactFields({ controller }: { controller: Controller }) {
         error={fieldErrors.contactName}
       />
       <Field
+        id="checkout-contact-phone"
         label="Телефон"
         value={formatRuPhone(form.contactPhone)}
         onChange={(value) => actions.setContactPhone(formatRuPhone(value))}
@@ -107,6 +112,7 @@ export function ContactFields({ controller }: { controller: Controller }) {
         error={fieldErrors.contactPhone}
       />
       <Field
+        id="checkout-contact-email"
         label="E-mail"
         value={form.contactEmail}
         onChange={actions.setContactEmail}
@@ -202,6 +208,7 @@ export function AddressFields({ controller }: { controller: Controller }) {
   return (
     <div className="chk-grid chk-grid--address">
       <Field
+        id="checkout-address-line"
         label="Адрес"
         value={form.address.addressLine}
         onChange={(value) => actions.setAddress({ ...form.address, addressLine: value })}
@@ -219,6 +226,7 @@ export function AddressFields({ controller }: { controller: Controller }) {
         }
       />
       <Field
+        id="checkout-address-city"
         label="Город"
         value={form.address.city}
         onChange={(value) => actions.setAddress({ ...form.address, city: value })}
@@ -226,6 +234,7 @@ export function AddressFields({ controller }: { controller: Controller }) {
         error={fieldErrors.city}
       />
       <Field
+        id="checkout-address-floor"
         label="Этаж"
         value={form.address.floor?.toString() ?? ''}
         onChange={(value) => actions.setAddress({ ...form.address, floor: value ? Number(value) : undefined })}
@@ -234,12 +243,14 @@ export function AddressFields({ controller }: { controller: Controller }) {
         error={fieldErrors.floor}
       />
       <Field
+        id="checkout-address-intercom"
         label="Домофон"
         value={form.address.intercom ?? ''}
         onChange={(value) => actions.setAddress({ ...form.address, intercom: value })}
         disabled={controller.interactionsLocked}
       />
       <Field
+        id="checkout-address-comment"
         label="Комментарий курьеру"
         value={form.address.addressComment ?? ''}
         onChange={(value) => actions.setAddress({ ...form.address, addressComment: value })}

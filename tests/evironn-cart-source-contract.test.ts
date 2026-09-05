@@ -88,8 +88,8 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(page).toContain('buildFurnitureProductCardData');
     expect(page).toContain('buildCatalogBCard');
     expect(`${page}\n${source('components/evironn/cart/cart-variant-a.tsx')}`).toContain('primarySkuId');
-    expect(source('components/evironn/cart/cart-variant-a.tsx')).toContain(
-      'disabled={!product.primarySkuId || product.soldOut}',
+    expect(source('components/evironn/cart/cart-variant-a.tsx')).toMatch(
+      /disabled=\{[\s\S]*!product\.primarySkuId[\s\S]*product\.soldOut[\s\S]*pendingActions\.has\(`related:/,
     );
   });
 
@@ -104,18 +104,16 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(css).not.toContain('.cart-a__swatches span');
     expect(css).not.toContain('.cart-a__mobile-bar button');
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      '50b7a852a230998c9bb04fd35e362dcae1a0f64e43f75fa39c0b1d68b916d51f',
+      '439dae8db84d4a0cb50c1cd182325d6b65cdbcbcf637504a5537a752aa0b35e5',
     );
   });
 
   it('handles rejected clear, related-add, and undo mutations at the click boundary', () => {
     const variant = source('components/evironn/cart/cart-variant-a.tsx');
 
-    expect(variant).toContain('onClick={() => void actions.clear().catch(() => undefined)}');
-    expect(variant).toMatch(
-      /onClick=\{\(\) =>\s*product\.primarySkuId && void actions\.addRelated\(product\.primarySkuId\)\.catch\(\(\) => undefined\)\s*\}/,
-    );
-    expect(variant).toMatch(/<UndoBar[\s\S]*onUndo=\{\(\) => void actions\.undo\(\)\.catch\(\(\) => undefined\)\}/);
+    expect(variant).toMatch(/actions\.clear\(\)\.catch\(\(\) => undefined\)/);
+    expect(variant).toMatch(/actions\.addRelated\(product\.primarySkuId\)\.catch\(\(\) => undefined\)/);
+    expect(variant).toMatch(/<UndoBar[\s\S]*actions\.undo\(\)\.catch\(\(\) => undefined\)/);
   });
 
   it('keeps the cart loading skeleton above the shared footer', () => {

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   toggleWishlist: vi.fn(),
   refreshWishlistCount: vi.fn(),
   validateCoupon: vi.fn(),
+  push: vi.fn(),
 }));
 
 vi.mock('@/services/api-client', () => ({
@@ -57,6 +58,7 @@ vi.mock('@/components/evironn/catalog/catalog-card', () => ({
     </article>
   ),
 }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 import { CartVariantA } from '@/components/evironn/cart/cart-variant-a';
 import { useCartStore } from '@/store/cart';
@@ -180,6 +182,24 @@ describe('Cart Variant A', () => {
     fireEvent.click(increase);
     await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
     expect(screen.getByRole('button', { name: 'Добавить одну штуку Noma Woven Lounge' })).toBeDisabled();
+  });
+
+  it('shows checkout navigation progress and rejects duplicate activation', async () => {
+    renderCart();
+    await waitFor(() => expect(screen.getAllByRole('link', { name: 'Оформить заказ' })).toHaveLength(2));
+
+    const checkoutLinks = screen.getAllByRole('link', { name: 'Оформить заказ' });
+    expect(checkoutLinks).toHaveLength(2);
+    fireEvent.click(checkoutLinks[0]);
+    fireEvent.click(checkoutLinks[0]);
+
+    expect(mocks.push).toHaveBeenCalledTimes(1);
+    expect(mocks.push).toHaveBeenCalledWith('/checkout');
+    expect(checkoutLinks[0]).toHaveAttribute('aria-busy', 'true');
+    expect(checkoutLinks[0]).toHaveTextContent('Оформить заказ');
+    expectFadeArc(checkoutLinks[0]);
+    expect(checkoutLinks[1]).toHaveAttribute('aria-busy', 'true');
+    expectFadeArc(checkoutLinks[1]);
   });
 
   it('shows pending feedback only on the active cart mutation control', async () => {

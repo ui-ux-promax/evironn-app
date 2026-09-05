@@ -34,6 +34,8 @@ vi.mock('@/services/api-client', () => ({
 }));
 
 import { CheckoutVariantA } from '@/components/evironn/checkout/checkout-variant-a';
+import { Field } from '@/components/evironn/checkout/checkout-primitives';
+import { PromoField } from '@/components/evironn/cart/cart-primitives';
 import { useCartStore } from '@/store/cart';
 
 const cart = {
@@ -152,6 +154,24 @@ afterEach(() => {
 });
 
 describe('Checkout Variant A', () => {
+  it('keeps checkout field and promo ids stable when explicitly scoped', () => {
+    render(
+      <>
+        <Field id="checkout-contact-name" label="Имя" value="Анна" onChange={vi.fn()} />
+        <PromoField
+          id="checkout-promo-desktop"
+          promo={{ input: '', code: '', status: 'idle', percent: 0 }}
+          onType={vi.fn()}
+          onApply={vi.fn()}
+          onClear={vi.fn()}
+        />
+      </>,
+    );
+
+    expect(screen.getByLabelText('Имя')).toHaveAttribute('id', 'checkout-contact-name');
+    expect(screen.getByLabelText('Промокод')).toHaveAttribute('id', 'checkout-promo-desktop');
+  });
+
   it('renders three receiving modes and replaces quote from server', async () => {
     render(<CheckoutVariantA initialData={initialData} />);
     expect(screen.getByRole('radio', { name: /Courier/ })).toBeInTheDocument();

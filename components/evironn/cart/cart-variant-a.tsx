@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FiHeart, FiTrash2 } from 'react-icons/fi';
 import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
@@ -23,6 +25,8 @@ const CHECKOUT_DISABLED_LABELS = {
 } as const;
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
+  const router = useRouter();
+  const [checkoutPending, setCheckoutPending] = useState(false);
   const {
     items,
     totals,
@@ -53,6 +57,16 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
           : items.some((item) => item.quantity > 99)
             ? CHECKOUT_DISABLED_LABELS.limit
             : CHECKOUT_DISABLED_LABELS.stock;
+
+  const openCheckout = () => {
+    if (checkoutPending) return;
+    setCheckoutPending(true);
+    try {
+      router.push('/checkout');
+    } catch {
+      setCheckoutPending(false);
+    }
+  };
 
   return (
     <main className="cart-a" id="main-content">
@@ -228,7 +242,17 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
               />
               <SummaryRows totals={totals} percent={promo.percent} />
               {canCheckout ? (
-                <a className="cart-a__checkout" href="/checkout">
+                <a
+                  className="cart-a__checkout"
+                  href="/checkout"
+                  aria-busy={checkoutPending || undefined}
+                  aria-disabled={checkoutPending || undefined}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openCheckout();
+                  }}
+                >
+                  {checkoutPending && <FadeArc className="cart-a__checkout-spinner" aria-hidden="true" />}
                   Оформить заказ
                 </a>
               ) : (
@@ -305,7 +329,18 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
             {totals.itemCount} товаров
           </span>
           {canCheckout ? (
-            <a href="/checkout">Оформить заказ</a>
+            <a
+              href="/checkout"
+              aria-busy={checkoutPending || undefined}
+              aria-disabled={checkoutPending || undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                openCheckout();
+              }}
+            >
+              {checkoutPending && <FadeArc className="cart-a__checkout-spinner" aria-hidden="true" />}
+              Оформить заказ
+            </a>
           ) : (
             <a
               role="button"

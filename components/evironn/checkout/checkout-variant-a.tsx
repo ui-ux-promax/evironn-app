@@ -57,10 +57,11 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
     );
   }
 
-  const summary = (
+  const renderSummary = (promoId: string) => (
     <>
       <OrderLines controller={controller} />
       <PromoField
+        id={promoId}
         promo={{
           input: form.couponDraft,
           code: quote?.coupon?.code ?? '',
@@ -170,12 +171,12 @@ export function CheckoutVariantA({ initialData }: { initialData: CheckoutPageDto
         <aside className="chk-a__side" aria-label="Сводка заказа">
           <div className="chk-a__summary">
             <h2>Ваш заказ</h2>
-            {summary}
+            {renderSummary('checkout-promo-desktop')}
             <SubmitButton controller={controller} />
           </div>
         </aside>
       </div>
-      <MobileBar controller={controller} summary={summary} />
+      <MobileBar controller={controller} summary={renderSummary('checkout-promo-mobile')} />
     </main>
   );
 }

@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the existing React Email component boundary: `EmailLayout` owns the shared canvas, header, card, and footer, while `VerificationCodeEmail` owns verification-specific hierarchy and the dynamic code. Verify the generated HTML rather than coupling tests only to source strings, and retain the existing welcome-email body while allowing it to inherit the new frame.
 
-**Tech Stack:** React 18, TypeScript, `@react-email/components`, `@react-email/render`, Vitest, Prettier, ESLint
+**Tech Stack:** React 18, TypeScript, `@react-email/components`, `react-dom/server`, Vitest, Prettier, ESLint
 
 ## Global Constraints
 
@@ -41,9 +41,9 @@
 Extend `tests/email-branding.test.ts` so it renders the verification component and checks both the approved design and removal of inherited content:
 
 ```ts
-import { render } from '@react-email/render';
 import { createElement } from 'react';
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { VerificationCodeEmail } from '../emails/verification-code';
 
@@ -61,8 +61,8 @@ describe('Evironn email templates', () => {
     }
   });
 
-  it('renders the approved Quiet Interior verification treatment', async () => {
-    const html = await render(createElement(VerificationCodeEmail, { code: '481034' }));
+  it('renders the approved Quiet Interior verification treatment', () => {
+    const html = renderToStaticMarkup(createElement(VerificationCodeEmail, { code: '481034' }));
 
     expect(html).toContain('481034');
     expect(html).toContain('Код подтверждения');

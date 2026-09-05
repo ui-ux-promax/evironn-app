@@ -1,6 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
+import { readFileSync } from 'node:fs';
+
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
@@ -120,7 +122,7 @@ describe('ProductPage canonical cart controls', () => {
     expect(mainButton).toBeDisabled();
     expect(mainButton).toHaveAttribute('aria-busy', 'true');
     expect(mainButton).toHaveTextContent('Добавить в корзину');
-    expect(mainButton.querySelector('svg')).toHaveClass('h-4', 'w-4');
+    expect(mainButton.querySelector('.product-page__cart-spinner')).toHaveClass('h-4', 'w-4');
 
     fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
     const addControls = document.querySelectorAll<HTMLButtonElement>(
@@ -131,7 +133,7 @@ describe('ProductPage canonical cart controls', () => {
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-busy', 'true');
       expect(button).toHaveTextContent('Добавить в корзину');
-      expect(button.querySelector('svg')).toHaveClass('h-4', 'w-4');
+      expect(button.querySelector('.product-page__cart-spinner')).toHaveClass('h-4', 'w-4');
     });
     expect(addCartItem).toHaveBeenCalledTimes(1);
 
@@ -143,5 +145,16 @@ describe('ProductPage canonical cart controls', () => {
       '.product-page__add-button, .product-page__360-add-button',
     );
     restoredControls.forEach((button) => expect(button).not.toBeDisabled());
+  });
+
+  it('keeps cart spinner sizing and main button alignment protected by next stylesheet contract', () => {
+    const source = readFileSync('styles/evironn/ProductPage.next.css', 'utf8');
+
+    expect(source).toMatch(
+      /\.product-page__360-add-button \.product-page__cart-spinner\s*\{[\s\S]*width:\s*16px;[\s\S]*height:\s*16px;[\s\S]*padding:\s*0;[\s\S]*background:\s*transparent;/,
+    );
+    expect(source).toMatch(
+      /\.product-page__add-button\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*gap:\s*8px;/,
+    );
   });
 });

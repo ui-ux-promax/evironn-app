@@ -387,7 +387,9 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
                     animate="visible"
                     variants={modalCaptionVariant(5)}
                   >
-                    {isAddingToCart ? <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}
+                    {isAddingToCart ? (
+                      <FadeArc className="product-page__cart-spinner h-4 w-4 shrink-0" aria-hidden="true" />
+                    ) : null}
                     <span>Добавить в корзину</span>
                     {!isAddingToCart ? <FiArrowUpRight aria-hidden="true" /> : null}
                   </motion.button>
@@ -566,7 +568,9 @@ export function ProductPage({ model }: { model: ShowcaseProductPageDto }) {
               disabled={isAddingToCart || currentCombination.sku.stock <= 0}
               aria-busy={isAddingToCart}
             >
-              {isAddingToCart ? <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}
+              {isAddingToCart ? (
+                <FadeArc className="product-page__cart-spinner h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : null}
               Добавить в корзину
             </button>
             {!is360Active && cartAddError ? (

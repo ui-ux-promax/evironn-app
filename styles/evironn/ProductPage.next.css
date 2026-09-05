@@ -16,6 +16,21 @@
   opacity: 0.6;
 }
 
+.product-page__add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.product-page__360-add-button .product-page__cart-spinner {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .product-page__product-media--fallback {
   position: relative;
   z-index: 2;

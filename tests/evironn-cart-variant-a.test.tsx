@@ -250,6 +250,9 @@ describe('Cart Variant A', () => {
     fireEvent.click(removeButton);
     expect(removeButton).toBeDisabled();
     expect(removeButton).toHaveAttribute('aria-busy', 'true');
+    expect(removeButton).toHaveAttribute('aria-label', 'Удалить Noma Woven Lounge');
+    expect(removeButton).toHaveTextContent('Удалить');
+    expectFadeArc(removeButton);
     fireEvent.click(removeButton);
     expect(mocks.removeCartItem).toHaveBeenCalledTimes(1);
     remove.resolve(empty);
@@ -260,6 +263,9 @@ describe('Cart Variant A', () => {
     fireEvent.click(undoButton);
     expect(undoButton).toBeDisabled();
     expect(undoButton).toHaveAttribute('aria-busy', 'true');
+    expect(undoButton).toHaveAccessibleName('Вернуть');
+    expect(undoButton).toHaveTextContent('Вернуть');
+    expectFadeArc(undoButton);
     fireEvent.click(undoButton);
     expect(mocks.addCartItem).toHaveBeenCalledTimes(1);
     undo.resolve(cart());
@@ -271,6 +277,9 @@ describe('Cart Variant A', () => {
     fireEvent.click(clearButton);
     expect(clearButton).toBeDisabled();
     expect(clearButton).toHaveAttribute('aria-busy', 'true');
+    expect(clearButton).toHaveAccessibleName('Очистить корзину');
+    expect(clearButton).toHaveTextContent('Очистить корзину');
+    expectFadeArc(clearButton);
     fireEvent.click(clearButton);
     expect(mocks.clearCart).toHaveBeenCalledTimes(1);
     clear.resolve(empty);
@@ -330,6 +339,9 @@ describe('Cart Variant A', () => {
     fireEvent.click(saveButton);
     expect(saveButton).toBeDisabled();
     expect(saveButton).toHaveAttribute('aria-busy', 'true');
+    expect(saveButton).toHaveAttribute('aria-label', 'Отложить Noma Woven Lounge');
+    expect(saveButton).toHaveTextContent('В избранное');
+    expectFadeArc(saveButton);
     fireEvent.click(saveButton);
     expect(mocks.addToWishlist).toHaveBeenCalledTimes(1);
     save.resolve({ ok: true, active: true });
@@ -347,6 +359,9 @@ describe('Cart Variant A', () => {
     fireEvent.click(addButton);
     expect(addButton).toBeDisabled();
     expect(addButton).toHaveAttribute('aria-busy', 'true');
+    expect(addButton).toHaveAttribute('aria-label', 'Добавить Related Chair в корзину');
+    expect(addButton).toHaveTextContent('Добавить в корзину');
+    expectFadeArc(addButton);
     expect(screen.getByRole('button', { name: 'Добавить Second Product в корзину' })).not.toHaveAttribute(
       'aria-busy',
       'true',
@@ -392,6 +407,7 @@ describe('Cart Variant A', () => {
     const pendingApply = screen.getByRole('button', { name: /Проверка/ });
     expect(pendingApply).toBeDisabled();
     expect(pendingApply).toHaveAttribute('aria-busy', 'true');
+    expectFadeArc(pendingApply);
     expect(pendingApply).toHaveTextContent('Проверка');
     fireEvent.click(pendingApply);
     expect(mocks.validateCoupon).toHaveBeenCalledTimes(1);

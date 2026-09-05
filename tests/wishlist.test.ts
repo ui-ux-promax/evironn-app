@@ -48,6 +48,14 @@ describe('resolveOwnerWishlist', () => {
     expect(w?.id).toBe('w3');
     expect(wlCreate).toHaveBeenCalledWith({ data: { token: 'tok', userId: undefined } });
   });
+  it('гость при гонке создания → перечитывает уже созданный wishlist после P2002', async () => {
+    const existing = { id: 'w4', userId: null, token: 'tok' };
+    wlFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(existing);
+    wlCreate.mockRejectedValueOnce({ code: 'P2002' });
+
+    await expect(resolveOwnerWishlist(null, 'tok', { create: true })).resolves.toEqual(existing);
+    expect(wlFindFirst).toHaveBeenNthCalledWith(2, { where: { token: 'tok' } });
+  });
   it('гость без token и create:false → null, без запроса', async () => {
     const w = await resolveOwnerWishlist(null, undefined, { create: false });
     expect(w).toBeNull();

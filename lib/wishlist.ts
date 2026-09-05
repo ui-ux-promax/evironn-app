@@ -11,6 +11,10 @@ const WISHLIST_TAKE = 100;
 
 type OwnerWishlist = { id: string; userId: string | null; token: string };
 
+function isUniqueConstraintError(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'P2002');
+}
+
 export async function resolveOwnerWishlist(
   session: Session | null,
   token: string | undefined,
@@ -22,13 +26,23 @@ export async function resolveOwnerWishlist(
     if (existing) return existing;
     if (!create) return null;
     if (!token) return null;
-    return prisma.wishlist.create({ data: { token, userId } });
+    try {
+      return await prisma.wishlist.create({ data: { token, userId } });
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) throw error;
+      return prisma.wishlist.findFirst({ where: { userId } });
+    }
   }
   if (!token) return null;
   const existing = await prisma.wishlist.findFirst({ where: { token } });
   if (existing) return existing;
   if (!create) return null;
-  return prisma.wishlist.create({ data: { token, userId: undefined } });
+  try {
+    return await prisma.wishlist.create({ data: { token, userId: undefined } });
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error;
+    return prisma.wishlist.findFirst({ where: { token } });
+  }
 }
 
 export async function getWishlistProductIds(session: Session | null, token: string | undefined): Promise<Set<string>> {

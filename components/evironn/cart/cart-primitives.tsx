@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import { FiCheck, FiHeadphones, FiMinus, FiPlus, FiRotateCcw, FiShoppingBag, FiTag, FiX } from 'react-icons/fi';
 import type { CartTotalsDto } from '@/services/dto/commerce-cart.dto';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { formatPrice } from '@/lib/format';
 import '../../../styles/evironn/CartPrimitives.css';
 
@@ -69,6 +70,7 @@ export function QtyStepper({
   maxQty = MAX_QTY,
   max,
   disabled = false,
+  pending = null,
 }: {
   qty: number;
   onStep: (delta: number) => void;
@@ -79,6 +81,7 @@ export function QtyStepper({
   maxQty?: number;
   max?: number;
   disabled?: boolean;
+  pending?: 'decrement' | 'increment' | 'input' | null;
 }) {
   const maximum = max ?? maxQty;
   return (
@@ -86,26 +89,29 @@ export function QtyStepper({
       <button
         type="button"
         onClick={() => onStep(-1)}
-        disabled={disabled || qty <= 1}
+        disabled={disabled || qty <= 1 || pending === 'decrement'}
+        aria-busy={pending === 'decrement' || undefined}
         aria-label={`Убрать одну штуку ${name}`}
       >
-        <FiMinus aria-hidden="true" />
+        {pending === 'decrement' ? <FadeArc aria-hidden="true" /> : <FiMinus aria-hidden="true" />}
       </button>
       <input
         type="text"
         inputMode="numeric"
         value={qty}
         aria-label={`Количество ${name}`}
-        disabled={disabled}
+        disabled={disabled || pending !== null}
+        aria-busy={pending === 'input' || undefined}
         onChange={(event) => onSet?.(Math.min(maximum, Number(event.target.value.replace(/\D/g, '')) || 1))}
       />
       <button
         type="button"
         onClick={() => onStep(1)}
-        disabled={disabled || qty >= maximum}
+        disabled={disabled || qty >= maximum || pending === 'increment'}
+        aria-busy={pending === 'increment' || undefined}
         aria-label={`Добавить одну штуку ${name}`}
       >
-        <FiPlus aria-hidden="true" />
+        {pending === 'increment' ? <FadeArc aria-hidden="true" /> : <FiPlus aria-hidden="true" />}
       </button>
     </div>
   );
@@ -139,7 +145,7 @@ export function PromoField({
         className="crt-promo__row"
         onSubmit={(event) => {
           event.preventDefault();
-          onApply();
+          if (!pending) onApply();
         }}
       >
         <span className="crt-promo__field">
@@ -162,7 +168,13 @@ export function PromoField({
             </button>
           )}
         </span>
-        <button className="crt-promo__apply" type="submit" disabled={pending || !promo.input.trim()}>
+        <button
+          className="crt-promo__apply"
+          type="submit"
+          disabled={pending || !promo.input.trim()}
+          aria-busy={pending || undefined}
+        >
+          {pending && <FadeArc aria-hidden="true" />}
           {pending ? 'Проверка' : 'Применить'}
         </button>
       </form>
@@ -228,10 +240,12 @@ export function UndoBar({
   label,
   onUndo,
   onDismiss,
+  pending = false,
 }: {
   label: string | null;
   onUndo: () => void;
   onDismiss: () => void;
+  pending?: boolean;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -243,8 +257,14 @@ export function UndoBar({
   return (
     <div className={`crt-undo${visible ? ' is-open' : ''}`} role="status" aria-live="polite">
       <p>{label ? `«${label}» убрали из корзины` : ''}</p>
-      <button className="crt-undo__undo" type="button" onClick={onUndo}>
-        <FiRotateCcw aria-hidden="true" /> Вернуть
+      <button
+        className="crt-undo__undo"
+        type="button"
+        onClick={onUndo}
+        disabled={pending}
+        aria-busy={pending || undefined}
+      >
+        {pending ? <FadeArc aria-hidden="true" /> : <FiRotateCcw aria-hidden="true" />} Вернуть
       </button>
       <button className="crt-undo__close" type="button" onClick={onDismiss} aria-label="Закрыть уведомление">
         <FiX aria-hidden="true" />

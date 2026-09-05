@@ -1,7 +1,7 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import { FiHeart, FiTrash2 } from 'react-icons/fi';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import type { CatalogBCard } from '@/components/evironn/catalog/catalog-variant-b-adapter';
 import { EmptyCart, PromoField, QtyStepper, Steps, SummaryRows, SupportLink, UndoBar } from './cart-primitives';
@@ -23,8 +23,19 @@ const CHECKOUT_DISABLED_LABELS = {
 } as const;
 
 export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProps) {
-  const { items, totals, loading, error, removed, savedMessage, promo, promoPending, wishlistedIds, actions } =
-    useCartVariantA(initialWishlistedIds);
+  const {
+    items,
+    totals,
+    loading,
+    error,
+    removed,
+    savedMessage,
+    promo,
+    promoPending,
+    pendingActions,
+    wishlistedIds,
+    actions,
+  } = useCartVariantA(initialWishlistedIds);
   const removedName = removed?.item.name ?? null;
   const canCheckout =
     !loading &&
@@ -68,7 +79,16 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
           <section className="cart-a__list" aria-label="Позиции заказа">
             <div className="cart-a__list-head">
               <p>{totals.itemCount} товаров</p>
-              <button type="button" onClick={() => void actions.clear().catch(() => undefined)}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pendingActions.has('clear')) return;
+                  void actions.clear().catch(() => undefined);
+                }}
+                disabled={pendingActions.has('clear')}
+                aria-busy={pendingActions.has('clear') || undefined}
+              >
+                {pendingActions.has('clear') && <FadeArc aria-hidden="true" />}
                 Очистить корзину
               </button>
             </div>
@@ -126,8 +146,26 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                         max={Math.min(item.stock, 99)}
                         name={item.name}
                         disabled={!item.available}
-                        onStep={(delta) => void actions.step(item.id, item.quantity + delta).catch(() => undefined)}
-                        onSet={(quantity) => void actions.step(item.id, quantity).catch(() => undefined)}
+                        pending={
+                          pendingActions.has(`line:${item.id}:decrement`)
+                            ? 'decrement'
+                            : pendingActions.has(`line:${item.id}:increment`)
+                              ? 'increment'
+                              : pendingActions.has(`line:${item.id}:input`)
+                                ? 'input'
+                                : null
+                        }
+                        onStep={(delta) => {
+                          const key = `line:${item.id}:${delta < 0 ? 'decrement' : 'increment'}`;
+                          if (pendingActions.has(key)) return;
+                          void actions
+                            .step(item.id, item.quantity + delta, delta < 0 ? 'decrement' : 'increment')
+                            .catch(() => undefined);
+                        }}
+                        onSet={(quantity) => {
+                          if (pendingActions.has(`line:${item.id}:input`)) return;
+                          void actions.step(item.id, quantity, 'input').catch(() => undefined);
+                        }}
                       />
                     </div>
 
@@ -139,17 +177,37 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                     <div className="cart-a__line-actions">
                       <button
                         type="button"
-                        onClick={() => void actions.saveToWishlist(item).catch(() => undefined)}
+                        onClick={() => {
+                          if (pendingActions.has(`line:${item.id}:wishlist`)) return;
+                          void actions.saveToWishlist(item).catch(() => undefined);
+                        }}
+                        disabled={pendingActions.has(`line:${item.id}:wishlist`)}
+                        aria-busy={pendingActions.has(`line:${item.id}:wishlist`) || undefined}
                         aria-label={`Отложить ${item.name}`}
                       >
-                        <FiHeart aria-hidden="true" /> В избранное
+                        {pendingActions.has(`line:${item.id}:wishlist`) ? (
+                          <FadeArc aria-hidden="true" />
+                        ) : (
+                          <FiHeart aria-hidden="true" />
+                        )}{' '}
+                        В избранное
                       </button>
                       <button
                         type="button"
-                        onClick={() => void actions.remove(item.id).catch(() => undefined)}
+                        onClick={() => {
+                          if (pendingActions.has(`line:${item.id}:remove`)) return;
+                          void actions.remove(item.id).catch(() => undefined);
+                        }}
+                        disabled={pendingActions.has(`line:${item.id}:remove`)}
+                        aria-busy={pendingActions.has(`line:${item.id}:remove`) || undefined}
                         aria-label={`Удалить ${item.name}`}
                       >
-                        <FiTrash2 aria-hidden="true" /> Удалить
+                        {pendingActions.has(`line:${item.id}:remove`) ? (
+                          <FadeArc aria-hidden="true" />
+                        ) : (
+                          <FiTrash2 aria-hidden="true" />
+                        )}{' '}
+                        Удалить
                       </button>
                     </div>
                   </li>
@@ -167,7 +225,9 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                 promo={promo}
                 pending={promoPending}
                 onType={actions.typePromo}
-                onApply={() => void actions.applyCoupon(promo.input)}
+                onApply={() => {
+                  if (!promoPending) void actions.applyCoupon(promo.input);
+                }}
                 onClear={actions.clearCoupon}
               />
               <SummaryRows totals={totals} percent={promo.percent} />
@@ -184,7 +244,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                   aria-busy={loading}
                   title={checkoutDisabledLabel}
                 >
-                  {loading && <Loader2 className="cart-a__checkout-spinner" aria-hidden="true" />}
+                  {loading && <FadeArc className="cart-a__checkout-spinner" aria-hidden="true" />}
                   {checkoutDisabledLabel}
                 </button>
               )}
@@ -209,12 +269,21 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                 />
                 <button
                   type="button"
-                  disabled={!product.primarySkuId || product.soldOut}
-                  aria-label={`Добавить ${product.name} в корзину`}
-                  onClick={() =>
-                    product.primarySkuId && void actions.addRelated(product.primarySkuId).catch(() => undefined)
+                  disabled={
+                    !product.primarySkuId ||
+                    product.soldOut ||
+                    pendingActions.has(`related:${product.primarySkuId}:add`)
                   }
+                  aria-busy={pendingActions.has(`related:${product.primarySkuId}:add`) || undefined}
+                  aria-label={`Добавить ${product.name} в корзину`}
+                  onClick={() => {
+                    if (!product.primarySkuId || pendingActions.has(`related:${product.primarySkuId}:add`)) return;
+                    void actions.addRelated(product.primarySkuId).catch(() => undefined);
+                  }}
                 >
+                  {product.primarySkuId && pendingActions.has(`related:${product.primarySkuId}:add`) && (
+                    <FadeArc aria-hidden="true" />
+                  )}
                   Добавить в корзину
                 </button>
               </div>
@@ -225,8 +294,12 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
 
       <UndoBar
         label={removedName}
-        onUndo={() => void actions.undo().catch(() => undefined)}
+        onUndo={() => {
+          if (pendingActions.has('undo')) return;
+          void actions.undo().catch(() => undefined);
+        }}
         onDismiss={actions.dismissUndo}
+        pending={pendingActions.has('undo')}
       />
 
       {items.length > 0 && (

@@ -52,6 +52,9 @@
 }
 
 .cart-a__list-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--ev-ink-60);
   font-family: var(--ev-font-body);
   font-size: 12.5px;
@@ -474,6 +477,10 @@
 }
 
 .cart-a__also-cell button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   height: 44px;
   border-radius: 999px;
   background: var(--ev-surface);
@@ -490,6 +497,13 @@
   background: hsl(var(--ev-text));
   box-shadow: none;
   color: #fff;
+}
+
+.cart-a__also-cell > button svg,
+.cart-a__list-head button svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 /* ---------- Mobile checkout bar ---------- */

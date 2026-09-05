@@ -136,6 +136,16 @@ function cart(items: CartLineDto[] = [line]): CartDto {
 
 const empty = cart([]);
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 function renderCart(snapshot = cart()) {
   mocks.getCart.mockResolvedValue(snapshot);
   return render(<CartVariantA related={[related, secondRelated]} initialWishlistedIds={[]} />);
@@ -166,6 +176,124 @@ describe('Cart Variant A', () => {
     fireEvent.click(increase);
     await waitFor(() => expect(mocks.updateItemQuantity).toHaveBeenCalledWith('line-1', 2));
     expect(screen.getByRole('button', { name: 'Добавить одну штуку Noma Woven Lounge' })).toBeDisabled();
+  });
+
+  it('shows pending feedback only on the active cart mutation control', async () => {
+    const firstLine = { ...line, quantity: 2, lineTotal: 178000, oldLineTotal: 198000 };
+    const secondLine = { ...line, id: 'line-2', productId: 'product-second', name: 'Second Line', quantity: 2 };
+    renderCart(cart([firstLine, secondLine]));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    const update = deferred<CartDto>();
+    mocks.updateItemQuantity.mockReturnValue(update.promise);
+    const firstDecrease = screen.getByRole('button', { name: 'Убрать одну штуку Noma Woven Lounge' });
+    const secondDecrease = screen.getByRole('button', { name: 'Убрать одну штуку Second Line' });
+
+    fireEvent.click(firstDecrease);
+    expect(firstDecrease).toBeDisabled();
+    expect(firstDecrease).toHaveAttribute('aria-busy', 'true');
+    expect(firstDecrease.querySelector('svg')).toBeInTheDocument();
+    expect(secondDecrease).not.toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(firstDecrease);
+    expect(mocks.updateItemQuantity).toHaveBeenCalledTimes(1);
+
+    update.resolve(cart([{ ...line, quantity: 1, lineTotal: 89000, oldLineTotal: 99000 }, secondLine]));
+    await waitFor(() => expect(firstDecrease).not.toHaveAttribute('aria-busy'));
+  });
+
+  it('keeps remove, undo, and clear feedback scoped until each request settles', async () => {
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    const remove = deferred<CartDto>();
+    mocks.removeCartItem.mockReturnValue(remove.promise);
+    const removeButton = screen.getByRole('button', { name: 'Удалить Noma Woven Lounge' });
+    fireEvent.click(removeButton);
+    expect(removeButton).toBeDisabled();
+    expect(removeButton).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(removeButton);
+    expect(mocks.removeCartItem).toHaveBeenCalledTimes(1);
+    remove.resolve(empty);
+    const undoButton = await screen.findByRole('button', { name: /Вернуть/ });
+
+    const undo = deferred<CartDto>();
+    mocks.addCartItem.mockReturnValue(undo.promise);
+    fireEvent.click(undoButton);
+    expect(undoButton).toBeDisabled();
+    expect(undoButton).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(undoButton);
+    expect(mocks.addCartItem).toHaveBeenCalledTimes(1);
+    undo.resolve(cart());
+    await waitFor(() => expect(undoButton).not.toHaveAttribute('aria-busy'));
+
+    const clear = deferred<CartDto>();
+    mocks.clearCart.mockReturnValue(clear.promise);
+    const clearButton = screen.getByRole('button', { name: 'Очистить корзину' });
+    fireEvent.click(clearButton);
+    expect(clearButton).toBeDisabled();
+    expect(clearButton).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(clearButton);
+    expect(mocks.clearCart).toHaveBeenCalledTimes(1);
+    clear.resolve(empty);
+    await screen.findByText('В корзине пока пусто');
+    expect(clearButton).not.toBeInTheDocument();
+  });
+
+  it('keeps save-to-wishlist and related add feedback independent', async () => {
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+
+    const save = deferred<{ ok: true; active: true }>();
+    const remove = deferred<CartDto>();
+    mocks.addToWishlist.mockReturnValue(save.promise);
+    mocks.removeCartItem.mockReturnValue(remove.promise);
+    const saveButton = screen.getByRole('button', { name: 'Отложить Noma Woven Lounge' });
+    fireEvent.click(saveButton);
+    expect(saveButton).toBeDisabled();
+    expect(saveButton).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(saveButton);
+    expect(mocks.addToWishlist).toHaveBeenCalledTimes(1);
+    save.resolve({ ok: true, active: true });
+    await waitFor(() => expect(mocks.removeCartItem).toHaveBeenCalledWith('line-1'));
+    remove.resolve(empty);
+    await screen.findByText('Товар сохранён в избранное');
+
+    cleanup();
+    useCartStore.setState({ ...empty, loading: false, error: false, totalAmount: 0 });
+    const add = deferred<CartDto>();
+    mocks.addCartItem.mockReturnValue(add.promise);
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+    const addButton = screen.getByRole('button', { name: 'Добавить Related Chair в корзину' });
+    fireEvent.click(addButton);
+    expect(addButton).toBeDisabled();
+    expect(addButton).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: 'Добавить Second Product в корзину' })).not.toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+    fireEvent.click(addButton);
+    expect(mocks.addCartItem).toHaveBeenCalledTimes(1);
+    add.resolve(cart());
+    await waitFor(() => expect(addButton).not.toHaveAttribute('aria-busy'));
+  });
+
+  it('shows promo validation feedback while preserving the apply label', async () => {
+    const validation = deferred<unknown>();
+    mocks.validateCoupon.mockReturnValue(validation.promise);
+    renderCart();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Корзина' })).toBeInTheDocument());
+    fireEvent.change(screen.getByRole('textbox', { name: 'Промокод' }), { target: { value: 'WELCOME10' } });
+    const apply = screen.getByRole('button', { name: 'Применить' });
+    fireEvent.click(apply);
+    const pendingApply = screen.getByRole('button', { name: /Проверка/ });
+    expect(pendingApply).toBeDisabled();
+    expect(pendingApply).toHaveAttribute('aria-busy', 'true');
+    expect(pendingApply).toHaveTextContent('Проверка');
+    fireEvent.click(pendingApply);
+    expect(mocks.validateCoupon).toHaveBeenCalledTimes(1);
+    validation.resolve({ ok: false, error: 'Неверный код' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Применить' })).not.toHaveAttribute('aria-busy'));
   });
 
   it('controls related wishlist pressed state, rolls back failed toggles, and refreshes count', async () => {

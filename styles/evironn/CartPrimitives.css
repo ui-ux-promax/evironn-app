@@ -229,6 +229,10 @@
 }
 
 .crt-promo__apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   height: 48px;
   padding: 0 22px;
   border-radius: 999px;
@@ -244,6 +248,11 @@
 
 .crt-promo__apply:hover:not(:disabled) {
   background: var(--ev-footer);
+}
+.crt-promo__apply svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 .crt-promo__apply:disabled {
   opacity: 0.34;

@@ -11,7 +11,7 @@ import type { WishlistMutationResult } from '@/services/dto/wishlist.dto';
 import type { PromoState } from './cart-primitives';
 
 export interface CartVariantAActions {
-  step(itemId: string, quantity: number): Promise<void>;
+  step(itemId: string, quantity: number, kind?: 'decrement' | 'increment' | 'input'): Promise<void>;
   remove(itemId: string): Promise<void>;
   clear(): Promise<void>;
   undo(): Promise<void>;
@@ -49,9 +49,11 @@ export function useCartVariantA(initialWishlistedIds: string[]) {
   const [removed, setRemoved] = useState<RemovedItem | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingActions, setPendingActions] = useState<ReadonlySet<string>>(() => new Set());
   const [wishlistedIds, setWishlistedIds] = useState(() => new Set(initialWishlistedIds));
   const cartRevisionRef = useRef(0);
   const couponRequestRef = useRef(0);
+  const pendingActionsRef = useRef(new Set<string>());
   const initialWishlistedKey = JSON.stringify(initialWishlistedIds);
 
   useEffect(() => setWishlistedIds(new Set(initialWishlistedIds)), [initialWishlistedKey]);
@@ -85,18 +87,32 @@ export function useCartVariantA(initialWishlistedIds: string[]) {
     [clearAppliedCoupon],
   );
 
+  const runPending = useCallback(async <T>(key: string, operation: () => Promise<T>): Promise<T> => {
+    if (pendingActionsRef.current.has(key)) throw new Error('ACTION_PENDING');
+    pendingActionsRef.current.add(key);
+    setPendingActions(new Set(pendingActionsRef.current));
+    try {
+      return await operation();
+    } finally {
+      pendingActionsRef.current.delete(key);
+      setPendingActions(new Set(pendingActionsRef.current));
+    }
+  }, []);
+
   const actions = useMemo(
     () => ({
-      step: async (itemId: string, quantity: number) => runMutation(() => cart.updateItemQuantity(itemId, quantity)),
+      step: async (itemId: string, quantity: number, kind = 'input') => {
+        return runPending(`line:${itemId}:${kind}`, () => runMutation(() => cart.updateItemQuantity(itemId, quantity)));
+      },
       remove: async (itemId: string) => {
         const index = cart.items.findIndex((item) => item.id === itemId);
         const item = index === -1 ? null : cart.items[index];
         if (!item) return;
-        await runMutation(() => cart.removeCartItem(itemId));
+        await runPending(`line:${itemId}:remove`, () => runMutation(() => cart.removeCartItem(itemId)));
         setRemoved({ item, index });
       },
       clear: async () => {
-        await runMutation(() => cart.clearCart());
+        await runPending('clear', () => runMutation(() => cart.clearCart()));
         setRemoved(null);
       },
       undo: async () => {
@@ -105,35 +121,40 @@ export function useCartVariantA(initialWishlistedIds: string[]) {
           setError('Устаревшую позицию нельзя вернуть без канонического SKU');
           return;
         }
-        await runMutation(() => cart.addCartItem({ skuId: removed.item.skuId, quantity: removed.item.quantity }));
+        await runPending('undo', () =>
+          runMutation(() => cart.addCartItem({ skuId: removed.item.skuId, quantity: removed.item.quantity })),
+        );
         setRemoved(null);
       },
       saveToWishlist: async (item: CartLineDto) => {
-        setError(null);
-        try {
-          const result = await addToWishlist({ productId: item.productId });
-          if (!result.ok) throw new Error(result.error);
-          setWishlistedIds((current) => {
-            const next = new Set(current);
-            if (result.active) next.add(item.productId);
-            else next.delete(item.productId);
-            return next;
-          });
-          await refreshWishlistCount();
-          const index = cart.items.findIndex((current) => current.id === item.id);
-          cartRevisionRef.current += 1;
-          couponRequestRef.current += 1;
-          setPromoPending(false);
-          await cart.removeCartItem(item.id);
-          clearAppliedCoupon();
-          setRemoved({ item, index: Math.max(0, index) });
-          setSavedMessage('Товар сохранён в избранное');
-        } catch (reason) {
-          setError(errorMessage(reason));
-          throw reason;
-        }
+        return runPending(`line:${item.id}:wishlist`, async () => {
+          setError(null);
+          try {
+            const result = await addToWishlist({ productId: item.productId });
+            if (!result.ok) throw new Error(result.error);
+            setWishlistedIds((current) => {
+              const next = new Set(current);
+              if (result.active) next.add(item.productId);
+              else next.delete(item.productId);
+              return next;
+            });
+            await refreshWishlistCount();
+            const index = cart.items.findIndex((current) => current.id === item.id);
+            cartRevisionRef.current += 1;
+            couponRequestRef.current += 1;
+            setPromoPending(false);
+            await cart.removeCartItem(item.id);
+            clearAppliedCoupon();
+            setRemoved({ item, index: Math.max(0, index) });
+            setSavedMessage('Товар сохранён в избранное');
+          } catch (reason) {
+            setError(errorMessage(reason));
+            throw reason;
+          }
+        });
       },
-      addRelated: async (skuId: string) => runMutation(() => cart.addCartItem({ skuId, quantity: 1 })),
+      addRelated: async (skuId: string) =>
+        runPending(`related:${skuId}:add`, () => runMutation(() => cart.addCartItem({ skuId, quantity: 1 }))),
       toggleWishlist: async (productId: string): Promise<WishlistMutationResult> => {
         const wasWishlisted = wishlistedIds.has(productId);
         setWishlistedIds((current) => {
@@ -219,6 +240,7 @@ export function useCartVariantA(initialWishlistedIds: string[]) {
       runMutation,
       setStoredCoupon,
       wishlistedIds,
+      runPending,
     ],
   );
 
@@ -243,6 +265,7 @@ export function useCartVariantA(initialWishlistedIds: string[]) {
     savedMessage,
     promo,
     promoPending,
+    pendingActions,
     actions,
   };
 }

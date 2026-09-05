@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('@/lib/prisma-client', () => ({
   prisma: {
-    wishlist: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    wishlist: { findFirst: vi.fn(), create: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
     wishlistItem: { findMany: vi.fn(), count: vi.fn(), upsert: vi.fn() },
   },
 }));
@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma-client';
 import { furnitureProductCardInclude } from '@/lib/furniture-product-summary';
 
 const wlFindFirst = prisma.wishlist.findFirst as unknown as ReturnType<typeof vi.fn>;
-const wlCreate = prisma.wishlist.create as unknown as ReturnType<typeof vi.fn>;
+const wlUpsert = prisma.wishlist.upsert as unknown as ReturnType<typeof vi.fn>;
 const wlUpdate = prisma.wishlist.update as unknown as ReturnType<typeof vi.fn>;
 const wlDelete = prisma.wishlist.delete as unknown as ReturnType<typeof vi.fn>;
 const itemFindMany = prisma.wishlistItem.findMany as unknown as ReturnType<typeof vi.fn>;
@@ -39,19 +39,23 @@ describe('resolveOwnerWishlist', () => {
     wlFindFirst.mockResolvedValue(null);
     const w = await resolveOwnerWishlist(null, 'tok', { create: false });
     expect(w).toBeNull();
-    expect(wlCreate).not.toHaveBeenCalled();
+    expect(wlUpsert).not.toHaveBeenCalled();
   });
   it('гость без записи и create:true → создаёт по token', async () => {
     wlFindFirst.mockResolvedValue(null);
-    wlCreate.mockResolvedValue({ id: 'w3', userId: null, token: 'tok' });
+    wlUpsert.mockResolvedValue({ id: 'w3', userId: null, token: 'tok' });
     const w = await resolveOwnerWishlist(null, 'tok', { create: true });
     expect(w?.id).toBe('w3');
-    expect(wlCreate).toHaveBeenCalledWith({ data: { token: 'tok', userId: undefined } });
+    expect(wlUpsert).toHaveBeenCalledWith({
+      where: { token: 'tok' },
+      create: { token: 'tok', userId: undefined },
+      update: {},
+    });
   });
   it('гость при гонке создания → перечитывает уже созданный wishlist после P2002', async () => {
     const existing = { id: 'w4', userId: null, token: 'tok' };
     wlFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(existing);
-    wlCreate.mockRejectedValueOnce({ code: 'P2002' });
+    wlUpsert.mockRejectedValueOnce({ code: 'P2002' });
 
     await expect(resolveOwnerWishlist(null, 'tok', { create: true })).resolves.toEqual(existing);
     expect(wlFindFirst).toHaveBeenNthCalledWith(2, { where: { token: 'tok' } });

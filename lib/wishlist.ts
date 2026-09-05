@@ -38,7 +38,11 @@ export async function resolveOwnerWishlist(
   if (existing) return existing;
   if (!create) return null;
   try {
-    return await prisma.wishlist.create({ data: { token, userId: undefined } });
+    return await prisma.wishlist.upsert({
+      where: { token },
+      create: { token, userId: undefined },
+      update: {},
+    });
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error;
     return prisma.wishlist.findFirst({ where: { token } });

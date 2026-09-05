@@ -425,13 +425,6 @@
   width: 17px;
   height: 17px;
   margin-right: 8px;
-  animation: cart-a-checkout-spin 800ms linear infinite;
-}
-
-@keyframes cart-a-checkout-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* ---------- Cross-sell ---------- */

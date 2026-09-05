@@ -33,6 +33,7 @@ export function countLabel(count: number): string {
 }
 
 type Tone = 'light' | 'dark';
+type QtyPendingControl = 'decrement' | 'increment' | 'input';
 
 /* ---------- Checkout progress ---------- */
 
@@ -81,37 +82,41 @@ export function QtyStepper({
   maxQty?: number;
   max?: number;
   disabled?: boolean;
-  pending?: 'decrement' | 'increment' | 'input' | null;
+  pending?: QtyPendingControl | ReadonlySet<QtyPendingControl> | null;
 }) {
   const maximum = max ?? maxQty;
+  const pendingControls = typeof pending === 'string' ? new Set([pending]) : pending;
+  const decrementPending = pendingControls?.has('decrement') ?? false;
+  const incrementPending = pendingControls?.has('increment') ?? false;
+  const inputPending = pendingControls?.has('input') ?? false;
   return (
     <div className={`crt-qty crt-qty--${size} crt-qty--${tone}`}>
       <button
         type="button"
         onClick={() => onStep(-1)}
-        disabled={disabled || qty <= 1 || pending === 'decrement'}
-        aria-busy={pending === 'decrement' || undefined}
+        disabled={disabled || qty <= 1 || decrementPending}
+        aria-busy={decrementPending || undefined}
         aria-label={`Убрать одну штуку ${name}`}
       >
-        {pending === 'decrement' ? <FadeArc aria-hidden="true" /> : <FiMinus aria-hidden="true" />}
+        {decrementPending ? <FadeArc aria-hidden="true" /> : <FiMinus aria-hidden="true" />}
       </button>
       <input
         type="text"
         inputMode="numeric"
         value={qty}
         aria-label={`Количество ${name}`}
-        disabled={disabled || pending !== null}
-        aria-busy={pending === 'input' || undefined}
+        disabled={disabled || inputPending}
+        aria-busy={inputPending || undefined}
         onChange={(event) => onSet?.(Math.min(maximum, Number(event.target.value.replace(/\D/g, '')) || 1))}
       />
       <button
         type="button"
         onClick={() => onStep(1)}
-        disabled={disabled || qty >= maximum || pending === 'increment'}
-        aria-busy={pending === 'increment' || undefined}
+        disabled={disabled || qty >= maximum || incrementPending}
+        aria-busy={incrementPending || undefined}
         aria-label={`Добавить одну штуку ${name}`}
       >
-        {pending === 'increment' ? <FadeArc aria-hidden="true" /> : <FiPlus aria-hidden="true" />}
+        {incrementPending ? <FadeArc aria-hidden="true" /> : <FiPlus aria-hidden="true" />}
       </button>
     </div>
   );

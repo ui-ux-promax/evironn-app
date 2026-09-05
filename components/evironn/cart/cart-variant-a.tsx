@@ -104,6 +104,10 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                 const configurationLabel = item.configuration
                   .map((option) => `${option.groupLabel}: ${option.valueLabel}`)
                   .join(' · ');
+                const pendingQuantityActions = new Set<'decrement' | 'increment' | 'input'>();
+                if (pendingActions.has(`line:${item.id}:decrement`)) pendingQuantityActions.add('decrement');
+                if (pendingActions.has(`line:${item.id}:increment`)) pendingQuantityActions.add('increment');
+                if (pendingActions.has(`line:${item.id}:input`)) pendingQuantityActions.add('input');
                 return (
                   <li className="cart-a__line" key={item.id}>
                     <a className="cart-a__thumb" href={`/product/${item.productSlug}`} aria-label={item.name}>
@@ -146,15 +150,7 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
                         max={Math.min(item.stock, 99)}
                         name={item.name}
                         disabled={!item.available}
-                        pending={
-                          pendingActions.has(`line:${item.id}:decrement`)
-                            ? 'decrement'
-                            : pendingActions.has(`line:${item.id}:increment`)
-                              ? 'increment'
-                              : pendingActions.has(`line:${item.id}:input`)
-                                ? 'input'
-                                : null
-                        }
+                        pending={pendingQuantityActions}
                         onStep={(delta) => {
                           const key = `line:${item.id}:${delta < 0 ? 'decrement' : 'increment'}`;
                           if (pendingActions.has(key)) return;

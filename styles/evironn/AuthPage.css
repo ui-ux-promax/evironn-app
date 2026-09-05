@@ -222,6 +222,54 @@
   height: 14px;
 }
 
+.auth-otp {
+  display: grid;
+  gap: 0.55rem;
+}
+.auth-otp__label {
+  color: var(--ev-ink-60);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.auth-otp__cells {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+.auth-otp__cells input {
+  width: 100%;
+  min-width: 0;
+  height: 56px;
+  border: 1px solid var(--ev-border-subtle);
+  border-radius: var(--ev-radius-sm);
+  background: var(--ev-surface);
+  color: hsl(var(--ev-text));
+  font-family: var(--ev-font-display);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+.auth-otp__cells input:focus-visible {
+  border-color: hsl(var(--ev-text));
+  outline: none;
+  box-shadow: var(--ev-focus-ring);
+}
+.auth-otp__cells input:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+.auth-otp.is-bad .auth-otp__cells input {
+  border-color: var(--ev-danger);
+}
+.auth-otp__note {
+  color: var(--ev-danger);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .auth-options {
   display: flex;
   align-items: center;
@@ -533,5 +581,11 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 0.65rem;
+  }
+  .auth-otp__cells {
+    gap: 0.35rem;
+  }
+  .auth-otp__cells input {
+    height: 50px;
   }
 }

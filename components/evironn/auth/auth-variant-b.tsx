@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, type KeyboardEvent, type Ref, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, type Ref, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck, FiEye, FiEyeOff, FiLock, FiMail, FiRefreshCw, FiShield, FiUser } from 'react-icons/fi';
 import { ConsentBlock, Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
@@ -29,9 +29,89 @@ export interface AuthVariantBProps {
   onTogglePassword: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onVerify: (event: FormEvent<HTMLFormElement>) => void;
+  onVerifyCode: () => void;
   onResend: () => void;
   onGoogle: () => void;
   error: string | null;
+}
+
+function VerificationCodeInput({
+  value,
+  error,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  error?: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const refs = useRef<Array<HTMLInputElement | null>>([]);
+  const labelId = 'verification-code-label';
+
+  useEffect(() => {
+    refs.current[0]?.focus();
+  }, []);
+
+  const setCharacter = (index: number, rawValue: string) => {
+    const digits = rawValue.replace(/\D/g, '').slice(0, 6);
+    if (index === 0 && digits.length > 1) {
+      onChange(digits);
+      refs.current[Math.min(digits.length, 6) - 1]?.focus();
+      return;
+    }
+
+    const characters = value.padEnd(6, ' ').slice(0, 6).split('');
+    characters[index] = digits.slice(-1) || ' ';
+    onChange(characters.join('').trimEnd());
+    if (digits && index < 5) refs.current[index + 1]?.focus();
+  };
+
+  return (
+    <div
+      className={`auth-otp${error ? ' is-bad' : ''}`}
+      role="group"
+      aria-labelledby={labelId}
+      onPaste={(event) => {
+        event.preventDefault();
+        const digits = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (!digits) return;
+        onChange(digits);
+        refs.current[Math.min(digits.length, 6) - 1]?.focus();
+      }}
+    >
+      <span className="auth-otp__label" id={labelId}>
+        Код из сообщения
+      </span>
+      <div className="auth-otp__cells">
+        {Array.from({ length: 6 }, (_, index) => (
+          <input
+            key={index}
+            ref={(element) => {
+              refs.current[index] = element;
+            }}
+            type="text"
+            inputMode="numeric"
+            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+            maxLength={6}
+            disabled={disabled}
+            value={value[index] ?? ''}
+            aria-label={`Цифра ${index + 1}`}
+            aria-invalid={Boolean(error)}
+            onChange={(event) => setCharacter(index, event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Backspace' && !value[index] && index > 0) refs.current[index - 1]?.focus();
+            }}
+          />
+        ))}
+      </div>
+      {error && (
+        <span className="auth-otp__note" role="alert">
+          {error}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function PasswordField({
@@ -132,12 +212,14 @@ export function AuthVariantB({
   onTogglePassword,
   onSubmit,
   onVerify,
+  onVerifyCode,
   onResend,
   onGoogle,
   error,
 }: AuthVariantBProps) {
   const [remember, setRemember] = useState(true);
   const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const lastSubmittedCode = useRef<string | null>(null);
   const strength = passwordStrength(values.password);
   const selectTab = (current: 'login' | 'register') => (event: KeyboardEvent<HTMLAnchorElement>) => {
     const modes = ['login', 'register'] as const;
@@ -164,6 +246,16 @@ export function AuthVariantB({
         ? 'Не удалось войти через Google'
         : error;
 
+  useEffect(() => {
+    if (mode !== 'verify' || !/^\d{6}$/.test(values.code) || busy) {
+      if (!/^\d{6}$/.test(values.code)) lastSubmittedCode.current = null;
+      return;
+    }
+    if (lastSubmittedCode.current === values.code) return;
+    lastSubmittedCode.current = values.code;
+    onVerifyCode();
+  }, [busy, mode, onVerifyCode, values.code]);
+
   if (mode === 'verify') {
     return (
       <main className="auth-page auth-page--b" id="main-content">
@@ -179,20 +271,11 @@ export function AuthVariantB({
           </header>
           <form className="auth-panel" onSubmit={onVerify} noValidate>
             <FormError message={error ?? ''} />
-            <Field
-              label="Код из сообщения"
+            <VerificationCodeInput
               value={values.code}
               error={errors.code}
-              placeholder="Введите 6 цифр"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              onChange={(value) => onFieldChange('code', value.replace(/\D/g, '').slice(0, 6))}
-            />
-            <SubmitButton
-              status={busy ? 'sending' : 'idle'}
-              disabled={values.code.length !== 6}
-              label="Подтвердить"
-              sendingLabel="Проверяем код…"
+              disabled={busy}
+              onChange={(value) => onFieldChange('code', value)}
             />
             <button
               className="auth-resend"

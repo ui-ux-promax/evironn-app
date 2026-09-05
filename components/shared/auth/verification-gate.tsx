@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Button } from '@/components/ui';
 import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { OtpInput } from './otp-input';
 import { verifyEmailCode, resendVerificationCode } from '@/app/actions/verification';
@@ -105,17 +104,6 @@ export function VerificationGate({ email, callbackUrl }: { email: string; callba
               {error}
             </p>
           )}
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            className="w-full mt-5"
-            loading={submitting}
-            disabled={code.length !== 6}
-            onClick={() => submit(code)}
-          >
-            Подтвердить
-          </Button>
           <button
             type="button"
             onClick={resend}

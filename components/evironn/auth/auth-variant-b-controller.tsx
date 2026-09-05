@@ -130,6 +130,11 @@ export function AuthVariantBController({
 
   const onVerify = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    await verifyCode();
+  };
+
+  const verifyCode = async () => {
+    if (busy || !/^\d{6}$/.test(values.code)) return;
     const parsed = verifyCodeSchema.safeParse({ code: values.code });
     if (!parsed.success) {
       setErrors(zodErrors(parsed.error));
@@ -203,6 +208,7 @@ export function AuthVariantBController({
       onTogglePassword={() => setPasswordVisible((visible) => !visible)}
       onSubmit={onSubmit}
       onVerify={onVerify}
+      onVerifyCode={() => void verifyCode()}
       onResend={onResend}
       onGoogle={() => void onGoogle()}
       error={error}

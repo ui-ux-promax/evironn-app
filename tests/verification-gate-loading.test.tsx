@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -25,6 +25,21 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('VerificationGate async actions', () => {
+  it('submits a completed OTP without rendering a confirmation button', async () => {
+    verifyEmailCodeMock.mockResolvedValue({ ok: false, reason: 'wrong' });
+    render(<VerificationGate email="user@example.com" />);
+
+    expect(screen.queryByRole('button', { name: 'Подтвердить' })).not.toBeInTheDocument();
+
+    const cells = screen.getAllByRole('textbox');
+    ['1', '2', '3', '4', '5', '6'].forEach((digit, index) => {
+      fireEvent.change(cells[index], { target: { value: digit } });
+    });
+
+    await waitFor(() => expect(verifyEmailCodeMock).toHaveBeenCalledWith({ code: '123456' }));
+    expect(verifyEmailCodeMock).toHaveBeenCalledTimes(1);
+  });
+
   it('shows resend progress and rejects duplicate clicks', () => {
     let resolveResend!: (value: { ok: true }) => void;
     resendVerificationCodeMock.mockReturnValue(

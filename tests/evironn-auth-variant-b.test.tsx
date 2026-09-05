@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
+import { readFileSync } from 'node:fs';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,6 +32,14 @@ const props = {
   oauthError: null,
 };
 
+function enterVerificationCode(code: string) {
+  const cells = screen.getAllByRole('textbox', { name: /цифра/i });
+  expect(cells).toHaveLength(6);
+  code.split('').forEach((digit, index) => {
+    fireEvent.change(cells[index], { target: { value: digit } });
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -47,6 +56,19 @@ afterEach(() => {
 });
 
 describe('Auth Variant B', () => {
+  it('uses the site rounded-corner radius for OTP cells instead of pill controls', () => {
+    const styles = readFileSync('styles/evironn/AuthPage.css', 'utf8');
+
+    expect(styles).toContain('.auth-otp__cells input');
+    expect(styles).toMatch(/\.auth-otp__cells input \{[\s\S]*border-radius: var\(--ev-radius-sm\);/);
+  });
+
+  it('renders OTP validation feedback with the red danger token', () => {
+    const styles = readFileSync('styles/evironn/AuthPage.css', 'utf8');
+
+    expect(styles).toMatch(/\.auth-otp__note \{[\s\S]*color: var\(--ev-danger\);/);
+  });
+
   it('shows generic credential error when server rejects credentials', async () => {
     signIn.mockResolvedValue({ ok: false, error: 'CredentialsSignin' });
     render(<AuthVariantBController {...props} />);
@@ -109,21 +131,20 @@ describe('Auth Variant B', () => {
     expect(ensureVerificationGate).toHaveBeenCalledWith('user@example.com', props.callbackUrl);
   });
 
-  it('verifies six digits and navigates to safe callback', async () => {
+  it('renders six OTP cells and verifies automatically after the final digit', async () => {
     render(<AuthVariantBController {...props} initialVerificationPending />);
-    const code = screen.getByLabelText('Код из сообщения');
-    fireEvent.change(code, { target: { value: '424242' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    expect(screen.queryByRole('button', { name: 'Подтвердить' })).not.toBeInTheDocument();
+    enterVerificationCode('424242');
 
     await waitFor(() => expect(verifyEmailCode).toHaveBeenCalledWith({ code: '424242' }));
+    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('heading', { name: 'Подтвердите почту' })).toBeInTheDocument();
   });
 
   it('shows visible feedback when verification action throws', async () => {
     verifyEmailCode.mockRejectedValue(new Error('verification unavailable'));
     render(<AuthVariantBController {...props} initialVerificationPending />);
-    fireEvent.change(screen.getByLabelText('Код из сообщения'), { target: { value: '424242' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    enterVerificationCode('424242');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось подтвердить код. Попробуйте позже');
   });

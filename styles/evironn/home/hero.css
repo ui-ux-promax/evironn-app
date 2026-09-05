@@ -773,7 +773,7 @@
   border: 1px solid hsl(var(--ev-text));
   border-radius: var(--ev-radius-pill);
   background: hsl(var(--ev-text));
-  color: hsl(var(--ev-background));
+  color: var(--ev-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

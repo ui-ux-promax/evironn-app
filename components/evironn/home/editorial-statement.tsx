@@ -68,7 +68,7 @@ function Phrase({ words, firstOrder }: { words: string[]; firstOrder: number }) 
 
 export function EditorialStatement() {
   return (
-    <section className="editorial-statement" aria-label={editorialCopy}>
+    <section className="editorial-statement" aria-label={editorialCopy} data-header-glass-density="dense">
       <div className="editorial-container">
         <div className="editorial-row">
           <div className="editorial-group editorial-group-primary">

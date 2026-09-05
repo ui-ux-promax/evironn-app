@@ -8,6 +8,11 @@ const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1
 
 const CONDENSE_ON = 64;
 const CONDENSE_OFF = 24;
+const GECKO_BACKDROP_ID = 'od-header-backdrop';
+
+type GeckoDocument = Document & {
+  mozSetImageElement?: (imageElementId: string, imageElement: Element | null) => void;
+};
 
 /**
  * Header chrome: scroll condensation, cart-count hydration, and the accessible
@@ -64,6 +69,71 @@ export function useHeaderChrome(serverCartCount: number) {
     condensed = window.scrollY > CONDENSE_ON;
     setIsCondensed(condensed);
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useLayoutEffect(() => {
+    const geckoDocument = document as GeckoDocument;
+    const target = innerRef.current;
+    const source = document.querySelector<HTMLElement>('.shop-content') ?? document.getElementById('main-content');
+    const denseSurfaces = Array.from(document.querySelectorAll<HTMLElement>('[data-header-glass-density="dense"]'));
+    const supportsElementImage =
+      typeof CSS !== 'undefined' &&
+      typeof CSS.supports === 'function' &&
+      CSS.supports('background-image', `-moz-element(#${GECKO_BACKDROP_ID})`) &&
+      typeof geckoDocument.mozSetImageElement === 'function';
+
+    if (!target || !source || !supportsElementImage || !geckoDocument.mozSetImageElement) return;
+
+    let animationFrame = 0;
+    const sync = () => {
+      animationFrame = 0;
+      const sourceBounds = source.getBoundingClientRect();
+      const targetBounds = target.getBoundingClientRect();
+      target.style.setProperty('--od-gecko-source-x', `${sourceBounds.left - targetBounds.left}px`);
+      target.style.setProperty('--od-gecko-source-y', `${sourceBounds.top - targetBounds.top}px`);
+      target.style.setProperty('--od-gecko-source-width', `${sourceBounds.width}px`);
+      target.style.setProperty('--od-gecko-source-height', `${sourceBounds.height}px`);
+      const overlapsDenseSurface = denseSurfaces.some((surface) => {
+        const bounds = surface.getBoundingClientRect();
+        return bounds.top < targetBounds.bottom && bounds.bottom > targetBounds.top;
+      });
+      target.dataset.geckoGlassDensity = overlapsDenseSurface ? 'dense' : 'normal';
+    };
+    const scheduleSync = () => {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(sync);
+    };
+
+    geckoDocument.mozSetImageElement(GECKO_BACKDROP_ID, source);
+    target.dataset.geckoGlass = 'ready';
+    sync();
+
+    let observer: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(scheduleSync);
+      observer.observe(source);
+      observer.observe(target);
+    }
+    window.addEventListener('scroll', scheduleSync, { passive: true });
+    window.addEventListener('resize', scheduleSync, { passive: true });
+
+    return () => {
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      observer?.disconnect();
+      window.removeEventListener('scroll', scheduleSync);
+      window.removeEventListener('resize', scheduleSync);
+      geckoDocument.mozSetImageElement?.(GECKO_BACKDROP_ID, null);
+      delete target.dataset.geckoGlass;
+      delete target.dataset.geckoGlassDensity;
+      for (const property of [
+        '--od-gecko-source-x',
+        '--od-gecko-source-y',
+        '--od-gecko-source-width',
+        '--od-gecko-source-height',
+      ]) {
+        target.style.removeProperty(property);
+      }
+    };
   }, []);
 
   useLayoutEffect(() => {

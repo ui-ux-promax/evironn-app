@@ -30,6 +30,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  document.querySelectorAll('[data-firefox-glass-test-source]').forEach((element) => element.remove());
+  delete (document as Document & { mozSetImageElement?: unknown }).mozSetImageElement;
   useCartStore.setState({ items: [], loading: true, totalAmount: 0, error: false });
 });
 
@@ -60,6 +62,56 @@ describe('Evironn storefront shell', () => {
     expect(screen.getByRole('link', { name: 'Поиск' })).toHaveAttribute('href', '/catalog');
     expect(screen.getByRole('link', { name: 'Аккаунт' })).toHaveAttribute('href', '/profile');
     expect(document.body).not.toHaveTextContent(/RITM/i);
+  });
+
+  it('registers and aligns a live Firefox paint source behind the glass capsule', () => {
+    const source = document.createElement('main');
+    source.className = 'shop-content';
+    source.dataset.firefoxGlassTestSource = 'true';
+    const denseSurface = document.createElement('section');
+    denseSurface.dataset.headerGlassDensity = 'dense';
+    source.append(denseSurface);
+    document.body.append(source);
+
+    const rect = (left: number, top: number, width: number, height: number) =>
+      ({
+        left,
+        top,
+        width,
+        height,
+        right: left + width,
+        bottom: top + height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      if (this === source) return rect(0, -120, 1326, 2400);
+      if (this.classList.contains('od-header-inner')) return rect(22, 10, 1282, 58);
+      if (this === denseSurface) return rect(0, 0, 1326, 180);
+      return rect(0, 0, 0, 0);
+    });
+
+    const setImageElement = vi.fn();
+    Object.defineProperty(document, 'mozSetImageElement', {
+      configurable: true,
+      value: setImageElement,
+    });
+    vi.stubGlobal('CSS', { supports: vi.fn(() => true) });
+
+    const view = render(<StorefrontHeader cartCount={0} />);
+    const capsule = document.querySelector<HTMLElement>('#evironn-header .od-header-inner');
+
+    expect(setImageElement).toHaveBeenCalledWith('od-header-backdrop', source);
+    expect(capsule).toHaveAttribute('data-gecko-glass', 'ready');
+    expect(capsule).toHaveAttribute('data-gecko-glass-density', 'dense');
+    expect(capsule?.style.getPropertyValue('--od-gecko-source-x')).toBe('-22px');
+    expect(capsule?.style.getPropertyValue('--od-gecko-source-y')).toBe('-130px');
+    expect(capsule?.style.getPropertyValue('--od-gecko-source-width')).toBe('1326px');
+    expect(capsule?.style.getPropertyValue('--od-gecko-source-height')).toBe('2400px');
+
+    view.unmount();
+    expect(setImageElement).toHaveBeenLastCalledWith('od-header-backdrop', null);
   });
 
   it('opens and closes the accessible mobile menu with canonical links', () => {

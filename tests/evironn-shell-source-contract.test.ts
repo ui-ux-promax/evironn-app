@@ -40,6 +40,12 @@ describe('Evironn shell source contract', () => {
 
     expect(header).toMatch(/#evironn-header\s+\.od-header-inner/);
     expect(header).toMatch(/backdrop-filter:\s*url\(#od-nav-liquid-glass\)/);
+    expect(header).toMatch(
+      /@supports\s*\(background-image:\s*-moz-element\(#od-header-backdrop\)\)[\s\S]*?background-image:\s*-moz-element\(#od-header-backdrop\)[\s\S]*?filter:\s*url\(#od-nav-liquid-glass\)\s+blur\(7px\)\s+saturate\(1\.4\)/,
+    );
+    expect(header).toMatch(
+      /data-gecko-glass-density=['"]dense['"][\s\S]*?filter:\s*url\(#od-nav-liquid-glass\)\s+blur\(14px\)[\s\S]*?opacity:\s*0\.42/,
+    );
     expect(header).toMatch(/#evironn-header\s+\.od-menu-toggle/);
     expect(footer).toMatch(/\.footer-15\s*\{/);
     expect(footer).toMatch(/\.footer-15-nav\s+a:focus-visible/);

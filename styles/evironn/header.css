@@ -455,6 +455,125 @@
   }
 }
 
+/* Gecko accepts the SVG `url()` syntax but does not paint a displacement graph
+   as a backdrop filter. Keep a conventional glass fallback until the client
+   registers a live page snapshot for the paint-source path below. */
+@supports (-moz-appearance: none) {
+  #evironn-header {
+    --od-gecko-glass:
+      radial-gradient(110% 180% at 12% -52%, rgba(255, 255, 255, 0.62), transparent 51%),
+      radial-gradient(72% 190% at 77% 132%, rgba(255, 255, 255, 0.23), transparent 60%),
+      linear-gradient(105deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 52%, rgba(255, 255, 255, 0.18)),
+      var(--od-glass-plate);
+  }
+
+  #evironn-header.is-condensed .od-header-inner {
+    background: var(--od-gecko-glass);
+    backdrop-filter: blur(7px) saturate(1.4);
+  }
+
+  @media (max-width: 600px) {
+    #evironn-header .od-header-inner,
+    #evironn-header.is-condensed .od-header-inner {
+      background: var(--od-gecko-glass);
+      backdrop-filter: blur(7px) saturate(1.4);
+    }
+  }
+}
+
+/* Firefox can run the same SVG displacement graph as an ordinary `filter`.
+   `-moz-element()` supplies a live image of the page content; JS keeps its
+   origin aligned with this fixed capsule while the document scrolls. */
+@supports (background-image: -moz-element(#od-header-backdrop)) {
+  #evironn-header .od-header-inner[data-gecko-glass='ready'] {
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  #evironn-header .od-header-inner[data-gecko-glass='ready'] > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  #evironn-header.is-condensed .od-header-inner[data-gecko-glass='ready'] {
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  #evironn-header.is-condensed .od-header-inner[data-gecko-glass='ready']::before {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background-image: -moz-element(#od-header-backdrop);
+    background-position: var(--od-gecko-source-x, 0) var(--od-gecko-source-y, 0);
+    background-size: var(--od-gecko-source-width, 100vw) var(--od-gecko-source-height, 100vh);
+    background-repeat: no-repeat;
+    content: '';
+    filter: url(#od-nav-liquid-glass) blur(7px) saturate(1.4);
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  #evironn-header.is-condensed .od-header-inner[data-gecko-glass='ready']::after {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: var(--od-gecko-glass);
+    content: '';
+    pointer-events: none;
+    transition: background-color 0.2s ease;
+  }
+
+  @media (max-width: 600px) {
+    #evironn-header .od-header-inner[data-gecko-glass='ready'],
+    #evironn-header.is-condensed .od-header-inner[data-gecko-glass='ready'] {
+      background: transparent;
+      backdrop-filter: none;
+    }
+
+    #evironn-header .od-header-inner[data-gecko-glass='ready']::before,
+    #evironn-header.is-condensed .od-header-inner[data-gecko-glass='ready']::before {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      border-radius: inherit;
+      background-image: -moz-element(#od-header-backdrop);
+      background-position: var(--od-gecko-source-x, 0) var(--od-gecko-source-y, 0);
+      background-size: var(--od-gecko-source-width, 100vw) var(--od-gecko-source-height, 100vh);
+      background-repeat: no-repeat;
+      content: '';
+      filter: url(#od-nav-liquid-glass) blur(7px) saturate(1.4);
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    #evironn-header .od-header-inner[data-gecko-glass='ready']::after,
+    #evironn-header.is-condensed .od-header-inner[data-gecko-glass='ready']::after {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: var(--od-gecko-glass);
+      content: '';
+      pointer-events: none;
+      transition: background-color 0.2s ease;
+    }
+  }
+
+  #evironn-header .od-header-inner[data-gecko-glass='ready'][data-gecko-glass-density='dense']::before {
+    filter: url(#od-nav-liquid-glass) blur(14px) saturate(1.3);
+    opacity: 0.42;
+  }
+
+  #evironn-header .od-header-inner[data-gecko-glass='ready'][data-gecko-glass-density='dense']::after {
+    background-color: rgba(255, 255, 255, 0.82);
+  }
+}
+
 #evironn-header .od-scrim {
   position: fixed;
   inset: 0;

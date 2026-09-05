@@ -89,6 +89,15 @@ describe('toggleWishlist', () => {
     expect(r).toEqual({ ok: true, active: true });
     expect(store.get('wishlistToken')).toBeTruthy();
   });
+  it('обновляет cookie, если авторизованный wishlist получил новый token', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u1' } });
+    resolveMock.mockResolvedValue({ id: 'w10', userId: 'u1', token: 'fresh-token' });
+    itemFindUnique.mockResolvedValue(null);
+    itemCreate.mockResolvedValue({ id: 'i10' });
+
+    await expect(toggleWishlist({ productId: 'p1' })).resolves.toEqual({ ok: true, active: true });
+    expect(store.get('wishlistToken')).toBe('fresh-token');
+  });
 
   it('неактивный товар не меняет wishlist', async () => {
     productFindFirst.mockResolvedValue(null);

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Session } from 'next-auth';
 import { prisma } from '@/lib/prisma-client';
 import {
@@ -30,6 +31,10 @@ async function recoverUserWishlistAfterTokenConflict(userId: string, token: stri
   }
 }
 
+async function createUserWishlistWithFreshToken(userId: string): Promise<OwnerWishlist> {
+  return prisma.wishlist.create({ data: { token: randomUUID(), userId } });
+}
+
 export async function resolveOwnerWishlist(
   session: Session | null,
   token: string | undefined,
@@ -45,7 +50,7 @@ export async function resolveOwnerWishlist(
       return await prisma.wishlist.create({ data: { token, userId } });
     } catch (error) {
       if (!isUniqueConstraintError(error)) throw error;
-      return recoverUserWishlistAfterTokenConflict(userId, token);
+      return (await recoverUserWishlistAfterTokenConflict(userId, token)) ?? createUserWishlistWithFreshToken(userId);
     }
   }
   if (!token) return null;

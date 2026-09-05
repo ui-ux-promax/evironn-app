@@ -42,6 +42,22 @@ describe('resolveOwnerWishlist', () => {
     );
     expect(wlUpdate).toHaveBeenCalledWith({ where: { id: 'wg' }, data: { userId: 'u1' } });
   });
+  it('залогинен при token другого пользователя → создаёт новый wishlist с новым token', async () => {
+    const fresh = { id: 'w5', userId: 'u1', token: 'fresh-token' };
+    wlFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'wo',
+      userId: 'other-user',
+      token: 'tok',
+    });
+    wlCreate.mockRejectedValueOnce({ code: 'P2002' }).mockResolvedValueOnce(fresh);
+
+    await expect(resolveOwnerWishlist({ user: { id: 'u1' } } as never, 'tok', { create: true })).resolves.toEqual(
+      fresh,
+    );
+    expect(wlCreate).toHaveBeenNthCalledWith(2, {
+      data: { token: expect.not.stringMatching(/^tok$/), userId: 'u1' },
+    });
+  });
   it('гость → ищет по token', async () => {
     wlFindFirst.mockResolvedValue({ id: 'w2', userId: null, token: 'tok' });
     const w = await resolveOwnerWishlist(null, 'tok', { create: false });

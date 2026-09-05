@@ -23,7 +23,9 @@ async function ensureOwner(session: Session | null, store: Awaited<ReturnType<ty
     token = randomUUID();
     store.set(wishlistCookieName, token, wishlistCookieOptions);
   }
-  return resolveOwnerWishlist(session, token, { create: true });
+  const owner = await resolveOwnerWishlist(session, token, { create: true });
+  if (owner && owner.token !== token) store.set(wishlistCookieName, owner.token, wishlistCookieOptions);
+  return owner;
 }
 
 function revalidateWishlistPaths(): void {

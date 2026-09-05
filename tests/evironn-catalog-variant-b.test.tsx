@@ -238,6 +238,8 @@ describe('Catalog Variant B shell', () => {
     const shell = readFileSync('components/evironn/catalog/catalog-variant-b.tsx', 'utf8');
     const route = readFileSync('app/(shop)/catalog/page.tsx', 'utf8');
     const css = readFileSync('styles/evironn/catalog-variant-b.css', 'utf8');
+    const primitivesCss = readFileSync('styles/evironn/catalog-primitives.css', 'utf8');
+    expect(primitivesCss).toMatch(/\.cat-empty\s*\{[\s\S]*?margin-top:\s*1\.4rem;/);
     for (const className of [
       'cat-b__stage',
       'cat-b__stage-inner',

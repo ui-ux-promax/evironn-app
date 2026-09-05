@@ -76,7 +76,7 @@ function reconcileProfileDto(
   for (const [productId, mutation] of optimisticFavorites) {
     const index = favorites.findIndex((product) => product.id === productId);
     if (!mutation.active) {
-      if (index !== -1) favorites.splice(index, 1);
+      if (index === -1 && mutation.product) favorites.push(mutation.product);
       continue;
     }
     if (index === -1 && mutation.product) favorites.push(mutation.product);
@@ -85,7 +85,19 @@ function reconcileProfileDto(
   return {
     ...normalized,
     favorites,
-    stats: { ...normalized.stats, favorites: favorites.length },
+    stats: {
+      ...normalized.stats,
+      favorites: Math.max(
+        0,
+        normalized.stats.favorites -
+          [...optimisticFavorites.values()].filter(
+            (mutation) =>
+              !mutation.active &&
+              mutation.product &&
+              normalized.favorites.some((product) => product.id === mutation.product?.id),
+          ).length,
+      ),
+    },
   };
 }
 
@@ -111,33 +123,48 @@ export function useProfileVariantA(dto: ProfilePageDto) {
   const optimisticFavorites = useRef(new Map<string, OptimisticFavoriteMutation>());
   const [section, setSection] = useState<ProfileSection>('overview');
   const [error, setError] = useState('');
-  const [pending, setPending] = useState(false);
+  const [pendingActions, setPendingActions] = useState<ReadonlySet<string>>(() => new Set());
+  const pendingActionsRef = useRef(new Set<string>());
 
   useEffect(() => {
     setData(reconcileProfileDto(normalizedDto, optimisticFavorites.current));
   }, [normalizedDto]);
 
-  const run = useCallback(async (operation: () => Promise<{ ok: true } | { ok: false; error: string }>) => {
-    setPending(true);
-    setError('');
+  const runPending = useCallback(async <T>(key: string, operation: () => Promise<T>): Promise<T | undefined> => {
+    if (pendingActionsRef.current.has(key)) return undefined;
+    pendingActionsRef.current.add(key);
+    setPendingActions(new Set(pendingActionsRef.current));
     try {
-      const result = await operation();
-      if (!result.ok) {
-        setError(result.error);
-        return false;
-      }
-      return true;
-    } catch (reason) {
-      setError(messageFor(reason));
-      return false;
+      return await operation();
     } finally {
-      setPending(false);
+      pendingActionsRef.current.delete(key);
+      setPendingActions(new Set(pendingActionsRef.current));
     }
   }, []);
 
+  const run = useCallback(
+    async (key: string, operation: () => Promise<{ ok: true } | { ok: false; error: string }>) => {
+      if (pendingActionsRef.current.has(key)) return false;
+      setError('');
+      try {
+        const result = await runPending(key, operation);
+        if (!result) return false;
+        if (!result.ok) {
+          setError(result.error);
+          return false;
+        }
+        return true;
+      } catch (reason) {
+        setError(messageFor(reason));
+        return false;
+      }
+    },
+    [runPending],
+  );
+
   const saveProfile = useCallback(
     async (values: ProfileValues) => {
-      const ok = await run(() => updateProfile(values));
+      const ok = await run('profile:save', () => updateProfile(values));
       if (ok) {
         setData((current) => {
           const name = values.name?.trim() ?? current.user.name;
@@ -162,7 +189,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
 
   const savePassword = useCallback(
     async (values: PasswordValues) => {
-      const ok = await run(() => updatePassword(values));
+      const ok = await run('password:save', () => updatePassword(values));
       if (ok) router.refresh();
     },
     [router, run],
@@ -170,10 +197,11 @@ export function useProfileVariantA(dto: ProfilePageDto) {
 
   const addProfileAddress = useCallback(
     async (values: ProfileAddressValues) => {
-      setPending(true);
+      if (pendingActionsRef.current.has('address:add')) return false;
       setError('');
       try {
-        const result = await addAddress(values);
+        const result = await runPending('address:add', () => addAddress(values));
+        if (!result) return false;
         if (!result.ok) {
           setError(result.error);
           return false;
@@ -194,16 +222,14 @@ export function useProfileVariantA(dto: ProfilePageDto) {
       } catch (reason) {
         setError(messageFor(reason));
         return false;
-      } finally {
-        setPending(false);
       }
     },
-    [data.addresses.length, router],
+    [data.addresses.length, router, runPending],
   );
 
   const removeProfileAddress = useCallback(
     async (id: string) => {
-      const ok = await run(() => deleteAddress(id));
+      const ok = await run(`address:${id}:delete`, () => deleteAddress(id));
       if (!ok) return;
       setData((current) => {
         const addresses = current.addresses.filter((address) => address.id !== id);
@@ -219,7 +245,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
 
   const makeDefaultAddress = useCallback(
     async (id: string) => {
-      const ok = await run(() => setDefaultAddress(id));
+      const ok = await run(`address:${id}:default`, () => setDefaultAddress(id));
       if (!ok) return;
       setData((current) => ({
         ...current,
@@ -234,15 +260,17 @@ export function useProfileVariantA(dto: ProfilePageDto) {
     async (productId: string) => {
       const toggledProduct = data.favorites.find((product) => product.id === productId);
       const token = Symbol(productId);
+      const key = `favorite:${productId}:remove`;
+      if (pendingActionsRef.current.has(key)) return { ok: false as const, error: 'ACTION_PENDING' };
       optimisticFavorites.current.set(productId, { active: false, product: toggledProduct, token });
       setData((current) => ({
         ...current,
-        favorites: current.favorites.filter((product) => product.id !== productId),
         stats: { ...current.stats, favorites: Math.max(0, current.stats.favorites - 1) },
       }));
       setError('');
       try {
-        const result = await toggleWishlist({ productId });
+        const result = await runPending(key, () => toggleWishlist({ productId }));
+        if (!result) return { ok: false as const, error: 'ACTION_PENDING' };
         if (!result.ok) {
           setData((current) => rollbackFavorite(current, productId, toggledProduct));
           setError(result.error);
@@ -267,29 +295,40 @@ export function useProfileVariantA(dto: ProfilePageDto) {
         if (optimisticFavorites.current.get(productId)?.token === token) optimisticFavorites.current.delete(productId);
       }
     },
-    [data.favorites, router],
+    [data.favorites, router, runPending],
   );
 
   const addFavoriteToCart = useCallback(
     async (skuId: string | null, soldOut: boolean) => {
       if (!skuId || soldOut) return false;
-      setPending(true);
+      const key = `favorite:${skuId}:cart`;
+      if (pendingActionsRef.current.has(key)) return false;
       setError('');
       try {
-        await addCartItem({ skuId, quantity: 1 });
+        await runPending(key, () => addCartItem({ skuId, quantity: 1 }));
         router.refresh();
         return true;
       } catch (reason) {
         setError(messageFor(reason));
         return false;
-      } finally {
-        setPending(false);
       }
     },
-    [addCartItem, router],
+    [addCartItem, router, runPending],
   );
 
-  const logout = useCallback(() => signOut({ callbackUrl: '/' }), []);
+  const logout = useCallback(async () => {
+    if (pendingActionsRef.current.has('logout')) return false;
+    setError('');
+    try {
+      await runPending('logout', () => signOut({ callbackUrl: '/' }));
+      return true;
+    } catch (reason) {
+      setError(messageFor(reason));
+      return false;
+    }
+  }, [runPending]);
+
+  const pending = pendingActions.size > 0;
 
   return useMemo(
     () => ({
@@ -297,6 +336,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
       section,
       error,
       pending,
+      pendingActions,
       actions: {
         go: setSection,
         saveProfile,
@@ -317,6 +357,7 @@ export function useProfileVariantA(dto: ProfilePageDto) {
       logout,
       makeDefaultAddress,
       pending,
+      pendingActions,
       removeProfileAddress,
       savePassword,
       saveProfile,

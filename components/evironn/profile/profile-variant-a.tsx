@@ -19,6 +19,7 @@ import {
 } from 'react-icons/fi';
 import { CatalogCard } from '@/components/evironn/catalog/catalog-card';
 import { Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import { formatPrice } from '@/lib/format';
 import type { ProfilePageDto, ProfileOrderDto, ProfileSection } from '@/services/dto/profile-page.dto';
 import type { ProfileValues } from '@/services/dto/auth.dto';
@@ -75,8 +76,18 @@ export function ProfileVariantA({ dto }: { dto: ProfilePageDto }) {
             <h1>{title}</h1>
             <p>{profile.data.user.email}</p>
           </div>
-          <button className="prf__logout" type="button" onClick={() => void profile.actions.logout()}>
-            <FiLogOut />
+          <button
+            className="prf__logout"
+            type="button"
+            disabled={profile.pendingActions.has('logout')}
+            aria-busy={profile.pendingActions.has('logout') || undefined}
+            onClick={() => void profile.actions.logout()}
+          >
+            {profile.pendingActions.has('logout') ? (
+              <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <FiLogOut />
+            )}
             Выйти
           </button>
         </div>
@@ -364,32 +375,41 @@ function Favorites({ profile }: { profile: ReturnType<typeof useProfileVariantA>
     <>
       <SectionHeading title="Избранное" copy="Предметы, к которым хочется вернуться." />
       <div className="prf__favorites">
-        {profile.data.favorites.map((product, index) => (
-          <div className="prf__favorite" key={product.id}>
-            <CatalogCard
-              product={product}
-              wishlisted
-              eager={index < 4}
-              onWishlistToggle={profile.actions.toggleFavorite}
-            />
-            <div>
-              <button
-                type="button"
-                disabled={!product.primarySkuId || product.soldOut || profile.pending}
-                onClick={() => void profile.actions.addFavoriteToCart(product.primarySkuId, product.soldOut)}
-              >
-                В корзину
-              </button>
-              <button
-                aria-label={`Убрать ${product.name} из избранного`}
-                type="button"
-                onClick={() => void profile.actions.toggleFavorite(product.id)}
-              >
-                <FiTrash2 />
-              </button>
+        {profile.data.favorites.map((product, index) => {
+          const cartKey = product.primarySkuId ? `favorite:${product.primarySkuId}:cart` : '';
+          const cartPending = Boolean(cartKey && profile.pendingActions.has(cartKey));
+          const removeKey = `favorite:${product.id}:remove`;
+          const removePending = profile.pendingActions.has(removeKey);
+          return (
+            <div className="prf__favorite" key={product.id}>
+              <CatalogCard
+                product={product}
+                wishlisted
+                eager={index < 4}
+                onWishlistToggle={profile.actions.toggleFavorite}
+              />
+              <div>
+                <button
+                  type="button"
+                  disabled={!product.primarySkuId || product.soldOut || cartPending}
+                  aria-busy={cartPending || undefined}
+                  onClick={() => void profile.actions.addFavoriteToCart(product.primarySkuId, product.soldOut)}
+                >
+                  {cartPending && <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />}В корзину
+                </button>
+                <button
+                  aria-label={`Убрать ${product.name} из избранного`}
+                  type="button"
+                  disabled={removePending}
+                  aria-busy={removePending || undefined}
+                  onClick={() => void profile.actions.toggleFavorite(product.id)}
+                >
+                  {removePending ? <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" /> : <FiTrash2 />}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {profile.data.favorites.length === 0 && (
         <Empty icon={<FiHeart />} text="Избранное пока пусто" link="Открыть каталог" href="/catalog" />
@@ -430,9 +450,11 @@ function Account({ profile }: { profile: ReturnType<typeof useProfileVariantA> }
       <button
         className="prf__primary"
         type="button"
-        disabled={profile.pending}
+        disabled={profile.pendingActions.has('profile:save')}
+        aria-busy={profile.pendingActions.has('profile:save') || undefined}
         onClick={() => void profile.actions.saveProfile(form)}
       >
+        {profile.pendingActions.has('profile:save') && <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />}
         Сохранить изменения
       </button>
       <section className="prf__subsection">
@@ -465,7 +487,7 @@ function Account({ profile }: { profile: ReturnType<typeof useProfileVariantA> }
             onChange={(value) => updatePasswordField('repeatPassword', value)}
           />
           <SubmitButton
-            status={profile.pending ? 'sending' : 'idle'}
+            status={profile.pendingActions.has('password:save') ? 'sending' : 'idle'}
             disabled={false}
             label="Изменить пароль"
             sendingLabel="Сохраняем…"
@@ -513,7 +535,12 @@ function Addresses({ profile }: { profile: ReturnType<typeof useProfileVariantA>
           <Field label="Улица и дом" value={form.street} onChange={(value) => update('street', value)} />
           <Field label="Комментарий" value={form.comment} onChange={(value) => update('comment', value)} />
           <div className="prf__actions">
-            <button type="submit" disabled={profile.pending}>
+            <button
+              type="submit"
+              disabled={profile.pendingActions.has('address:add')}
+              aria-busy={profile.pendingActions.has('address:add') || undefined}
+            >
+              {profile.pendingActions.has('address:add') && <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />}
               Сохранить адрес
             </button>
           </div>
@@ -537,18 +564,29 @@ function Addresses({ profile }: { profile: ReturnType<typeof useProfileVariantA>
               {!address.isDefault && (
                 <button
                   type="button"
+                  disabled={profile.pendingActions.has(`address:${address.id}:default`)}
+                  aria-busy={profile.pendingActions.has(`address:${address.id}:default`) || undefined}
                   onClick={() => void profile.actions.setDefaultAddress(address.id)}
                   aria-label={`Сделать адрес ${address.label} основным`}
                 >
+                  {profile.pendingActions.has(`address:${address.id}:default`) && (
+                    <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  )}
                   Основной
                 </button>
               )}
               <button
                 type="button"
                 aria-label={`Удалить ${address.label}`}
+                disabled={profile.pendingActions.has(`address:${address.id}:delete`)}
+                aria-busy={profile.pendingActions.has(`address:${address.id}:delete`) || undefined}
                 onClick={() => void profile.actions.deleteAddress(address.id)}
               >
-                <FiTrash2 />
+                {profile.pendingActions.has(`address:${address.id}:delete`) ? (
+                  <FadeArc className="h-4 w-4 shrink-0" aria-hidden="true" />
+                ) : (
+                  <FiTrash2 />
+                )}
               </button>
             </div>
           </article>

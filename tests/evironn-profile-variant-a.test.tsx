@@ -166,6 +166,146 @@ function openSection(label: string) {
 }
 
 describe('Profile Variant A', () => {
+  it('isolates profile save progress and keeps its label while pending', async () => {
+    let resolveSave: ((result: { ok: true }) => void) | undefined;
+    mocks.updateProfile.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Профиль');
+
+    const save = screen.getByRole('button', { name: 'Сохранить изменения' });
+    fireEvent.click(save);
+
+    await waitFor(() => {
+      expect(save).toBeDisabled();
+      expect(save).toHaveAttribute('aria-busy', 'true');
+      expect(save).toHaveTextContent('Сохранить изменения');
+      expect(save.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(screen.getByRole('button', { name: 'Изменить пароль' })).toBeEnabled();
+
+    resolveSave?.({ ok: true });
+    await waitFor(() => expect(save).toBeEnabled());
+    expect(save).not.toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('isolates address add progress and restores the control after rejection', async () => {
+    let rejectAdd: ((reason?: unknown) => void) | undefined;
+    mocks.addAddress.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectAdd = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Адреса');
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+    fireEvent.change(screen.getByLabelText('Город'), { target: { value: 'Москва' } });
+    fireEvent.change(screen.getByLabelText('Улица и дом'), { target: { value: 'Тверская, 10' } });
+    const save = screen.getByRole('button', { name: 'Сохранить адрес' });
+    fireEvent.click(save);
+
+    await waitFor(() => {
+      expect(save).toBeDisabled();
+      expect(save).toHaveAttribute('aria-busy', 'true');
+      expect(save).toHaveTextContent('Сохранить адрес');
+      expect(save.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(screen.getByRole('button', { name: 'Сделать адрес Дача основным' })).toBeEnabled();
+
+    rejectAdd?.(new Error('Адрес недоступен'));
+    await waitFor(() => expect(save).toBeEnabled());
+    expect(screen.getByRole('alert')).toHaveTextContent('Адрес недоступен');
+  });
+
+  it('isolates favorite cart progress and prevents duplicate requests', async () => {
+    let rejectAdd: ((reason?: unknown) => void) | undefined;
+    mocks.addCartItem.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectAdd = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Избранное');
+
+    const add = screen.getAllByRole('button', { name: 'В корзину' })[0];
+    fireEvent.click(add);
+    fireEvent.click(add);
+    await waitFor(() => {
+      expect(mocks.addCartItem).toHaveBeenCalledTimes(1);
+      expect(add).toBeDisabled();
+      expect(add).toHaveAttribute('aria-busy', 'true');
+      expect(add).toHaveTextContent('В корзину');
+      expect(add.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(screen.getAllByRole('button', { name: 'В корзину' })[1]).toBeDisabled();
+
+    rejectAdd?.(new Error('Корзина недоступна'));
+    await waitFor(() => expect(add).toBeEnabled());
+    expect(screen.getByRole('alert')).toHaveTextContent('Корзина недоступна');
+  });
+
+  it('keeps a favorite card mounted while removal is pending and rolls it back on rejection', async () => {
+    let rejectToggle: ((reason?: unknown) => void) | undefined;
+    mocks.toggleWishlist.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectToggle = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+    openSection('Избранное');
+
+    const remove = screen.getByRole('button', { name: 'Убрать Noma из избранного' });
+    fireEvent.click(remove);
+    fireEvent.click(remove);
+    await waitFor(() => {
+      expect(mocks.toggleWishlist).toHaveBeenCalledTimes(1);
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute('aria-busy', 'true');
+      expect(remove.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(screen.getByText('Noma')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Убрать Sold out из избранного' })).toBeEnabled();
+
+    rejectToggle?.(new Error('Избранное недоступно'));
+    await waitFor(() => expect(remove).toBeEnabled());
+    expect(screen.getByText('Noma')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Избранное недоступно');
+  });
+
+  it('guards logout, keeps its label, and restores the button after rejection', async () => {
+    let rejectLogout: ((reason?: unknown) => void) | undefined;
+    mocks.signOut.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectLogout = reject;
+        }),
+    );
+    render(<ProfileVariantA dto={dto} />);
+
+    const logout = screen.getByRole('button', { name: 'Выйти' });
+    fireEvent.click(logout);
+    fireEvent.click(logout);
+    await waitFor(() => {
+      expect(mocks.signOut).toHaveBeenCalledTimes(1);
+      expect(logout).toBeDisabled();
+      expect(logout).toHaveAttribute('aria-busy', 'true');
+      expect(logout).toHaveTextContent('Выйти');
+      expect(logout.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    rejectLogout?.(new Error('Выход недоступен'));
+    await waitFor(() => expect(logout).toBeEnabled());
+    expect(screen.getByText('anna@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Выход недоступен');
+  });
+
   it('keeps the exact profile shell classes and supported navigation only', () => {
     render(<ProfileVariantA dto={dto} />);
 
@@ -281,12 +421,12 @@ describe('Profile Variant A', () => {
     openSection('Избранное');
 
     fireEvent.click(screen.getByRole('button', { name: 'Убрать Noma из избранного' }));
-    await waitFor(() => expect(screen.queryByText('Noma')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Noma')).toBeInTheDocument());
 
     view.rerender(<ProfileVariantA dto={refreshedDto} />);
 
     expect(screen.getByText('МП')).toBeInTheDocument();
-    expect(screen.queryByText('Noma')).not.toBeInTheDocument();
+    expect(screen.getByText('Noma')).toBeInTheDocument();
     expect(screen.getByTestId('wishlisted-product-2')).toHaveTextContent('true');
 
     resolveToggle?.({ ok: true, active: false });
@@ -344,7 +484,7 @@ describe('Profile Variant A', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle favorite' }));
     await waitFor(() => {
       const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
-      expect(data.favorites.map((product) => product.id)).toEqual(['product-2']);
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-1', 'product-2']);
     });
 
     const staleRefresh: ProfilePageDto = {
@@ -364,7 +504,7 @@ describe('Profile Variant A', () => {
       expect(data.addresses.map((address) => address.id)).toEqual(['address-2', 'address-1']);
       expect(data.stats.orders).toBe(5);
       expect(data.stats.favorites).toBe(1);
-      expect(data.favorites.map((product) => product.id)).toEqual(['product-2']);
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-1', 'product-2']);
     });
 
     resolveToggle?.({ ok: true, active: false });
@@ -398,21 +538,21 @@ describe('Profile Variant A', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle favorite' }));
     await waitFor(() => {
       const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
-      expect(data.favorites.map((product) => product.id)).toEqual(['product-2']);
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-1', 'product-2']);
     });
 
     view.rerender(<ProfileDataProbe dto={refreshedDto} />);
     await waitFor(() => {
       const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
       expect(data.user.name).toBe('Обновлённый профиль');
-      expect(data.favorites.map((product) => product.id)).toEqual(['product-3']);
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-1', 'product-3']);
       expect(data.stats).toMatchObject({ orders: 7, addresses: 4, favorites: 1 });
     });
 
     rejectToggle?.(new Error('wishlist unavailable'));
     await waitFor(() => {
       const data = JSON.parse(screen.getByTestId('profile-data').textContent ?? '{}') as ProfilePageDto;
-      expect(data.favorites.map((product) => product.id)).toEqual(['product-3', 'product-1']);
+      expect(data.favorites.map((product) => product.id)).toEqual(['product-1', 'product-3']);
       expect(data.stats).toEqual({ orders: 7, favorites: 2, addresses: 4 });
     });
   });

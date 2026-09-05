@@ -1,0 +1,351 @@
+/* Shared chrome for the five header explorations.
+   Desktop (>=1041px) is intentionally identical across all variants: the
+   approved desktop header stays untouched, so the choice is purely about the
+   mobile bar and the burger drawer. Everything below 1041px lives in the
+   per-variant stylesheet. */
+
+.ev-hdr {
+  --hdr-ink: hsl(30 6% 18%);
+  --hdr-ink-70: hsl(30 5% 34%);
+  --hdr-ink-50: hsl(30 5% 48%);
+  --hdr-glass: rgba(255, 255, 255, 0.6);
+  --hdr-glass-strong: rgba(252, 251, 248, 0.9);
+  --hdr-hairline: rgba(21, 20, 15, 0.09);
+  --hdr-hairline-strong: rgba(21, 20, 15, 0.16);
+  --hdr-shadow-sm: 0 4px 18px rgba(17, 17, 26, 0.06);
+  --hdr-shadow-md: 0 6px 24px rgba(17, 17, 26, 0.07), 0 16px 48px rgba(17, 17, 26, 0.07);
+  --hdr-shadow-lg: 0 18px 40px rgba(31, 28, 24, 0.14), 0 40px 90px rgba(31, 28, 24, 0.12);
+  --hdr-inset: inset 0 0 0 1px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --hdr-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --hdr-scrim: rgba(30, 28, 24, 0.34);
+  --hdr-safe-b: env(safe-area-inset-bottom, 0px);
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  width: 100%;
+  height: 85px;
+  color: var(--hdr-ink);
+  font-family: 'Golos Text', system-ui, sans-serif;
+}
+
+.ev-hdr *,
+.ev-hdr *::before,
+.ev-hdr *::after {
+  box-sizing: border-box;
+}
+.ev-hdr a {
+  color: inherit;
+  text-decoration: none;
+}
+.ev-hdr button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Translucent band over the hero; released once the bar condenses to a pill. */
+.ev-hdr__band {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 -1px var(--hdr-hairline);
+  backdrop-filter: blur(14px) saturate(1.35);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.ev-hdr[data-condensed='true'] .ev-hdr__band {
+  opacity: 0;
+}
+
+.ev-hdr__bar {
+  position: relative;
+  top: 22px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 1360px;
+  height: 40px;
+  margin: 0 auto;
+  padding-inline: 44px;
+  border: 1px solid transparent;
+  transition:
+    width 0.42s var(--hdr-ease),
+    top 0.42s var(--hdr-ease),
+    min-height 0.42s var(--hdr-ease),
+    padding 0.42s var(--hdr-ease),
+    border-radius 0.42s var(--hdr-ease),
+    background 0.26s ease,
+    border-color 0.26s ease,
+    box-shadow 0.26s ease;
+}
+.ev-hdr[data-condensed='true'] .ev-hdr__bar {
+  top: 14px;
+  width: min(1280px, calc(100% - 32px));
+  max-width: none;
+  height: auto;
+  min-height: 58px;
+  padding: 9px 28px;
+  border-color: var(--hdr-hairline);
+  border-radius: 999px;
+  background: var(--hdr-glass);
+  box-shadow: var(--hdr-inset), var(--hdr-shadow-md);
+  backdrop-filter: blur(18px) saturate(1.45);
+  -webkit-backdrop-filter: blur(18px) saturate(1.45);
+}
+
+.ev-hdr__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  height: 40px;
+}
+.ev-hdr__logo img {
+  display: block;
+  width: auto;
+  height: 40px;
+  max-width: none;
+}
+
+.ev-hdr__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 38px;
+}
+.ev-hdr__nav a {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 17px;
+  white-space: nowrap;
+  transition: opacity 0.18s ease;
+}
+.ev-hdr__nav a:hover {
+  opacity: 0.66;
+}
+
+.ev-hdr__actions {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 18px;
+}
+.ev-hdr__utility {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  transition: opacity 0.18s ease;
+}
+.ev-hdr__utility:hover {
+  opacity: 0.66;
+}
+/* Two classes so the value beats the `.ev-hdr a { color: inherit }` reset. */
+.ev-hdr .ev-hdr__bag {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 15px;
+  border-radius: 999px;
+  background: var(--hdr-ink);
+  color: #fafafa;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  transition: background 0.18s ease;
+}
+.ev-hdr .ev-hdr__bag:hover {
+  background: #434343;
+}
+
+/* Mobile-only control cluster. Hidden on desktop for every variant. */
+.ev-hdr__mobile {
+  display: none;
+}
+
+/* Off-layout host for SVG filter definitions. */
+.ev-hdr__glass-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.ev-hdr :focus-visible {
+  outline: 2px solid var(--hdr-ink);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* Round glass control shared by several variants. */
+.ev-hdr__round {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  transition:
+    background 0.2s ease,
+    transform 0.2s var(--hdr-ease);
+}
+.ev-hdr__round:active {
+  transform: scale(0.94);
+}
+.ev-hdr__round svg {
+  width: 21px;
+  height: 21px;
+}
+
+/* Cart count chip anchored to a round control. */
+.ev-hdr__count {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--hdr-ink);
+  color: #fbfaf8;
+  font-size: 10px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* Burger glyph: two rules that cross into an X when the drawer opens. */
+.ev-hdr__burger-glyph {
+  position: relative;
+  display: block;
+  width: 17px;
+  height: 11px;
+}
+.ev-hdr__burger-glyph::before,
+.ev-hdr__burger-glyph::after {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  content: '';
+  transition:
+    transform 0.34s var(--hdr-ease),
+    width 0.34s var(--hdr-ease);
+}
+.ev-hdr__burger-glyph::before {
+  top: 1px;
+}
+.ev-hdr__burger-glyph::after {
+  bottom: 1px;
+  width: 72%;
+}
+[data-open='true'] .ev-hdr__burger-glyph::before {
+  transform: translateY(4.25px) rotate(45deg);
+}
+[data-open='true'] .ev-hdr__burger-glyph::after {
+  width: 100%;
+  transform: translateY(-4.25px) rotate(-45deg);
+}
+
+/* Uppercase micro label used across the drawers. */
+.ev-hdr__eyebrow {
+  display: block;
+  color: var(--hdr-ink-50);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.ev-hdr__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  background: var(--hdr-scrim);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: ev-hdr-fade 0.32s var(--hdr-ease) both;
+}
+
+@keyframes ev-hdr-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ev-hdr-rise {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 1601px) {
+  .ev-hdr__bar {
+    padding-inline: 64px;
+  }
+  .ev-hdr[data-condensed='true'] .ev-hdr__bar {
+    padding-inline: 28px;
+  }
+}
+
+@media (max-width: 1040px) {
+  .ev-hdr__nav,
+  .ev-hdr__actions {
+    display: none;
+  }
+  .ev-hdr__mobile {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+  }
+  .ev-hdr__bar {
+    grid-template-columns: auto 1fr;
+  }
+  .ev-hdr__logo {
+    grid-column: 1;
+  }
+  .ev-hdr__mobile {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-hdr *,
+  .ev-hdr *::before,
+  .ev-hdr *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

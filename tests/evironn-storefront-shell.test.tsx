@@ -204,7 +204,10 @@ describe('Evironn storefront shell', () => {
     const dialog = screen.getByRole('dialog', { name: 'Мобильное меню' });
     const controls = within(dialog).getAllByRole('link');
     expect(document.activeElement).toBe(controls[0]);
-    expect(document.querySelector('#evironn-header > .od-header-inner')).toHaveAttribute('inert');
+    // The bar stays interactive on purpose: the toggle doubles as the close
+    // control, so only siblings of the header become inert.
+    expect(document.querySelector('#evironn-header > .od-header-inner')).not.toHaveAttribute('inert');
+    expect(screen.getByRole('button', { name: 'Закрыть меню' })).toBeInTheDocument();
     expect(background).toHaveAttribute('inert');
     expect(footer).toHaveAttribute('inert');
 

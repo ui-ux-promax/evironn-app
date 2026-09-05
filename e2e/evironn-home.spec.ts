@@ -253,7 +253,9 @@ test.describe('Evironn home mobile', () => {
           .evaluate((element) => element === document.activeElement),
       )
       .toBe(true);
-    await expect(page.locator('#evironn-header > .od-header-inner')).toHaveAttribute('inert', '');
+    // The capsule stays interactive so its toggle doubles as the close control.
+    await expect(page.locator('#evironn-header > .od-header-inner')).not.toHaveAttribute('inert', '');
+    await expect(menuButton).toHaveAttribute('aria-label', 'Закрыть меню');
     await page.keyboard.press('Shift+Tab');
     await expect
       .poll(() =>

@@ -1,3 +1,11 @@
+/* Storefront bar.
+   Layout tiers:
+     <= 600px   floating liquid-glass capsule + bottom sheet navigation
+     601–1040px inline navigation, compact: fluid type and icon-only utilities
+     >= 1041px  inline navigation, wide: labelled utilities and cart pill
+   Every mobile-sheet rule is scoped `#evironn-header .od-mobile-menu` so the
+   drawer can never leak styles into the rest of the document. */
+
 #evironn-header *,
 #evironn-header *::before,
 #evironn-header *::after {
@@ -7,7 +15,24 @@
   color: inherit;
   text-decoration: none;
 }
+#evironn-header button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 #evironn-header {
+  --od-ink: #262626;
+  --od-ink-60: hsl(30 5% 46%);
+  --od-hairline: rgba(21, 20, 15, 0.08);
+  --od-hairline-strong: rgba(21, 20, 15, 0.16);
+  --od-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --od-glass-plate: #ffffff6b;
+  --od-glass-rim:
+    inset 0 0 2px 1px #ffffff8c, inset 0 0 10px 4px #ffffff38, 0 6px 24px #11111a0f, 0 12px 40px #11111a0d;
+  --od-safe-b: env(safe-area-inset-bottom, 0px);
+
   position: fixed;
   top: 0;
   left: 0;
@@ -15,31 +40,27 @@
   width: 100%;
   height: 85px;
   background: transparent;
-  color: #262626;
+  color: var(--od-ink);
   font-family: 'Golos Text', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  transform: translateY(0);
-  transition:
-    transform 0.36s cubic-bezier(0.22, 0.61, 0.36, 1),
-    box-shadow 0.22s ease,
-    border-color 0.22s ease;
-  will-change: transform;
 }
-#evironn-header::before {
+
+/* Translucent band over the hero; released once the bar condenses to a pill. */
+#evironn-header .od-header-band {
   position: absolute;
   inset: 0;
   z-index: 0;
-  content: '';
   background: #ffffff6b;
-  box-shadow: inset 0 -1px rgba(21, 20, 15, 0.08);
+  box-shadow: inset 0 -1px var(--od-hairline);
   backdrop-filter: blur(12px) saturate(1.4);
   -webkit-backdrop-filter: blur(12px) saturate(1.4);
   opacity: 1;
   pointer-events: none;
   transition: opacity 0.26s ease;
 }
-#evironn-header.is-condensed::before {
+#evironn-header.is-condensed .od-header-band {
   opacity: 0;
 }
+
 #evironn-header .od-header-inner {
   position: relative;
   top: 22px;
@@ -52,17 +73,17 @@
   max-width: 1360px;
   height: 40px;
   margin: 0 auto;
-  padding-inline: 44px;
+  padding-inline: clamp(28px, 3.2vw, 44px);
   border: 1px solid transparent;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   transition:
-    width 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-    top 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-    height 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-    padding 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-    border-radius 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 0.42s var(--od-ease),
+    top 0.42s var(--od-ease),
+    height 0.42s var(--od-ease),
+    padding 0.42s var(--od-ease),
+    border-radius 0.42s var(--od-ease),
     background 0.26s ease,
     border-color 0.26s ease,
     box-shadow 0.26s ease;
@@ -74,18 +95,15 @@
   height: auto;
   min-height: 58px;
   padding: 9px 28px;
-  border-color: rgba(21, 20, 15, 0.08);
+  border-color: var(--od-hairline);
   border-radius: var(--ev-radius-pill);
-  background: #ffffff6b;
-  box-shadow:
-    inset 0 0 2px 1px #ffffff8c,
-    inset 0 0 10px 4px #ffffff38,
-    0 6px 24px #11111a0f,
-    0 12px 40px #11111a0d;
+  background: var(--od-glass-plate);
+  box-shadow: var(--od-glass-rim);
   backdrop-filter: blur(12px) saturate(1.4);
   -webkit-backdrop-filter: blur(12px) saturate(1.4);
   backdrop-filter: url(#od-nav-liquid-glass) blur(7px) saturate(1.4);
 }
+
 #evironn-header .od-logo-link {
   display: inline-flex;
   align-items: center;
@@ -93,15 +111,21 @@
   height: 40px;
 }
 #evironn-header .od-logo {
+  display: block;
   width: auto;
   height: 40px;
   max-width: none;
 }
+
+/* The nav is centred while the side columns are unequal, so the right-hand gap
+   is the one that runs out first. Scaling the nav gap and the actions with the
+   viewport keeps daylight between «Терраса» and the utilities down at 1041px. */
 #evironn-header .od-primary-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 38px;
+  gap: clamp(22px, 2.6vw, 38px);
+  min-width: 0;
   height: 24.8px;
 }
 #evironn-header .od-primary-nav a {
@@ -112,68 +136,97 @@
   line-height: 17px;
   white-space: nowrap;
 }
+
 #evironn-header .od-actions {
   display: flex;
   align-items: center;
   justify-self: end;
-  gap: 18px;
+  gap: clamp(12px, 1.25vw, 18px);
 }
 #evironn-header .od-utility-action {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  color: #262626;
+  color: var(--od-ink);
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
 }
+#evironn-header .od-utility-glyph {
+  display: none;
+  width: 20px;
+  height: 20px;
+}
 #evironn-header .od-bag {
+  position: relative;
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  padding: 7px 15px;
+  padding: 7px clamp(13px, 1.05vw, 15px);
   border-radius: 999px;
-  background: #262626;
+  background: var(--od-ink);
   color: #fafafa !important;
   font-size: 13px;
   font-weight: 500;
   line-height: 20.15px;
   white-space: nowrap;
 }
+#evironn-header .od-bag-glyph {
+  display: none;
+  width: 21px;
+  height: 21px;
+}
+#evironn-header .od-bag-count {
+  display: none;
+}
+
 #evironn-header .od-menu-toggle {
   display: none;
+  position: relative;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(26, 26, 26, 0.18);
-  border-radius: 8px;
-}
-#evironn-header .od-menu-icon,
-#evironn-header .od-menu-icon::before,
-#evironn-header .od-menu-icon::after {
-  display: block;
-  width: 18px;
-  height: 2px;
-  border-radius: 2px;
-  background: #262626;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
 }
 #evironn-header .od-menu-icon {
   position: relative;
+  display: block;
+  width: 17px;
+  height: 11px;
 }
 #evironn-header .od-menu-icon::before,
 #evironn-header .od-menu-icon::after {
   position: absolute;
   left: 0;
+  width: 100%;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--od-ink);
   content: '';
+  transition:
+    transform 0.34s var(--od-ease),
+    width 0.34s var(--od-ease);
 }
 #evironn-header .od-menu-icon::before {
-  top: -6px;
+  top: 1px;
 }
 #evironn-header .od-menu-icon::after {
-  top: 6px;
+  bottom: 1px;
+  width: 72%;
 }
+#evironn-header[data-menu-open='true'] .od-menu-icon::before {
+  transform: translateY(4.25px) rotate(45deg);
+}
+#evironn-header[data-menu-open='true'] .od-menu-icon::after {
+  width: 100%;
+  transform: translateY(-4.25px) rotate(-45deg);
+}
+
 #evironn-header .od-primary-nav a,
 #evironn-header .od-utility-action,
 #evironn-header .od-bag,
@@ -192,16 +245,30 @@
 }
 #evironn-header .od-menu-toggle:hover {
   background: rgba(38, 38, 38, 0.06);
-  border-color: rgba(26, 26, 26, 0.28);
 }
 #evironn-header .od-primary-nav a:focus-visible,
 #evironn-header .od-utility-action:focus-visible,
 #evironn-header .od-bag:focus-visible,
 #evironn-header .od-menu-toggle:focus-visible {
-  outline: 2px solid #262626;
+  outline: 2px solid var(--od-ink);
   outline-offset: 3px;
   box-shadow: none;
 }
+/* Kept as its own block: every `.od-mobile-menu` prelude must stay scoped to the
+   header root, so drawer selectors are never grouped with bar selectors. */
+#evironn-header .od-mobile-menu a:focus-visible {
+  outline: 2px solid var(--od-ink);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+#evironn-header .od-nav-glass-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
 @media (min-width: 1601px) {
   #evironn-header .od-header-inner {
     padding-inline: 64px;
@@ -210,128 +277,370 @@
     padding-inline: 28px;
   }
 }
-@media (min-width: 572px) and (max-width: 1040px) {
+
+/* Compact inline tier. The five Russian labels plus a logo only fit down to
+   601px once the utilities collapse to icons and type/gaps scale fluidly. */
+@media (min-width: 601px) and (max-width: 1040px) {
   #evironn-header {
     height: 73px;
   }
   #evironn-header .od-header-inner {
     top: 16px;
-    display: flex;
-    justify-content: space-between;
-    gap: 18px;
-    height: 40px;
-    padding-inline: 24px;
+    gap: clamp(10px, 1.8vw, 24px);
+    padding-inline: clamp(12px, 2.2vw, 30px);
   }
   #evironn-header.is-condensed .od-header-inner {
     top: 8px;
     width: calc(100% - 24px);
-    height: auto;
     min-height: 58px;
-    padding: 9px 20px;
+    padding: 9px clamp(14px, 2.2vw, 24px);
   }
-  #evironn-header .od-logo-link {
-    height: 40px;
-  }
+  #evironn-header .od-logo-link,
   #evironn-header .od-logo {
-    height: 40px;
+    height: clamp(28px, 3.2vw, 36px);
   }
   #evironn-header .od-primary-nav {
-    display: none;
-  }
-  #evironn-header .od-actions {
-    gap: 18px;
-  }
-  #evironn-header .od-utility-action {
-    display: none;
-  }
-  #evironn-header .od-bag {
-    display: none;
-  }
-  #evironn-header .od-menu-toggle {
-    display: flex;
-    margin-left: auto;
-  }
-}
-@media (max-width: 571px) {
-  #evironn-header {
-    height: 71px;
-  }
-  #evironn-header .od-header-inner {
-    top: 16px;
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    height: 38px;
-    padding-inline: 14px;
-  }
-  #evironn-header.is-condensed .od-header-inner {
-    top: 8px;
-    width: calc(100% - 20px);
+    gap: clamp(8px, 1.6vw, 26px);
     height: auto;
-    min-height: 56px;
-    padding: 9px 16px;
   }
-  #evironn-header .od-logo-link {
-    height: 34px;
-  }
-  #evironn-header .od-logo {
-    height: 34px;
-  }
-  #evironn-header .od-primary-nav {
-    display: none;
+  #evironn-header .od-primary-nav a {
+    font-size: clamp(11.5px, 1.3vw, 13.5px);
   }
   #evironn-header .od-actions {
-    gap: 18px;
+    gap: clamp(2px, 0.6vw, 8px);
   }
-  #evironn-header .od-utility-action {
-    display: none;
-  }
+  #evironn-header .od-utility-action,
   #evironn-header .od-bag {
-    display: none;
+    width: clamp(34px, 3.8vw, 40px);
+    height: clamp(34px, 3.8vw, 40px);
+    padding: 0;
+    border-radius: 999px;
   }
-  #evironn-header .od-menu-toggle {
-    display: flex;
-    margin-left: auto;
+  #evironn-header .od-utility-glyph,
+  #evironn-header .od-bag-glyph {
+    display: block;
+  }
+  #evironn-header .od-utility-action:hover {
+    opacity: 1;
+    background: rgba(38, 38, 38, 0.06);
+  }
+  #evironn-header .od-utility-label,
+  #evironn-header .od-bag-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #evironn-header .od-bag-count {
+    position: absolute;
+    top: -1px;
+    right: -2px;
+    display: grid;
+    place-items: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--od-ink);
+    box-shadow: 0 0 0 2px rgba(252, 251, 248, 0.9);
+    color: #fbfaf8;
+    font-size: 10px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
 }
 
-/* The clone header did not ship a drawer because its route shell was static.
-   This scoped adapter supplies the App Router mobile interaction without
-   changing the clone header geometry or controls. */
+/* Mobile capsule tier. */
+@media (max-width: 600px) {
+  #evironn-header {
+    --od-pill-top: 12px;
+    --od-pill-h: 56px;
+    height: calc(var(--od-pill-top) + var(--od-pill-h));
+  }
+  #evironn-header.is-condensed {
+    --od-pill-top: 8px;
+    --od-pill-h: 52px;
+  }
+  #evironn-header .od-header-band {
+    opacity: 0;
+  }
+  #evironn-header .od-header-inner,
+  #evironn-header.is-condensed .od-header-inner {
+    top: var(--od-pill-top);
+    z-index: 2;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    width: calc(100% - 20px);
+    max-width: none;
+    height: auto;
+    min-height: var(--od-pill-h);
+    padding: 7px 8px 7px 17px;
+    border: 1px solid var(--od-hairline);
+    border-radius: 999px;
+    background: var(--od-glass-plate);
+    box-shadow: var(--od-glass-rim);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: url(#od-nav-liquid-glass) blur(7px) saturate(1.4);
+  }
+  #evironn-header .od-logo-link,
+  #evironn-header .od-logo {
+    height: 28px;
+  }
+  #evironn-header .od-primary-nav,
+  #evironn-header .od-utility-action {
+    display: none;
+  }
+  #evironn-header .od-actions {
+    gap: 2px;
+  }
+  #evironn-header .od-bag {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--od-ink) !important;
+  }
+  #evironn-header .od-bag:hover {
+    background: rgba(38, 38, 38, 0.06);
+  }
+  #evironn-header .od-bag-glyph {
+    display: block;
+  }
+  #evironn-header .od-bag-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #evironn-header .od-bag-count {
+    position: absolute;
+    top: 1px;
+    right: 0;
+    display: grid;
+    place-items: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--od-ink);
+    color: #fbfaf8;
+    font-size: 10px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  #evironn-header .od-menu-toggle {
+    display: inline-flex;
+  }
+  #evironn-header .od-menu-toggle::before {
+    position: absolute;
+    top: 11px;
+    bottom: 11px;
+    left: -1px;
+    width: 1px;
+    background: var(--od-hairline);
+    content: '';
+  }
+}
+
+#evironn-header .od-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  background: rgba(30, 28, 24, 0.34);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: od-fade-in 0.32s var(--od-ease) both;
+}
+
+/* Bottom sheet navigation. */
 #evironn-header .od-mobile-menu {
   position: fixed;
-  inset: 71px 0 auto;
-  z-index: 0;
-  display: none;
-  padding: 24px 20px 32px;
-  border-top: 1px solid rgba(21, 20, 15, 0.08);
-  background: rgb(255 255 255 / 0.96);
-  box-shadow: 0 12px 40px rgb(17 17 26 / 0.12);
-  backdrop-filter: blur(12px) saturate(1.4);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  max-height: calc(100dvh - var(--od-pill-top, 12px) - var(--od-pill-h, 56px) - 14px);
+  padding: 10px 14px calc(16px + var(--od-safe-b));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 28px 28px 0 0;
+  background: rgba(252, 251, 248, 0.94);
+  box-shadow:
+    0 18px 40px rgba(31, 28, 24, 0.14),
+    0 40px 90px rgba(31, 28, 24, 0.12);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  /* Vertical intent reaches the swipe-to-dismiss handler, which cancels the
+     browser scroll itself once it takes the gesture over. */
+  touch-action: pan-y;
+  will-change: transform;
+  animation: od-sheet-up 0.46s var(--od-ease) both;
 }
-
-#evironn-header .od-mobile-menu nav {
+#evironn-header .od-mobile-menu .od-grip {
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin: 3px auto 14px;
+  border-radius: 999px;
+  background: hsl(30 6% 18% / 0.2);
+  cursor: grab;
+}
+#evironn-header .od-mobile-menu .od-sheet-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 54px;
+  padding: 0 18px 0 22px;
+  border-radius: 999px;
+  background: var(--od-ink);
+  color: #fbfaf8;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  animation: od-rise 0.5s var(--od-ease) both;
+  animation-delay: 50ms;
+}
+#evironn-header .od-mobile-menu .od-sheet-cta svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+}
+#evironn-header .od-mobile-menu .od-sheet-eyebrow {
+  display: block;
+  margin: 18px 4px 8px;
+  color: var(--od-ink-60);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+#evironn-header .od-mobile-menu .od-room-grid {
   display: grid;
-  gap: 18px;
-  max-width: 1360px;
-  margin: 0 auto;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+#evironn-header .od-mobile-menu .od-room-card {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3.4;
+  overflow: hidden;
+  border-radius: 18px;
+  background: hsl(30 6% 90%);
+  box-shadow: 0 4px 18px rgba(17, 17, 26, 0.06);
+  animation: od-rise 0.5s var(--od-ease) both;
+  transition: transform 0.24s var(--od-ease);
+}
+#evironn-header .od-mobile-menu .od-room-card:active {
+  transform: scale(0.975);
+}
+#evironn-header .od-mobile-menu .od-room-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#evironn-header .od-mobile-menu .od-room-chip {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 2px 10px rgba(31, 28, 24, 0.14);
+  backdrop-filter: blur(8px) saturate(1.3);
+  -webkit-backdrop-filter: blur(8px) saturate(1.3);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+#evironn-header .od-mobile-menu .od-tile-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  animation: od-rise 0.5s var(--od-ease) both;
+  animation-delay: 280ms;
+}
+#evironn-header .od-mobile-menu .od-tile {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  min-height: 66px;
+  padding: 10px 6px;
+  border: 1px solid var(--od-hairline);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  transition: background 0.18s ease;
+}
+#evironn-header .od-mobile-menu .od-tile:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+#evironn-header .od-mobile-menu .od-tile svg {
+  width: 19px;
+  height: 19px;
+  opacity: 0.72;
+}
+#evironn-header .od-mobile-menu .od-tile span {
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-#evironn-header .od-mobile-menu a {
-  color: inherit;
-  font-size: 16px;
-  font-weight: 500;
-  text-decoration: none;
+@keyframes od-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-
-@media (max-width: 1040px) {
-  #evironn-header .od-mobile-menu {
-    display: block;
+@keyframes od-sheet-up {
+  from {
+    transform: translateY(102%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes od-rise {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #evironn-header .od-mobile-menu {
-    transition: none;
+  #evironn-header *,
+  #evironn-header *::before,
+  #evironn-header *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
   }
 }

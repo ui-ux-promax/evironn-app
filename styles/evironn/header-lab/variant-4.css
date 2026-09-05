@@ -1,0 +1,211 @@
+/* Variant 4 — «Тёмная кулиса».
+   Ink round controls stay legible over any hero frame; the drawer is a
+   full-screen dark curtain reusing the footer palette and wordmark. */
+
+@media (max-width: 1040px) {
+  .ev-hdr--curtain {
+    --curtain-bg: hsl(30 8% 12%);
+    --curtain-accent: hsl(20 35% 62%);
+    height: 72px;
+  }
+  .ev-hdr--curtain .ev-hdr__band {
+    opacity: 0;
+  }
+  .ev-hdr--curtain .ev-hdr__bar,
+  .ev-hdr--curtain[data-condensed='true'] .ev-hdr__bar {
+    top: 0;
+    z-index: 2;
+    width: 100%;
+    max-width: none;
+    height: 72px;
+    min-height: 0;
+    gap: 10px;
+    padding: 0 14px 0 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .ev-hdr--curtain .ev-hdr__logo,
+  .ev-hdr--curtain .ev-hdr__logo img {
+    height: 28px;
+  }
+  .ev-hdr--curtain .ev-hdr__logo img {
+    transition: filter 0.34s var(--hdr-ease);
+  }
+  .ev-hdr--curtain[data-open='true'] .ev-hdr__logo img {
+    filter: brightness(0) invert(1);
+  }
+  .ev-hdr--curtain .ev-hdr__mobile {
+    gap: 8px;
+  }
+  .ev-hdr--curtain .ev-hdr__round {
+    background: var(--hdr-ink);
+    color: #fbfaf8;
+    box-shadow: 0 6px 20px rgba(31, 28, 24, 0.24);
+    transition:
+      background 0.28s var(--hdr-ease),
+      color 0.28s var(--hdr-ease),
+      transform 0.2s var(--hdr-ease);
+  }
+  .ev-hdr--curtain[data-open='true'] .ev-hdr__round {
+    background: #fbfaf8;
+    color: var(--hdr-ink);
+  }
+  .ev-hdr--curtain .ev-hdr__count {
+    background: var(--curtain-accent);
+    color: hsl(30 8% 12%);
+    box-shadow: 0 0 0 2px hsl(30 6% 18%);
+    transition: box-shadow 0.28s var(--hdr-ease);
+  }
+  .ev-hdr--curtain[data-open='true'] .ev-hdr__count {
+    box-shadow: 0 0 0 2px #fbfaf8;
+  }
+
+  .ev-hdr--curtain .ev-hdr__drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--curtain-bg);
+    color: rgba(255, 255, 255, 0.94);
+    animation: ev-hdr-curtain-drop 0.5s var(--hdr-ease) both;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-inner {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 88px 18px calc(12px + var(--hdr-safe-b));
+  }
+
+  .ev-hdr--curtain .ev-hdr__curtain-lead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    animation: ev-hdr-rise 0.5s var(--hdr-ease) both;
+    animation-delay: 120ms;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-lead > span {
+    font-size: 27px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-lead svg {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    color: var(--curtain-accent);
+  }
+
+  .ev-hdr--curtain .ev-hdr__curtain-eyebrow {
+    margin: 24px 0 4px;
+    color: var(--curtain-accent);
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-list li {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    animation: ev-hdr-rise 0.55s var(--hdr-ease) both;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-list a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    align-items: baseline;
+    gap: 4px 12px;
+    padding: 14px 0 15px;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-index {
+    color: var(--curtain-accent);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.12em;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-name {
+    font-size: 31px;
+    font-weight: 300;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-caption {
+    grid-column: 2;
+    color: rgba(255, 255, 255, 0.44);
+    font-size: 11.5px;
+    line-height: 1.3;
+  }
+
+  .ev-hdr--curtain .ev-hdr__curtain-utility {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 26px;
+    animation: ev-hdr-rise 0.55s var(--hdr-ease) both;
+    animation-delay: 420ms;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-utility a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-utility a:hover {
+    border-color: rgba(255, 255, 255, 0.44);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .ev-hdr--curtain .ev-hdr__curtain-utility svg {
+    width: 17px;
+    height: 17px;
+    opacity: 0.75;
+  }
+
+  .ev-hdr--curtain .ev-hdr__curtain-wordmark {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: 34px;
+    fill: rgba(255, 255, 255, 0.14);
+    animation: ev-hdr-fade 1.1s var(--hdr-ease) both;
+    animation-delay: 260ms;
+  }
+
+  .ev-hdr--curtain .ev-hdr__drawer :focus-visible {
+    outline-color: var(--curtain-accent);
+  }
+}
+
+@keyframes ev-hdr-curtain-drop {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Tablet: keep the curtain column measured instead of stretching to the edge. */
+@media (min-width: 640px) and (max-width: 1040px) {
+  .ev-hdr--curtain .ev-hdr__curtain-inner {
+    max-width: 560px;
+    margin-inline: auto;
+  }
+}

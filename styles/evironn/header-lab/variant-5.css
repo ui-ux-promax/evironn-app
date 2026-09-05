@@ -1,0 +1,246 @@
+/* Variant 5 — «Стеклянный рельс».
+   All utilities collapse into one segmented glass rail; the drawer scales out of
+   that rail as an anchored card with room chips. */
+
+@media (max-width: 1040px) {
+  .ev-hdr--rail {
+    --rail-top: 11px;
+    --rail-h: 46px;
+    height: 68px;
+  }
+  .ev-hdr--rail .ev-hdr__band {
+    background: rgba(255, 255, 255, 0.34);
+    box-shadow: none;
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  }
+  .ev-hdr--rail[data-condensed='true'] .ev-hdr__band {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: inset 0 -1px var(--hdr-hairline);
+  }
+  .ev-hdr--rail .ev-hdr__bar,
+  .ev-hdr--rail[data-condensed='true'] .ev-hdr__bar {
+    top: var(--rail-top);
+    width: 100%;
+    max-width: none;
+    height: var(--rail-h);
+    min-height: 0;
+    gap: 10px;
+    padding: 0 10px 0 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .ev-hdr--rail .ev-hdr__logo,
+  .ev-hdr--rail .ev-hdr__logo img {
+    height: 27px;
+  }
+
+  .ev-hdr--rail .ev-hdr__rail {
+    display: inline-flex;
+    align-items: center;
+    height: var(--rail-h);
+    padding: 0 3px;
+    border: 1px solid var(--hdr-hairline);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: var(--hdr-inset), var(--hdr-shadow-sm);
+    backdrop-filter: blur(18px) saturate(1.45);
+    -webkit-backdrop-filter: blur(18px) saturate(1.45);
+  }
+  .ev-hdr--rail .ev-hdr__round {
+    width: 40px;
+    height: 40px;
+  }
+  .ev-hdr--rail .ev-hdr__round svg {
+    width: 19px;
+    height: 19px;
+  }
+  .ev-hdr--rail .ev-hdr__round + .ev-hdr__round::before {
+    position: absolute;
+    top: 11px;
+    bottom: 11px;
+    left: -1px;
+    width: 1px;
+    background: var(--hdr-hairline);
+    content: '';
+    transition: opacity 0.2s ease;
+  }
+  .ev-hdr--rail .ev-hdr__round:hover {
+    background: rgba(38, 38, 38, 0.06);
+  }
+  .ev-hdr--rail .ev-hdr__count {
+    top: 0;
+    right: -2px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.78);
+  }
+
+  .ev-hdr--rail .ev-hdr__drawer {
+    position: fixed;
+    top: calc(var(--rail-top) + var(--rail-h) + 7px);
+    right: 10px;
+    left: 10px;
+    z-index: 1;
+    max-height: calc(100dvh - var(--rail-top) - var(--rail-h) - 21px);
+    padding: 14px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid rgba(255, 255, 255, 0.66);
+    border-radius: 24px;
+    background: rgba(252, 251, 248, 0.9);
+    box-shadow: var(--hdr-shadow-lg);
+    backdrop-filter: blur(30px) saturate(1.5);
+    -webkit-backdrop-filter: blur(30px) saturate(1.5);
+    transform-origin: top right;
+    animation: ev-hdr-rail-open 0.42s var(--hdr-ease) both;
+  }
+
+  .ev-hdr--rail .ev-hdr__rail-lead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 4px 6px 14px;
+    border-bottom: 1px solid var(--hdr-hairline);
+    animation: ev-hdr-rise 0.46s var(--hdr-ease) both;
+  }
+  .ev-hdr--rail .ev-hdr__rail-lead-text {
+    display: grid;
+    gap: 5px;
+  }
+  .ev-hdr--rail .ev-hdr__rail-lead-text > span:last-child {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .ev-hdr--rail .ev-hdr__rail-lead svg {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    opacity: 0.36;
+  }
+
+  .ev-hdr--rail .ev-hdr__chip-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .ev-hdr--rail .ev-hdr__chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 54px;
+    padding: 0 12px 0 7px;
+    border: 1px solid var(--hdr-hairline);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.62);
+    font-size: 13.5px;
+    font-weight: 550;
+    animation: ev-hdr-rise 0.46s var(--hdr-ease) both;
+    transition:
+      background 0.18s ease,
+      transform 0.2s var(--hdr-ease);
+  }
+  .ev-hdr--rail .ev-hdr__chip:active {
+    transform: scale(0.97);
+  }
+  .ev-hdr--rail .ev-hdr__chip:hover {
+    background: rgba(255, 255, 255, 0.96);
+  }
+  .ev-hdr--rail .ev-hdr__chip-thumb {
+    display: block;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: hsl(30 6% 90%);
+  }
+  .ev-hdr--rail .ev-hdr__chip-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ev-hdr--rail .ev-hdr__field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    margin-top: 10px;
+    padding: 0 16px;
+    border: 1px solid var(--hdr-hairline-strong);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--hdr-ink-70);
+    font-size: 13px;
+    animation: ev-hdr-rise 0.46s var(--hdr-ease) both;
+    animation-delay: 240ms;
+  }
+  .ev-hdr--rail .ev-hdr__field svg {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+  }
+
+  .ev-hdr--rail .ev-hdr__foot-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 7px;
+    margin-top: 8px;
+    animation: ev-hdr-rise 0.46s var(--hdr-ease) both;
+    animation-delay: 280ms;
+  }
+  .ev-hdr--rail .ev-hdr__ghost,
+  .ev-hdr--rail .ev-hdr__solid {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ev-hdr--rail .ev-hdr__ghost {
+    border: 1px solid var(--hdr-hairline-strong);
+    background: rgba(255, 255, 255, 0.5);
+  }
+  .ev-hdr--rail .ev-hdr__solid {
+    background: var(--hdr-ink);
+    color: #fbfaf8;
+  }
+  .ev-hdr--rail .ev-hdr__ghost svg,
+  .ev-hdr--rail .ev-hdr__solid svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.75;
+  }
+}
+
+@keyframes ev-hdr-rail-open {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Tablet: keep the card anchored to the rail instead of stretching. */
+@media (min-width: 640px) and (max-width: 1040px) {
+  .ev-hdr--rail .ev-hdr__drawer {
+    left: auto;
+    width: min(430px, calc(100% - 20px));
+  }
+}

@@ -1,0 +1,73 @@
+.hdr-lab-switcher {
+  position: fixed;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 320;
+  display: grid;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  background: rgba(24, 22, 20, 0.82);
+  box-shadow: 0 18px 44px rgba(20, 18, 16, 0.36);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: 'Golos Text', system-ui, sans-serif;
+  transform: translateX(-50%);
+}
+
+.hdr-lab-switcher__meta {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding-inline: 4px;
+  text-align: center;
+}
+.hdr-lab-switcher__meta strong {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.hdr-lab-switcher__meta span {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.hdr-lab-switcher__row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.hdr-lab-switcher__row a {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+.hdr-lab-switcher__row a:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.hdr-lab-switcher__row a[aria-current='true'] {
+  background: #fbfaf8;
+  border-color: #fbfaf8;
+  color: hsl(30 8% 12%);
+}
+
+/* Stay out of the way while a drawer is on screen. */
+html[data-ev-hdr-open='true'] .hdr-lab-switcher {
+  opacity: 0;
+  pointer-events: none;
+}

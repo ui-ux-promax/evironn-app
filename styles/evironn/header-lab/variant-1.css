@@ -1,0 +1,194 @@
+/* Variant 1 — «Стеклянная капсула».
+   Mobile bar is a floating glass capsule at every scroll position; the drawer
+   is a capsule-width card that drops directly beneath it. */
+
+@media (max-width: 1040px) {
+  .ev-hdr--pill {
+    --pill-top: 12px;
+    --pill-h: 56px;
+    height: calc(var(--pill-top) + var(--pill-h));
+  }
+  .ev-hdr--pill[data-condensed='true'] {
+    --pill-top: 8px;
+    --pill-h: 52px;
+  }
+  .ev-hdr--pill .ev-hdr__band {
+    opacity: 0;
+  }
+  .ev-hdr--pill .ev-hdr__bar,
+  .ev-hdr--pill[data-condensed='true'] .ev-hdr__bar {
+    top: var(--pill-top);
+    width: calc(100% - 20px);
+    max-width: none;
+    height: auto;
+    min-height: var(--pill-h);
+    gap: 10px;
+    padding: 7px 8px 7px 17px;
+    border: 1px solid var(--hdr-hairline);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: var(--hdr-inset), var(--hdr-shadow-md);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  }
+  .ev-hdr--pill .ev-hdr__logo,
+  .ev-hdr--pill .ev-hdr__logo img {
+    height: 28px;
+  }
+  .ev-hdr--pill .ev-hdr__mobile {
+    gap: 2px;
+  }
+  .ev-hdr--pill .ev-hdr__round:hover {
+    background: rgba(38, 38, 38, 0.06);
+  }
+  .ev-hdr--pill .ev-hdr__burger::before {
+    position: absolute;
+    top: 11px;
+    bottom: 11px;
+    left: -1px;
+    width: 1px;
+    background: var(--hdr-hairline);
+    content: '';
+  }
+
+  .ev-hdr--pill .ev-hdr__drawer {
+    position: fixed;
+    top: calc(var(--pill-top) + var(--pill-h) + 8px);
+    right: 10px;
+    left: 10px;
+    z-index: 1;
+    max-height: calc(100dvh - var(--pill-top) - var(--pill-h) - 22px);
+    padding: 18px 16px 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 26px;
+    background: rgba(252, 251, 248, 0.86);
+    box-shadow: var(--hdr-shadow-lg);
+    backdrop-filter: blur(28px) saturate(1.5);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+    animation: ev-hdr-pill-drop 0.42s var(--hdr-ease) both;
+  }
+
+  .ev-hdr--pill .ev-hdr__drawer-eyebrow {
+    margin: 2px 4px 6px;
+  }
+  .ev-hdr--pill .ev-hdr__drawer-eyebrow--service {
+    margin-top: 20px;
+  }
+
+  .ev-hdr--pill .ev-hdr__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--hdr-hairline);
+    animation: ev-hdr-rise 0.5s var(--hdr-ease) both;
+  }
+  .ev-hdr--pill .ev-hdr__row--lead {
+    padding-top: 6px;
+    animation-delay: 40ms;
+  }
+  .ev-hdr--pill .ev-hdr__row--lead > span {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .ev-hdr--pill .ev-hdr__row:last-of-type {
+    border-bottom: 0;
+  }
+  .ev-hdr--pill .ev-hdr__row-text {
+    display: grid;
+    gap: 3px;
+  }
+  .ev-hdr--pill .ev-hdr__row-label {
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .ev-hdr--pill .ev-hdr__row-caption {
+    color: var(--hdr-ink-50);
+    font-size: 11.5px;
+    line-height: 1.3;
+  }
+  .ev-hdr--pill .ev-hdr__row-chevron {
+    flex: 0 0 auto;
+    width: 17px;
+    height: 17px;
+    color: var(--hdr-ink);
+    opacity: 0.32;
+    transition: transform 0.24s var(--hdr-ease);
+  }
+  .ev-hdr--pill .ev-hdr__row:active .ev-hdr__row-chevron {
+    transform: translateX(3px);
+  }
+
+  .ev-hdr--pill .ev-hdr__pill-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    animation: ev-hdr-rise 0.5s var(--hdr-ease) both;
+    animation-delay: 230ms;
+  }
+  .ev-hdr--pill .ev-hdr__ghost-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    border: 1px solid var(--hdr-hairline-strong);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-weight: 550;
+    transition: background 0.18s ease;
+  }
+  .ev-hdr--pill .ev-hdr__ghost-pill:hover {
+    background: rgba(255, 255, 255, 0.86);
+  }
+  .ev-hdr--pill .ev-hdr__ghost-pill svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+  }
+  .ev-hdr--pill .ev-hdr__solid-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 50px;
+    margin-top: 8px;
+    border-radius: 999px;
+    background: var(--hdr-ink);
+    color: #fbfaf8;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    animation: ev-hdr-rise 0.5s var(--hdr-ease) both;
+    animation-delay: 270ms;
+  }
+  .ev-hdr--pill .ev-hdr__solid-pill svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+@keyframes ev-hdr-pill-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Tablet: keep the card anchored to the controls instead of stretching. */
+@media (min-width: 640px) and (max-width: 1040px) {
+  .ev-hdr--pill .ev-hdr__drawer {
+    left: auto;
+    width: min(420px, calc(100% - 20px));
+  }
+}

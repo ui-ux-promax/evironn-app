@@ -106,4 +106,42 @@ describe('ProductPage canonical cart controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Дерево: Сосна' }));
     expect(screen.getByRole('button', { name: 'Добавить в корзину' })).not.toBeDisabled();
   });
+
+  it('shows shared pending feedback on every rendered add control and restores after rejection', async () => {
+    let rejectAdd!: (error: Error) => void;
+    const pendingAdd = new Promise<void>((_, reject) => {
+      rejectAdd = reject;
+    });
+    addCartItem.mockImplementationOnce(() => pendingAdd);
+    render(<ProductPage model={model} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить в корзину' }));
+    const mainButton = screen.getByRole('button', { name: 'Добавить в корзину' });
+    expect(mainButton).toBeDisabled();
+    expect(mainButton).toHaveAttribute('aria-busy', 'true');
+    expect(mainButton).toHaveTextContent('Добавить в корзину');
+    expect(mainButton.querySelector('svg')).toHaveClass('h-4', 'w-4');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть кресло в 360°' }));
+    const addControls = document.querySelectorAll<HTMLButtonElement>(
+      '.product-page__add-button, .product-page__360-add-button',
+    );
+    expect(addControls).toHaveLength(2);
+    addControls.forEach((button) => {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button).toHaveTextContent('Добавить в корзину');
+      expect(button.querySelector('svg')).toHaveClass('h-4', 'w-4');
+    });
+    expect(addCartItem).toHaveBeenCalledTimes(1);
+
+    rejectAdd(new Error('network'));
+    await waitFor(() => expect(mainButton).not.toBeDisabled());
+    expect(mainButton).toHaveAttribute('aria-busy', 'false');
+    expect(screen.getByText('Не удалось добавить товар в корзину')).toBeInTheDocument();
+    const restoredControls = document.querySelectorAll<HTMLButtonElement>(
+      '.product-page__add-button, .product-page__360-add-button',
+    );
+    restoredControls.forEach((button) => expect(button).not.toBeDisabled());
+  });
 });

@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -142,6 +142,56 @@ describe('CatalogCard', () => {
     expect(screen.getByText('Под заказ')).toBeInTheDocument();
     expect(screen.getByRole('article')).toHaveClass('is-out');
     expect(screen.queryByText('Распродано')).not.toBeInTheDocument();
+  });
+
+  it('shows pending feedback only on active wishlist card and restores after resolve', async () => {
+    let resolveMutation!: (result: WishlistMutationResult) => void;
+    const pendingMutation = new Promise<WishlistMutationResult>((resolve) => {
+      resolveMutation = resolve;
+    });
+    const onWishlistToggle = vi.fn<WishlistToggle>().mockReturnValue(pendingMutation);
+
+    render(
+      <>
+        <CatalogCard product={cardFixture} wishlisted={false} onWishlistToggle={onWishlistToggle} />
+        <CatalogCard
+          product={{ ...cardFixture, id: 'product-2', name: 'Second Chair' }}
+          wishlisted={false}
+          onWishlistToggle={onWishlistToggle}
+        />
+      </>,
+    );
+
+    const [activeFavorite, idleFavorite] = screen.getAllByRole('button', { name: /Добавить .* в избранное/i });
+    fireEvent.click(activeFavorite);
+    expect(activeFavorite).toBeDisabled();
+    expect(activeFavorite).toHaveAttribute('aria-busy', 'true');
+    expect(activeFavorite.querySelector('svg')).toHaveClass('h-[18px]', 'w-[18px]');
+    expect(idleFavorite).not.toBeDisabled();
+    fireEvent.click(activeFavorite);
+    expect(onWishlistToggle).toHaveBeenCalledTimes(1);
+
+    resolveMutation({ ok: true, active: true });
+    await waitFor(() => expect(activeFavorite).not.toBeDisabled());
+    expect(activeFavorite).not.toHaveAttribute('aria-busy');
+    expect(activeFavorite.querySelector('svg')).not.toHaveClass('h-[18px]');
+  });
+
+  it('restores wishlist control after rejected mutation', async () => {
+    let rejectMutation!: (error: Error) => void;
+    const pendingMutation = new Promise<WishlistMutationResult>((_, reject) => {
+      rejectMutation = reject;
+    });
+    const onWishlistToggle = vi.fn<WishlistToggle>().mockReturnValue(pendingMutation);
+
+    renderCard(cardFixture, { onWishlistToggle });
+    const favorite = screen.getByRole('button', { name: /Добавить Noma Woven Lounge/i });
+    fireEvent.click(favorite);
+    expect(favorite).toHaveAttribute('aria-busy', 'true');
+    rejectMutation(new Error('network'));
+    await waitFor(() => expect(favorite).not.toBeDisabled());
+    expect(favorite).not.toHaveAttribute('aria-busy');
+    expect(favorite).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('activates forward playback on fine-pointer hover and reverse on leave', () => {

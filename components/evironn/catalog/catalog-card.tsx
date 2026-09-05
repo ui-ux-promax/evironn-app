@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { FiHeart } from 'react-icons/fi';
 import Link from 'next/link';
 
+import { FadeArc } from '@/components/loading-ui/fade-arc';
 import {
   CARD_PLAYBACK_RATE,
   getMediaLayerState,
@@ -187,6 +188,7 @@ export function CatalogCard({
         aria-pressed={wishlisted}
         aria-label={wishlisted ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`}
         disabled={wishlistPending}
+        aria-busy={wishlistPending || undefined}
         onClick={async () => {
           if (wishlistPending) return;
           setWishlistPending(true);
@@ -199,7 +201,11 @@ export function CatalogCard({
           }
         }}
       >
-        <FiHeart aria-hidden="true" />
+        {wishlistPending ? (
+          <FadeArc className="h-[18px] w-[18px]" aria-hidden="true" />
+        ) : (
+          <FiHeart aria-hidden="true" />
+        )}
       </button>
       <div className="cat-card__body">
         <h3 className="cat-card__name">{product.name}</h3>

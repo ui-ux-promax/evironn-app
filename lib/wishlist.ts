@@ -15,6 +15,21 @@ function isUniqueConstraintError(error: unknown): boolean {
   return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'P2002');
 }
 
+async function recoverUserWishlistAfterTokenConflict(userId: string, token: string): Promise<OwnerWishlist | null> {
+  const userWishlist = await prisma.wishlist.findFirst({ where: { userId } });
+  if (userWishlist) return userWishlist;
+
+  const guestWishlist = await prisma.wishlist.findFirst({ where: { token } });
+  if (!guestWishlist || guestWishlist.userId) return null;
+
+  try {
+    return await prisma.wishlist.update({ where: { id: guestWishlist.id }, data: { userId } });
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error;
+    return prisma.wishlist.findFirst({ where: { userId } });
+  }
+}
+
 export async function resolveOwnerWishlist(
   session: Session | null,
   token: string | undefined,
@@ -30,7 +45,7 @@ export async function resolveOwnerWishlist(
       return await prisma.wishlist.create({ data: { token, userId } });
     } catch (error) {
       if (!isUniqueConstraintError(error)) throw error;
-      return prisma.wishlist.findFirst({ where: { userId } });
+      return recoverUserWishlistAfterTokenConflict(userId, token);
     }
   }
   if (!token) return null;

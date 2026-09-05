@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma-client';
 import { furnitureProductCardInclude } from '@/lib/furniture-product-summary';
 
 const wlFindFirst = prisma.wishlist.findFirst as unknown as ReturnType<typeof vi.fn>;
+const wlCreate = prisma.wishlist.create as unknown as ReturnType<typeof vi.fn>;
 const wlUpsert = prisma.wishlist.upsert as unknown as ReturnType<typeof vi.fn>;
 const wlUpdate = prisma.wishlist.update as unknown as ReturnType<typeof vi.fn>;
 const wlDelete = prisma.wishlist.delete as unknown as ReturnType<typeof vi.fn>;
@@ -28,6 +29,18 @@ describe('resolveOwnerWishlist', () => {
     const w = await resolveOwnerWishlist({ user: { id: 'u1' } } as never, 'guest-tok', { create: false });
     expect(w).toEqual({ id: 'w1', userId: 'u1', token: 't' });
     expect(wlFindFirst).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+  });
+  it('залогинен при конфликте guest token → присоединяет гостевой wishlist к userId', async () => {
+    const guest = { id: 'wg', userId: null, token: 'tok' };
+    const claimed = { id: 'wg', userId: 'u1', token: 'tok' };
+    wlFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(guest);
+    wlCreate.mockRejectedValueOnce({ code: 'P2002' });
+    wlUpdate.mockResolvedValueOnce(claimed);
+
+    await expect(resolveOwnerWishlist({ user: { id: 'u1' } } as never, 'tok', { create: true })).resolves.toEqual(
+      claimed,
+    );
+    expect(wlUpdate).toHaveBeenCalledWith({ where: { id: 'wg' }, data: { userId: 'u1' } });
   });
   it('гость → ищет по token', async () => {
     wlFindFirst.mockResolvedValue({ id: 'w2', userId: null, token: 'tok' });

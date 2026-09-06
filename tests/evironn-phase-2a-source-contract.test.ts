@@ -104,6 +104,7 @@ describe('Evironn Phase 2A migration source contract', () => {
     expect(home).toMatch(/<main\b\s+id=["']main-content["']/);
     expect(home.match(/<main\b/g)).toHaveLength(1);
     expect(home.match(/<main\b\s+id=["']main-content["']/g)).toHaveLength(1);
+    expect(home).not.toContain('Перейти к содержимому');
     expect(home).toContain('<Hero />');
     expect(home).toContain('<FurnitureCategorySection />');
     expect(home).toContain('<InteractiveFurnitureCards />');

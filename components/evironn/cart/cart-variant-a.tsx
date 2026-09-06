@@ -243,12 +243,15 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
               <SummaryRows totals={totals} percent={promo.percent} />
               {canCheckout ? (
                 <a
-                  className="cart-a__checkout"
+                  className={`cart-a__checkout${checkoutPending ? ' is-pending' : ''}`}
                   href="/checkout"
                   aria-busy={checkoutPending || undefined}
                   aria-disabled={checkoutPending || undefined}
+                  tabIndex={checkoutPending ? -1 : undefined}
+                  data-pending={checkoutPending || undefined}
                   onClick={(event) => {
                     event.preventDefault();
+                    if (checkoutPending) return;
                     openCheckout();
                   }}
                 >
@@ -330,11 +333,15 @@ export function CartVariantA({ related, initialWishlistedIds }: CartVariantAProp
           </span>
           {canCheckout ? (
             <a
+              className={checkoutPending ? 'is-pending' : undefined}
               href="/checkout"
               aria-busy={checkoutPending || undefined}
               aria-disabled={checkoutPending || undefined}
+              tabIndex={checkoutPending ? -1 : undefined}
+              data-pending={checkoutPending || undefined}
               onClick={(event) => {
                 event.preventDefault();
+                if (checkoutPending) return;
                 openCheckout();
               }}
             >

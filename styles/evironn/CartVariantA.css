@@ -421,6 +421,19 @@
   transform: none;
 }
 
+.cart-a__checkout.is-pending,
+.cart-a__mobile-bar a.is-pending {
+  cursor: wait;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.cart-a__checkout.is-pending:hover,
+.cart-a__mobile-bar a.is-pending:hover {
+  background: hsl(var(--ev-text));
+  transform: none;
+}
+
 .cart-a__checkout-spinner {
   width: 17px;
   height: 17px;
@@ -554,7 +567,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 200;
+    z-index: 199;
     display: flex;
     align-items: center;
     justify-content: space-between;

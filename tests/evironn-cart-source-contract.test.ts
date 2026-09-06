@@ -105,7 +105,7 @@ describe('Evironn Cart Variant A source boundary', () => {
     expect(css).not.toContain('.cart-a__mobile-bar button');
     expect(css).not.toContain('cart-a-checkout-spin');
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      '3e36f93d58bd9007f235ad36e1b301c69d367687f1d36314fa62bbac9ecd50cf',
+      '0889596ccffcfde8d9e79a0bd5b78968673a2ff3b30c7f22f162d6b725bb9c70',
     );
   });
 

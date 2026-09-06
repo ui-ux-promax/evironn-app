@@ -30,6 +30,7 @@
 }
 .prf__avatar {
   display: grid;
+  flex: 0 0 auto;
   width: 62px;
   height: 62px;
   place-items: center;

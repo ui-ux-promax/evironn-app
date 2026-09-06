@@ -74,11 +74,15 @@ describe('production profile Variant A source contract', () => {
     expect(css).toMatch(/@media \(max-width: 580px\)/);
     expect(css).toMatch(/\.prf__favorites[\s\S]*grid-template-columns/);
     expect(createHash('sha256').update(css).digest('hex')).toBe(
-      '3c506c471ced075908c7103af5b56d9e9266d4afbc72dffc213caed960a84460',
+      '5ac6a3fafb2b36adc9a79135d495b30335b4abfe59c08f8662151b8e2ca5581e',
     );
   });
 
   it('adds separation above the password submit button', () => {
     expect(css).toMatch(/\.prf__subsection form > \.chk-submit\s*\{[\s\S]*margin-top:\s*16px;/);
+  });
+
+  it('keeps the profile avatar circular when the identity row becomes narrow', () => {
+    expect(css).toMatch(/\.prf__avatar\s*\{[^}]*flex:\s*0 0 auto;/);
   });
 });

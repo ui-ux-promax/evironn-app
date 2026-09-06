@@ -196,9 +196,15 @@ describe('Cart Variant A', () => {
     expect(mocks.push).toHaveBeenCalledTimes(1);
     expect(mocks.push).toHaveBeenCalledWith('/checkout');
     expect(checkoutLinks[0]).toHaveAttribute('aria-busy', 'true');
+    expect(checkoutLinks[0]).toHaveAttribute('aria-disabled', 'true');
+    expect(checkoutLinks[0]).toHaveAttribute('tabindex', '-1');
+    expect(checkoutLinks[0]).toHaveAttribute('data-pending', 'true');
     expect(checkoutLinks[0]).toHaveTextContent('Оформить заказ');
     expectFadeArc(checkoutLinks[0]);
     expect(checkoutLinks[1]).toHaveAttribute('aria-busy', 'true');
+    expect(checkoutLinks[1]).toHaveAttribute('aria-disabled', 'true');
+    expect(checkoutLinks[1]).toHaveAttribute('tabindex', '-1');
+    expect(checkoutLinks[1]).toHaveAttribute('data-pending', 'true');
     expectFadeArc(checkoutLinks[1]);
   });
 

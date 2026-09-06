@@ -89,6 +89,7 @@ beforeEach(() => {
   mocks.orderCreate.mockResolvedValue({ id: 'order-1', orderNumber: 1042, createdAt: now, totalAmount: 100000 });
   mocks.transaction.mockImplementation(async (operation: (tx: object) => unknown) =>
     operation({
+      user: { update: vi.fn(async () => ({ id: 'user-1' })) },
       sku: { updateMany: vi.fn(async () => ({ count: 1 })) },
       order: {
         create: mocks.orderCreate,

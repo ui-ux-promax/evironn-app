@@ -81,6 +81,7 @@ beforeEach(() => {
   mocks.resolveOwnerCart.mockResolvedValue({ id: 'cart-1', token: 'token' });
   mocks.orderCreate.mockResolvedValue({ id: 'order-1', orderNumber: 1042, createdAt: now, totalAmount: 100000 });
   const transaction = {
+    user: { update: vi.fn(async () => ({ id: 'user-1' })) },
     cart: { findFirst: vi.fn(async () => cart) },
     coupon: { findUnique: vi.fn() },
     sku: { updateMany: vi.fn(async () => ({ count: 1 })) },
@@ -121,6 +122,7 @@ describe('placeOrder and checkout builder integration', () => {
       ],
     };
     const transactionFor = (authoritativeCart: typeof cart, percent: number) => ({
+      user: { update: vi.fn(async () => ({ id: 'user-1' })) },
       cart: { findFirst: vi.fn(async () => authoritativeCart) },
       coupon: {
         findUnique: vi.fn(async () => ({ code: 'EV10', percent, active: true, expiresAt: null })),

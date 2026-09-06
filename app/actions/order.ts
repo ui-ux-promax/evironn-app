@@ -233,6 +233,11 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
         throw Object.assign(new Error('Корзина изменилась во время оформления. Повторите попытку.'), { code: 'CART_CONFLICT' });
       }
 
+      await transaction.user.update({
+        where: { id: userId },
+        data: { phone: form.contactPhone },
+      });
+
       return {
         id: order.id,
         orderNumber: order.orderNumber,

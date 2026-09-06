@@ -90,6 +90,9 @@ const orderData = {
 
 function transactionClient() {
   return {
+    user: {
+      update: vi.fn(async () => ({ id: 'user-1', phone: '+79231445566' })),
+    },
     sku: { updateMany: vi.fn(async () => ({ count: 1 })) },
     order: {
       create: vi.fn(async () => ({
@@ -117,6 +120,20 @@ beforeEach(() => {
 });
 
 describe('placeOrder transactional canonical placement', () => {
+  it('stores the normalized checkout phone on the authenticated user inside the order transaction', async () => {
+    const tx = transactionClient();
+    mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown) => operation(tx));
+
+    await expect(
+      placeOrder({ ...validForm, contactPhone: '8 (923) 144-55-66' }),
+    ).resolves.toEqual({ ok: true, code: 'ORDER_READY', orderNumber: 1042 });
+
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { phone: '+79231445566' },
+    });
+  });
+
   it('writes stock, immutable snapshots, order totals, and placed cart deletion through one transaction client', async () => {
     const tx = transactionClient();
     mocks.transaction.mockImplementation(async (operation: (transaction: typeof tx) => unknown, options: unknown) => {
@@ -168,6 +185,7 @@ describe('placeOrder transactional canonical placement', () => {
     expect(result).toMatchObject({ ok: false });
     expect(tx.order.create).not.toHaveBeenCalled();
     expect(tx.cartItem.deleteMany).not.toHaveBeenCalled();
+    expect(tx.user.update).not.toHaveBeenCalled();
   });
 
   it('rejects quantities above the canonical maximum before reservation', async () => {

@@ -141,6 +141,17 @@ describe('Auth Variant B', () => {
     expect(screen.getByRole('heading', { name: 'Подтвердите почту' })).toBeInTheDocument();
   });
 
+  it.each([
+    ['login', 'Назад ко входу', 'Войти в аккаунт'],
+    ['register', 'Назад к регистрации', 'Создать аккаунт'],
+  ] as const)('returns from verification to the %s form', (initialMode, backLabel, heading) => {
+    render(<AuthVariantBController {...props} initialMode={initialMode} initialVerificationPending />);
+
+    fireEvent.click(screen.getByRole('button', { name: backLabel }));
+
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+  });
+
   it('shows visible feedback when verification action throws', async () => {
     verifyEmailCode.mockRejectedValue(new Error('verification unavailable'));
     render(<AuthVariantBController {...props} initialVerificationPending />);

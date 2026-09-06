@@ -1176,6 +1176,24 @@
   }
 }
 
+@media (max-width: 600px) {
+  #evironn-hero .furni-hero-copy {
+    display: none;
+  }
+}
+
+@media (min-width: 376px) and (max-width: 600px) {
+  #evironn-hero .furni-hero-stack {
+    top: 80px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 600px) {
+  #evironn-hero .furni-hero-actions {
+    justify-content: center;
+  }
+}
+
 @keyframes hero-room-leave-mobile {
   from {
     opacity: 1;

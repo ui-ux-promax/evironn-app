@@ -85,7 +85,7 @@ describe('Evironn storefront shell', () => {
         y: top,
         toJSON: () => ({}),
       }) as DOMRect;
-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       if (this === source) return rect(0, -120, 1326, 2400);
       if (this.classList.contains('od-header-inner')) return rect(22, 10, 1282, 58);
       if (this === denseSurface) return rect(0, 0, 1326, 180);

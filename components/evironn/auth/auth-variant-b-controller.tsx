@@ -45,6 +45,7 @@ export function AuthVariantBController({
 }: AuthVariantBControllerProps) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthVariantBMode>(initialVerificationPending ? 'verify' : initialMode);
+  const [verificationReturnMode, setVerificationReturnMode] = useState<'login' | 'register'>(initialMode);
   const [values, setValues] = useState<AuthVariantBValues>(emptyAuthVariantBValues);
   const [errors, setErrors] = useState<AuthVariantBErrors>({});
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export function AuthVariantBController({
       if (result?.error) {
         const gate = await ensureVerificationGate(parsed.data.email, safeCallback);
         if (gate.gated) {
+          setVerificationReturnMode('login');
           setMode('verify');
           return;
         }
@@ -114,6 +116,7 @@ export function AuthVariantBController({
         if (result.retryAfterSec) setResendSeconds(result.retryAfterSec);
         return;
       }
+      setVerificationReturnMode('register');
       setMode('verify');
     } catch {
       setError('Не удалось завершить регистрацию. Попробуйте позже');
@@ -190,6 +193,7 @@ export function AuthVariantBController({
   return (
     <AuthVariantB
       mode={mode}
+      verificationReturnMode={verificationReturnMode}
       values={values}
       errors={errors}
       oauthError={oauthError}
@@ -200,6 +204,12 @@ export function AuthVariantBController({
       passwordVisible={passwordVisible}
       onModeChange={(next) => {
         setMode(next);
+        setVerificationReturnMode(next);
+        setError(null);
+        setErrors({});
+      }}
+      onVerificationBack={() => {
+        setMode(verificationReturnMode);
         setError(null);
         setErrors({});
       }}

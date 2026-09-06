@@ -221,6 +221,21 @@
   width: 14px;
   height: 14px;
 }
+.auth-verify-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  color: var(--ev-ink-60);
+  font-size: 12.5px;
+}
+.auth-verify-back:hover {
+  color: hsl(var(--ev-text));
+}
+.auth-verify-back svg {
+  width: 15px;
+  height: 15px;
+}
 
 .auth-otp {
   display: grid;

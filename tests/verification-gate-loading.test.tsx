@@ -25,6 +25,14 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('VerificationGate async actions', () => {
+  it('lets the user dismiss email verification and continue browsing', () => {
+    render(<VerificationGate email="user@example.com" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть подтверждение почты' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('submits a completed OTP without rendering a confirmation button', async () => {
     verifyEmailCodeMock.mockResolvedValue({ ok: false, reason: 'wrong' });
     render(<VerificationGate email="user@example.com" />);

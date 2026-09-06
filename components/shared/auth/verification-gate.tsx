@@ -24,6 +24,7 @@ function maskEmail(email: string): string {
 }
 
 export function VerificationGate({ email, callbackUrl }: { email: string; callbackUrl?: string }) {
+  const [open, setOpen] = useState(true);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -81,19 +82,21 @@ export function VerificationGate({ email, callbackUrl }: { email: string; callba
     }
   };
 
-  const block = (e: Event) => e.preventDefault();
-
   return (
-    <Dialog.Root open>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 z-50" />
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[min(420px,92vw)] rounded-2xl bg-white p-6 sm:p-8 shadow-xl"
-          onEscapeKeyDown={block}
-          onPointerDownOutside={block}
-          onInteractOutside={block}
           aria-describedby="verify-desc"
         >
+          <Dialog.Close
+            type="button"
+            aria-label="Закрыть подтверждение почты"
+            className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-2xl leading-none text-black/50 transition-colors hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <span aria-hidden="true">×</span>
+          </Dialog.Close>
           <Dialog.Title className="text-lg font-display font-bold">Подтвердите почту</Dialog.Title>
           <p id="verify-desc" className="text-sm text-black/60 mt-1 mb-5">
             Код отправлен на {maskEmail(email)}. Введите 6 цифр из письма.

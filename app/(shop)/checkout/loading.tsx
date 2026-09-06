@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui';
+import '@/styles/evironn/CheckoutVariantA.css';
 
 export default function CheckoutLoading() {
   return (

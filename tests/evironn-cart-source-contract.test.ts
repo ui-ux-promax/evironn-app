@@ -122,9 +122,33 @@ describe('Evironn Cart Variant A source boundary', () => {
     const layout = source('app/layout.tsx');
     const css = source('styles/evironn/CartLoading.css');
 
-    expect(loading).toContain('className="cart-loading mx-auto max-w-[1240px]');
+    expect(loading).toContain('className="cart-a cart-loading"');
     expect(loading).toContain('aria-hidden');
     expect(layout).toContain("import '../styles/evironn/CartLoading.css';");
     expect(css).toMatch(/\.cart-loading\s*\{[\s\S]*min-height:\s*100svh;[\s\S]*min-height:\s*100dvh;[\s\S]*\}/);
+  });
+
+  it('mirrors the cart information architecture while loading', () => {
+    const loading = source('app/(shop)/cart/loading.tsx');
+
+    expect(loading).toContain("import { Steps } from '@/components/evironn/cart/cart-primitives'");
+    expect(loading).toContain('className="cart-a cart-loading"');
+    for (const className of [
+      'cart-a__list-head',
+      'cart-a__columns',
+      'cart-a__line',
+      'cart-a__card',
+      'cart-a__mobile-bar',
+    ])
+      expect(loading).toContain(className);
+    expect(loading).not.toContain('lg:grid-cols-[1fr_380px]');
+  });
+
+  it('puts each checkout step on its own row down to 320px', () => {
+    const css = source('styles/evironn/CartPrimitives.css');
+
+    expect(css).toMatch(
+      /@media \(max-width: 460px\) \{[\s\S]*?\.crt-steps li:first-child,\n  \.crt-steps li:nth-child\(2\) \{[\s\S]*?flex-basis: 100%;/,
+    );
   });
 });

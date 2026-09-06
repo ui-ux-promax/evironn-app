@@ -113,6 +113,7 @@ function HeroPosterImage({
       quality={90}
       fetchPriority="high"
       priority
+      unoptimized
     />
   ) : (
     <img key={`${room}-${version}`} {...imageProps} data-hero-room={room} data-hero-poster-version={version} alt="" />

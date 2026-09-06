@@ -2,7 +2,18 @@
 
 import { type FormEvent, type KeyboardEvent, type Ref, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FiArrowRight, FiCheck, FiEye, FiEyeOff, FiLock, FiMail, FiRefreshCw, FiShield, FiUser } from 'react-icons/fi';
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiCheck,
+  FiEye,
+  FiEyeOff,
+  FiLock,
+  FiMail,
+  FiRefreshCw,
+  FiShield,
+  FiUser,
+} from 'react-icons/fi';
 import { ConsentBlock, Field, FormError, SubmitButton } from '@/components/evironn/forms/form-primitives';
 import { FadeArc } from '@/components/loading-ui/fade-arc';
 import {
@@ -15,6 +26,7 @@ import {
 
 export interface AuthVariantBProps {
   mode: AuthVariantBMode;
+  verificationReturnMode: 'login' | 'register';
   values: AuthVariantBValues;
   errors: AuthVariantBErrors;
   oauthError: string | null;
@@ -24,6 +36,7 @@ export interface AuthVariantBProps {
   resendSeconds: number;
   passwordVisible: boolean;
   onModeChange: (mode: 'login' | 'register') => void;
+  onVerificationBack: () => void;
   onFieldChange: (field: AuthVariantBField, value: string) => void;
   onConsentChange: (checked: boolean) => void;
   onTogglePassword: () => void;
@@ -198,6 +211,7 @@ function AuthTab({
 
 export function AuthVariantB({
   mode,
+  verificationReturnMode,
   values,
   errors,
   oauthError,
@@ -207,6 +221,7 @@ export function AuthVariantB({
   resendSeconds,
   passwordVisible,
   onModeChange,
+  onVerificationBack,
   onFieldChange,
   onConsentChange,
   onTogglePassword,
@@ -294,6 +309,10 @@ export function AuthVariantB({
                 : resendSeconds > 0
                   ? `Повторный код через ${resendSeconds} с`
                   : 'Отправить код повторно'}
+            </button>
+            <button className="auth-verify-back" type="button" onClick={onVerificationBack}>
+              <FiArrowLeft aria-hidden="true" />
+              {verificationReturnMode === 'login' ? 'Назад ко входу' : 'Назад к регистрации'}
             </button>
           </form>
         </section>

@@ -40,6 +40,12 @@ describe('Evironn Checkout Variant A source boundary', () => {
     expect(page).not.toContain('CheckoutForm');
   });
 
+  it('loads checkout layout styles before the route fallback renders', () => {
+    const loading = source('app/(shop)/checkout/loading.tsx');
+
+    expect(loading).toContain("import '@/styles/evironn/CheckoutVariantA.css'");
+  });
+
   it('renders distinct pending and blocked payment initialization states', () => {
     const production = files.map(source).join('\n');
     expect(production).toContain('PAYMENT_INITIALIZATION_PENDING');
